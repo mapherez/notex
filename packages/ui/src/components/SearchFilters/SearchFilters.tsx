@@ -29,14 +29,34 @@ export interface SearchFiltersProps {
   onToggleCollapse?: (collapsed: boolean) => void;
   /** Additional CSS class */
   className?: string;
+  /** Localized strings for filters */
+  labels?: {
+    title?: string;
+    searchFilters?: string;
+    categories?: string;
+    difficulty?: string;
+    tags?: string;
+    dateRange?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    clearFilters?: string;
+    showMore?: string;
+    activeCount?: (count: number) => string;
+    expandFilters?: string;
+    collapseFilters?: string;
+    loadingFilters?: string;
+    cardCount?: (count: number) => string;
+  };
 }
 
+// TODO: Extract strings below to localization
 const DEFAULT_DIFFICULTY_OPTIONS: FilterOption[] = [
   { value: 'básico', label: 'Básico' },
   { value: 'intermediário', label: 'Intermediário' },
   { value: 'avançado', label: 'Avançado' },
 ];
 
+// TODO: Extract strings below to localization
 const DEFAULT_CATEGORY_OPTIONS: FilterOption[] = [
   { value: 'programação', label: 'Programação' },
   { value: 'idiomas', label: 'Idiomas' },
@@ -56,7 +76,29 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
   collapsed = false,
   onToggleCollapse,
   className,
+  labels = {},
 }) => {
+  // Default labels (fallback to English)
+  // TODO: Extract these strings to localization
+  const defaultLabels = {
+    title: 'Filters',
+    searchFilters: 'Search filters',
+    categories: 'Categories',
+    difficulty: 'Difficulty',
+    tags: 'Tags',
+    dateRange: 'Date Created',
+    dateFrom: 'From:',
+    dateTo: 'To:',
+    clearFilters: 'Clear filters',
+    showMore: (count: number) => `Show more (${count})`,
+    activeCount: (count: number) => count === 1 ? `${count} active filter` : `${count} active filters`,
+    expandFilters: 'Expand filters',
+    collapseFilters: 'Collapse filters',
+    loadingFilters: 'Loading filters...',
+    cardCount: (count: number) => count === 1 ? `${count} card` : `${count} cards`,
+    ...labels,
+  };
+
   const [dateFromInput, setDateFromInput] = useState(
     filters.dateRange?.from?.toISOString().split('T')[0] || ''
   );
@@ -153,14 +195,14 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
         [styles.collapsed]: collapsed,
         [styles.loading]: loading,
       })}
-      aria-label="Filtros de pesquisa"
+      aria-label={defaultLabels.searchFilters}
     >
       {/* Filter Header */}
       <div className={styles.header}>
-        <h3 className={styles.title}>Filtros</h3>
+        <h3 className={styles.title}>{defaultLabels.title}</h3>
         <div className={styles.headerActions}>
           {activeFiltersCount > 0 && (
-            <span className={styles.activeCount} aria-label={`${activeFiltersCount} filtros ativos`}>
+            <span className={styles.activeCount} aria-label={defaultLabels.activeCount(activeFiltersCount)}>
               {activeFiltersCount}
             </span>
           )}
@@ -169,7 +211,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
               type="button"
               onClick={() => onToggleCollapse(!collapsed)}
               className={styles.collapseButton}
-              aria-label={collapsed ? 'Expandir filtros' : 'Recolher filtros'}
+              aria-label={collapsed ? defaultLabels.expandFilters : defaultLabels.collapseFilters}
               aria-expanded={!collapsed}
             >
               <svg
@@ -194,7 +236,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
         <div className={styles.content}>
           {/* Categories Filter */}
           <div className={styles.filterGroup}>
-            <h4 className={styles.filterTitle}>Categorias</h4>
+            <h4 className={styles.filterTitle}>{defaultLabels.categories}</h4>
             <div className={styles.filterOptions} role="group" aria-labelledby="categories-title">
               {categoryOptions.map(option => (
                 <label key={option.value} className={styles.checkboxLabel}>
@@ -209,7 +251,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                   <span className={styles.optionText}>
                     {option.label}
                     {showCounts && option.count !== undefined && (
-                      <span className={styles.optionCount} aria-label={`${option.count} cartões`}>
+                      <span className={styles.optionCount} aria-label={`${option.count} cartões`}> // TODO: Extract this aria-label to localization
                         ({option.count})
                       </span>
                     )}
@@ -221,7 +263,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
 
           {/* Difficulty Filter */}
           <div className={styles.filterGroup}>
-            <h4 className={styles.filterTitle}>Dificuldade</h4>
+            <h4 className={styles.filterTitle}>{defaultLabels.difficulty}</h4>
             <div className={styles.filterOptions} role="group" aria-labelledby="difficulty-title">
               {difficultyOptions.map(option => (
                 <label key={option.value} className={styles.checkboxLabel}>
@@ -236,7 +278,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                   <span className={styles.optionText}>
                     {option.label}
                     {showCounts && option.count !== undefined && (
-                      <span className={styles.optionCount} aria-label={`${option.count} cartões`}>
+                      <span className={styles.optionCount} aria-label={`${option.count} cartões`}> // TODO: Extract this aria-label to localization
                         ({option.count})
                       </span>
                     )}
@@ -249,7 +291,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
           {/* Tags Filter */}
           {tagOptions.length > 0 && (
             <div className={styles.filterGroup}>
-              <h4 className={styles.filterTitle}>Etiquetas</h4>
+              <h4 className={styles.filterTitle}>{defaultLabels.tags}</h4>
               <div className={styles.filterOptions} role="group" aria-labelledby="tags-title">
                 {tagOptions.slice(0, 8).map(option => (
                   <label key={option.value} className={styles.checkboxLabel}>
@@ -264,7 +306,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                     <span className={styles.optionText}>
                       {option.label}
                       {showCounts && option.count !== undefined && (
-                        <span className={styles.optionCount} aria-label={`${option.count} cartões`}>
+                        <span className={styles.optionCount} aria-label={`${option.count} cartões`}> // TODO: Extract this aria-label to localization
                           ({option.count})
                         </span>
                       )}
@@ -289,10 +331,10 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
 
           {/* Date Range Filter */}
           <div className={styles.filterGroup}>
-            <h4 className={styles.filterTitle}>Data de Criação</h4>
+            <h4 className={styles.filterTitle}>{defaultLabels.dateRange}</h4>
             <div className={styles.dateRange}>
               <div className={styles.dateInput}>
-                <label htmlFor="date-from" className={styles.dateLabel}>De:</label>
+                <label htmlFor="date-from" className={styles.dateLabel}>{defaultLabels.dateFrom}</label>
                 <input
                   id="date-from"
                   type="date"
@@ -304,7 +346,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                 />
               </div>
               <div className={styles.dateInput}>
-                <label htmlFor="date-to" className={styles.dateLabel}>Até:</label>
+                <label htmlFor="date-to" className={styles.dateLabel}>{defaultLabels.dateTo}</label>
                 <input
                   id="date-to"
                   type="date"
@@ -341,14 +383,14 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
-                Limpar filtros
+                {defaultLabels.clearFilters}
               </button>
             </div>
           )}
 
           {/* Loading State */}
           {loading && (
-            <div className={styles.loadingOverlay} aria-label="A carregar filtros...">
+            <div className={styles.loadingOverlay} aria-label="A carregar filtros..."> // TODO: Extract this aria-label to localization
               <div className={styles.spinner}>
                 <svg className={styles.spinnerIcon} viewBox="0 0 24 24">
                   <circle

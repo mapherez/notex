@@ -64,5 +64,14 @@
   "A11Y_CARD_COUNT_one": "{{count}} cartão", 
   "A11Y_CARD_COUNT_other": "{{count}} cartões",
   "A11Y_MENU_EXPANDED": "Menu expandido",
-  "A11Y_MENU_COLLAPSED": "Menu recolhido"
+  "A11Y_MENU_COLLAPSED": "Menu recolhido",
+  "A11Y_SEARCH_INPUT": "Procurar cartões de conhecimento",
+  "A11Y_CLEAR_SEARCH": "Limpar pesquisa",
+  "A11Y_SEARCH_LOADING": "A carregar...",
+  "A11Y_SEARCH_FILTERS": "Filtros de pesquisa",
+  "A11Y_FILTERS_ACTIVE_COUNT_one": "{{count}} filtro ativo",
+  "A11Y_FILTERS_ACTIVE_COUNT_other": "{{count}} filtros ativos",
+  "A11Y_EXPAND_FILTERS": "Expandir filtros",
+  "A11Y_COLLAPSE_FILTERS": "Recolher filtros",
+  "A11Y_LOADING_FILTERS": "A carregar filtros..."
 }

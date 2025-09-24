@@ -14,6 +14,7 @@ export function HomePageContent() {
     'TypeScript genéricos',
     'CSS Grid layout'
   ]);
+  // TODO: Remove hardcoded values above when real search history is implemented
   
   const [filters, setFilters] = useState<SearchFiltersType>({
     categories: [],
@@ -87,6 +88,7 @@ export function HomePageContent() {
     label: localize(option.label),
   })) || [];
 
+  // TODO: Replace with dynamic tags from backend, when available
   const tagOptions: FilterOption[] = [
     { value: 'javascript', label: 'JavaScript', count: 8 },
     { value: 'react', label: 'React', count: 6 },

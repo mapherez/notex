@@ -39,13 +39,20 @@ export interface SearchBarProps {
   className?: string;
   /** Whether to show keyboard shortcut hint */
   showShortcut?: boolean;
+  /** Accessibility label for search input */
+  searchAriaLabel?: string;
+  /** Accessibility label for clear button */
+  clearAriaLabel?: string;
+  /** Accessibility label for loading state */
+  loadingAriaLabel?: string;
 }
 
+// TODO: Extract strings below to localization
 export const SearchBar: React.FC<SearchBarProps> = ({
   value,
   onChange,
   onSubmit,
-  placeholder = 'Procurar cartões de conhecimento...',
+  placeholder = 'Search knowledge cards...',
   loading = false,
   suggestions = [],
   onSuggestionSelect,
@@ -54,6 +61,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   onHistorySelect,
   className,
   showShortcut = true,
+  searchAriaLabel = 'Search knowledge cards',
+  clearAriaLabel = 'Clear search',
+  loadingAriaLabel = 'Loading...',
 }) => {
   const [isActive, setIsActive] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -229,7 +239,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             className={styles.input}
-            aria-label="Procurar cartões de conhecimento"
+            aria-label={searchAriaLabel}
             aria-expanded={showSuggestions}
             aria-haspopup="listbox"
             aria-autocomplete="list"
@@ -244,7 +254,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               type="button"
               onClick={handleClear}
               className={styles.clearButton}
-              aria-label="Limpar pesquisa"
+              aria-label={clearAriaLabel}
             >
               <svg
                 width="16"
@@ -272,7 +282,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
           {/* Loading Spinner */}
           {loading && (
-            <div className={styles.spinner} aria-label="A carregar...">
+            <div className={styles.spinner} aria-label={loadingAriaLabel}>
               <svg className={styles.spinnerIcon} viewBox="0 0 24 24">
                 <circle
                   cx="12"

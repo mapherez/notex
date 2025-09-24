@@ -62,7 +62,7 @@ function CardsPageContent() {
     return (
       <main className="container">
         <div className="main">
-          <div className="loading">Loading...</div>
+          <div className="loading">{settingsLoading ? 'Loading...' : 'Initializing...'}</div> // TODO: Extract these strings to localization
         </div>
       </main>
     );

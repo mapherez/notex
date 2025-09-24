@@ -4,7 +4,7 @@ import { ClientSettingsProvider } from '@/components/ClientSettingsProvider';
 import { getEnvironmentSettings, getCurrentMarketSettings } from '@notex/config';
 import '@/styles/globals.scss';
 
-// Static metadata - will be enhanced with dynamic settings in the future
+// TODO: Static metadata - will be enhanced with dynamic settings in the future
 export const metadata: Metadata = {
   title: 'NoteX - Knowledge Management',
   description: 'Modern knowledge management system with accessibility and i18n built-in',
