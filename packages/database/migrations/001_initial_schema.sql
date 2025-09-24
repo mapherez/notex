@@ -28,10 +28,7 @@ CREATE TABLE knowledge_cards (
   search_vector TSVECTOR GENERATED ALWAYS AS (
     setweight(to_tsvector('portuguese', title), 'A') ||
     setweight(to_tsvector('portuguese', coalesce(content->>'summary', '')), 'B') ||
-    setweight(to_tsvector('portuguese', coalesce(content->>'body', '')), 'C') ||
-    setweight(to_tsvector('portuguese', coalesce(array_to_string(
-      ARRAY(SELECT jsonb_array_elements_text(content->'examples')), ' '
-    ), '')), 'D')
+    setweight(to_tsvector('portuguese', coalesce(content->>'body', '')), 'C')
   ) STORED
 );
 

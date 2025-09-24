@@ -85,6 +85,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@notex/database':
+        specifier: workspace:*
+        version: link:../database
       clsx:
         specifier: ^2.0.0
         version: 2.1.1

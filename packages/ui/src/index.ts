@@ -3,6 +3,7 @@
 
 // Components
 export * from './components/Button';
+export * from './components/Card';
 
 // Utilities (to be added)
 // export * from './utils';

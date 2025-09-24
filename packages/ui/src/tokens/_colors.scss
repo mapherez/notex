@@ -1,0 +1,82 @@
+// Design Tokens - Colors
+// Semantic color tokens for consistent theming
+
+:root {
+  // Base Colors
+  --neutral-50: #fafafa;
+  --neutral-100: #f5f5f5;
+  --neutral-200: #e5e5e5;
+  --neutral-300: #d4d4d4;
+  --neutral-400: #a3a3a3;
+  --neutral-500: #737373;
+  --neutral-600: #525252;
+  --neutral-700: #404040;
+  --neutral-800: #262626;
+  --neutral-900: #171717;
+
+  --blue-50: #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+
+  --green-50: #f0fdf4;
+  --green-100: #dcfce7;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+
+  --yellow-50: #fefce8;
+  --yellow-100: #fef3c7;
+  --yellow-600: #d97706;
+  --yellow-700: #b45309;
+
+  --red-50: #fef2f2;
+  --red-100: #fee2e2;
+  --red-600: #dc2626;
+  --red-700: #b91c1c;
+
+  // Semantic Colors - Light Theme
+  --color-bg-primary: var(--neutral-50);
+  --color-bg-secondary: var(--neutral-100);
+  --color-text-primary: var(--neutral-900);
+  --color-text-secondary: var(--neutral-700);
+  --color-text-muted: var(--neutral-500);
+  
+  --color-border-subtle: var(--neutral-200);
+  --color-border-default: var(--neutral-300);
+  
+  --color-accent-primary: var(--blue-600);
+  --color-accent-bg: var(--blue-50);
+  --color-accent-text: var(--blue-700);
+  
+  --color-success-bg: var(--green-50);
+  --color-success-text: var(--green-700);
+  
+  --color-warning-bg: var(--yellow-50);
+  --color-warning-text: var(--yellow-700);
+  
+  --color-danger-bg: var(--red-50);  
+  --color-danger-text: var(--red-700);
+
+  // Spacing
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-full: 9999px;
+}
+
+// Dark Theme
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg-primary: var(--neutral-900);
+    --color-bg-secondary: var(--neutral-800);
+    --color-text-primary: var(--neutral-50);
+    --color-text-secondary: var(--neutral-300);
+    --color-text-muted: var(--neutral-500);
+    
+    --color-border-subtle: var(--neutral-700);
+    --color-border-default: var(--neutral-600);
+    
+    --color-accent-bg: var(--blue-900);
+    --color-accent-text: var(--blue-300);
+  }
+}

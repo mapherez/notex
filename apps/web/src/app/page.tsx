@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from '@notex/ui';
 
 export default function HomePage() {
@@ -16,7 +18,12 @@ export default function HomePage() {
         </p>
         
         <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          <Button variant="primary">Get Started</Button>
+          <Button 
+            variant="primary"
+            onClick={() => window.location.href = '/cards'}
+          >
+            View Knowledge Cards
+          </Button>
           <Button variant="secondary">Learn More</Button>
           <Button variant="ghost">View Demo</Button>
         </div>
