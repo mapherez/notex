@@ -251,7 +251,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                   <span className={styles.optionText}>
                     {option.label}
                     {showCounts && option.count !== undefined && (
-                      <span className={styles.optionCount} aria-label={`${option.count} cartões`}> // TODO: Extract this aria-label to localization
+                      <span className={styles.optionCount} aria-label={`${option.count} cartões`}> {/* TODO: Extract this aria-label to localization */}
                         ({option.count})
                       </span>
                     )}
@@ -278,7 +278,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                   <span className={styles.optionText}>
                     {option.label}
                     {showCounts && option.count !== undefined && (
-                      <span className={styles.optionCount} aria-label={`${option.count} cartões`}> // TODO: Extract this aria-label to localization
+                      <span className={styles.optionCount} aria-label={`${option.count} cartões`}> {/* TODO: Extract this aria-label to localization */}
                         ({option.count})
                       </span>
                     )}
@@ -306,7 +306,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                     <span className={styles.optionText}>
                       {option.label}
                       {showCounts && option.count !== undefined && (
-                        <span className={styles.optionCount} aria-label={`${option.count} cartões`}> // TODO: Extract this aria-label to localization
+                        <span className={styles.optionCount} aria-label={`${option.count} cartões`}> {/* TODO: Extract this aria-label to localization */}
                           ({option.count})
                         </span>
                       )}
@@ -390,7 +390,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
 
           {/* Loading State */}
           {loading && (
-            <div className={styles.loadingOverlay} aria-label="A carregar filtros..."> // TODO: Extract this aria-label to localization
+            <div className={styles.loadingOverlay} aria-label="A carregar filtros..."> {/* TODO: Extract this aria-label to localization */}
               <div className={styles.spinner}>
                 <svg className={styles.spinnerIcon} viewBox="0 0 24 24">
                   <circle

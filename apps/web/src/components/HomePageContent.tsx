@@ -3,9 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button, SearchBar, SearchFilters, useSettings } from '@notex/ui';
 import { createLocalizeFunction, loadLocale } from '@notex/config';
-import type { SearchFilters as SearchFiltersType, Locale, FilterOption } from '@notex/types';
 import { KnowledgeCardRepository } from '@notex/database';
-import { SearchSuggestion }  from '@notex/types';
+import type { SearchFilters as SearchFiltersType, Locale, FilterOption, SearchSuggestion } from '@notex/types';
 
 export function HomePageContent() {
   const [searchQuery, setSearchQuery] = useState('');
