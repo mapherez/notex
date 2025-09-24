@@ -5,6 +5,9 @@
 export { supabase } from './client';
 export type { Database } from './database.types';
 
+// Re-export Supabase types for convenience
+export type { User, Session, AuthError } from '@supabase/supabase-js';
+
 // Types and schemas
 export * from './types';
 

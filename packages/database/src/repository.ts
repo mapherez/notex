@@ -2,6 +2,7 @@
 // CRUD operations and queries for knowledge cards
 
 import { supabase } from './client';
+import type { Database } from './database.types';
 import type {
   KnowledgeCard,
   CreateKnowledgeCard,
@@ -19,11 +20,11 @@ import {
 export class KnowledgeCardRepository {
   // Create a new knowledge card
   static async create(data: CreateKnowledgeCard): Promise<KnowledgeCard> {
-    const cardData = {
+    const cardData: Database['public']['Tables']['knowledge_cards']['Insert'] = {
       ...data,
       content: data.content || getDefaultContent(),
       metadata: data.metadata || getDefaultMetadata(),
-      status: data.status || 'draft' as const,
+      status: data.status || 'draft',
     };
 
     const { data: result, error } = await supabase

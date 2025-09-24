@@ -1,8 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@notex/database';
-import type { User, Session, AuthError } from '@supabase/supabase-js';
+import { supabase, type User, type Session, type AuthError } from '@notex/database';
 
 interface AuthContextType {
   user: User | null;
