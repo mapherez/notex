@@ -25,7 +25,7 @@ NoteX is a comprehensive knowledge management system designed specifically for P
 
 This is a pnpm monorepo with the following structure:
 
-```
+```text
 notex/
 ├── apps/
 │   └── web/                 # Next.js App Router application
