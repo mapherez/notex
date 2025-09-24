@@ -1,0 +1,204 @@
+// Button component styles
+// Note: Global tokens are imported in the main app, not in component modules
+
+.button {
+  // Base button styles
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-interactive);
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  white-space: nowrap;
+  user-select: none;
+  
+  // Disable browser focus outline since we provide our own
+  &:focus {
+    outline: none;
+  }
+  
+  // Custom focus styles
+  &:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+  
+  &:disabled,
+  &[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  
+  // Prevent text selection on button interaction
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Size variants
+.small {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+  padding: var(--space-2) var(--space-3);
+  height: 2rem;
+  
+  .loadingSpinner {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.medium {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+  padding: var(--space-3) var(--space-4);
+  height: 2.5rem;
+  
+  .loadingSpinner {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+.large {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-relaxed);
+  padding: var(--space-4) var(--space-6);
+  height: 3rem;
+  
+  .loadingSpinner {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+// Visual variants
+.primary {
+  background-color: var(--color-accent-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-accent-primary);
+  
+  &:hover:not(:disabled):not([aria-disabled="true"]) {
+    background-color: var(--color-accent-primary-hover);
+    border-color: var(--color-accent-primary-hover);
+  }
+  
+  &:active:not(:disabled):not([aria-disabled="true"]) {
+    background-color: var(--color-accent-primary-active);
+    border-color: var(--color-accent-primary-active);
+  }
+}
+
+.secondary {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-primary);
+  
+  &:hover:not(:disabled):not([aria-disabled="true"]) {
+    background-color: var(--color-bg-tertiary);
+    border-color: var(--color-border-secondary);
+  }
+  
+  &:active:not(:disabled):not([aria-disabled="true"]) {
+    background-color: var(--color-bg-interactive);
+  }
+}
+
+.ghost {
+  background-color: transparent;
+  color: var(--color-text-interactive);
+  border-color: transparent;
+  
+  &:hover:not(:disabled):not([aria-disabled="true"]) {
+    background-color: var(--color-bg-interactive);
+    color: var(--color-text-primary);
+  }
+  
+  &:active:not(:disabled):not([aria-disabled="true"]) {
+    background-color: var(--color-bg-interactive-hover);
+  }
+}
+
+// Layout modifiers
+.fullWidth {
+  width: 100%;
+}
+
+// Loading state
+.loading {
+  .content {
+    opacity: 0;
+  }
+}
+
+.loadingSpinner {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Icon positioning
+.iconBefore {
+  display: flex;
+  align-items: center;
+}
+
+.iconAfter {
+  display: flex;
+  align-items: center;
+}
+
+// Content wrapper
+.content {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.hidden {
+  opacity: 0;
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .button {
+    border-width: 2px;
+  }
+  
+  .primary {
+    border-color: var(--color-text-inverse);
+  }
+  
+  .secondary,
+  .ghost {
+    border-color: var(--color-text-primary);
+  }
+}
