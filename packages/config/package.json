@@ -9,6 +9,9 @@
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
+  "dependencies": {
+    "@notex/types": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.0.0"
   }

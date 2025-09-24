@@ -16,7 +16,8 @@
     "lint": "pnpm --recursive lint",
     "type-check": "pnpm --recursive type-check",
     "test": "pnpm --recursive test",
-    "clean": "pnpm --recursive clean"
+    "clean": "pnpm --recursive clean",
+    "cleanup": "node scripts/cleanup.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

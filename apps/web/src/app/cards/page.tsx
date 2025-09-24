@@ -1,16 +1,39 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card } from '@notex/ui';
+import { Card, useSettings } from '@notex/ui';
 import { KnowledgeCardRepository, type KnowledgeCard } from '@notex/database';
+import { createLocalizeFunction, loadLocale } from '@notex/config';
+import type { Locale } from '@notex/types';
 
-export default function CardsPage() {
+function CardsPageContent() {
   const [cards, setCards] = useState<KnowledgeCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [localize, setLocalize] = useState<((key: string, params?: Record<string, string | number>) => string) | null>(null);
+  const { settings } = useSettings();
+
+  // Initialize localization
+  useEffect(() => {
+    async function initializeLocalization() {
+      try {
+        await loadLocale(settings.SETUP.language as Locale);
+        const { localize: localizeFunc } = createLocalizeFunction(settings.SETUP.language as Locale);
+        setLocalize(() => localizeFunc);
+      } catch (error) {
+        console.error('Failed to load locale:', error);
+        // Fallback to identity function
+        setLocalize(() => (key: string) => key);
+      }
+    }
+
+    initializeLocalization();
+  }, [settings.SETUP.language]);
 
   useEffect(() => {
     async function fetchCards() {
+      if (!localize) return; // Wait for localization to be ready
+
       try {
         setLoading(true);
         setError(null);
@@ -24,21 +47,31 @@ export default function CardsPage() {
       } catch (err) {
         console.error('Error fetching cards:', err);
         console.error('Error details:', err instanceof Error ? err.message : String(err));
-        setError(`Failed to load knowledge cards: ${err instanceof Error ? err.message : String(err)}`);
+        setError(localize('CARDS_ERROR', { error: err instanceof Error ? err.message : String(err) }));
       } finally {
         setLoading(false);
       }
     }
 
     fetchCards();
-  }, []);
+  }, [localize]);
+
+  if (!localize) {
+    return (
+      <main className="container">
+        <div className="main">
+          <div className="loading">Loading...</div>
+        </div>
+      </main>
+    );
+  }
 
   if (loading) {
     return (
       <main className="container">
         <div className="main">
-          <h1>Knowledge Cards</h1>
-          <div className="loading">Loading knowledge cards...</div>
+          <h1>{localize('CARDS_PAGE_TITLE')}</h1>
+          <div className="loading">{localize('CARDS_LOADING')}</div>
         </div>
       </main>
     );
@@ -48,7 +81,7 @@ export default function CardsPage() {
     return (
       <main className="container">
         <div className="main">
-          <h1>Knowledge Cards</h1>
+          <h1>{localize('CARDS_PAGE_TITLE')}</h1>
           <div className="error">{error}</div>
         </div>
       </main>
@@ -58,11 +91,11 @@ export default function CardsPage() {
   return (
     <main className="container">
       <div className="main">
-        <h1>Knowledge Cards</h1>
-        <p>Explore our collection of Portuguese language knowledge cards.</p>
+        <h1>{localize('CARDS_PAGE_TITLE')}</h1>
+        <p>{localize('CARDS_PAGE_DESCRIPTION')}</p>
         
         {cards.length === 0 ? (
-          <div className="error">No knowledge cards found.</div>
+          <div className="error">{localize('CARDS_NO_RESULTS')}</div>
         ) : (
           <div className="cards-grid">
             {cards.map((card) => (
@@ -80,4 +113,8 @@ export default function CardsPage() {
       </div>
     </main>
   );
+}
+
+export default function CardsPage() {
+  return <CardsPageContent />;
 }

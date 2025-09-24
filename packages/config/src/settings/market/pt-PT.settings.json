@@ -1,0 +1,14 @@
+{
+  "SETUP": {
+    "language": "pt-PT",
+    "currency": "EUR",
+    "timezone": "Europe/Lisbon",
+    "languages": [
+      "pt-PT",
+      "en-US"
+    ]
+  },
+  "UI": {
+    "cardsPerPage": 15
+  }
+}

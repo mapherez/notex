@@ -79,10 +79,14 @@ export const UpdateKnowledgeCardSchema = CreateKnowledgeCardSchema.partial().ext
 
 // Search and filter schemas
 export const SearchFiltersSchema = z.object({
-  category: z.string().optional(),
+  categories: z.array(z.string()).default([]),
+  difficulty: z.array(z.string()).default([]),
+  tags: z.array(z.string()).default([]),
   status: z.enum(['draft', 'published', 'archived']).optional(),
-  tags: z.array(z.string()).optional(),
-  difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
+  dateRange: z.object({
+    from: z.date().optional(),
+    to: z.date().optional(),
+  }).optional(),
 });
 
 export const SearchResultSchema = z.object({

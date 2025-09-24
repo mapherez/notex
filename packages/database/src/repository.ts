@@ -110,20 +110,29 @@ export class KnowledgeCardRepository {
   }
 
   // List knowledge cards with optional filters
-  static async list(filters?: SearchFilters, limit = 20, offset = 0): Promise<KnowledgeCard[]> {
+  static async list(filters?: Partial<SearchFilters>, limit = 20, offset = 0): Promise<KnowledgeCard[]> {
     let query = supabase
       .from('knowledge_cards')
       .select('*')
       .order('updated_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    // Apply filters
-    if (filters?.category) {
-      query = query.eq('category', filters.category);
+    // Apply category filters
+    if (filters?.categories && filters.categories.length > 0) {
+      query = query.in('category', filters.categories);
     }
     
+    // Apply status filter
     if (filters?.status) {
       query = query.eq('status', filters.status);
+    }
+
+    // Apply date range filters
+    if (filters?.dateRange?.from) {
+      query = query.gte('created_at', filters.dateRange.from.toISOString());
+    }
+    if (filters?.dateRange?.to) {
+      query = query.lte('created_at', filters.dateRange.to.toISOString());
     }
 
     const { data, error } = await query;
@@ -136,23 +145,57 @@ export class KnowledgeCardRepository {
   }
 
   // Search knowledge cards using full-text search
-  static async search(query: string, filters?: SearchFilters, limit = 20): Promise<SearchResult[]> {
-    // For now, use a simple title/content search
-    // TODO: Implement proper full-text search with PostgreSQL
+  static async search(query: string = '', filters?: SearchFilters, limit = 20): Promise<SearchResult[]> {
     let searchQuery = supabase
       .from('knowledge_cards')
       .select('*')
-      .or(`title.ilike.%${query}%,content->>summary.ilike.%${query}%,content->>body.ilike.%${query}%`)
       .limit(limit);
 
-    // Apply filters
-    if (filters?.category) {
-      searchQuery = searchQuery.eq('category', filters.category);
+    // Apply text search if query provided
+    if (query.trim()) {
+      searchQuery = searchQuery.or(
+        `title.ilike.%${query}%,content->>summary.ilike.%${query}%,content->>body.ilike.%${query}%`
+      );
+    }
+
+    // Apply category filters
+    if (filters?.categories && filters.categories.length > 0) {
+      searchQuery = searchQuery.in('category', filters.categories);
     }
     
+    // Apply status filter
     if (filters?.status) {
       searchQuery = searchQuery.eq('status', filters.status);
     }
+
+    // Apply date range filters
+    if (filters?.dateRange?.from) {
+      searchQuery = searchQuery.gte('created_at', filters.dateRange.from.toISOString());
+    }
+    if (filters?.dateRange?.to) {
+      searchQuery = searchQuery.lte('created_at', filters.dateRange.to.toISOString());
+    }
+
+    // Apply difficulty filters by checking metadata
+    if (filters?.difficulty && filters.difficulty.length > 0) {
+      // For difficulty, we need to filter by metadata->difficulty or content->difficulty
+      const difficultyConditions = filters.difficulty.map(diff => 
+        `metadata->>difficulty.eq.${diff},content->>difficulty.eq.${diff}`
+      ).join(',');
+      searchQuery = searchQuery.or(difficultyConditions);
+    }
+
+    // Apply tag filters
+    if (filters?.tags && filters.tags.length > 0) {
+      // Check if any of the selected tags are in the metadata->tags array
+      const tagConditions = filters.tags.map(tag => 
+        `metadata->>tags.cs.["${tag}"]`
+      ).join(',');
+      searchQuery = searchQuery.or(tagConditions);
+    }
+
+    // Order by relevance (updated_at for now, could be improved with proper scoring)
+    searchQuery = searchQuery.order('updated_at', { ascending: false });
 
     const { data, error } = await searchQuery;
 
@@ -163,9 +206,86 @@ export class KnowledgeCardRepository {
     // Map to search results with basic scoring
     return data.map(row => ({
       card: KnowledgeCardRepository.mapRowToCard(row),
-      score: this.calculateScore(row, query),
-      highlights: this.generateHighlights(row, query),
+      score: KnowledgeCardRepository.calculateScore(row, query),
+      highlights: KnowledgeCardRepository.generateHighlights(row, query),
     }));
+  }
+
+  // Get search suggestions based on existing cards
+  static async getSearchSuggestions(query: string, limit = 8): Promise<string[]> {
+    if (!query.trim()) return [];
+
+    const { data, error } = await supabase
+      .from('knowledge_cards')
+      .select('title, category, metadata')
+      .or(`title.ilike.%${query}%,category.ilike.%${query}%`)
+      .limit(limit * 2); // Get more to deduplicate
+
+    if (error) {
+      console.warn('Failed to get search suggestions:', error.message);
+      return [];
+    }
+
+    const suggestions = new Set<string>();
+    
+    data.forEach(row => {
+      // Add matching titles
+      if (row.title.toLowerCase().includes(query.toLowerCase())) {
+        suggestions.add(row.title);
+      }
+      
+      // Add matching categories
+      if (row.category.toLowerCase().includes(query.toLowerCase())) {
+        suggestions.add(row.category);
+      }
+      
+      // Add matching tags
+      if (row.metadata?.tags) {
+        row.metadata.tags.forEach((tag: string) => {
+          if (tag.toLowerCase().includes(query.toLowerCase())) {
+            suggestions.add(tag);
+          }
+        });
+      }
+    });
+
+    return Array.from(suggestions).slice(0, limit);
+  }
+
+  // Get all unique categories for filter options
+  static async getCategories(): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('knowledge_cards')
+      .select('category')
+      .not('category', 'is', null);
+
+    if (error) {
+      throw new Error(`Failed to get categories: ${error.message}`);
+    }
+
+    const categories = [...new Set(data.map(row => row.category))];
+    return categories.sort();
+  }
+
+  // Get all unique tags for filter options
+  static async getTags(): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('knowledge_cards')
+      .select('metadata')
+      .not('metadata', 'is', null);
+
+    if (error) {
+      throw new Error(`Failed to get tags: ${error.message}`);
+    }
+
+    const allTags = new Set<string>();
+    data.forEach(row => {
+      if (row.metadata?.tags && Array.isArray(row.metadata.tags)) {
+        row.metadata.tags.forEach((tag: string) => allTags.add(tag));
+      }
+    });
+
+    return Array.from(allTags).sort();
   }
 
   // Get published cards only (for public access)
@@ -175,7 +295,7 @@ export class KnowledgeCardRepository {
 
   // Get cards by category
   static async getByCategory(category: string, limit = 20, offset = 0): Promise<KnowledgeCard[]> {
-    return this.list({ category }, limit, offset);
+    return this.list({ categories: [category] }, limit, offset);
   }
 
   // Private helper methods

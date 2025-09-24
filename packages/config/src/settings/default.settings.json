@@ -1,0 +1,108 @@
+{
+  "SETUP": {
+    "language": "en-US",
+    "currency": "USD",
+    "timezone": "UTC",
+    "theme": "auto",
+    "gitHubPages": "https://github.com/mapherez/notex",
+    "languages": [
+      "en-US",
+      "pt-PT"
+    ]
+  },
+  "METADATA": {
+    "title": "NoteX - Knowledge Management",
+    "description": "Modern knowledge management system with accessibility and i18n built-in",
+    "keywords": [
+      "knowledge management",
+      "notes", 
+      "accessibility",  
+      "i18n"
+    ],
+    "author": "mapherez",
+    "themeColor": {
+      "light": "#ffffff",
+      "dark": "#000000"
+    }
+  },
+  "UI": {
+    "cardLayout": "grid",
+    "cardsPerPage": 12,
+    "showDescriptions": true,
+    "compactMode": false
+  },
+  "SEARCH": {
+    "enableFullText": true,
+    "highlightMatches": true,
+    "maxSuggestions": 8,
+    "debounceMs": 300
+  },
+  "EDITOR": {
+    "autoSave": true,
+    "autoSaveDelay": 2000,
+    "confirmDelete": true,
+    "enableMarkdown": true
+  },
+  "HOMEPAGE": {
+    "searchPlaceholder": "SEARCH_PLACEHOLDER",
+    "categoryOptions": [
+      {
+        "value": "programming",
+        "label": "CATEGORY_PROGRAMMING",
+        "count": 12
+      },
+      {
+        "value": "languages",
+        "label": "CATEGORY_LANGUAGES",
+        "count": 8
+      },
+      {
+        "value": "mathematics",
+        "label": "CATEGORY_MATHEMATICS",
+        "count": 5
+      },
+      {
+        "value": "sciences",
+        "label": "CATEGORY_SCIENCES",
+        "count": 3
+      },
+      {
+        "value": "others",
+        "label": "CATEGORY_OTHERS",
+        "count": 2
+      }
+    ],
+    "difficultyOptions": [
+      {
+        "value": "basic",
+        "label": "DIFFICULTY_BASIC",
+        "count": 15
+      },
+      {
+        "value": "intermediate",
+        "label": "DIFFICULTY_INTERMEDIATE",
+        "count": 10
+      },
+      {
+        "value": "advanced",
+        "label": "DIFFICULTY_ADVANCED",
+        "count": 5
+      }
+    ],
+    "buttons": {
+      "viewCards": {
+        "labelKey": "HOMEPAGE_BUTTON_VIEW_CARDS",
+        "variant": "primary",
+        "href": "/cards"
+      },
+      "learnMore": {
+        "labelKey": "HOMEPAGE_BUTTON_LEARN_MORE",
+        "variant": "secondary"
+      },
+      "viewDemo": {
+        "labelKey": "HOMEPAGE_BUTTON_VIEW_DEMO",
+        "variant": "ghost"
+      }
+    }
+  }
+}

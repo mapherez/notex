@@ -4,6 +4,11 @@
 // Components
 export * from './components/Button';
 export * from './components/Card';
+export * from './components/SearchBar';
+export * from './components/SearchFilters';
+
+// Hooks
+export * from './hooks/useSettings';
 
 // Utilities (to be added)
 // export * from './utils';

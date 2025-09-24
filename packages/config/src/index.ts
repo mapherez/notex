@@ -1,6 +1,13 @@
 // Configuration and settings
-// Placeholder for app configuration
+export * from './i18n';
+
+// Settings Management System
+export * from './settings';
+
+// Utilities
+export { deepMerge, deepMergeMultiple, type DeepPartial } from './utils/object';
 
 export const config = {
-  // Placeholder
+  defaultLocale: 'pt-PT' as const,
+  supportedLocales: ['pt-PT', 'en-US'] as const,
 };

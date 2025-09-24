@@ -38,14 +38,19 @@
   // Semantic Colors - Light Theme
   --color-bg-primary: var(--neutral-50);
   --color-bg-secondary: var(--neutral-100);
+  --color-bg-tertiary: var(--neutral-200);
   --color-text-primary: var(--neutral-900);
   --color-text-secondary: var(--neutral-700);
-  --color-text-muted: var(--neutral-500);
+  --color-text-tertiary: var(--neutral-500);
+  --color-text-quaternary: var(--neutral-400);
   
   --color-border-subtle: var(--neutral-200);
   --color-border-default: var(--neutral-300);
+  --color-border-strong: var(--neutral-400);
   
   --color-accent-primary: var(--blue-600);
+  --color-accent-primary-alpha: rgba(59, 130, 246, 0.1);
+  --color-accent-primary-subtle: var(--blue-50);
   --color-accent-bg: var(--blue-50);
   --color-accent-text: var(--blue-700);
   
@@ -58,9 +63,11 @@
   --color-danger-bg: var(--red-50);  
   --color-danger-text: var(--red-700);
 
-  // Spacing
+  // Border Radius
+  --radius-xs: 0.25rem;
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
   --radius-full: 9999px;
 }
 
@@ -69,13 +76,18 @@
   :root {
     --color-bg-primary: var(--neutral-900);
     --color-bg-secondary: var(--neutral-800);
+    --color-bg-tertiary: var(--neutral-700);
     --color-text-primary: var(--neutral-50);
     --color-text-secondary: var(--neutral-300);
-    --color-text-muted: var(--neutral-500);
+    --color-text-tertiary: var(--neutral-500);
+    --color-text-quaternary: var(--neutral-600);
     
     --color-border-subtle: var(--neutral-700);
     --color-border-default: var(--neutral-600);
+    --color-border-strong: var(--neutral-500);
     
+    --color-accent-primary-alpha: rgba(147, 197, 253, 0.1);
+    --color-accent-primary-subtle: var(--blue-900);
     --color-accent-bg: var(--blue-900);
     --color-accent-text: var(--blue-300);
   }
