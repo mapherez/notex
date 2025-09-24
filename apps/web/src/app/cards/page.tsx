@@ -11,11 +11,13 @@ function CardsPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [localize, setLocalize] = useState<((key: string, params?: Record<string, string | number>) => string) | null>(null);
-  const { settings } = useSettings();
+  const { settings, loading: settingsLoading } = useSettings();
 
   // Initialize localization
   useEffect(() => {
     async function initializeLocalization() {
+      if (!settings?.SETUP?.language || settingsLoading) return;
+
       try {
         await loadLocale(settings.SETUP.language as Locale);
         const { localize: localizeFunc } = createLocalizeFunction(settings.SETUP.language as Locale);
@@ -28,7 +30,7 @@ function CardsPageContent() {
     }
 
     initializeLocalization();
-  }, [settings.SETUP.language]);
+  }, [settings?.SETUP?.language, settingsLoading]);
 
   useEffect(() => {
     async function fetchCards() {
@@ -56,7 +58,7 @@ function CardsPageContent() {
     fetchCards();
   }, [localize]);
 
-  if (!localize) {
+  if (settingsLoading || !localize) {
     return (
       <main className="container">
         <div className="main">
