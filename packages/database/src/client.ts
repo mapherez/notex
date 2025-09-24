@@ -1,6 +1,5 @@
 // Supabase client configuration
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from './database.types';
 
 // Environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,6 +19,3 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 });
-
-// Export types for convenience
-export type { Database } from './database.types';
