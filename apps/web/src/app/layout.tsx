@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { AuthProvider } from '@/lib/auth';
 import '@/styles/globals.scss';
 
 export const metadata: Metadata = {
@@ -21,9 +22,11 @@ export default function RootLayout({
   return (
     <html lang="pt-PT" suppressHydrationWarning>
       <body>
-        <div id="root">
-          {children}
-        </div>
+        <AuthProvider>
+          <div id="root">
+            {children}
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

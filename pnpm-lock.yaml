@@ -23,6 +23,9 @@ importers:
       '@notex/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@notex/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@notex/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -72,6 +75,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.38.0
         version: 2.57.4
+      zod:
+        specifier: ^3.22.0
+        version: 3.25.76
     devDependencies:
       typescript:
         specifier: ^5.0.0
@@ -3309,3 +3315,7 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
+
+  /zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+    dev: false

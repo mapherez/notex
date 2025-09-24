@@ -17,6 +17,7 @@
     "@notex/ui": "workspace:*",
     "@notex/utils": "workspace:*",
     "@notex/config": "workspace:*",
+    "@notex/database": "workspace:*",
     "sass": "^1.69.0"
   },
   "devDependencies": {

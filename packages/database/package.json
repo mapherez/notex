@@ -10,7 +10,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.38.0"
+    "@supabase/supabase-js": "^2.38.0",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
