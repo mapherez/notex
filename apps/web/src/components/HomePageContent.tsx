@@ -5,6 +5,7 @@ import { Button, SearchBar, SearchFilters, useSettings } from '@notex/ui';
 import { createLocalizeFunction, loadLocale } from '@notex/config';
 import type { SearchFilters as SearchFiltersType, Locale, FilterOption } from '@notex/types';
 import { KnowledgeCardRepository } from '@notex/database';
+import { SearchSuggestion }  from '@notex/types';
 
 export function HomePageContent() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,7 +59,7 @@ export function HomePageContent() {
     }
   };
 
-  const handleSuggestionSelect = (suggestion: any) => {
+  const handleSuggestionSelect = (suggestion: SearchSuggestion) => {
     console.log('Selected suggestion:', suggestion);
     // TODO: Navigate to suggestion
   };

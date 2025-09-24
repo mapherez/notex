@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { AuthProvider } from '@/lib/auth';
 import { ClientSettingsProvider } from '@/components/ClientSettingsProvider';
-import { getEnvironmentSettings, getCurrentMarketSettings } from '@notex/config';
 import '@/styles/globals.scss';
 
 // TODO: Static metadata - will be enhanced with dynamic settings in the future
