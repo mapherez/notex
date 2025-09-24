@@ -27,11 +27,12 @@
   "HOMEPAGE_BUTTON_LEARN_MORE": "Saber Mais",
   "HOMEPAGE_BUTTON_VIEW_DEMO": "Ver Demonstração",
 
-  "CARDS_PAGE_TITLE": "Cartões de Conhecimento",
-  "CARDS_PAGE_DESCRIPTION": "Explore a nossa coleção de cartões de conhecimento em português.",
-  "CARDS_LOADING": "A carregar cartões de conhecimento...",
-  "CARDS_ERROR": "Falha ao carregar cartões de conhecimento: {{error}}",
-  "CARDS_NO_RESULTS": "Nenhum cartão de conhecimento encontrado.",
+  "SEARCH_PAGE_TITLE": "Procurar Cartões de Conhecimento",
+  "SEARCH_PAGE_DESCRIPTION": "Encontre o conhecimento que precisa com o nosso poderoso sistema de pesquisa e filtragem.",
+  "SEARCH_ERROR": "Pesquisa falhou: {{error}}",
+  "SEARCH_NO_RESULTS_TITLE": "Nenhum resultado encontrado",
+  "SEARCH_NO_RESULTS_DESCRIPTION": "Tente ajustar os seus termos de pesquisa ou filtros.",
+  "SEARCH_RECENT_CARDS": "Cartões de Conhecimento Recentes",
 
   "ERROR_GENERIC": "Ocorreu um erro inesperado",
   "FILTERS_EXPAND": "Expandir filtros",

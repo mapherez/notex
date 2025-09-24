@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { AuthProvider } from '@/lib/auth';
 import { ClientSettingsProvider } from '@/components/ClientSettingsProvider';
 import '@/styles/globals.scss';
@@ -27,7 +28,21 @@ export default function RootLayout({
         <AuthProvider>
           <ClientSettingsProvider>
             <div id="root">
-              {children}
+              <header className="site-header">
+                <nav className="main-nav">
+                  <div className="nav-brand">
+                    <Link href="/">NoteX</Link>
+                  </div>
+                  <ul className="nav-links">
+                    <li><Link href="/">Home</Link></li>
+                    <li><Link href="/cards">Cards</Link></li>
+                    <li><Link href="/search">Search</Link></li>
+                  </ul>
+                </nav>
+              </header>
+              <main>
+                {children}
+              </main>
             </div>
           </ClientSettingsProvider>
         </AuthProvider>

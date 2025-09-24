@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button, SearchBar, SearchFilters, useSettings } from '@notex/ui';
 import { createLocalizeFunction, loadLocale } from '@notex/config';
-import { KnowledgeCardRepository } from '@notex/database';
 import type { SearchFilters as SearchFiltersType, Locale, FilterOption, SearchSuggestion } from '@notex/types';
+import { useRouter } from 'next/navigation';
 
 export function HomePageContent() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,6 +26,7 @@ export function HomePageContent() {
   const [localize, setLocalize] = useState<((key: string, params?: Record<string, string | number>) => string) | null>(null);
   
   const { settings, loading } = useSettings();
+  const router = useRouter();
 
   // Initialize localization
   useEffect(() => {
@@ -47,15 +48,28 @@ export function HomePageContent() {
   }, [settings?.SETUP?.language, loading]);
 
   const handleSearch = async (query: string) => {
-    console.log('Searching for:', query);
-    console.log('With filters:', filters);
+    if (!query.trim()) return; // Don't search for empty queries
     
-    try {
-      const results = await KnowledgeCardRepository.search(query, filters, 10);
-      console.log('Search results:', results);
-    } catch (error) {
-      console.error('Search failed:', error);
+    // Build search URL with query parameters
+    const params = new URLSearchParams();
+    params.set('q', query);
+    
+    // Add filter parameters
+    if (filters.categories.length > 0) {
+      params.set('categories', filters.categories.join(','));
     }
+    if (filters.difficulty.length > 0) {
+      params.set('difficulty', filters.difficulty.join(','));
+    }
+    if (filters.tags.length > 0) {
+      params.set('tags', filters.tags.join(','));
+    }
+    if (filters.status) {
+      params.set('status', filters.status);
+    }
+    
+    // Navigate to search page with parameters
+    router.push(`/search?${params.toString()}`);
   };
 
   const handleSuggestionSelect = (suggestion: SearchSuggestion) => {

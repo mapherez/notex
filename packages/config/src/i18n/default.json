@@ -51,11 +51,12 @@
   "HOMEPAGE_BUTTON_LEARN_MORE": "Learn More",
   "HOMEPAGE_BUTTON_VIEW_DEMO": "View Demo",
 
-  "CARDS_PAGE_TITLE": "Knowledge Cards",
-  "CARDS_PAGE_DESCRIPTION": "Explore our collection of knowledge cards.",
-  "CARDS_LOADING": "Loading knowledge cards...",
-  "CARDS_ERROR": "Failed to load knowledge cards: {{error}}",
-  "CARDS_NO_RESULTS": "No knowledge cards found.",
+  "SEARCH_PAGE_TITLE": "Search Knowledge Cards",
+  "SEARCH_PAGE_DESCRIPTION": "Find the knowledge you need with our powerful search and filtering system.",
+  "SEARCH_ERROR": "Search failed: {{error}}",
+  "SEARCH_NO_RESULTS_TITLE": "No results found",
+  "SEARCH_NO_RESULTS_DESCRIPTION": "Try adjusting your search terms or filters.",
+  "SEARCH_RECENT_CARDS": "Recent Knowledge Cards",
 
   "ERROR_GENERIC": "An unexpected error occurred",
   

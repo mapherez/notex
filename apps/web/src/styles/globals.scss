@@ -27,6 +27,50 @@ html, body {
   padding: var(--space-lg) 0;
 }
 
+// Navigation styles
+.site-header {
+  background: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.main-nav {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+}
+
+.nav-brand a {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: var(--space-lg);
+}
+
+.nav-links a {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  padding: var(--space-sm) 0;
+  transition: color 0.2s ease;
+}
+
+.nav-links a:hover,
+.nav-links a:focus {
+  color: var(--color-accent-primary);
+}
+
 // Cards grid
 .cards-grid {
   display: grid;
@@ -35,9 +79,39 @@ html, body {
   margin-top: var(--space-lg);
 }
 
-// Loading and error states
-.loading, .error {
+// Search page styles
+.search-section {
+  margin-bottom: var(--space-lg);
+}
+
+.filters-section {
+  margin-bottom: var(--space-lg);
+}
+
+.results-section {
+  margin-top: var(--space-lg);
+}
+
+.results-header {
+  margin-bottom: var(--space-lg);
+}
+
+.results-header h2 {
+  font-size: var(--text-xl);
+  color: var(--color-text-primary);
+}
+
+.no-results {
   text-align: center;
   padding: var(--space-xl);
+}
+
+.no-results h3 {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-sm);
+  color: var(--color-text-primary);
+}
+
+.no-results p {
   color: var(--color-text-secondary);
 }
