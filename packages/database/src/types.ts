@@ -38,8 +38,14 @@ export const KnowledgeCardSchema = z.object({
   title: z.string(),
   category: z.string(),
   status: z.enum(['draft', 'published', 'archived']),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  created_at: z.string().transform((str) => {
+    // Ensure the timestamp is in a valid ISO format
+    return new Date(str).toISOString();
+  }),
+  updated_at: z.string().transform((str) => {
+    // Ensure the timestamp is in a valid ISO format
+    return new Date(str).toISOString();
+  }),
   content: ContentSchema,
   metadata: MetadataSchema,
 });
