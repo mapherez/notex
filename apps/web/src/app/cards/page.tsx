@@ -23,7 +23,8 @@ export default function CardsPage() {
         setCards(fetchedCards);
       } catch (err) {
         console.error('Error fetching cards:', err);
-        setError('Failed to load knowledge cards');
+        console.error('Error details:', err instanceof Error ? err.message : String(err));
+        setError(`Failed to load knowledge cards: ${err instanceof Error ? err.message : String(err)}`);
       } finally {
         setLoading(false);
       }

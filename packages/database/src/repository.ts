@@ -37,7 +37,7 @@ export class KnowledgeCardRepository {
       throw new Error(`Failed to create knowledge card: ${error.message}`);
     }
 
-    return this.mapRowToCard(result);
+    return KnowledgeCardRepository.mapRowToCard(result);
   }
 
   // Get a knowledge card by ID
@@ -55,7 +55,7 @@ export class KnowledgeCardRepository {
       throw new Error(`Failed to get knowledge card: ${error.message}`);
     }
 
-    return this.mapRowToCard(data);
+    return KnowledgeCardRepository.mapRowToCard(data);
   }
 
   // Get a knowledge card by slug
@@ -73,7 +73,7 @@ export class KnowledgeCardRepository {
       throw new Error(`Failed to get knowledge card: ${error.message}`);
     }
 
-    return this.mapRowToCard(data);
+    return KnowledgeCardRepository.mapRowToCard(data);
   }
 
   // Update a knowledge card
@@ -94,7 +94,7 @@ export class KnowledgeCardRepository {
       throw new Error(`Failed to update knowledge card: ${error.message}`);
     }
 
-    return this.mapRowToCard(result);
+    return KnowledgeCardRepository.mapRowToCard(result);
   }
 
   // Delete a knowledge card
@@ -132,7 +132,7 @@ export class KnowledgeCardRepository {
       throw new Error(`Failed to list knowledge cards: ${error.message}`);
     }
 
-    return data.map(row => this.mapRowToCard(row));
+    return data.map(row => KnowledgeCardRepository.mapRowToCard(row));
   }
 
   // Search knowledge cards using full-text search
@@ -162,7 +162,7 @@ export class KnowledgeCardRepository {
 
     // Map to search results with basic scoring
     return data.map(row => ({
-      card: this.mapRowToCard(row),
+      card: KnowledgeCardRepository.mapRowToCard(row),
       score: this.calculateScore(row, query),
       highlights: this.generateHighlights(row, query),
     }));
