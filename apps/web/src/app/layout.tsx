@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { Suspense } from 'react';
 import { AuthProvider } from '@/lib/auth';
 import { ClientSettingsProvider } from '@/components/ClientSettingsProvider';
+import { AppLayout } from '@/components/AppLayout';
 import '@/styles/globals.scss';
 
 // TODO: Static metadata - will be enhanced with dynamic settings in the future
@@ -27,23 +28,11 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <ClientSettingsProvider>
-            <div id="root">
-              <header className="site-header">
-                <nav className="main-nav">
-                  <div className="nav-brand">
-                    <Link href="/">NoteX</Link>
-                  </div>
-                  <ul className="nav-links">
-                    <li><Link href="/">Home</Link></li>
-                    <li><Link href="/cards">Cards</Link></li>
-                    <li><Link href="/search">Search</Link></li>
-                  </ul>
-                </nav>
-              </header>
-              <main>
+            <Suspense fallback={<div>Loading...</div>}>
+              <AppLayout>
                 {children}
-              </main>
-            </div>
+              </AppLayout>
+            </Suspense>
           </ClientSettingsProvider>
         </AuthProvider>
       </body>

@@ -21,6 +21,10 @@
   "FILTERS_EXPAND": "Expand filters",
   "FILTERS_COLLAPSE": "Collapse filters",
   
+  "CLEAR_FILTERS": "Clear filters",
+  "ADD_CARD": "Add card",
+  "LOAD_MORE_CARDS": "Load more cards",
+  
   "DIFFICULTY_BASIC": "Basic",
   "DIFFICULTY_INTERMEDIATE": "Intermediate", 
   "DIFFICULTY_ADVANCED": "Advanced",
@@ -50,6 +54,9 @@
   "HOMEPAGE_BUTTON_VIEW_CARDS": "View Knowledge Cards",
   "HOMEPAGE_BUTTON_LEARN_MORE": "Learn More",
   "HOMEPAGE_BUTTON_VIEW_DEMO": "View Demo",
+
+  "RECENT_CARDS_TITLE": "Recent Knowledge Cards",
+  "RECENT_CARDS_DESCRIPTION": "Explore the latest additions to our knowledge base.",
 
   "SEARCH_PAGE_TITLE": "Search Knowledge Cards",
   "SEARCH_PAGE_DESCRIPTION": "Find the knowledge you need with our powerful search and filtering system.",

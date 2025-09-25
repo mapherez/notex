@@ -55,6 +55,9 @@ export interface AppSettings {
       viewCards?: ButtonConfig
       learnMore?: ButtonConfig
       viewDemo?: ButtonConfig
+      clearFilters?: ButtonConfig
+      addCard?: ButtonConfig
+      loadMore?: ButtonConfig
     }
   }
 }

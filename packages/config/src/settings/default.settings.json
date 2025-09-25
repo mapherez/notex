@@ -102,6 +102,18 @@
       "viewDemo": {
         "labelKey": "HOMEPAGE_BUTTON_VIEW_DEMO",
         "variant": "ghost"
+      },
+      "clearFilters": {
+        "labelKey": "CLEAR_FILTERS",
+        "variant": "secondary"
+      },
+      "addCard": {
+        "labelKey": "ADD_CARD",
+        "variant": "primary"
+      },
+      "loadMore": {
+        "labelKey": "LOAD_MORE_CARDS",
+        "variant": "secondary"
       }
     }
   }

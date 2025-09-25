@@ -1,37 +1,26 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Button, SearchBar, SearchFilters, useSettings } from '@notex/ui';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Card, Button } from '@notex/ui';
+import { KnowledgeCardRepository, type KnowledgeCard } from '@notex/database';
+import { useSettings } from '@notex/ui';
 import { createLocalizeFunction, loadLocale } from '@notex/config';
-import type { SearchFilters as SearchFiltersType, Locale, FilterOption, SearchSuggestion } from '@notex/types';
-import { useRouter } from 'next/navigation';
+import type { Locale } from '@notex/types';
+import { useSearchContext } from './AppLayout';
 
 export function HomePageContent() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchHistory] = useState([
-    'React hooks',
-    'PostgreSQL índices', 
-    'TypeScript genéricos',
-    'CSS Grid layout'
-  ]);
-  // TODO: Remove hardcoded values above when real search history is implemented
-  
-  const [filters, setFilters] = useState<SearchFiltersType>({
-    categories: [],
-    difficulty: [],
-    tags: [],
-  });
-  
-  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+  const [allCards, setAllCards] = useState<KnowledgeCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [displayCount, setDisplayCount] = useState(6);
   const [localize, setLocalize] = useState<((key: string, params?: Record<string, string | number>) => string) | null>(null);
-  
-  const { settings, loading } = useSettings();
-  const router = useRouter();
+  const { settings, loading: settingsLoading } = useSettings();
+  const { searchQuery, filters } = useSearchContext();
 
   // Initialize localization
   useEffect(() => {
     async function initializeLocalization() {
-      if (!settings?.SETUP?.language || loading) return;
+      if (!settings?.SETUP?.language || settingsLoading) return;
 
       try {
         await loadLocale(settings.SETUP.language as Locale);
@@ -39,159 +28,150 @@ export function HomePageContent() {
         setLocalize(() => localizeFunc);
       } catch (error) {
         console.error('Failed to load locale:', error);
-        // Fallback to identity function
         setLocalize(() => (key: string) => key);
       }
     }
 
     initializeLocalization();
-  }, [settings?.SETUP?.language, loading]);
+  }, [settings?.SETUP?.language, settingsLoading]);
 
-  const handleSearch = async (query: string) => {
-    if (!query.trim()) return; // Don't search for empty queries
-    
-    // Build search URL with query parameters
-    const params = new URLSearchParams();
-    params.set('q', query);
-    
-    // Add filter parameters
-    if (filters.categories.length > 0) {
-      params.set('categories', filters.categories.join(','));
+  // Fetch recent cards
+  useEffect(() => {
+    async function fetchRecentCards() {
+      if (!localize) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Get recent cards (limit to a reasonable number initially)
+        const recentCards = await KnowledgeCardRepository.list(
+          { status: 'published' },
+          50, // Fetch more than we need initially
+          0
+        );
+
+        setAllCards(recentCards);
+      } catch (err) {
+        console.error('Error fetching recent cards:', err);
+        setError(localize('ERROR_GENERIC'));
+      } finally {
+        setLoading(false);
+      }
     }
-    if (filters.difficulty.length > 0) {
-      params.set('difficulty', filters.difficulty.join(','));
+
+    fetchRecentCards();
+  }, [localize]);
+
+  // Filter cards based on search query and filters
+  const filteredCards = useMemo(() => {
+    let filtered = allCards;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(card =>
+        card.title.toLowerCase().includes(query) ||
+        card.content?.summary?.toLowerCase().includes(query) ||
+        card.category?.toLowerCase().includes(query) ||
+        card.metadata?.tags?.some(tag => tag.toLowerCase().includes(query))
+      );
     }
-    if (filters.tags.length > 0) {
-      params.set('tags', filters.tags.join(','));
+
+    // Filter by categories
+    if (filters.categories && filters.categories.length > 0) {
+      filtered = filtered.filter(card => filters.categories.includes(card.category));
     }
-    if (filters.status) {
-      params.set('status', filters.status);
+
+    // Filter by difficulty
+    if (filters.difficulty && filters.difficulty.length > 0) {
+      filtered = filtered.filter(card => 
+        card.metadata?.difficulty && typeof card.metadata.difficulty === 'string' && 
+        filters.difficulty.includes(card.metadata.difficulty)
+      );
     }
-    
-    // Navigate to search page with parameters
-    router.push(`/search?${params.toString()}`);
+
+    // Filter by tags
+    if (filters.tags && filters.tags.length > 0) {
+      filtered = filtered.filter(card =>
+        card.metadata?.tags?.some(tag => filters.tags.includes(tag))
+      );
+    }
+
+    // Filter by status
+    if (filters.status && filters.status !== 'published') {
+      filtered = filtered.filter(card => card.status === filters.status);
+    }
+
+    return filtered;
+  }, [allCards, searchQuery, filters]);
+
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(6);
+  }, [searchQuery, filters]);
+
+  const handleLoadMore = () => {
+    setDisplayCount(prev => prev + 6);
   };
 
-  const handleSuggestionSelect = (suggestion: SearchSuggestion) => {
-    console.log('Selected suggestion:', suggestion);
-    // TODO: Navigate to suggestion
-  };
+  const displayedCards = filteredCards.slice(0, displayCount);
+  const hasMoreCards = filteredCards.length > displayCount;
 
-  const handleFiltersChange = (newFilters: SearchFiltersType) => {
-    setFilters(newFilters);
-    console.log('Filters changed:', newFilters);
-    // TODO: Trigger search with new filters
-  };
-
-  if (loading || !localize || !settings?.HOMEPAGE) {
+  if (settingsLoading || !localize) {
     return (
-      <main className="container">
+      <div className="homepage-content">
         <div className="loading">Loading...</div>
-      </main>
+      </div>
     );
   }
 
-  // Transform settings data to include localized labels
-  const categoryOptions: FilterOption[] = settings.HOMEPAGE.categoryOptions?.map(option => ({
-    ...option,
-    label: localize(option.label),
-  })) || [];
-
-  const difficultyOptions: FilterOption[] = settings.HOMEPAGE.difficultyOptions?.map(option => ({
-    ...option,
-    label: localize(option.label),
-  })) || [];
-
-  // TODO: Replace with dynamic tags from backend, when available
-  const tagOptions: FilterOption[] = [
-    { value: 'javascript', label: 'JavaScript', count: 8 },
-    { value: 'react', label: 'React', count: 6 },
-    { value: 'typescript', label: 'TypeScript', count: 4 },
-    { value: 'css', label: 'CSS', count: 5 },
-    { value: 'html', label: 'HTML', count: 3 },
-    { value: 'nodejs', label: 'Node.js', count: 4 },
-    { value: 'database', label: 'Database', count: 3 },
-    { value: 'api', label: 'API', count: 2 },
-    { value: 'testing', label: 'Testing', count: 3 },
-    { value: 'performance', label: 'Performance', count: 2 },
-  ];
+  if (error) {
+    return (
+      <div className="homepage-content">
+        <div className="error">{error}</div>
+      </div>
+    );
+  }
 
   return (
-    <main className="container">
-      <header className="header">
-        <h1>{localize('APP_TITLE')}</h1>
-        <p>{localize('APP_SUBTITLE')}</p>
-      </header>
-      
-      <section className="hero">
-        <h2>{localize('HOMEPAGE_HERO_TITLE')}</h2>
-        <p>{localize('HOMEPAGE_HERO_DESCRIPTION')}</p>
-
-        {/* Search Interface Demo */}
-        <div style={{ 
-          marginTop: '2rem', 
-          marginBottom: '2rem',
-          display: 'flex',
-          gap: '2rem',
-          alignItems: 'flex-start',
-          width: '100%',
-          maxWidth: '1200px',
-          margin: '2rem auto'
-        }}>
-          {/* Search Bar */}
-          <div style={{ flex: 1 }}>
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              onSubmit={handleSearch}
-              onSuggestionSelect={handleSuggestionSelect}
-              onHistorySelect={setSearchQuery}
-              history={searchHistory}
-              placeholder={localize(settings.HOMEPAGE.searchPlaceholder || 'SEARCH_PLACEHOLDER')}
-              showShortcut={true}
-            />
+    <div className="homepage-content">
+      {/* Recent Cards Section */}
+      <div className="recent-cards">
+        {loading ? (
+          <div className="loading">Loading cards...</div>
+        ) : filteredCards.length === 0 ? (
+          <div className="no-cards">
+            <p>No knowledge cards found. Create your first card to get started!</p>
           </div>
-          
-          {/* Search Filters */}
-          <SearchFilters
-            filters={filters}
-            onChange={handleFiltersChange}
-            collapsed={filtersCollapsed}
-            onToggleCollapse={setFiltersCollapsed}
-            categoryOptions={categoryOptions}
-            difficultyOptions={difficultyOptions}
-            tagOptions={tagOptions}
-            showCounts={true}
-          />
-        </div>
-        
-        <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          {settings.HOMEPAGE?.buttons?.viewCards && (
-            <Button 
-              variant={settings.HOMEPAGE.buttons.viewCards.variant}
-              onClick={() => {
-                if (settings.HOMEPAGE?.buttons?.viewCards?.href) {
-                  window.location.href = settings.HOMEPAGE.buttons.viewCards.href;
-                }
-              }}
-            >
-              {localize(settings.HOMEPAGE.buttons.viewCards.labelKey)}
-            </Button>
-          )}
-          
-          {settings.HOMEPAGE?.buttons?.learnMore && (
-            <Button variant={settings.HOMEPAGE.buttons.learnMore.variant}>
-              {localize(settings.HOMEPAGE.buttons.learnMore.labelKey)}
-            </Button>
-          )}
-          
-          {settings.HOMEPAGE?.buttons?.viewDemo && (
-            <Button variant={settings.HOMEPAGE.buttons.viewDemo.variant}>
-              {localize(settings.HOMEPAGE.buttons.viewDemo.labelKey)}
-            </Button>
-          )}
-        </div>
-      </section>
-    </main>
+        ) : (
+          <>
+            <div className="placeholder-content">
+              {displayedCards.map((card) => (
+                <Card
+                  key={card.id}
+                  card={card}
+                  onClick={() => {
+                    // TODO: Navigate to card detail page
+                    console.log('Card clicked:', card.id);
+                  }}
+                />
+              ))}
+            </div>
+            {hasMoreCards && (
+              <div className="load-more-container">
+                <Button
+                  variant={settings?.HOMEPAGE?.buttons?.loadMore?.variant || 'secondary'}
+                  size="large"
+                  onClick={handleLoadMore}
+                >
+                  {localize(settings?.HOMEPAGE?.buttons?.loadMore?.labelKey || 'LOAD_MORE_CARDS')}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
