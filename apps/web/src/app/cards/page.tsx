@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, useSettings } from '@notex/ui';
 import { KnowledgeCardRepository, type KnowledgeCard } from '@notex/database';
 import { createLocalizeFunction, loadLocale } from '@notex/config';
 import type { Locale } from '@notex/types';
 
 function CardsPageContent() {
+  const router = useRouter();
   const [cards, setCards] = useState<KnowledgeCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -105,8 +107,8 @@ function CardsPageContent() {
                 key={card.id}
                 card={card}
                 onClick={() => {
-                  // TODO: Navigate to card detail page
-                  console.log('Clicked card:', card.slug);
+                  // Navigate to card detail page
+                  router.push(`/cards/${card.slug}`);
                 }}
               />
             ))}

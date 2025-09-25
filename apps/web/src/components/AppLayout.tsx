@@ -6,6 +6,8 @@ import { createLocalizeFunction, loadLocale } from '@notex/config';
 import type { SearchFilters as SearchFiltersType, Locale, FilterOption } from '@notex/types';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { HomePageContent } from './HomePageContent';
+import { CardDetailContent } from './CardDetailContent';
 
 interface SearchContextType {
   searchQuery: string;
@@ -225,6 +227,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                       status: 'published',
                     });
                     setFiltersCollapsed(true);
+                    router.replace('/');
                   }}
                 >
                   {localize(settings?.HOMEPAGE?.buttons?.clearFilters?.labelKey || 'CLEAR_FILTERS')}
@@ -259,7 +262,13 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Dynamic Content Area */}
         <main className="content-stage">
-          {children}
+          {pathname === '/' || pathname === '/search' ? (
+            <HomePageContent />
+          ) : pathname.startsWith('/cards/') ? (
+            <CardDetailContent />
+          ) : (
+            children
+          )}
         </main>
       </div>
     </SearchContext.Provider>

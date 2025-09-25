@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, Button } from '@notex/ui';
 import { KnowledgeCardRepository, type KnowledgeCard } from '@notex/database';
 import { useSettings } from '@notex/ui';
@@ -9,6 +10,7 @@ import type { Locale } from '@notex/types';
 import { useSearchContext } from './AppLayout';
 
 export function HomePageContent() {
+  const router = useRouter();
   const [allCards, setAllCards] = useState<KnowledgeCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -152,8 +154,7 @@ export function HomePageContent() {
                   key={card.id}
                   card={card}
                   onClick={() => {
-                    // TODO: Navigate to card detail page
-                    console.log('Card clicked:', card.id);
+                    router.push(`/cards/${card.slug}`);
                   }}
                 />
               ))}
