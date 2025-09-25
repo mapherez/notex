@@ -6,6 +6,7 @@ export * from './components/Button';
 export * from './components/Card';
 export * from './components/SearchBar';
 export * from './components/SearchFilters';
+export * from './components/CardEditor';
 
 // Hooks
 export * from './hooks/useSettings';

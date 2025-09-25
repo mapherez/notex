@@ -236,8 +236,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   variant={settings?.HOMEPAGE?.buttons?.addCard?.variant || 'primary'}
                   size="large"
                   onClick={() => {
-                    // TODO: Open add card modal
-                    console.log('Add card clicked');
+                    router.push('/cards/new');
                   }}
                 >
                   {localize(settings?.HOMEPAGE?.buttons?.addCard?.labelKey || 'ADD_CARD')}
@@ -264,7 +263,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <main className="content-stage">
           {pathname === '/' || pathname === '/search' ? (
             <HomePageContent />
-          ) : pathname.startsWith('/cards/') ? (
+          ) : pathname.startsWith('/cards/') && !pathname.includes('/new') && !pathname.includes('/edit') ? (
             <CardDetailContent />
           ) : (
             children

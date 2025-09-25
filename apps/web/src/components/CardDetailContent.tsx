@@ -148,6 +148,12 @@ export function CardDetailContent() {
           </button>
           <span className={styles.breadcrumbSeparator}>›</span>
           <span className={styles.breadcrumbCurrent}>{title}</span>
+          <button
+            onClick={() => router.push(`/cards/${card.slug}/edit`)}
+            className={`${styles.editButton} button secondary`}
+          >
+            {localize('EDIT')}
+          </button>
         </nav>
 
         {/* Header */}
