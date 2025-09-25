@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { AppSettings, EnvironmentSettings } from '@notex/types'
-import { getMarketSettings, getEnvironmentSettings, validateSettings, getCurrentMarketSettings } from '@notex/config'
+import { AppSettings } from '@notex/types'
+import { getMarketSettings, getEnvironmentSettings, validateSettings } from '@notex/config'
 
 interface SettingsContextType {
   settings: AppSettings

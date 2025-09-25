@@ -1,4 +1,4 @@
-import { AppSettings, RawMarketSettings, EnvironmentSettings, DeepPartial } from '@notex/types'
+import { AppSettings, RawMarketSettings, EnvironmentSettings } from '@notex/types'
 import { deepMerge } from './utils/object'
 import defaultSettings from './settings/default.settings.json'
 import env from './settings/env.json'

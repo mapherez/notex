@@ -11,7 +11,7 @@ export interface SearchSuggestion {
   id: string;
   text: string;
   type: 'query' | 'card' | 'category';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SearchFilters {
@@ -25,7 +25,7 @@ export interface SearchFilters {
   status?: 'draft' | 'published' | 'archived';
 }
 
-export interface SearchResult<T = any> {
+export interface SearchResult<T = unknown> {
   card: T;
   score: number;
   highlights?: {
@@ -38,7 +38,7 @@ export interface SearchResult<T = any> {
 // Common component props
 export interface BaseComponentProps {
   className?: string;
-  children?: any; // React.ReactNode equivalent without React dependency
+  children?: unknown; // React.ReactNode equivalent without React dependency
 }
 
 // Loading states

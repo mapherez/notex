@@ -112,6 +112,7 @@ export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
 export type SearchResult = z.infer<typeof SearchResultSchema>;
 
 // Content migration utility
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const migrateContent = (content: any): Content => {
   // If no version or version 1, upgrade to version 2
   if (!content.version || content.version === 1) {

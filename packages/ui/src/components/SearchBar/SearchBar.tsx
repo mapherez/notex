@@ -11,7 +11,7 @@ export interface SearchSuggestion {
   id: string;
   text: string;
   type: 'query' | 'card' | 'category';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SearchBarProps {
@@ -184,7 +184,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   }, [showSuggestions, displayItems.length]);
 
   // Handle suggestion click
-  const handleSuggestionClick = useCallback((item: SearchSuggestion | { type: 'history'; text: string }, index: number) => {
+  const handleSuggestionClick = useCallback((item: SearchSuggestion | { type: 'history'; text: string }) => {
     if ('id' in item) {
       onSuggestionSelect?.(item);
     } else {
@@ -326,7 +326,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               })}
               role="option"
               aria-selected={index === selectedIndex}
-              onClick={() => handleSuggestionClick(item, index)}
+              onClick={() => handleSuggestionClick(item)}
             >
               <div className={styles.suggestionIcon}>
                 {item.type === 'history' ? (

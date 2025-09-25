@@ -13,8 +13,8 @@ export interface Database {
           status: 'draft' | 'published' | 'archived';
           created_at: string;
           updated_at: string;
-          content: Record<string, any>;
-          metadata: Record<string, any>;
+          content: Record<string, unknown>;
+          metadata: Record<string, unknown>;
           search_vector?: string; // Generated column
         };
         Insert: {
@@ -25,8 +25,8 @@ export interface Database {
           status?: 'draft' | 'published' | 'archived';
           created_at?: string;
           updated_at?: string;
-          content?: Record<string, any>;
-          metadata?: Record<string, any>;
+          content?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
         };
         Update: {
           id?: string;
@@ -36,8 +36,8 @@ export interface Database {
           status?: 'draft' | 'published' | 'archived';
           created_at?: string;
           updated_at?: string;
-          content?: Record<string, any>;
-          metadata?: Record<string, any>;
+          content?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
         };
       };
     };
@@ -58,8 +58,8 @@ export interface Database {
           status: string;
           created_at: string;
           updated_at: string;
-          content: Record<string, any>;
-          metadata: Record<string, any>;
+          content: Record<string, unknown>;
+          metadata: Record<string, unknown>;
           similarity: number;
         }[];
       };

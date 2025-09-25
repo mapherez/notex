@@ -42,6 +42,7 @@ export function deepMerge<T extends object>(
 
       if (isPlainObject(sourceValue) && isPlainObject(targetValue)) {
         // Recursively merge nested objects
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         output[key] = deepMerge(targetValue as any, sourceValue) as T[Extract<keyof T, string>]
       } else {
         // For primitives, arrays, or null values, replace entirely

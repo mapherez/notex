@@ -299,7 +299,7 @@ export class KnowledgeCardRepository {
   }
 
   // Private helper methods
-  private static mapRowToCard(row: any): KnowledgeCard {
+  private static mapRowToCard(row: Database['public']['Tables']['knowledge_cards']['Row']): KnowledgeCard {
     // Migrate content to latest version
     const migratedContent = migrateContent(row.content);
     
@@ -312,6 +312,7 @@ export class KnowledgeCardRepository {
     return KnowledgeCardSchema.parse(card);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static calculateScore(row: any, query: string): number {
     // Simple scoring algorithm
     let score = 0;
@@ -332,6 +333,7 @@ export class KnowledgeCardRepository {
     return score;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static generateHighlights(row: any, query: string): SearchResult['highlights'] {
     // Simple highlight generation
     const lowerQuery = query.toLowerCase();
