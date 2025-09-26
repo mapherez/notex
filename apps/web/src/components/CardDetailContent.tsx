@@ -6,18 +6,23 @@ import { useSettings } from '@notex/ui';
 import { KnowledgeCardRepository, type KnowledgeCard } from '@notex/database';
 import { createLocalizeFunction, loadLocale } from '@notex/config';
 import type { Locale } from '@notex/types';
+import { useAuth } from '../lib/auth';
 import styles from '../app/cards/[slug]/page.module.scss';
 
 export function CardDetailContent() {
   const router = useRouter();
   const pathname = usePathname();
   const slug = pathname.split('/cards/')[1];
+  const { profile } = useAuth();
 
   const [card, setCard] = useState<KnowledgeCard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [localize, setLocalize] = useState<((key: string, params?: Record<string, string | number>) => string) | null>(null);
   const { settings, loading: settingsLoading } = useSettings();
+
+  // Check if user can edit this card
+  const canEdit = profile?.role === 'admin' || (card?.editable_by_others && profile?.can_create);
 
   // Initialize localization
   useEffect(() => {
@@ -148,12 +153,14 @@ export function CardDetailContent() {
           </button>
           <span className={styles.breadcrumbSeparator}>›</span>
           <span className={styles.breadcrumbCurrent}>{title}</span>
-          <button
-            onClick={() => router.push(`/cards/${card.slug}/edit`)}
-            className={`${styles.editButton} button secondary`}
-          >
-            {localize('EDIT')}
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => router.push(`/cards/${card.slug}/edit`)}
+              className={`${styles.editButton} button secondary`}
+            >
+              {localize('EDIT')}
+            </button>
+          )}
         </nav>
 
         {/* Header */}

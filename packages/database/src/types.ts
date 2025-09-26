@@ -48,6 +48,7 @@ export const KnowledgeCardSchema = z.object({
   }),
   content: ContentSchema,
   metadata: MetadataSchema,
+  editable_by_others: z.boolean().optional(),
 });
 
 // Database row type (before processing)
@@ -61,6 +62,7 @@ export const KnowledgeCardRowSchema = z.object({
   updated_at: z.string(),
   content: z.record(z.any()), // Raw JSONB
   metadata: z.record(z.any()), // Raw JSONB
+  editable_by_others: z.boolean().optional(),
 });
 
 // Insert/Update schemas (omit generated fields)
@@ -71,6 +73,7 @@ export const CreateKnowledgeCardSchema = z.object({
   content: ContentSchema,
   metadata: MetadataSchema.optional(),
   status: z.enum(['draft', 'published', 'archived']).optional(),
+  editable_by_others: z.boolean().optional(),
 });
 
 export const UpdateKnowledgeCardSchema = CreateKnowledgeCardSchema.partial().extend({

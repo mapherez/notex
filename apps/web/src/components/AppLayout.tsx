@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { SearchBar, SearchFilters, Button, useSettings } from '@notex/ui';
+import { SearchBar, SearchFilters, Button, useSettings, LoginButton } from '@notex/ui';
 import { createLocalizeFunction, loadLocale } from '@notex/config';
 import type { SearchFilters as SearchFiltersType, Locale, FilterOption } from '@notex/types';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { HomePageContent } from './HomePageContent';
 import { CardDetailContent } from './CardDetailContent';
+import { useAuth } from '@/lib/auth';
 
 interface SearchContextType {
   searchQuery: string;
@@ -50,9 +51,14 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [localize, setLocalize] = useState<((key: string, params?: Record<string, string | number>) => string) | null>(null);
 
   const { settings, loading: settingsLoading } = useSettings();
+  const { user, profile, loading: authLoading, signInWithGoogle, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  console.log('USER: ', user);
+  console.log('PROFILE: ', profile);
+  console.log('AUTH LOADING: ', authLoading);
 
   // Initialize localization
   useEffect(() => {
@@ -198,6 +204,23 @@ export function AppLayout({ children }: AppLayoutProps) {
             <div className="nav-brand">
               <Link href="/">NoteX</Link>
             </div>
+            <div className="nav-auth">
+              <LoginButton
+                user={user}
+                loading={authLoading}
+                onSignIn={signInWithGoogle}
+                onSignOut={signOut}
+              />
+              {/* Temporary sign out button for debugging */}
+              {user && (
+                <button
+                  onClick={signOut}
+                  className="ml-2 px-3 py-1 text-xs bg-red-500 text-white rounded"
+                >
+                  Force Sign Out
+                </button>
+              )}
+            </div>
           </nav>
         </header>
 
@@ -232,15 +255,17 @@ export function AppLayout({ children }: AppLayoutProps) {
                 >
                   {localize(settings?.HOMEPAGE?.buttons?.clearFilters?.labelKey || 'CLEAR_FILTERS')}
                 </Button>
-                <Button 
-                  variant={settings?.HOMEPAGE?.buttons?.addCard?.variant || 'primary'}
-                  size="large"
-                  onClick={() => {
-                    router.push('/cards/new');
-                  }}
-                >
-                  {localize(settings?.HOMEPAGE?.buttons?.addCard?.labelKey || 'ADD_CARD')}
-                </Button>
+                {profile?.can_create && (
+                  <Button 
+                    variant={settings?.HOMEPAGE?.buttons?.addCard?.variant || 'primary'}
+                    size="large"
+                    onClick={() => {
+                      router.push('/cards/new');
+                    }}
+                  >
+                    {localize(settings?.HOMEPAGE?.buttons?.addCard?.labelKey || 'ADD_CARD')}
+                  </Button>
+                )}
               </div>
             </div>
           </div>

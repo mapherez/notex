@@ -21,7 +21,7 @@ export default function EditCardPage() {
   const [error, setError] = useState<string | null>(null);
   const [localize, setLocalize] = useState<((key: string, params?: Record<string, string | number>) => string) | null>(null);
   const { settings, loading: settingsLoading } = useSettings();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
 
   // Initialize localization
   useEffect(() => {
@@ -149,6 +149,7 @@ export default function EditCardPage() {
         onSave={handleSave}
         onCancel={handleCancel}
         isLoading={isLoading}
+        userProfile={profile}
       />
     </>
   );

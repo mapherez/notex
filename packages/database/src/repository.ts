@@ -20,6 +20,20 @@ import {
 export class KnowledgeCardRepository {
   // Create a new knowledge card
   static async create(data: CreateKnowledgeCard): Promise<KnowledgeCard> {
+    // Check authentication and permissions
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Authentication required');
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('can_create')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.can_create) {
+      throw new Error('Create permission required');
+    }
+
     const cardData: Database['public']['Tables']['knowledge_cards']['Insert'] = {
       ...data,
       content: data.content || getDefaultContent(),
@@ -78,6 +92,28 @@ export class KnowledgeCardRepository {
 
   // Update a knowledge card
   static async update(id: string, data: Partial<UpdateKnowledgeCard>): Promise<KnowledgeCard> {
+    // Check authentication and permissions
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Authentication required');
+
+    // Get current card to check permissions
+    const currentCard = await KnowledgeCardRepository.getById(id);
+    if (!currentCard) throw new Error('Card not found');
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    // Check permissions: admins can edit anything, normal users only if editable_by_others is true
+    const canEdit = profile?.role === 'admin' ||
+      (profile?.role === 'normal' && currentCard.editable_by_others);
+
+    if (!canEdit) {
+      throw new Error('Edit permission required');
+    }
+
     const updateData = {
       ...data,
       updated_at: new Date().toISOString(),

@@ -8,16 +8,29 @@ import type { Locale } from '@notex/types';
 import type { CreateKnowledgeCard, UpdateKnowledgeCard, KnowledgeCard } from '@notex/database';
 import styles from './CardEditor.module.scss';
 
+interface UserProfile {
+  id: string;
+  email: string;
+  role: 'admin' | 'normal';
+  can_create: boolean;
+}
+
 interface CardEditorProps {
   card?: KnowledgeCard;
   onSave: (data: CreateKnowledgeCard | UpdateKnowledgeCard) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
+  userProfile?: UserProfile | null;
 }
 
-export function CardEditor({ card, onSave, onCancel, isLoading = false }: CardEditorProps) {
+export function CardEditor({ card, onSave, onCancel, isLoading = false, userProfile }: CardEditorProps) {
   const [localize, setLocalize] = useState<((key: string, params?: Record<string, string | number>) => string) | null>(null);
   const { settings, loading: settingsLoading } = useSettings();
+
+  // Permission checks
+  const canEdit = userProfile?.role === 'admin' ||
+    (userProfile?.role === 'normal' && card?.editable_by_others);
+  const isAdmin = userProfile?.role === 'admin';
 
   // Form state
   const [title, setTitle] = useState(card?.title || '');
@@ -31,6 +44,7 @@ export function CardEditor({ card, onSave, onCancel, isLoading = false }: CardEd
   );
   const [tags, setTags] = useState(card?.metadata?.tags?.join(', ') || '');
   const [status, setStatus] = useState(card?.status || 'draft');
+  const [editableByOthers, setEditableByOthers] = useState(card?.editable_by_others ?? false);
 
   // Initialize localization
   useEffect(() => {
@@ -70,6 +84,7 @@ export function CardEditor({ card, onSave, onCancel, isLoading = false }: CardEd
         tags: tags.split(',').filter(tag => tag.trim()).map(tag => tag.trim()),
       },
       status: status as 'draft' | 'published' | 'archived',
+      editable_by_others: editableByOthers,
     };
 
     // Add slug for new cards (id is handled by the page for updates)
@@ -91,6 +106,21 @@ export function CardEditor({ card, onSave, onCancel, isLoading = false }: CardEd
 
   if (settingsLoading || !localize) {
     return <div className={styles.loading}>Loading...</div>;
+  }
+
+  // Permission check for editing existing cards
+  if (!canEdit && card) {
+    return (
+      <div className={styles.cardEditor}>
+        <div className={styles.permissionDenied}>
+          <h1>{localize('PERMISSION_DENIED')}</h1>
+          <p>{localize('EDIT_PERMISSION_REQUIRED')}</p>
+          <Button variant="secondary" onClick={onCancel}>
+            {localize('GO_BACK')}
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const categoryOptions = settings?.HOMEPAGE?.categoryOptions || [];
@@ -273,6 +303,22 @@ export function CardEditor({ card, onSave, onCancel, isLoading = false }: CardEd
           />
           <small className={styles.help}>{localize('TAGS_HELP')}</small>
         </div>
+
+        {/* Admin controls */}
+        {isAdmin && (
+          <div className={styles.field}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={editableByOthers}
+                onChange={(e) => setEditableByOthers(e.target.checked)}
+                className={styles.checkbox}
+              />
+              {localize('EDITABLE_BY_OTHERS')}
+            </label>
+            <small className={styles.help}>{localize('EDITABLE_BY_OTHERS_HELP')}</small>
+          </div>
+        )}
       </form>
     </div>
   );
