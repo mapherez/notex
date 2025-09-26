@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { SearchBar, SearchFilters, Button, useSettings, LoginButton } from '@notex/ui';
+import { SearchBar, SearchFilters, Button, useSettings } from '@notex/ui';
 import { createLocalizeFunction, loadLocale } from '@notex/config';
 import type { SearchFilters as SearchFiltersType, Locale, FilterOption } from '@notex/types';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { HomePageContent } from './HomePageContent';
 import { CardDetailContent } from './CardDetailContent';
+import { Header } from './Header';
 import { useAuth } from '@/lib/auth';
 
 interface SearchContextType {
@@ -199,30 +199,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <SearchContext.Provider value={{ searchQuery, filters, setSearchQuery, setFilters }}>
       <div className="app-layout">
         {/* Persistent Header */}
-        <header className="site-header">
-          <nav className="main-nav">
-            <div className="nav-brand">
-              <Link href="/">NoteX</Link>
-            </div>
-            <div className="nav-auth">
-              <LoginButton
-                user={user}
-                loading={authLoading}
-                onSignIn={signInWithGoogle}
-                onSignOut={signOut}
-              />
-              {/* Temporary sign out button for debugging */}
-              {user && (
-                <button
-                  onClick={signOut}
-                  className="ml-2 px-3 py-1 text-xs bg-red-500 text-white rounded"
-                >
-                  Force Sign Out
-                </button>
-              )}
-            </div>
-          </nav>
-        </header>
+        <Header onSignIn={signInWithGoogle} onSignOut={signOut} />
 
         {/* Persistent Search Interface */}
         <div className="search-interface">
