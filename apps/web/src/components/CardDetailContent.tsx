@@ -22,7 +22,11 @@ export function CardDetailContent() {
   const { settings, loading: settingsLoading } = useSettings();
 
   // Check if user can edit this card
-  const canEdit = profile?.role === 'admin' || (card?.editable_by_others && profile?.can_create);
+  const canEdit = Boolean(
+    profile?.role === 'admin' ||
+    card?.editable_by_others ||
+    (card?.metadata?.created_by && profile?.id === String(card.metadata.created_by))
+  );
 
   // Initialize localization
   useEffect(() => {
