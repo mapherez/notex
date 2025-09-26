@@ -26,11 +26,11 @@ export class KnowledgeCardRepository {
 
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('can_create')
+      .select('can_create, role')
       .eq('id', user.id)
       .single();
 
-    if (!profile?.can_create) {
+    if (profile?.role !== 'admin' && !profile?.can_create) {
       throw new Error('Create permission required');
     }
 

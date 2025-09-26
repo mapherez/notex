@@ -255,7 +255,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 >
                   {localize(settings?.HOMEPAGE?.buttons?.clearFilters?.labelKey || 'CLEAR_FILTERS')}
                 </Button>
-                {profile?.can_create && (
+                {(profile?.role === 'admin' || profile?.can_create) && (
                   <Button 
                     variant={settings?.HOMEPAGE?.buttons?.addCard?.variant || 'primary'}
                     size="large"
