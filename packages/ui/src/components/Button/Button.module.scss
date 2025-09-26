@@ -76,8 +76,8 @@
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-relaxed);
   padding: var(--space-4) calc(var(--space-6) + 16px);
-  height: 48px;
-  min-height: 48px;
+  height: var(--space-12);
+  min-height: var(--space-12);
   
   .loadingSpinner {
     width: 1.5rem;
