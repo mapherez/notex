@@ -118,10 +118,18 @@ export class KnowledgeCardRepository {
       throw new Error('Edit permission required');
     }
 
-    const updateData = {
+    const updateData: Partial<Database['public']['Tables']['knowledge_cards']['Update']> = {
       ...data,
       updated_at: new Date().toISOString(),
     };
+
+    // If metadata is being updated, merge it with existing metadata to preserve created_by
+    if (data.metadata) {
+      updateData.metadata = {
+        ...currentCard.metadata,
+        ...data.metadata,
+      };
+    }
 
     const { data: result, error } = await supabase
       .from('knowledge_cards')

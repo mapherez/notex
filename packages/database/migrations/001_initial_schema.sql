@@ -174,14 +174,15 @@ CREATE POLICY "Users can read their own cards" ON knowledge_cards
 CREATE POLICY "Authenticated users can insert cards" ON knowledge_cards
   FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
--- Policy: Users can update their own cards
+-- Policy: Users can update their own cards or cards marked as editable by others
 CREATE POLICY "Users can update their own cards" ON knowledge_cards
   FOR UPDATE USING (
     auth.uid()::text = metadata->>'created_by' OR
     EXISTS (
       SELECT 1 FROM user_profiles
       WHERE id = auth.uid() AND role = 'admin'
-    )
+    ) OR
+    editable_by_others = true
   );
 
 -- Policy: Users can delete their own cards

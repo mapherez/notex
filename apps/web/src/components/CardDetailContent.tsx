@@ -24,8 +24,7 @@ export function CardDetailContent() {
   // Check if user can edit this card
   const canEdit = Boolean(
     profile?.role === 'admin' ||
-    card?.editable_by_others ||
-    (card?.metadata?.created_by && profile?.id === String(card.metadata.created_by))
+    card?.editable_by_others
   );
 
   // Initialize localization
