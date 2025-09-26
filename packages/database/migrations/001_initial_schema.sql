@@ -176,8 +176,20 @@ CREATE POLICY "Authenticated users can insert cards" ON knowledge_cards
 
 -- Policy: Users can update their own cards
 CREATE POLICY "Users can update their own cards" ON knowledge_cards
-  FOR UPDATE USING (auth.uid()::text = metadata->>'created_by');
+  FOR UPDATE USING (
+    auth.uid()::text = metadata->>'created_by' OR
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
 
 -- Policy: Users can delete their own cards
 CREATE POLICY "Users can delete their own cards" ON knowledge_cards
-  FOR DELETE USING (auth.uid()::text = metadata->>'created_by');
+  FOR DELETE USING (
+    auth.uid()::text = metadata->>'created_by' OR
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );

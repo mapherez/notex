@@ -37,7 +37,11 @@ export class KnowledgeCardRepository {
     const cardData: Database['public']['Tables']['knowledge_cards']['Insert'] = {
       ...data,
       content: data.content || getDefaultContent(),
-      metadata: data.metadata || getDefaultMetadata(),
+      metadata: {
+        ...getDefaultMetadata(),
+        ...data.metadata,
+        created_by: user.id,
+      },
       status: data.status || 'draft',
     };
 

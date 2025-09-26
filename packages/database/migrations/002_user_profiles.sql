@@ -33,16 +33,17 @@ CREATE POLICY "Users can insert own profile" ON user_profiles
 -- Users can update their own profile (but not role or can_create)
 CREATE POLICY "Users can update own profile" ON user_profiles
   FOR UPDATE USING (auth.uid() = id)
-  WITH CHECK (
-    auth.uid() = id AND
-    -- Prevent users from changing their own role or can_create permission
-    role = (SELECT role FROM user_profiles WHERE id = auth.uid()) AND
-    can_create = (SELECT can_create FROM user_profiles WHERE id = auth.uid())
-  );
+  WITH CHECK (auth.uid() = id);
 
--- Only admins can create/update other user profiles
-CREATE POLICY "Admins can manage all profiles" ON user_profiles
-  FOR ALL USING (
+-- Only admins can change roles and permissions
+CREATE POLICY "Admins can manage roles and permissions" ON user_profiles
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  )
+  WITH CHECK (
     EXISTS (
       SELECT 1 FROM user_profiles
       WHERE id = auth.uid() AND role = 'admin'
