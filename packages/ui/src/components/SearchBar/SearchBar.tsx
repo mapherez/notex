@@ -46,6 +46,8 @@ export interface SearchBarProps {
   searchAriaLabel?: string;
   /** Accessibility label for clear button */
   clearAriaLabel?: string;
+  /** Callback when clear button is clicked */
+  onClear?: () => void;
   /** Accessibility label for loading state */
   loadingAriaLabel?: string;
 }
@@ -62,6 +64,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   history = [],
   onHistorySelect,
   onHistoryDelete,
+  onClear,
   className,
   showShortcut = true,
   searchAriaLabel = 'Search knowledge cards',
@@ -203,10 +206,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   // Clear search
   const handleClear = useCallback(() => {
-    onChange('');
-    inputRef.current?.focus();
-    setShowSuggestions(showHistory && history.length > 0);
-  }, [onChange, showHistory, history.length]);
+    if (onClear) {
+      onClear();
+    } else {
+      onChange('');
+      inputRef.current?.focus();
+      setShowSuggestions(showHistory && history.length > 0);
+    }
+  }, [onClear, onChange, showHistory, history.length]);
 
   return (
     <div 

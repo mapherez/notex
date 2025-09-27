@@ -70,6 +70,19 @@ export function AppLayout({ children }: AppLayoutProps) {
     setSearchHistory(updatedHistory);
   }, []);
 
+  // Handle clearing search and filters (same as Clear Filters button)
+  const handleClearAll = useCallback(() => {
+    setSearchQuery('');
+    setFilters({
+      categories: [],
+      difficulty: [],
+      tags: [],
+      status: 'published',
+    });
+    setFiltersCollapsed(true);
+    router.replace('/');
+  }, [router]);
+
   // Initialize localization
   useEffect(() => {
     async function initializeLocalization() {
@@ -240,6 +253,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 onSubmit={handleSearch}
                 onHistorySelect={setSearchQuery}
                 onHistoryDelete={handleHistoryDelete}
+                onClear={handleClearAll}
                 history={searchHistory}
                 placeholder={localize('SEARCH_PLACEHOLDER')}
                 searchAriaLabel={localize('A11Y_SEARCH_INPUT')}
