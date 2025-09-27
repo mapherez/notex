@@ -190,6 +190,7 @@ ComponentName/
   - Data validation with Zod
   - Date formatting and manipulation
   - Accessibility helpers
+  - Platform detection for responsive UI
 
 ### Tools
 

@@ -445,10 +445,10 @@ static async create(data: CreateKnowledgeCard): Promise<KnowledgeCard> {
 
 ### 1. Authentication
 
-- [ ] Google sign-in works
+- [x] Google sign-in works
 - [ ] User profile is created automatically
-- [ ] Sign-out works
-- [ ] Session persists on refresh
+- [x] Sign-out works
+- [x] Session persists on refresh
 
 ### 2. Permissions
 
