@@ -48,14 +48,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [localize, setLocalize] = useState<((key: string, params?: Record<string, string | number>) => string) | null>(null);
 
   const { settings, loading: settingsLoading } = useSettings();
-  const { user, profile, loading: authLoading, signInWithGoogle, signOut } = useAuth();
+  const { profile, signInWithGoogle, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  console.log('USER: ', user);
-  console.log('PROFILE: ', profile);
-  console.log('AUTH LOADING: ', authLoading);
 
   // Load search history from localStorage on mount
   useEffect(() => {
@@ -116,7 +112,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
     // Check if this search was already executed
     if (lastExecutedSearch === query.trim()) {
-      console.log('Search already executed, skipping duplicate');
+      console.warn('Search already executed, skipping duplicate');
       return;
     }
 
@@ -162,7 +158,6 @@ export function AppLayout({ children }: AppLayoutProps) {
 
     const timeoutId = setTimeout(() => {
       // Perform database search after 1 second delay
-      console.log('Auto-search triggered after 1s delay:', searchQuery);
       handleSearch(searchQuery);
     }, 1000);
 

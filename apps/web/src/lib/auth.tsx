@@ -39,13 +39,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error && error.code === 'PGRST116') { // PGRST116 = no rows returned
         // Profile doesn't exist, create a default one
-        console.log('Creating new user profile for:', userId);
         
         // Get the current user to ensure we have the email
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         const userEmail = currentUser?.email || '';
-        
-        console.log('Current user email:', userEmail);
         
         const { data: newProfile, error: createError } = await supabase
           .from('user_profiles')
@@ -58,20 +55,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .select()
           .single();
 
-        console.log('Profile creation result:', { newProfile: !!newProfile, createError });
+        console.warn('Profile creation result:', { newProfile: !!newProfile, createError });
 
         if (createError) {
           console.error('Error creating user profile:', createError);
           setProfile(null);
         } else {
-          console.log('Profile created successfully:', newProfile);
+          console.warn('Profile created successfully:', newProfile);
           setProfile(newProfile);
         }
       } else if (error) {
         console.error('Error fetching user profile:', error);
         setProfile(null);
       } else {
-        console.log('Profile found:', data);
+        console.warn('Profile found:', data);
         setProfile(data);
       }
     } catch (error) {
@@ -114,13 +111,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }, 10000); // 10 seconds timeout
 
-    return () => clearTimeout(timeout);
-
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth event:', event);
       setSession(session);
       setUser(session?.user ?? null);
 
@@ -132,7 +126,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, [fetchUserProfile]);
 
   const signIn = async (email: string, password: string) => {
@@ -152,6 +149,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // Immediately clear local state for instant UI update
+    setUser(null);
+    setProfile(null);
+    setSession(null);
+
     const { error } = await supabase.auth.signOut();
     return { error };
   };

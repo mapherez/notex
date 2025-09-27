@@ -56,9 +56,9 @@ export function Header({ onSignIn, onSignOut }: HeaderProps) {
     setShowModal(true);
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setShowMenu(false);
-    onSignOut();
+    await onSignOut();
   };
 
   const getUserDisplayName = () => {
