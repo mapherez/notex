@@ -15,6 +15,7 @@
   "A11Y_SEARCH_INPUT": "Search knowledge cards",
   "A11Y_SEARCH_LOADING": "Loading...",
   "A11Y_SEARCH_RESULTS": "Search results",
+  "A11Y_THEME_CHOOSER": "Choose theme",
   "A11Y_USER_MENU": "User menu",
   "ADD_CARD": "Add card",
   "APP_SUBTITLE": "Knowledge Management System",
@@ -128,6 +129,10 @@
   "SOURCES": "Sources",
   "STATUS": "Status",
   "SUMMARY": "Summary",
+
+  "THEME_DARK": "Dark",
+  "THEME_DIM": "Dim",
+  "THEME_LIGHT": "Light",
 
   "TITLE": "Title",
 

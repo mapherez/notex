@@ -15,7 +15,7 @@ export interface AppSettings {
     language: string
     currency?: string
     timezone?: string
-    theme?: 'light' | 'dark' | 'auto'
+    theme?: 'light' | 'dark' | 'dim' | 'auto'
     gitHubPages?: string
     languages?: string[]
   }

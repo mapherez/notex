@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { AuthProvider } from '@/lib/auth';
 import { ClientSettingsProvider } from '@/components/ClientSettingsProvider';
+import { ThemeProvider } from '@notex/ui';
+import type { Theme } from '@notex/ui';
 import { AppLayout } from '@/components/AppLayout';
 import defaultSettings from '@notex/config/src/settings/default.settings.json';
 import '@/styles/globals.scss';
@@ -34,11 +36,13 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <ClientSettingsProvider>
-            <Suspense fallback={<div>Loading...</div>}>
-              <AppLayout>
-                {children}
-              </AppLayout>
-            </Suspense>
+            <ThemeProvider defaultTheme={defaultSettings.SETUP.theme as Theme}>
+              <Suspense fallback={<div>Loading...</div>}>
+                <AppLayout>
+                  {children}
+                </AppLayout>
+              </Suspense>
+            </ThemeProvider>
           </ClientSettingsProvider>
         </AuthProvider>
       </body>

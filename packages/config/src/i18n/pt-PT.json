@@ -15,6 +15,7 @@
   "A11Y_SEARCH_INPUT": "Procurar cartões de conhecimento",
   "A11Y_SEARCH_LOADING": "A carregar...",
   "A11Y_SEARCH_RESULTS": "Resultados da pesquisa",
+  "A11Y_THEME_CHOOSER": "Escolher tema",
   "A11Y_USER_MENU": "Menu do utilizador",
   "ADD_CARD": "Adicionar cartão",
   "APP_SUBTITLE": "Sistema de Gestão de Conhecimento",
@@ -128,6 +129,10 @@
   "SOURCES": "Fontes",
   "STATUS": "Estado",
   "SUMMARY": "Resumo",
+
+  "THEME_DARK": "Escuro",
+  "THEME_DIM": "Dim",
+  "THEME_LIGHT": "Claro",
 
   "TITLE": "Título",
 

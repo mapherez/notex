@@ -12,6 +12,9 @@ export * from './components/Auth/LoginButton';
 // Hooks
 export * from './hooks/useSettings';
 
+// Theme
+export * from './ThemeProvider';
+
 // Utilities (to be added)
 // export * from './utils';
 

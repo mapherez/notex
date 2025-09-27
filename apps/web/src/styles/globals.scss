@@ -11,7 +11,7 @@
 html, body {
   @include body;
   color: var(--color-text-primary);
-  background: var(--color-bg-primary);
+  background: var(--color-bg-tertiary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -172,6 +172,89 @@ html, body {
   }
 }
 
+.theme-chooser-container {
+  position: relative;
+}
+
+.theme-chooser-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-10);
+  height: var(--space-10);
+  border-radius: var(--radius-full);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--color-bg-hover);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.theme-icon {
+  width: var(--space-5);
+  height: var(--space-5);
+}
+
+.theme-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--space-2);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  min-width: 120px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-option {
+  display: block;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: var(--color-bg-hover);
+  }
+
+  &.active {
+    background: var(--color-primary);
+    color: var(--color-text-on-primary);
+  }
+
+  &:first-child {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  &:last-child {
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+
+  &:only-child {
+    border-radius: var(--radius-lg);
+  }
+}
+
 // Modal styles
 .modal-overlay {
   position: fixed;
@@ -286,7 +369,7 @@ html, body {
 
 // Search interface styles
 .search-interface {
-  background: var(--color-bg-primary);
+  background: var(--color-bg-tertiary);
   border-bottom: 1px solid var(--color-border);
   padding: var(--space-lg) var(--space-md);
   width: 100%;
