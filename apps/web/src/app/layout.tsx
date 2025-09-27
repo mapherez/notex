@@ -3,20 +3,26 @@ import { Suspense } from 'react';
 import { AuthProvider } from '@/lib/auth';
 import { ClientSettingsProvider } from '@/components/ClientSettingsProvider';
 import { AppLayout } from '@/components/AppLayout';
+import defaultSettings from '@notex/config/src/settings/default.settings.json';
 import '@/styles/globals.scss';
 
-// TODO: Static metadata - will be enhanced with dynamic settings in the future
-export const metadata: Metadata = {
-  title: 'NoteX - Knowledge Management',
-  description: 'Modern knowledge management system with accessibility and i18n built-in',
-  keywords: ['knowledge management', 'notes', 'accessibility', 'i18n'],
-  authors: [{ name: 'mapherez' }],
-  viewport: 'width=device-width, initial-scale=1',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#000000' },
-  ],
-};
+// Extract metadata from settings file
+function getMetadataFromSettings(): Metadata {
+  const metadata = defaultSettings.METADATA;
+  return {
+    title: metadata.title,
+    description: metadata.description,
+    keywords: metadata.keywords,
+    authors: [{ name: metadata.author }],
+    viewport: 'width=device-width, initial-scale=1',
+    themeColor: [
+      { media: '(prefers-color-scheme: light)', color: metadata.themeColor.light },
+      { media: '(prefers-color-scheme: dark)', color: metadata.themeColor.dark },
+    ],
+  };
+}
+
+export const metadata: Metadata = getMetadataFromSettings();
 
 export default function RootLayout({
   children,

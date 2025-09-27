@@ -7,6 +7,7 @@ import { KnowledgeCardRepository, type KnowledgeCard } from '@notex/database';
 import { createLocalizeFunction, loadLocale } from '@notex/config';
 import type { Locale } from '@notex/types';
 import { useAuth } from '../lib/auth';
+import { Button } from '@notex/ui';
 import styles from '../app/cards/[slug]/page.module.scss';
 
 export function CardDetailContent() {
@@ -86,7 +87,7 @@ export function CardDetailContent() {
     return (
       <main className={styles.container}>
         <div className={styles.main}>
-          <div className={styles.loading}>{settingsLoading ? 'Loading...' : 'Initializing...'}</div>
+          <div className={styles.loading}>{settingsLoading ? (localize ? localize('LOADING') : 'Loading...') : (localize ? localize('CARD_INITIALIZING') : 'Initializing...')}</div>
         </div>
       </main>
     );
@@ -109,12 +110,12 @@ export function CardDetailContent() {
         <div className={styles.main}>
           <h1>{localize('CARD_NOT_FOUND_TITLE')}</h1>
           <div className={styles.error}>{error || localize('CARD_NOT_FOUND')}</div>
-          <button
+          <Button
             onClick={() => router.back()}
-            className="button primary"
+            variant="primary"
           >
             {localize('GO_BACK')}
-          </button>
+          </Button>
         </div>
       </main>
     );
@@ -148,21 +149,23 @@ export function CardDetailContent() {
       <div className={styles.main}>
         {/* Breadcrumb */}
         <nav className={styles.breadcrumb}>
-          <button
+          <Button
             onClick={() => router.back()}
+            variant="ghost"
             className={styles.breadcrumbLink}
           >
             {localize('BACK')}
-          </button>
+          </Button>
           <span className={styles.breadcrumbSeparator}>›</span>
           <span className={styles.breadcrumbCurrent}>{title}</span>
           {canEdit && (
-            <button
+            <Button
               onClick={() => router.push(`/cards/${card.slug}/edit`)}
-              className={`${styles.editButton} button secondary`}
+              variant="secondary"
+              className={styles.editButton}
             >
               {localize('EDIT')}
-            </button>
+            </Button>
           )}
         </nav>
 

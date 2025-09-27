@@ -5,8 +5,14 @@
 
 import React, { useState, useCallback } from 'react';
 import clsx from 'clsx';
-import type { SearchFilters, FilterOption } from '@notex/types';
+import type { SearchFilters, FilterOption, AppSettings } from '@notex/types';
 import styles from './SearchFilters.module.scss';
+
+interface SettingsFilterOption {
+  value: string;
+  label: string;
+  count?: number;
+}
 
 export interface SearchFiltersProps {
   /** Current filter values */
@@ -47,29 +53,17 @@ export interface SearchFiltersProps {
     loadingFilters?: string;
     cardCount?: (count: number) => string;
   };
+  /** Settings object for filter options */
+  settings?: AppSettings;
+  /** Localization function */
+  localize?: (key: string, params?: Record<string, string | number>) => string;
 }
-
-// TODO: Extract strings below to localization
-const DEFAULT_DIFFICULTY_OPTIONS: FilterOption[] = [
-  { value: 'básico', label: 'Básico' },
-  { value: 'intermediário', label: 'Intermediário' },
-  { value: 'avançado', label: 'Avançado' },
-];
-
-// TODO: Extract strings below to localization
-const DEFAULT_CATEGORY_OPTIONS: FilterOption[] = [
-  { value: 'programação', label: 'Programação' },
-  { value: 'idiomas', label: 'Idiomas' },
-  { value: 'matemática', label: 'Matemática' },
-  { value: 'ciências', label: 'Ciências' },
-  { value: 'outros', label: 'Outros' },
-];
 
 export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
   filters,
   onChange,
-  categoryOptions = DEFAULT_CATEGORY_OPTIONS,
-  difficultyOptions = DEFAULT_DIFFICULTY_OPTIONS,
+  categoryOptions,
+  difficultyOptions,
   tagOptions = [],
   loading = false,
   showCounts = true,
@@ -77,25 +71,40 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
   onToggleCollapse,
   className,
   labels = {},
+  settings,
+  localize,
 }) => {
+  // Create localized default options from settings
+  const defaultDifficultyOptions: FilterOption[] = settings?.FILTERS?.difficultyOptions?.map((option: SettingsFilterOption) => ({
+    ...option,
+    label: localize ? localize(option.label) : option.label,
+  })) || [];
+
+  const defaultCategoryOptions: FilterOption[] = settings?.FILTERS?.categoryOptions?.map((option: SettingsFilterOption) => ({
+    ...option,
+    label: localize ? localize(option.label) : option.label,
+  })) || [];
+
+  // Use provided options or defaults
+  const finalCategoryOptions = categoryOptions || defaultCategoryOptions;
+  const finalDifficultyOptions = difficultyOptions || defaultDifficultyOptions;
   // Default labels (fallback to English)
-  // TODO: Extract these strings to localization
   const defaultLabels = {
-    title: 'Filters',
-    searchFilters: 'Search filters',
-    categories: 'Categories',
-    difficulty: 'Difficulty',
-    tags: 'Tags',
-    dateRange: 'Date Created',
-    dateFrom: 'From:',
-    dateTo: 'To:',
-    clearFilters: 'Clear filters',
-    showMore: (count: number) => `Show more (${count})`,
-    activeCount: (count: number) => count === 1 ? `${count} active filter` : `${count} active filters`,
-    expandFilters: 'Expand filters',
-    collapseFilters: 'Collapse filters',
-    loadingFilters: 'Loading filters...',
-    cardCount: (count: number) => count === 1 ? `${count} card` : `${count} cards`,
+    title: localize ? localize('FILTERS_TITLE') : 'Filters',
+    searchFilters: localize ? localize('A11Y_SEARCH_FILTERS') : 'Search filters',
+    categories: localize ? localize('FILTERS_CATEGORIES') : 'Categories',
+    difficulty: localize ? localize('FILTERS_DIFFICULTY') : 'Difficulty',
+    tags: localize ? localize('FILTERS_TAGS') : 'Tags',
+    dateRange: localize ? localize('FILTERS_DATE_RANGE') : 'Date Created',
+    dateFrom: localize ? localize('FILTERS_DATE_FROM') : 'From:',
+    dateTo: localize ? localize('FILTERS_DATE_TO') : 'To:',
+    clearFilters: localize ? localize('FILTERS_CLEAR_ALL') : 'Clear filters',
+    showMore: (count: number) => localize ? localize('FILTERS_SHOW_MORE', { count }) : `Show more (${count})`,
+    activeCount: (count: number) => localize ? localize(`FILTERS_ACTIVE_COUNT_${count === 1 ? 'one' : 'other'}`, { count }) : count === 1 ? `${count} active filter` : `${count} active filters`,
+    expandFilters: localize ? localize('FILTERS_EXPAND') : 'Expand filters',
+    collapseFilters: localize ? localize('FILTERS_COLLAPSE') : 'Collapse filters',
+    loadingFilters: localize ? localize('A11Y_LOADING_FILTERS') : 'Loading filters...',
+    cardCount: (count: number) => localize ? localize(`A11Y_CARD_COUNT_${count === 1 ? 'one' : 'other'}`, { count }) : count === 1 ? `${count} card` : `${count} cards`,
     ...labels,
   };
 
@@ -238,7 +247,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
           <div className={styles.filterGroup}>
             <h4 className={styles.filterTitle}>{defaultLabels.categories}</h4>
             <div className={styles.filterOptions} role="group" aria-labelledby="categories-title">
-              {categoryOptions.map(option => (
+              {finalCategoryOptions.map(option => (
                 <label key={option.value} className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
@@ -251,7 +260,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                   <span className={styles.optionText}>
                     {option.label}
                     {showCounts && option.count !== undefined && (
-                      <span className={styles.optionCount} aria-label={`${option.count} cartões`}> {/* TODO: Extract this aria-label to localization */}
+                      <span className={styles.optionCount} aria-label={defaultLabels.cardCount(option.count)}>
                         ({option.count})
                       </span>
                     )}
@@ -265,7 +274,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
           <div className={styles.filterGroup}>
             <h4 className={styles.filterTitle}>{defaultLabels.difficulty}</h4>
             <div className={styles.filterOptions} role="group" aria-labelledby="difficulty-title">
-              {difficultyOptions.map(option => (
+              {finalDifficultyOptions.map(option => (
                 <label key={option.value} className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
@@ -278,7 +287,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                   <span className={styles.optionText}>
                     {option.label}
                     {showCounts && option.count !== undefined && (
-                      <span className={styles.optionCount} aria-label={`${option.count} cartões`}> {/* TODO: Extract this aria-label to localization */}
+                      <span className={styles.optionCount} aria-label={defaultLabels.cardCount(option.count)}>
                         ({option.count})
                       </span>
                     )}
@@ -306,7 +315,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                     <span className={styles.optionText}>
                       {option.label}
                       {showCounts && option.count !== undefined && (
-                        <span className={styles.optionCount} aria-label={`${option.count} cartões`}> {/* TODO: Extract this aria-label to localization */}
+                        <span className={styles.optionCount} aria-label={defaultLabels.cardCount(option.count)}>
                           ({option.count})
                         </span>
                       )}
@@ -322,7 +331,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                       console.log('Show more tags');
                     }}
                   >
-                    Ver mais ({tagOptions.length - 8})
+                    {typeof defaultLabels.showMore === 'function' ? defaultLabels.showMore(tagOptions.length - 8) : defaultLabels.showMore}
                   </button>
                 )}
               </div>
@@ -390,7 +399,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
 
           {/* Loading State */}
           {loading && (
-            <div className={styles.loadingOverlay} aria-label="A carregar filtros..."> {/* TODO: Extract this aria-label to localization */}
+            <div className={styles.loadingOverlay} aria-label={defaultLabels.loadingFilters}>
               <div className={styles.spinner}>
                 <svg className={styles.spinnerIcon} viewBox="0 0 24 24">
                   <circle

@@ -86,7 +86,7 @@ async function listFiles(dir, predicate = () => true) {
  * Clean up and format locale files
  */
 async function cleanupLocales() {
-  const localeDir = 'packages/config/src/i18n/locales'
+  const localeDir = 'packages/config/src/i18n'
   
   const locales = await listFiles(localeDir, (f) => f.endsWith('.json'))
   

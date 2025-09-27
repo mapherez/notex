@@ -165,7 +165,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   if (settingsLoading || !localize) {
     return (
       <div className="app-layout">
-        <div className="loading">Loading...</div>
+        <div className="loading">{localize ? localize('LOADING') : 'Loading...'}</div>
       </div>
     );
   }
@@ -212,6 +212,9 @@ export function AppLayout({ children }: AppLayoutProps) {
                 onHistorySelect={setSearchQuery}
                 history={searchHistory}
                 placeholder={localize('SEARCH_PLACEHOLDER')}
+                searchAriaLabel={localize('A11Y_SEARCH_INPUT')}
+                clearAriaLabel={localize('A11Y_CLEAR_SEARCH')}
+                loadingAriaLabel={localize('A11Y_SEARCH_LOADING')}
                 showShortcut={true}
               />
               <div className="search-actions">
@@ -257,6 +260,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               difficultyOptions={difficultyOptions}
               tagOptions={tagOptions}
               showCounts={true}
+              settings={settings}
+              localize={localize}
             />
           </div>
         </div>

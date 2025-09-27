@@ -59,6 +59,17 @@ export interface AppSettings {
       addCard?: ButtonConfig
       loadMore?: ButtonConfig
     }
+    auth?: {
+      buttons?: {
+        signIn?: ButtonConfig
+        signOut?: ButtonConfig
+        googleSignIn?: ButtonConfig
+      }
+    }
+  }
+  FILTERS?: {
+    categoryOptions?: FilterOption[]
+    difficultyOptions?: FilterOption[]
   }
 }
 

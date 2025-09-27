@@ -9,6 +9,7 @@ import { useSettings } from '@notex/ui';
 import { createLocalizeFunction, loadLocale } from '@notex/config';
 import type { Locale } from '@notex/types';
 import { useAuth } from '@/lib/auth';
+import { Button } from '@notex/ui';
 
 export default function EditCardPage() {
   const router = useRouter();
@@ -103,7 +104,7 @@ export default function EditCardPage() {
   if (settingsLoading || !localize || authLoading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>Loading...</p>
+        <p>{localize ? localize('LOADING') : 'Loading...'}</p>
       </div>
     );
   }
@@ -121,19 +122,12 @@ export default function EditCardPage() {
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <h1>{localize('ERROR')}</h1>
         <p>{error || localize('CARD_NOT_FOUND')}</p>
-        <button
+        <Button
           onClick={() => router.back()}
-          style={{
-            padding: '0.5rem 1rem',
-            background: 'var(--primary)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
+          variant="primary"
         >
           {localize('GO_BACK')}
-        </button>
+        </Button>
       </div>
     );
   }

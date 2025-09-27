@@ -123,7 +123,7 @@ export function HomePageContent() {
   if (settingsLoading || !localize) {
     return (
       <div className="homepage-content">
-        <div className="loading">Loading...</div>
+        <div className="loading">{localize ? localize('HOMEPAGE_LOADING') : 'Loading...'}</div>
       </div>
     );
   }
@@ -141,10 +141,10 @@ export function HomePageContent() {
       {/* Recent Cards Section */}
       <div className="recent-cards">
         {loading ? (
-          <div className="loading">Loading cards...</div>
+          <div className="loading">{localize ? localize('HOMEPAGE_LOADING_CARDS') : 'Loading cards...'}</div>
         ) : filteredCards.length === 0 ? (
           <div className="no-cards">
-            <p>No knowledge cards found. Create your first card to get started!</p>
+            <p>{localize ? localize('HOMEPAGE_NO_CARDS') : 'No knowledge cards found. Create your first card to get started!'}</p>
           </div>
         ) : (
           <>

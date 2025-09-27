@@ -68,7 +68,7 @@ export default function NewCardPage() {
   if (settingsLoading || !localize || authLoading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>Loading...</p>
+        <p>{localize ? localize('LOADING') : 'Loading...'}</p>
       </div>
     );
   }

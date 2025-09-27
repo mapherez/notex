@@ -115,6 +115,60 @@
         "labelKey": "LOAD_MORE_CARDS",
         "variant": "secondary"
       }
+    },
+    "auth": {
+      "buttons": {
+        "signIn": {
+          "labelKey": "HEADER_LOGIN",
+          "variant": "primary"
+        },
+        "signOut": {
+          "labelKey": "HEADER_SIGN_OUT",
+          "variant": "secondary"
+        },
+        "googleSignIn": {
+          "labelKey": "HEADER_CONTINUE_WITH_GOOGLE",
+          "variant": "primary"
+        }
+      }
     }
+  },
+  "FILTERS": {
+    "categoryOptions": [
+      {
+        "value": "programação",
+        "label": "CATEGORY_PROGRAMMING"
+      },
+      {
+        "value": "idiomas",
+        "label": "CATEGORY_LANGUAGES"
+      },
+      {
+        "value": "matemática",
+        "label": "CATEGORY_MATHEMATICS"
+      },
+      {
+        "value": "ciências",
+        "label": "CATEGORY_SCIENCES"
+      },
+      {
+        "value": "outros",
+        "label": "CATEGORY_OTHERS"
+      }
+    ],
+    "difficultyOptions": [
+      {
+        "value": "básico",
+        "label": "DIFFICULTY_BASIC"
+      },
+      {
+        "value": "intermediário",
+        "label": "DIFFICULTY_INTERMEDIATE"
+      },
+      {
+        "value": "avançado",
+        "label": "DIFFICULTY_ADVANCED"
+      }
+    ]
   }
 }

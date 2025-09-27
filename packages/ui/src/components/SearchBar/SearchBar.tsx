@@ -47,7 +47,6 @@ export interface SearchBarProps {
   loadingAriaLabel?: string;
 }
 
-// TODO: Extract strings below to localization
 export const SearchBar: React.FC<SearchBarProps> = ({
   value,
   onChange,
