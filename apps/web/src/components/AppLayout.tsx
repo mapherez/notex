@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { SearchBar, SearchFilters, Button, useSettings } from '@notex/ui';
 import { createLocalizeFunction, loadLocale } from '@notex/config';
 import type { SearchFilters as SearchFiltersType, Locale, FilterOption } from '@notex/types';
@@ -9,6 +9,7 @@ import { HomePageContent } from './HomePageContent';
 import { CardDetailContent } from './CardDetailContent';
 import { Header } from './Header';
 import { useAuth } from '@/lib/auth';
+import { getSearchHistory, saveSearchToHistory, SEARCH_HISTORY_KEY } from '@notex/utils';
 
 interface SearchContextType {
   searchQuery: string;
@@ -33,12 +34,8 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchHistory] = useState([
-    'React hooks',
-    'PostgreSQL índices',
-    'TypeScript genéricos',
-    'CSS Grid layout'
-  ]);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [lastExecutedSearch, setLastExecutedSearch] = useState<string>('');
 
   const [filters, setFilters] = useState<SearchFiltersType>({
     categories: [],
@@ -59,6 +56,23 @@ export function AppLayout({ children }: AppLayoutProps) {
   console.log('USER: ', user);
   console.log('PROFILE: ', profile);
   console.log('AUTH LOADING: ', authLoading);
+
+  // Load search history from localStorage on mount
+  useEffect(() => {
+    setSearchHistory(getSearchHistory());
+  }, []);
+
+  // Handle history item deletion
+  const handleHistoryDelete = useCallback((query: string) => {
+    const currentHistory = getSearchHistory();
+    const updatedHistory = currentHistory.filter(item => item !== query);
+    
+    // Update localStorage
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updatedHistory));
+    
+    // Update state
+    setSearchHistory(updatedHistory);
+  }, []);
 
   // Initialize localization
   useEffect(() => {
@@ -97,8 +111,21 @@ export function AppLayout({ children }: AppLayoutProps) {
     });
   }, [pathname, searchParams]);
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) return;
+
+    // Check if this search was already executed
+    if (lastExecutedSearch === query.trim()) {
+      console.log('Search already executed, skipping duplicate');
+      return;
+    }
+
+    // Save search to history
+    saveSearchToHistory(query);
+    setSearchHistory(getSearchHistory());
+
+    // Mark this search as executed
+    setLastExecutedSearch(query.trim());
 
     // Build search URL with query parameters
     const params = new URLSearchParams();
@@ -120,20 +147,27 @@ export function AppLayout({ children }: AppLayoutProps) {
 
     // Navigate to search page with parameters
     router.push(`/search?${params.toString()}`);
-  };
+  }, [lastExecutedSearch, filters, router]);
 
-  // Auto-search with debouncing when on homepage
+  // Reset last executed search when query changes
+  useEffect(() => {
+    if (searchQuery !== lastExecutedSearch) {
+      setLastExecutedSearch('');
+    }
+  }, [searchQuery, lastExecutedSearch]);
+
+  // Auto-search with 1-second debouncing when on homepage
   useEffect(() => {
     if (pathname !== '/' || !searchQuery.trim()) return;
 
     const timeoutId = setTimeout(() => {
-      // On homepage, we want to show filtered results instead of navigating to search
-      // This will be implemented when we add the cards display logic
-      console.log('Auto-search triggered:', searchQuery, filters);
-    }, 300);
+      // Perform database search after 1 second delay
+      console.log('Auto-search triggered after 1s delay:', searchQuery);
+      handleSearch(searchQuery);
+    }, 1000);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, filters, pathname]);
+  }, [searchQuery, pathname, handleSearch]);
 
   const handleFiltersChange = (newFilters: SearchFiltersType) => {
     setFilters(newFilters);
@@ -210,6 +244,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 onChange={setSearchQuery}
                 onSubmit={handleSearch}
                 onHistorySelect={setSearchQuery}
+                onHistoryDelete={handleHistoryDelete}
                 history={searchHistory}
                 placeholder={localize('SEARCH_PLACEHOLDER')}
                 searchAriaLabel={localize('A11Y_SEARCH_INPUT')}

@@ -36,6 +36,8 @@ export interface SearchBarProps {
   history?: string[];
   /** Callback when history item is selected */
   onHistorySelect?: (query: string) => void;
+  /** Callback when history item is deleted */
+  onHistoryDelete?: (query: string) => void;
   /** Additional CSS class */
   className?: string;
   /** Whether to show keyboard shortcut hint */
@@ -59,6 +61,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   showHistory = true,
   history = [],
   onHistorySelect,
+  onHistoryDelete,
   className,
   showShortcut = true,
   searchAriaLabel = 'Search knowledge cards',
@@ -356,7 +359,24 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               </div>
               <span className={styles.suggestionText}>{item.text}</span>
               {item.type === 'history' && (
-                <span className={styles.suggestionLabel}>Histórico</span>
+                <div className={styles.historyActions}>
+                  <button
+                    type="button"
+                    className={styles.deleteHistoryButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onHistoryDelete?.(item.text);
+                    }}
+                    aria-label={`Remove ${item.text} from search history`}
+                    title="Remove from history"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                  <span className={styles.suggestionLabel}>Histórico</span>
+                </div>
               )}
             </div>
           ))}

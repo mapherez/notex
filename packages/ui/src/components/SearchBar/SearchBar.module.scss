@@ -222,6 +222,43 @@
   flex-shrink: 0;
 }
 
+.historyActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.deleteHistoryButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  opacity: 0.6;
+
+  &:hover {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    opacity: 1;
+  }
+
+  &:active {
+    background: var(--color-bg-hover);
+  }
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
 // Responsive Design
 @media (max-width: 768px) {
   .inputWrapper {
