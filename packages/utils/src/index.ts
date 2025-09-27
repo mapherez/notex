@@ -1,5 +1,7 @@
 // Utility functions and helpers
-// Placeholder for future utilities
+
+// Platform detection utilities
+export * from './platform';
 
 export const utils = {
   // Placeholder

@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import clsx from 'clsx';
+import { getPlatformInfo } from '@notex/utils';
 import styles from './SearchBar.module.scss';
 
 export interface SearchSuggestion {
@@ -86,6 +87,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     
     return items;
   }, [suggestions, history, value, showHistory]);
+
+  // Get platform information for shortcut hint
+  const { isDesktop, modifierKey } = getPlatformInfo();
 
   // Handle keyboard shortcuts (Cmd+K to focus)
   useEffect(() => {
@@ -272,9 +276,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           )}
 
           {/* Keyboard Shortcut Hint */}
-          {showShortcut && !isActive && !value && (
+          {showShortcut && !isActive && !value && isDesktop && (
             <div className={styles.shortcutHint}>
-              <kbd>⌘</kbd>
+              <kbd>{modifierKey}</kbd>
               <kbd>K</kbd>
             </div>
           )}

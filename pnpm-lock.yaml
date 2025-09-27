@@ -137,6 +137,9 @@ importers:
       '@notex/types':
         specifier: workspace:*
         version: link:../types
+      '@notex/utils':
+        specifier: workspace:*
+        version: link:../utils
       clsx:
         specifier: ^2.0.0
         version: 2.1.1
