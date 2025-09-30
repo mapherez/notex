@@ -226,21 +226,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.inputWrapper}>
           {/* Search Icon */}
-          <svg
-            className={styles.searchIcon}
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <Path d="m21 21-4.35-4.35" />
-          </svg>
+          <i className={`${styles.searchIcon} icon icon-search`} aria-hidden="true"></i>
 
           {/* Input Field */}
           <input
@@ -269,19 +255,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               className={styles.clearButton}
               aria-label={clearAriaLabel}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <i className="icon icon-close icon-sm" aria-hidden="true"></i>
             </button>
           )}
 
@@ -296,31 +270,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           {/* Loading Spinner */}
           {loading && (
             <div className={styles.spinner} aria-label={loadingAriaLabel}>
-              <svg className={styles.spinnerIcon} viewBox="0 0 24 24">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                  strokeDasharray="32"
-                  strokeDashoffset="32"
-                >
-                  <animate
-                    attributeName="stroke-dasharray"
-                    dur="2s"
-                    values="0 32;16 16;0 32;0 32"
-                    repeatCount="indefinite"
-                  />
-                  <animate
-                    attributeName="stroke-dashoffset"
-                    dur="2s"
-                    values="0;-16;-32;-32"
-                    repeatCount="indefinite"
-                  />
-                </circle>
-              </svg>
+              <i className={`${styles.spinnerIcon} icon icon-spinner`} aria-hidden="true"></i>
             </div>
           )}
         </div>
@@ -342,27 +292,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               onClick={() => handleSuggestionClick(item)}
             >
               <div className={styles.suggestionIcon}>
-                {item.type === 'history' ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12,6 12,12 16,14" />
-                  </svg>
-                ) : item.type === 'category' ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="3" width="7" height="7" />
-                    <rect x="14" y="3" width="7" height="7" />
-                    <rect x="14" y="14" width="7" height="7" />
-                    <rect x="3" y="14" width="7" height="7" />
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M9 12l2 2 4-4" />
-                    <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3" />
-                    <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3" />
-                    <path d="M12 21c0-1-1-3-3-3s-3 2-3 3 1 3 3 3 3-2 3-3" />
-                    <path d="M12 3c0 1-1 3-3 3s-3-2-3-3 1-3 3-3 3 2 3 3" />
-                  </svg>
-                )}
+                <i className={`icon ${item.type === 'history' ? 'icon-clock' : item.type === 'category' ? 'icon-grid' : 'icon-check'}`} aria-hidden="true"></i>
               </div>
               <span className={styles.suggestionText}>{item.text}</span>
               {item.type === 'history' && (
@@ -377,10 +307,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     aria-label={`Remove ${item.text} from search history`}
                     title="Remove from history"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
+                    <i className="icon icon-close icon-sm" aria-hidden="true"></i>
                   </button>
                   <span className={styles.suggestionLabel}>Histórico</span>
                 </div>
@@ -392,6 +319,3 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     </div>
   );
 };
-
-// Fix for SVG Path component
-const Path: React.FC<{ d: string }> = ({ d }) => <path d={d} />;

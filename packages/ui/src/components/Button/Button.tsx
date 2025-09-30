@@ -54,25 +54,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {loading && (
           <span className={styles.loadingSpinner} aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" className={styles.spinner}>
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeDasharray="32"
-                strokeDashoffset="32"
-              >
-                <animate
-                  attributeName="stroke-dashoffset"
-                  values="32;0;32"
-                  dur="1.5s"
-                  repeatCount="indefinite"
-                />
-              </circle>
-            </svg>
+            <i className={`${styles.spinner} icon icon-spinner`}></i>
           </span>
         )}
         

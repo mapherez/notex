@@ -15,6 +15,9 @@ export * from './hooks/useSettings';
 // Theme
 export * from './ThemeProvider';
 
+// Icons (CSS classes available via global styles)
+// export * from './assets/icons';
+
 // Utilities (to be added)
 // export * from './utils';
 

@@ -223,19 +223,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
               aria-label={collapsed ? defaultLabels.expandFilters : defaultLabels.collapseFilters}
               aria-expanded={!collapsed}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={clsx(styles.collapseIcon, { [styles.collapsed]: collapsed })}
-              >
-                <polyline points="6,9 12,15 18,9" />
-              </svg>
+              <i className={clsx('icon', collapsed ? 'icon-chevron-down' : 'icon-chevron-up', styles.collapseIcon)} aria-hidden="true"></i>
             </button>
           )}
         </div>
@@ -378,20 +366,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
                 className={styles.clearButton}
                 disabled={loading}
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <i className="icon icon-close icon-sm" aria-hidden="true"></i>
                 {defaultLabels.clearFilters}
               </button>
             </div>
@@ -401,31 +376,7 @@ export const SearchFiltersComponent: React.FC<SearchFiltersProps> = ({
           {loading && (
             <div className={styles.loadingOverlay} aria-label={defaultLabels.loadingFilters}>
               <div className={styles.spinner}>
-                <svg className={styles.spinnerIcon} viewBox="0 0 24 24">
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                    strokeDasharray="32"
-                    strokeDashoffset="32"
-                  >
-                    <animate
-                      attributeName="stroke-dasharray"
-                      dur="2s"
-                      values="0 32;16 16;0 32;0 32"
-                      repeatCount="indefinite"
-                    />
-                    <animate
-                      attributeName="stroke-dashoffset"
-                      dur="2s"
-                      values="0;-16;-32;-32"
-                      repeatCount="indefinite"
-                    />
-                  </circle>
-                </svg>
+                <i className={`${styles.spinnerIcon} icon icon-spinner`} aria-hidden="true"></i>
               </div>
             </div>
           )}

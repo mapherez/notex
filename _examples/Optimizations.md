@@ -24,10 +24,6 @@
 - Add monitoring and analytics
 
 --------------------------------------------
-SVGs:
-
-- Extract all SVGs into single files, for reusability. Create a scss file listing all existing svg files, to turn them into classes that can be used in `i` elements
-
 Filters:
 
 - All filters need to be changed
