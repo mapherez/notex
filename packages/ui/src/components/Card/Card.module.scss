@@ -2,24 +2,26 @@
 // Uses CSS custom properties defined in global tokens
 
 .card {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
+  background: var(--surface1);
+  border: 1px solid var(--surface4);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
   transition: all 0.2s ease;
   cursor: default;
-  
+  box-shadow:
+    0 2.8px 2.2px hsl(var(--surface-shadow) / calc(var(--shadow-strength) + 0.03)),
+    0 6.7px 5.3px hsl(var(--surface-shadow) / calc(var(--shadow-strength) + 0.01));
+
   &[role="button"] {
     cursor: pointer;
-    
+
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      border-color: var(--color-border-default);
+      border-color: var(--surface3);
     }
-    
+
     &:focus-visible {
-      outline: 2px solid var(--color-accent-primary);
+      outline: 2px solid var(--brand);
       outline-offset: 2px;
     }
   }

@@ -15,34 +15,34 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-subtle);
+  background: var(--surface2);
+  border: 1px solid var(--surface4);
   border-radius: var(--radius-lg);
   transition: all 0.2s ease;
   min-height: var(--space-12);
 
   &:hover {
-    border-color: var(--color-border-default);
+    border-color: var(--surface3);
   }
 
   .container.active & {
-    border-color: var(--color-accent-primary);
-    box-shadow: 0 0 0 3px var(--color-accent-primary-alpha);
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px hsl(var(--brand-hue) var(--brand-saturation) var(--brand-lightness) / 0.1);
   }
 
   .container.loading & {
-    background: var(--color-bg-secondary);
+    background: var(--surface3);
   }
 }
 
 .searchIcon {
   margin-left: var(--space-md);
-  color: var(--color-text-tertiary);
+  color: var(--text2);
   flex-shrink: 0;
   transition: color 0.2s ease;
 
   .container.active & {
-    color: var(--color-accent-primary);
+    color: var(--brand);
   }
 }
 

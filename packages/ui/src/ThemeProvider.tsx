@@ -48,6 +48,7 @@ export function ThemeProvider({ children, defaultTheme = 'dim' }: ThemeProviderP
 
     const root = document.documentElement;
     root.setAttribute('data-theme', theme);
+    root.setAttribute('color-scheme', theme === 'light' ? 'light' : 'dark');
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme, mounted]);
 

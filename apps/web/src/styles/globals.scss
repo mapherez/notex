@@ -10,8 +10,8 @@
 
 html, body {
   @include body;
-  color: var(--color-text-primary);
-  background: var(--color-bg-tertiary);
+  color: var(--text1);
+  background: var(--surface1);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -37,8 +37,8 @@ html, body {
 
 // Navigation styles
 .site-header {
-  background: var(--color-bg-primary);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--surface4);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -271,9 +271,9 @@ html, body {
 }
 
 .modal-content {
-  background: var(--color-bg-primary);
+  background: var(--surface2);
   border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-xl);
+  @extend .rad-shadow;
   max-width: 400px;
   width: 100%;
   max-height: 90vh;

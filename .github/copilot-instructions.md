@@ -115,11 +115,13 @@ if (buttonConfig) {
 - ✅ **Add 'use client'** to components using React hooks
 - ✅ **Extract component config** to settings when applicable
 
-### **Icon System:**
-- ✅ **Use CSS classes**: `<i className="icon icon-name"></i>` for all icons
-- ✅ **Size variants**: `icon-sm`, `icon-lg`, `icon-xl` or Tailwind classes `w-4 h-4`
-- ✅ **Custom icons**: Data URI encoded in `packages/ui/src/tokens/_icons.scss`
-- ❌ **Never use**: Inline SVG or `<img>` tags for icons
+### **Color Scheme System:**
+- ✅ **HSL Foundation**: Brand color broken into hue/saturation/lightness components
+- ✅ **Multiple Themes**: Light, dark, and dim variants with calculated color adjustments
+- ✅ **Automatic Detection**: `prefers-color-scheme` media queries for user preference
+- ✅ **Attribute Switching**: `[color-scheme="light|dark|dim"]` for manual theme control
+- ✅ **Theme-Aware Shadows**: `.rad-shadow` utility with adaptive colors and strength
+- ✅ **Accessibility Classes**: `.surface1/.surface2/.surface3/.surface4` for guaranteed contrast
 
 ### **Modal Overlays:**
 - ✅ **Structure**: `modal-overlay` → `modal-content` → `modal-header` + `modal-body`
@@ -384,6 +386,7 @@ import React from 'react';
 - ✅ **Localization works**: Switch between pt-PT and en-US
 - ✅ **Settings load**: Check browser console for settings loading
 - ✅ **Icons render**: Verify icon classes display correctly across themes
+- ✅ **Color schemes work**: Test light/dark/dim themes and `prefers-color-scheme` auto-switching
 - ✅ **Responsive design**: Test on different screen sizes
 
 ---
