@@ -34,3 +34,7 @@ Modal:
 
 Colors:
 <https://web.dev/articles/building/a-color-scheme#dark_colors_all_together>
+
+Card edit:
+
+- Editing a card's difficulty doesn't work (always says beginner) - wrong field being updated.
