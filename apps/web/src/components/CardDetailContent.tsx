@@ -145,7 +145,7 @@ export function CardDetailContent() {
   });
 
   return (
-    <main className={styles.container}>
+    <main className={styles.container} data-content-type="text-heavy">
       <div className={styles.main}>
         {/* Breadcrumb */}
         <nav className={styles.breadcrumb}>

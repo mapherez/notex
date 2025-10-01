@@ -1,0 +1,193 @@
+// Design Tokens - Responsive Utilities
+// Breakpoints and responsive utilities for mobile-first design
+
+:root {
+  // Breakpoints (mobile-first, em units for accessibility)
+  --breakpoint-mobile: 23.4375rem;   // 375px (small mobile)
+  --breakpoint-tablet: 48rem;        // 768px
+  --breakpoint-desktop: 64rem;       // 1024px
+  --breakpoint-large: 80rem;         // 1280px
+  --breakpoint-xl: 90rem;           // 1440px
+
+  // Container widths (max-widths for content)
+  --container-mobile: 100vw;
+  --container-tablet: 100vw;
+  --container-desktop: 64rem;        // 1024px
+  --container-large: 80rem;          // 1280px
+  --container-xl: 90rem;             // 1440px
+
+  // Responsive container
+  --container-max-width: var(--container-mobile);
+
+  @media (min-width: 48rem) {
+    --container-max-width: var(--container-tablet);
+  }
+
+  @media (min-width: 64rem) {
+    --container-max-width: var(--container-desktop);
+  }
+
+  @media (min-width: 80rem) {
+    --container-max-width: var(--container-large);
+  }
+
+  @media (min-width: 90rem) {
+    --container-max-width: var(--container-xl);
+  }
+}
+
+// Responsive utility classes
+.container {
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding-left: var(--space-friends);
+  padding-right: var(--space-friends);
+
+  @media (min-width: 48rem) {
+    padding-left: var(--space-acquaintances);
+    padding-right: var(--space-acquaintances);
+  }
+
+  @media (min-width: 64rem) {
+    padding-left: var(--space-strangers);
+    padding-right: var(--space-strangers);
+  }
+}
+
+// Content-aware containers
+.container-text-heavy {
+  @extend .container;
+  --container-max-width: 50rem; // Optimal for 50-75 chars/line at 20px font
+}
+
+.container-interaction-heavy {
+  @extend .container;
+  --container-max-width: var(--container-xl); // Full width for interactions
+}
+
+// Content-type aware responsive behavior
+[data-content-type="text-heavy"] {
+  .container {
+    --container-max-width: 50rem;
+  }
+  
+  .text-responsive {
+    @include body-large;
+  }
+}
+
+[data-content-type="interaction-heavy"] {
+  .container {
+    --container-max-width: var(--container-xl);
+  }
+  
+  .text-responsive {
+    @include body;
+  }
+}
+
+// Responsive spacing utilities
+.space-responsive {
+  padding: var(--space-friends);
+
+  @media (min-width: 48rem) {
+    padding: var(--space-acquaintances);
+  }
+
+  @media (min-width: 64rem) {
+    padding: var(--space-strangers);
+  }
+}
+
+// Flex utilities
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-responsive {
+  gap: var(--space-best-friends);
+
+  @media (min-width: 48rem) {
+    gap: var(--space-friends);
+  }
+
+  @media (min-width: 64rem) {
+    gap: var(--space-acquaintances);
+  }
+}
+
+// Grid system (8-point based)
+.grid {
+  display: grid;
+  gap: var(--space-friends);
+  grid-template-columns: 1fr;
+
+  @media (min-width: 48rem) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-acquaintances);
+  }
+
+  @media (min-width: 64rem) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-strangers);
+  }
+}
+
+.grid-2 {
+  display: grid;
+  gap: var(--space-friends);
+  grid-template-columns: 1fr;
+
+  @media (min-width: 48rem) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.grid-3 {
+  display: grid;
+  gap: var(--space-friends);
+  grid-template-columns: 1fr;
+
+  @media (min-width: 48rem) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 64rem) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.grid-4 {
+  display: grid;
+  gap: var(--space-friends);
+  grid-template-columns: 1fr;
+
+  @media (min-width: 48rem) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 64rem) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

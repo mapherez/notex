@@ -127,7 +127,7 @@ export function CardEditor({ card, onSave, onCancel, isLoading = false, userProf
   const difficultyOptions = settings?.HOMEPAGE?.difficultyOptions || [];
 
   return (
-    <div className={styles.cardEditor}>
+    <div className={styles.cardEditor} data-content-type="interaction-heavy">
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.header}>
           <h1>{card ? localize('EDIT_CARD') : localize('CREATE_CARD')}</h1>

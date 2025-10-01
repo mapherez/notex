@@ -1,5 +1,5 @@
 // Design Tokens - Typography
-// Modern, accessible typography scale
+// Mobile-first responsive typography with content-aware sizing
 
 :root {
   // Font families
@@ -17,26 +17,96 @@
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  // Font sizes (using rem for accessibility)
+  // Mobile-first font sizes (start with mobile, scale up)
+  // Base: 16px (mobile body text, meets iOS/Android minimums)
+
+  // Content-aware base sizes
+  --font-size-body-mobile: 1rem;       // 16px - Mobile body (iOS/Android standard)
+  --font-size-body-tablet: 1.125rem;   // 18px - Tablet body
+  --font-size-body-desktop: 1rem;   // 16px - Desktop body (text-heavy)
+  --font-size-body-desktop-compact: 1rem; // 16px - Desktop interaction-heavy
+
+  // Minimal 4-size scale (mobile-first)
+  --font-size-caption: 0.875rem;       // 14px - Secondary text, captions
+  --font-size-body: var(--font-size-body-mobile);     // 16px+ - Primary content
+  --font-size-heading: 1.5rem;         // 24px+ - Headings, titles
+  --font-size-display: 2rem;           // 32px+ - Hero text, large headings
+
+  // Platform-specific minimums (critical for usability)
+  --font-size-input-min: 1rem;         // 16px - Prevents iOS zoom
+  --font-size-touch-min: 2.75rem;      // 44px - iOS touch targets
+
+  // Responsive scaling (mobile-first approach)
+  @media (min-width: 48rem) { /* Tablet: 768px+ */
+    --font-size-body: var(--font-size-body-tablet);
+    --font-size-heading: 1.75rem;     // 28px
+    --font-size-display: 2.5rem;      // 40px
+  }
+
+  @media (min-width: 64rem) { /* Desktop: 1024px+ */
+    --font-size-body: var(--font-size-body-desktop);
+    --font-size-heading: 2rem;        // 32px
+    --font-size-display: 3rem;        // 48px
+  }
+
+  @media (min-width: 80rem) { /* Large Desktop: 1280px+ */
+    --font-size-body: var(--font-size-body-desktop);
+    --font-size-heading: 2.25rem;     // 36px
+    --font-size-display: 3.5rem;      // 56px
+  }
+
+  // Content-type overrides (text-heavy vs interaction-heavy)
+  // Use data attributes or classes to switch: [data-content-type="text-heavy"]
+  [data-content-type="text-heavy"] {
+    --font-size-body: var(--font-size-body-desktop); /* Larger for reading */
+  }
+
+  [data-content-type="interaction-heavy"] {
+    --font-size-body: var(--font-size-body-desktop-compact); /* Smaller for scanning */
+  }
+
+  // Legacy compatibility (gradual migration)
   --font-size-xs: 0.75rem;     // 12px
-  --font-size-sm: 0.875rem;    // 14px
-  --font-size-base: 1rem;      // 16px
+  --font-size-sm: var(--font-size-caption);    // 14px
+  --font-size-base: var(--font-size-body);     // 16px+
   --font-size-md: 1.125rem;    // 18px
-  --font-size-lg: 1.25rem;     // 20px
+  --font-size-lg: var(--font-size-heading);    // 24px+
   --font-size-xl: 1.5rem;      // 24px
-  --font-size-2xl: 1.875rem;   // 30px
+  --font-size-2xl: var(--font-size-display);   // 32px+
   --font-size-3xl: 2.25rem;    // 36px
   --font-size-4xl: 3rem;       // 48px
   --font-size-5xl: 3.75rem;    // 60px
 
-  // Line heights
+  // Line heights (optimized for reading, 50-75 characters per line)
+  --line-height-caption: 1.4;    // Tighter for secondary text
+  --line-height-body: 1.6;       // Optimal for reading (mobile)
+  --line-height-body-tablet: 1.65; // Slightly looser on tablet
+  --line-height-body-desktop: 1.7;  // Comfortable desktop reading
+  --line-height-heading: 1.2;    // Tight for headings
+  --line-height-display: 1.1;    // Very tight for large display text
+
+  // Responsive line heights
+  @media (min-width: 48rem) { /* Tablet */
+    --line-height-body: var(--line-height-body-tablet);
+  }
+
+  @media (min-width: 64rem) { /* Desktop */
+    --line-height-body: var(--line-height-body-desktop);
+  }
+
+  // Letter spacing
+  --letter-spacing-caption: 0.01em;   // Slightly loose for readability
+  --letter-spacing-body: 0;           // Normal for body text
+  --letter-spacing-heading: -0.02em;  // Tighter for headings
+  --letter-spacing-display: -0.03em;  // Very tight for large text
+
+  // Legacy compatibility
   --line-height-tight: 1.25;
   --line-height-snug: 1.375;
-  --line-height-normal: 1.5;
+  --line-height-normal: var(--line-height-body);
   --line-height-relaxed: 1.625;
   --line-height-loose: 2;
 
-  // Letter spacing
   --letter-spacing-tighter: -0.05em;
   --letter-spacing-tight: -0.025em;
   --letter-spacing-normal: 0;
@@ -45,61 +115,76 @@
   --letter-spacing-widest: 0.1em;
 }
 
-// Typography utilities
+// Typography utilities (responsive and content-aware)
 @mixin heading-1 {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-3xl);
+  font-size: var(--font-size-display);
   font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-tight);
-  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-display);
+  letter-spacing: var(--letter-spacing-display);
 }
 
 @mixin heading-2 {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-heading);
   font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-snug);
-  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-heading);
+  letter-spacing: var(--letter-spacing-heading);
 }
 
 @mixin heading-3 {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-xl);
+  font-size: calc(var(--font-size-heading) * 0.875); // 0.875 ratio
   font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-snug);
+  line-height: var(--line-height-heading);
+  letter-spacing: var(--letter-spacing-heading);
 }
 
 @mixin heading-4 {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-lg);
+  font-size: calc(var(--font-size-heading) * 0.75); // 0.75 ratio
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-normal);
+  line-height: var(--line-height-heading);
+  letter-spacing: var(--letter-spacing-heading);
 }
 
 @mixin body-large {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-md);
+  font-size: calc(var(--font-size-body) * 1.125); // Larger body for emphasis
   font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-relaxed);
+  line-height: var(--line-height-body);
+  letter-spacing: var(--letter-spacing-body);
 }
 
 @mixin body {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-normal);
+  line-height: var(--line-height-body);
+  letter-spacing: var(--letter-spacing-body);
 }
 
 @mixin body-small {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-normal);
+  line-height: var(--line-height-caption);
+  letter-spacing: var(--letter-spacing-caption);
+}
+
+@mixin caption {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-caption);
+  letter-spacing: var(--letter-spacing-caption);
+  opacity: 0.8; // Secondary text styling
 }
 
 @mixin code {
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-normal);
+  line-height: var(--line-height-caption);
+  letter-spacing: 0.02em; // Slightly loose for code
 }

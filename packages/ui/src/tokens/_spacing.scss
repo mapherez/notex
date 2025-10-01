@@ -1,47 +1,112 @@
 // Design Tokens - Spacing
-// Consistent spacing scale
+// 8-point grid system with spacing friendship and responsive design
 
 :root {
-  --space-xs: 0.25rem;   // 4px
-  --space-sm: 0.5rem;    // 8px
-  --space-md: 1rem;      // 16px
-  --space-lg: 1.5rem;    // 24px
-  --space-xl: 2rem;      // 32px
-  --space-2xl: 3rem;     // 48px
+  // Base spacing unit (8px = 0.5rem at 16px base)
+  --space-unit: 0.5rem;  // 8px
 
-  // Additional spacing for components
-  --space-1: 0.25rem;    // 4px
-  --space-2: 0.5rem;     // 8px
-  --space-3: 0.75rem;    // 12px
-  --space-4: 1rem;       // 16px
-  --space-5: 1.25rem;    // 20px
-  --space-6: 1.5rem;     // 24px
-  --space-8: 2rem;       // 32px
-  --space-10: 2.5rem;    // 40px
-  --space-12: 3rem;      // 48px
+  // 8-Point Grid System (multiples of 8px)
+  --space-1: 0.0625rem;  // 1px - Micro interactions
+  --space-2: 0.125rem;   // 2px - Borders, hairlines
+  --space-4: 0.25rem;    // 4px - Small gaps
+  --space-8: 0.5rem;     // 8px - Best friends (closely related)
+  --space-12: 0.75rem;   // 12px - Component internals
+  --space-16: 1rem;      // 16px - Friends (related elements)
+  --space-20: 1.25rem;   // 20px - Medium spacing
+  --space-24: 1.5rem;    // 24px - Acquaintances (less related)
+  --space-32: 2rem;      // 32px - Large sections
+  --space-40: 2.5rem;    // 40px - Major sections
+  --space-48: 3rem;      // 48px - Page sections
+  --space-56: 3.5rem;    // 56px - Hero spacing
+  --space-64: 4rem;      // 64px - Large hero elements
 
-  // Border radius
+  // Spacing Friendship System (semantic naming)
+  --space-best-friends: var(--space-8);    // 8px - Heading + description, icon + label
+  --space-friends: var(--space-16);        // 16px - Card content, form groups
+  --space-acquaintances: var(--space-24);  // 24px - Card to card, section breaks
+  --space-strangers: var(--space-32);      // 32px - Major layout divisions
+
+  // Dynamic Spacing Base Units (0.75x - 1.25x ratios)
+  --space-base-compact: calc(var(--space-unit) * 0.75);   // 6px - Dense layouts
+  --space-base-normal: var(--space-unit);                 // 8px - Standard spacing
+  --space-base-relaxed: calc(var(--space-unit) * 1.25);   // 10px - Spacious layouts
+
+  // Legacy compatibility (gradual migration)
+  --space-xs: var(--space-4);
+  --space-sm: var(--space-8);
+  --space-md: var(--space-16);
+  --space-lg: var(--space-24);
+  --space-xl: var(--space-32);
+  --space-2xl: var(--space-48);
+
+  // Responsive Spacing (scales with viewport)
+  // Mobile-first: base values, then scale up for larger screens
+
+  // Tablet (768px+)
+  @media (min-width: 48rem) {
+    --space-best-friends: calc(var(--space-8) * 1.125);   // 9px
+    --space-friends: calc(var(--space-16) * 1.125);       // 18px
+    --space-acquaintances: calc(var(--space-24) * 1.125); // 27px
+    --space-strangers: calc(var(--space-32) * 1.125);     // 36px
+  }
+
+  // Desktop (1024px+)
+  @media (min-width: 64rem) {
+    --space-best-friends: calc(var(--space-8) * 1.25);   // 10px (more conservative)
+    --space-friends: calc(var(--space-16) * 1.25);       // 20px (more conservative)
+    --space-acquaintances: calc(var(--space-24) * 1.25); // 30px (more conservative)
+    --space-strangers: calc(var(--space-32) * 1.25);     // 40px (more conservative)
+  }
+
+  // Large Desktop (1280px+)
+  @media (min-width: 80rem) {
+    --space-best-friends: var(--space-12);   // 12px
+    --space-friends: var(--space-20);        // 20px
+    --space-acquaintances: var(--space-32);  // 32px
+    --space-strangers: var(--space-48);      // 48px
+  }
+
+  // Border radius (8-point grid aligned)
   --radius-none: 0;
-  --radius-sm: 0.125rem;  // 2px
-  --radius: 0.25rem;      // 4px
-  --radius-md: 0.375rem;  // 6px
-  --radius-lg: 0.5rem;    // 8px
-  --radius-xl: 0.75rem;   // 12px
-  --radius-2xl: 1rem;     // 16px
-  --radius-3xl: 1.5rem;   // 24px
-  --radius-full: 9999px;
+  --radius-2: 0.125rem;   // 2px - Small elements
+  --radius-4: 0.25rem;    // 4px - Buttons, inputs
+  --radius-6: 0.375rem;   // 6px - Interactive elements
+  --radius-8: 0.5rem;     // 8px - Cards, containers
+  --radius-12: 0.75rem;   // 12px - Large cards
+  --radius-16: 1rem;      // 16px - Modals, large containers
+  --radius-24: 1.5rem;    // 24px - Hero elements
+  --radius-full: 9999px;  // Pills, avatars
 
-  // Component radius
-  --radius-interactive: var(--radius-md);
-  --radius-card: var(--radius-lg);
-  --radius-modal: var(--radius-xl);
+  // Component radius (semantic mapping)
+  --radius-interactive: var(--radius-6);  // Buttons, inputs
+  --radius-card: var(--radius-8);         // Cards, panels
+  --radius-modal: var(--radius-12);       // Modals, dialogs
+  --radius-hero: var(--radius-16);        // Hero sections
 
-  // Shadows
-  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-  --shadow-2xl: 0 50px 100px -20px rgb(0 0 0 / 0.25);
+  // Legacy compatibility
+  --radius-sm: var(--radius-4);
+  --radius: var(--radius-4);
+  --radius-md: var(--radius-6);
+  --radius-lg: var(--radius-8);
+  --radius-xl: var(--radius-12);
+  --radius-2xl: var(--radius-16);
+  --radius-3xl: var(--radius-24);
+
+  // Shadows (theme-aware with 8-point grid alignment)
+  --shadow-2: 0 1px 2px 0 rgb(0 0 0 / 0.05);     // Subtle depth
+  --shadow-4: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-8: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-12: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-16: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-24: 0 25px 50px -12px rgb(0 0 0 / 0.25);  // Large elements
+  --shadow-32: 0 50px 100px -20px rgb(0 0 0 / 0.25);  // Hero elements
+
+  // Legacy compatibility
+  --shadow-xs: var(--shadow-2);
+  --shadow-sm: var(--shadow-4);
+  --shadow: var(--shadow-8);
+  --shadow-md: var(--shadow-12);
+  --shadow-lg: var(--shadow-16);
+  --shadow-xl: var(--shadow-24);
+  --shadow-2xl: var(--shadow-32);
 }

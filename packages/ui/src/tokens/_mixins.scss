@@ -3,58 +3,81 @@
 
 @mixin heading-1 {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-3xl);
+  font-size: var(--font-size-display);
   font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-tight);
-  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-display);
+  letter-spacing: var(--letter-spacing-display);
 }
 
 @mixin heading-2 {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-heading);
   font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-snug);
-  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-heading);
+  letter-spacing: var(--letter-spacing-heading);
 }
 
 @mixin heading-3 {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-xl);
+  font-size: calc(var(--font-size-heading) * 0.875);
   font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-snug);
+  line-height: var(--line-height-heading);
+  letter-spacing: var(--letter-spacing-heading);
 }
 
 @mixin heading-4 {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-lg);
+  font-size: calc(var(--font-size-heading) * 0.75);
   font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-normal);
+  line-height: var(--line-height-heading);
+  letter-spacing: var(--letter-spacing-heading);
 }
 
 @mixin body-large {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-md);
+  font-size: calc(var(--font-size-body) * 1.125);
   font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-relaxed);
+  line-height: var(--line-height-body);
+  letter-spacing: var(--letter-spacing-body);
 }
 
 @mixin body {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-normal);
+  line-height: var(--line-height-body);
+  letter-spacing: var(--letter-spacing-body);
 }
 
 @mixin body-small {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-normal);
+  line-height: var(--line-height-caption);
+  letter-spacing: var(--letter-spacing-caption);
+}
+
+@mixin body-xs {
+  font-family: var(--font-family-sans);
+  font-size: calc(var(--font-size-caption) * 0.875);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-caption);
+  letter-spacing: var(--letter-spacing-caption);
+}
+
+@mixin caption {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-caption);
+  letter-spacing: var(--letter-spacing-caption);
+  opacity: 0.8;
 }
 
 @mixin code {
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-normal);
+  line-height: var(--line-height-caption);
+  letter-spacing: 0.02em;
 }

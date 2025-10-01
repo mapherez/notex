@@ -137,7 +137,7 @@ export function HomePageContent() {
   }
 
   return (
-    <div className="homepage-content">
+    <div className="homepage-content" data-content-type="text-heavy">
       {/* Recent Cards Section */}
       <div className="recent-cards">
         {loading ? (

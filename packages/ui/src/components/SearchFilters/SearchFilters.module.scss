@@ -1,6 +1,8 @@
 // SearchFilters Component Styles
 // Collapsible sidebar with filter options and responsive design
 
+@import '../../tokens/mixins';
+
 .container {
   background: var(--surface3);
   border: 1px solid var(--surface4);
@@ -19,7 +21,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-md);
+  padding: var(--space-friends);
   border-bottom: 1px solid var(--surface4);
   background: var(--surface2);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
@@ -31,8 +33,7 @@
 }
 
 .title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  @include heading-4;
   color: var(--text1);
   margin: 0;
 }
@@ -40,7 +41,7 @@
 .headerActions {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-best-friends);
 }
 
 .activeCount {
@@ -52,9 +53,9 @@
   background: var(--brand);
   color: white;
   border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  padding: 0 var(--space-xs);
+  @include body-xs;
+  font-weight: var(--weight-medium);
+  padding: 0 var(--space-best-friends);
 }
 
 .collapseButton {
@@ -63,7 +64,7 @@
   justify-content: center;
   background: none;
   border: none;
-  padding: var(--space-xs);
+  padding: var(--space-best-friends);
   color: var(--text2);
   cursor: pointer;
   border-radius: var(--radius-sm);
@@ -89,7 +90,7 @@
 }
 
 .content {
-  padding: var(--space-md);
+  padding: var(--space-friends);
   background: var(--surface3);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   
@@ -100,7 +101,7 @@
 
 // Filter Groups
 .filterGroup {
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-strangers);
   
   &:last-child {
     margin-bottom: 0;
@@ -108,25 +109,25 @@
 }
 
 .filterTitle {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
+  @include body;
+  font-weight: var(--weight-medium);
   color: var(--text1);
-  margin: 0 0 var(--space-sm) 0;
+  margin: 0 0 var(--space-best-friends) 0;
 }
 
 .filterOptions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-best-friends);
 }
 
 // Checkbox Styling
 .checkboxLabel {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-best-friends);
   cursor: pointer;
-  padding: var(--space-xs) var(--space-sm);
+  padding: var(--space-best-friends) var(--space-best-friends);
   border-radius: var(--radius-md);
   transition: background-color 0.15s ease;
   
@@ -198,20 +199,20 @@
 }
 
 .optionCount {
-  font-size: var(--font-size-xs);
+  @include body-xs;
   color: var(--text2);
-  font-weight: var(--font-weight-normal);
-  margin-left: var(--space-xs);
+  font-weight: var(--weight-normal);
+  margin-left: var(--space-best-friends);
 }
 
 .showMoreButton {
   background: none;
   border: none;
   color: var(--brand);
-  font-size: var(--font-size-sm);
+  @include body-small;
   cursor: pointer;
-  padding: var(--space-xs) var(--space-sm);
-  margin-top: var(--space-xs);
+  padding: var(--space-best-friends) var(--space-best-friends);
+  margin-top: var(--space-best-friends);
   border-radius: var(--radius-md);
   transition: background-color 0.15s ease;
   
@@ -229,23 +230,23 @@
 .dateRange {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-best-friends);
 }
 
 .dateInput {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-best-friends);
 }
 
 .dateLabel {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  @include body-small;
+  font-weight: var(--weight-medium);
   color: var(--text2);
 }
 
 .dateField {
-  padding: var(--space-sm);
+  padding: var(--space-best-friends);
   border: 1px solid var(--surface4);
   border-radius: var(--radius-md);
   background: var(--surface3);
@@ -283,21 +284,21 @@
 
 // Actions Section
 .actions {
-  margin-top: var(--space-lg);
-  padding-top: var(--space-md);
+  margin-top: var(--space-strangers);
+  padding-top: var(--space-friends);
   border-top: 1px solid var(--surface4);
 }
 
 .clearButton {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-best-friends);
   background: none;
   border: 1px solid var(--surface4);
   color: var(--text2);
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-best-friends) var(--space-friends);
   border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
+  @include body-small;
   cursor: pointer;
   transition: all 0.2s ease;
   width: 100%;
@@ -361,7 +362,7 @@
   }
   
   .content {
-    padding: var(--space-sm);
+    padding: var(--space-best-friends);
   }
   
   .dateRange {
@@ -376,7 +377,7 @@
   }
   
   .header {
-    padding: var(--space-sm) var(--space-md);
+    padding: var(--space-best-friends) var(--space-friends);
   }
   
   .title {
@@ -384,7 +385,7 @@
   }
   
   .dateRange {
-    gap: var(--space-xs);
+    gap: var(--space-best-friends);
   }
   
   .dateInput {

@@ -36,7 +36,7 @@
 }
 
 .searchIcon {
-  margin-left: var(--space-md);
+  margin-left: var(--space-friends);
   color: var(--text2);
   flex-shrink: 0;
   transition: color 0.2s ease;
@@ -51,18 +51,18 @@
   border: none;
   outline: none;
   background: transparent;
-  padding: var(--space-md) var(--space-sm);
+  padding: var(--space-friends) var(--space-best-friends);
   font-size: var(--text-base);
   font-family: inherit;
-  color: var(--color-text-primary);
+  color: var(--text1);
   line-height: 1.5;
 
   &::placeholder {
-    color: var(--color-text-tertiary);
+    color: var(--text3);
   }
 
   &:focus::placeholder {
-    color: var(--color-text-quaternary);
+    color: var(--text4);
   }
 }
 
@@ -72,21 +72,21 @@
   justify-content: center;
   background: none;
   border: none;
-  padding: var(--space-xs);
-  margin-right: var(--space-xs);
-  color: var(--color-text-tertiary);
+  padding: var(--space-best-friends);
+  margin-right: var(--space-best-friends);
+  color: var(--text3);
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: all 0.2s ease;
   flex-shrink: 0;
 
   &:hover {
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-secondary);
+    background: var(--surface3);
+    color: var(--text2);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-accent-primary);
+    outline: 2px solid var(--brand);
     outline-offset: 2px;
   }
 }
@@ -94,9 +94,9 @@
 .shortcutHint {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  margin-right: var(--space-md);
-  color: var(--color-text-tertiary);
+  gap: var(--space-best-friends);
+  margin-right: var(--space-friends);
+  color: var(--text3);
   font-size: var(--text-sm);
   flex-shrink: 0;
 
@@ -106,9 +106,9 @@
     justify-content: center;
     min-width: var(--space-5);
     height: var(--space-5);
-    padding: 0 var(--space-xs);
-    background: var(--color-bg-tertiary);
-    border: 1px solid var(--color-border-subtle);
+    padding: 0 var(--space-best-friends);
+    background: var(--surface3);
+    border: 1px solid var(--surface4);
     border-radius: var(--radius-xs);
     font-size: var(--text-xs);
     font-family: ui-monospace, 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
@@ -117,8 +117,8 @@
 }
 
 .spinner {
-  margin-right: var(--space-md);
-  color: var(--color-accent-primary);
+  margin-right: var(--space-friends);
+  color: var(--brand);
   flex-shrink: 0;
 }
 
@@ -144,14 +144,14 @@
   left: 0;
   right: 0;
   z-index: 50;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-default);
+  background: var(--surface1);
+  border: 1px solid var(--surface4);
   border-radius: var(--radius-lg);
-  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  margin-top: var(--space-xs);
+  box-shadow: var(--shadow-8);
+  margin-top: var(--space-best-friends);
   max-height: 300px;
   overflow-y: auto;
-  padding: var(--space-xs) 0;
+  padding: var(--space-best-friends) 0;
 
   // Scrollbar styling
   &::-webkit-scrollbar {
@@ -163,43 +163,43 @@
   }
 
   &::-webkit-scrollbar-thumb {
-    background: var(--color-border-default);
+    background: var(--surface4);
     border-radius: 3px;
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background: var(--color-border-strong);
+    background: var(--surface3);
   }
 }
 
 .suggestion {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
+  gap: var(--space-best-friends);
+  padding: var(--space-best-friends) var(--space-friends);
   cursor: pointer;
   transition: background-color 0.15s ease;
-  margin: 0 var(--space-xs);
+  margin: 0 var(--space-best-friends);
   border-radius: var(--radius-md);
 
   &:hover,
   &.selected {
-    background: var(--color-bg-secondary);
+    background: var(--surface2);
   }
 
   &.selected {
-    background: var(--color-accent-primary-subtle);
+    background: hsl(var(--brand-hue) var(--brand-saturation) var(--brand-lightness) / 0.1);
   }
 
   &.history {
     .suggestionIcon {
-      color: var(--color-text-tertiary);
+      color: var(--text3);
     }
   }
 }
 
 .suggestionIcon {
-  color: var(--color-text-secondary);
+  color: var(--text2);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -208,7 +208,7 @@
 .suggestionText {
   flex: 1;
   font-size: var(--text-base);
-  color: var(--color-text-primary);
+  color: var(--text1);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -217,7 +217,7 @@
 
 .suggestionLabel {
   font-size: var(--text-xs);
-  color: var(--color-text-tertiary);
+  color: var(--text3);
   font-weight: var(--weight-medium);
   flex-shrink: 0;
 }
@@ -225,7 +225,7 @@
 .historyActions {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-best-friends);
   flex-shrink: 0;
 }
 
@@ -237,20 +237,20 @@
   height: 20px;
   border: none;
   background: transparent;
-  color: var(--color-text-tertiary);
+  color: var(--text3);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.15s ease;
   opacity: 0.6;
 
   &:hover {
-    background: var(--color-bg-tertiary);
-    color: var(--color-text-secondary);
+    background: var(--surface3);
+    color: var(--text2);
     opacity: 1;
   }
 
   &:active {
-    background: var(--color-bg-hover);
+    background: var(--surface4);
   }
 
   svg {

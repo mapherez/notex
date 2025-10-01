@@ -93,7 +93,7 @@ function CardsPageContent() {
   }
 
   return (
-    <main className="container">
+    <main className="container" data-content-type="text-heavy">
       <div className="main">
         <h1>{localize('CARDS_PAGE_TITLE')}</h1>
         <p>{localize('CARDS_PAGE_DESCRIPTION')}</p>
