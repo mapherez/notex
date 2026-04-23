@@ -1,0 +1,14 @@
+{
+  "productName": "NoteX",
+  "defaultSettings": {
+    "theme": "dark",
+    "language": "pt",
+    "username": "Ricardo",
+    "startupPage": "/",
+    "preferredLayout": "list"
+  },
+  "storage": {
+    "quotaGb": 10,
+    "usedGb": 6.8
+  }
+}

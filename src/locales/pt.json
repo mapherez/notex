@@ -1,0 +1,294 @@
+{
+  "common": {
+    "back": "Voltar",
+    "saved": "Guardado",
+    "today": "Hoje",
+    "yesterday": "Ontem",
+    "viewAll": "Ver todas",
+    "viewAllTags": "Ver todas as tags",
+    "viewAllActivity": "Ver toda a atividade",
+    "add": "Adicionar",
+    "open": "Abrir",
+    "close": "Fechar",
+    "more": "Mais opções",
+    "copy": "Copiar",
+    "favorite": "Favorito",
+    "unfavorite": "Remover favorito",
+    "empty": "Ainda não há notas para mostrar.",
+    "import": "Importar",
+    "export": "Exportar"
+  },
+  "navigation": {
+    "home": "Início",
+    "notes": "Notas",
+    "favorites": "Favoritos",
+    "recent": "Recentes",
+    "trash": "Lixeira",
+    "collections": "Coleções",
+    "profile": "Perfil",
+    "newNote": "Nova nota",
+    "seeMore": "Ver mais",
+    "storage": "Armazenamento",
+    "storageUsed": "6.8 GB usados",
+    "storageLimit": "de 10 GB",
+    "storagePercent": "68%",
+    "collapse": "Recolher menu",
+    "expand": "Abrir menu"
+  },
+  "topbar": {
+    "searchPlaceholder": "Pesquisar notas, títulos, etiquetas...",
+    "keyboardHint": "⌘ K",
+    "theme": "Alternar tema",
+    "notifications": "Notificações",
+    "account": "Conta"
+  },
+  "dashboard": {
+    "greeting": "Olá, Ricardo 👋",
+    "subtitle": "Aqui está o teu conhecimento organizado.",
+    "stats": {
+      "notes": "Notas",
+      "favorites": "Favoritos",
+      "collections": "Coleções",
+      "tags": "Tags",
+      "notesDelta": "+ 12 esta semana",
+      "favoritesDelta": "+ 3 esta semana",
+      "collectionsDelta": "Sem alterações",
+      "tagsDelta": "+ 5 esta semana"
+    },
+    "recentNotes": "Notas recentes",
+    "quickCapture": {
+      "title": "Captura rápida",
+      "placeholder": "Escreve algo rapidamente...",
+      "submit": "Guardar captura",
+      "format": "Lista",
+      "image": "Imagem",
+      "task": "Tarefa",
+      "voice": "Voz"
+    },
+    "popularTags": "Tags populares",
+    "recentActivity": "Atividade recente"
+  },
+  "notes": {
+    "title": "Notas",
+    "subtitle": "Todas as tuas notas ativas, organizadas por atualização.",
+    "favoritesTitle": "Favoritos",
+    "favoritesSubtitle": "Notas marcadas para acesso rápido.",
+    "recentTitle": "Recentes",
+    "recentSubtitle": "Notas abertas ou editadas recentemente.",
+    "trashTitle": "Lixeira",
+    "trashSubtitle": "Notas removidas que ainda podes recuperar.",
+    "collectionsTitle": "Coleções",
+    "collectionsSubtitle": "Agrupa conhecimento por áreas de trabalho.",
+    "allNotes": "Todas as notas",
+    "restore": "Restaurar",
+    "moveToTrash": "Mover para a lixeira",
+    "updated": "Atualizada",
+    "created": "Criada"
+  },
+  "noteDetail": {
+    "collectionLabel": "Coleção",
+    "summary": "Resumo",
+    "explanation": "Explicação",
+    "usageExamples": "Exemplos de uso",
+    "tip": "Dica",
+    "metadata": "Informações",
+    "createdAt": "Criada em",
+    "updatedAt": "Editada em",
+    "author": "Autor",
+    "tags": "Tags",
+    "addTag": "Adicionar tag",
+    "additionalExamples": "Exemplos adicionais",
+    "addExample": "Adicionar exemplo",
+    "relatedLinks": "Ligada a",
+    "addLink": "Adicionar ligação",
+    "words": "palavras",
+    "characters": "caracteres",
+    "readingTime": "Tempo de leitura: {{count}} min",
+    "lastEdit": "Última edição há 2 h",
+    "table": {
+      "expression": "Expressão",
+      "meaning": "Significado",
+      "example": "Exemplo"
+    }
+  },
+  "profile": {
+    "title": "Perfil",
+    "subtitle": "Gerencia a tua conta, preferências e dados pessoais.",
+    "connectedWith": "Conectado com Google",
+    "statistics": "Estatísticas",
+    "stats": {
+      "notes": "Notas criadas",
+      "collections": "Coleções",
+      "favorites": "Favoritos",
+      "lastActivity": "Última atividade",
+      "streak": "Sequência de dias",
+      "storage": "Armazenamento usado"
+    },
+    "preferences": {
+      "title": "Preferências",
+      "theme": "Tema",
+      "themeDescription": "Escolhe o tema da aplicação",
+      "language": "Idioma",
+      "languageDescription": "Define o idioma da interface",
+      "layout": "Layout preferido",
+      "layoutDescription": "Escolhe como queres ver as tuas notas",
+      "startup": "Página inicial",
+      "startupDescription": "Escolhe a página que será aberta ao iniciar",
+      "dark": "Dark",
+      "light": "Light",
+      "portuguese": "Português",
+      "english": "English",
+      "list": "Lista",
+      "grid": "Grelha",
+      "latestNotes": "Últimas notas"
+    },
+    "organization": {
+      "title": "Organização pessoal",
+      "favoriteTags": "Tags favoritas",
+      "favoriteTagsDescription": "As tags que usas com mais frequência",
+      "primaryCollection": "Coleção principal",
+      "primaryCollectionDescription": "A tua coleção principal",
+      "quickPins": "Atalhos rápidos",
+      "quickPinsDescription": "Notas que fixaste para acesso rápido"
+    },
+    "security": {
+      "title": "Conta e segurança",
+      "linkedAccount": "Conta ligada",
+      "provider": "Google",
+      "email": "Email",
+      "lastLogin": "Último login",
+      "lastLoginValue": "Hoje, 10:24",
+      "activeSessions": "Sessões ativas",
+      "exportData": "Exportar dados",
+      "importData": "Importar dados",
+      "deleteAccount": "Apagar conta",
+      "deleteWarning": "Esta ação não pode ser desfeita",
+      "logout": "Terminar sessão",
+      "logoutDescription": "Sair da tua conta",
+      "sessionCount": "2 sessões ativas"
+    },
+    "values": {
+      "lastActivity": "Hoje, 10:24",
+      "streak": "12 dias 🔥"
+    },
+    "plan": {
+      "title": "Plano atual",
+      "name": "Plano Gratuito",
+      "current": "Atual",
+      "notes": "Notas",
+      "storage": "Armazenamento",
+      "attachments": "Anexos por nota",
+      "history": "Histórico de versões",
+      "upgrade": "Fazer upgrade para Pro",
+      "notesLimit": "128 / 500",
+      "storageLimit": "6.8 GB / 10 GB",
+      "attachmentLimit": "Até 20 MB",
+      "historyLimit": "7 dias"
+    }
+  },
+  "collections": {
+    "work": "Trabalho",
+    "studies": "Estudos",
+    "projects": "Projetos",
+    "personal": "Pessoal",
+    "ideas": "Ideias"
+  },
+  "mock": {
+    "user": {
+      "name": "Ricardo Silva",
+      "email": "ricardo@email.com",
+      "handle": "@ricardosilva"
+    },
+    "tags": [
+      { "id": "tag-productivity", "name": "produtividade", "color": "blue", "count": 23 },
+      { "id": "tag-development", "name": "desenvolvimento", "color": "green", "count": 18 },
+      { "id": "tag-ideas", "name": "ideias", "color": "amber", "count": 15 },
+      { "id": "tag-study", "name": "estudo", "color": "purple", "count": 12 },
+      { "id": "tag-personal", "name": "pessoal", "color": "pink", "count": 9 },
+      { "id": "tag-grammar", "name": "gramática", "color": "purple", "count": 7 },
+      { "id": "tag-portuguese", "name": "português", "color": "green", "count": 6 },
+      { "id": "tag-doubt", "name": "duvida", "color": "neutral", "count": 5 },
+      { "id": "tag-work", "name": "trabalho", "color": "blue", "count": 4 },
+      { "id": "tag-inspiration", "name": "inspiração", "color": "purple", "count": 4 }
+    ],
+    "collections": [
+      { "id": "collection-work", "name": "Trabalho", "color": "blue", "icon": "folder" },
+      { "id": "collection-studies", "name": "Estudos", "color": "green", "icon": "folder" },
+      { "id": "collection-projects", "name": "Projetos", "color": "orange", "icon": "folder" },
+      { "id": "collection-personal", "name": "Pessoal", "color": "pink", "icon": "folder" },
+      { "id": "collection-ideas", "name": "Ideias", "color": "yellow", "icon": "folder" }
+    ],
+    "notes": {
+      "linguistic": {
+        "title": "Dúvida linguística: “a ver” ou “haver”?",
+        "intro": "Qual é a diferença entre “a ver” e “haver” e quando usar cada um?",
+        "summary": [
+          "“A ver” é uma expressão usada para indicar que algo será visto, analisado ou considerado.",
+          "“Haver” é o verbo impessoal que indica existência ou acontecimento."
+        ],
+        "explanation": [
+          "“A ver” é uma expressão coloquial que significa “vamos ver”, “vamos analisar”, “vamos considerar”.",
+          "“Haver” é verbo impessoal que indica existência ou tempo decorrido, como “há livros na mesa” ou “há dois anos que não te vejo”."
+        ],
+        "usageExamples": [
+          {
+            "expression": "A ver",
+            "meaning": "Usado para indicar que algo será visto, analisado ou considerado.",
+            "example": "A ver se consigo terminar este relatório ainda hoje.\nVamos a ver o que o cliente sugere."
+          },
+          {
+            "expression": "Haver",
+            "meaning": "Usado para indicar existência ou tempo decorrido.",
+            "example": "Há muitos livros na estante.\nHá dois anos que não te vejo."
+          }
+        ],
+        "tip": "Se puderes substituir por “existe” ou “ocorre”, usa “haver”. Se fizer sentido substituir por “vamos ver”, usa “a ver”.",
+        "additionalExamples": [
+          "A ver se me lembro de tudo.",
+          "A ver no que isto vai dar.",
+          "Há pessoas que não gostam de café.",
+          "Há três dias que chove sem parar."
+        ],
+        "relatedLinks": [
+          "Verbos impessoais",
+          "Expressões do dia a dia"
+        ]
+      },
+      "projectRoadmap": {
+        "title": "Roadmap do Projeto",
+        "intro": "Plano detalhado das fases e entregas do projeto.",
+        "summary": ["Definir fases, riscos, entregáveis e métricas para manter o lançamento previsível."],
+        "tagline": "Plano detalhado das fases e entregas do projeto..."
+      },
+      "productIdeas": {
+        "title": "Ideias para o novo produto",
+        "intro": "Brainstorm de funcionalidades e diferenciais.",
+        "summary": ["Lista de hipóteses para validar com utilizadores e transformar em experiências testáveis."],
+        "tagline": "Brainstorm de funcionalidades e diferenciais..."
+      },
+      "terminalCommands": {
+        "title": "Comandos úteis - Terminal",
+        "intro": "Lista de comandos que uso no dia a dia.",
+        "summary": ["Referência rápida para comandos de diagnóstico, navegação e manutenção."],
+        "tagline": "Lista de comandos que uso no dia a dia..."
+      },
+      "japanTrip": {
+        "title": "Viagem ao Japão",
+        "intro": "Sítios a visitar, experiências e dicas úteis.",
+        "summary": ["Notas pessoais para organizar roteiro, custos, transportes e reservas."],
+        "tagline": "Sítios a visitar, experiências e dicas úteis..."
+      },
+      "atomicHabits": {
+        "title": "Resumo - Livro Atomic Habits",
+        "intro": "Principais ideias e aprendizagens do livro.",
+        "summary": ["Sistemas vencem metas quando os hábitos são pequenos, claros e repetíveis."],
+        "tagline": "Principais ideias e aprendizagens do livro..."
+      }
+    },
+    "activities": [
+      { "noteId": "note-roadmap", "label": "Nota “Roadmap do Projeto” editada", "time": "Hoje, 10:24" },
+      { "noteId": "note-product-ideas", "label": "Nota “Ideias para o novo produto” criada", "time": "Ontem, 18:45" },
+      { "noteId": "note-terminal", "label": "Nota “Comandos úteis - Terminal” editada", "time": "Ontem, 09:15" }
+    ]
+  }
+}
