@@ -12,6 +12,7 @@ import {
   LogOut,
   Mail,
   Plus,
+  RefreshCw,
   Settings2,
   Shield,
   Star,
@@ -19,7 +20,8 @@ import {
   Upload,
   UserCheck,
 } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { IconBadge } from '../components/ui/IconBadge';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
@@ -29,16 +31,23 @@ import { createExportFile, readImportFile } from '../core/services/exportImport'
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
+import { useToastStore } from '../store/useToastStore';
 import type { Locale, PreferredLayout, ThemePreference } from '../core/models/models';
 
 export function ProfilePage() {
   const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
+  const [pinPickerOpen, setPinPickerOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const settings = useAppStore((state) => state.settings);
   const setTheme = useAppStore((state) => state.setTheme);
   const setLanguage = useAppStore((state) => state.setLanguage);
   const setPreferredLayout = useAppStore((state) => state.setPreferredLayout);
   const setStartupPage = useAppStore((state) => state.setStartupPage);
+  const setPrimaryCollection = useAppStore((state) => state.setPrimaryCollection);
+  const toggleFavoriteTag = useAppStore((state) => state.toggleFavoriteTag);
+  const toggleQuickPin = useAppStore((state) => state.toggleQuickPin);
   const replaceSettings = useAppStore((state) => state.replaceSettings);
   const notes = useKnowledgeStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
@@ -46,10 +55,14 @@ export function ProfilePage() {
   const user = useKnowledgeStore((state) => state.user);
   const exportPayload = useKnowledgeStore((state) => state.exportPayload);
   const importPayload = useKnowledgeStore((state) => state.importPayload);
+  const resetDemoData = useKnowledgeStore((state) => state.resetDemoData);
+  const pushToast = useToastStore((state) => state.pushToast);
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const favoriteNotes = activeNotes.filter((note) => note.isFavorite);
-  const favoriteTags = tags.slice(6, 10);
-  const quickPins = activeNotes.filter((note) => note.isPinned).concat(activeNotes.slice(1, 3)).slice(0, 3);
+  const favoriteTags = tags.filter((tag) => settings.favoriteTagIds.includes(tag.id));
+  const remainingTags = tags.filter((tag) => !settings.favoriteTagIds.includes(tag.id));
+  const quickPins = activeNotes.filter((note) => settings.quickPinNoteIds.includes(note.id));
+  const remainingPins = activeNotes.filter((note) => !settings.quickPinNoteIds.includes(note.id)).slice(0, 6);
 
   return (
     <div className="page-content list-page-grid">
@@ -62,8 +75,13 @@ export function ProfilePage() {
         <section className="profile-left">
           <article className="profile-card">
             <div className="profile-avatar">
-              {initials(user?.name)}
-              <button className="icon-button profile-edit" type="button" aria-label={t('common.more')}>
+              <img src="/assets/avatar-ricardo.svg" alt="" />
+              <button
+                className="icon-button profile-edit"
+                type="button"
+                aria-label={t('common.more')}
+                onClick={() => pushToast(t('profile.actions.avatarUpdated'), 'info')}
+              >
                 <Edit3 size={16} />
               </button>
             </div>
@@ -103,7 +121,7 @@ export function ProfilePage() {
               label={t('profile.preferences.theme')}
               description={t('profile.preferences.themeDescription')}
               value={settings.theme}
-              onChange={(value) => void setTheme(value as ThemePreference)}
+              onChange={(value) => void setTheme(value as ThemePreference).then(() => pushToast(t('common.done'), 'success'))}
               options={[
                 { value: 'dark', label: t('profile.preferences.dark') },
                 { value: 'light', label: t('profile.preferences.light') },
@@ -114,7 +132,7 @@ export function ProfilePage() {
               label={t('profile.preferences.language')}
               description={t('profile.preferences.languageDescription')}
               value={settings.language}
-              onChange={(value) => void setLanguage(value as Locale)}
+              onChange={(value) => void setLanguage(value as Locale).then(() => pushToast(t('common.done'), 'success'))}
               options={[
                 { value: 'pt', label: t('profile.preferences.portuguese') },
                 { value: 'en', label: t('profile.preferences.english') },
@@ -125,7 +143,7 @@ export function ProfilePage() {
               label={t('profile.preferences.layout')}
               description={t('profile.preferences.layoutDescription')}
               value={settings.preferredLayout}
-              onChange={(value) => void setPreferredLayout(value as PreferredLayout)}
+              onChange={(value) => void setPreferredLayout(value as PreferredLayout).then(() => pushToast(t('common.done'), 'success'))}
               options={[
                 { value: 'list', label: t('profile.preferences.list') },
                 { value: 'grid', label: t('profile.preferences.grid') },
@@ -136,7 +154,7 @@ export function ProfilePage() {
               label={t('profile.preferences.startup')}
               description={t('profile.preferences.startupDescription')}
               value={settings.startupPage}
-              onChange={(value) => void setStartupPage(value)}
+              onChange={(value) => void setStartupPage(value).then(() => pushToast(t('common.done'), 'success'))}
               options={[
                 { value: '/', label: t('navigation.home') },
                 { value: '/notes', label: t('profile.preferences.latestNotes') },
@@ -156,12 +174,35 @@ export function ProfilePage() {
                 <div className="settings-description">{t('profile.organization.favoriteTagsDescription')}</div>
                 <div className="chip-stack mt-3">
                   {favoriteTags.map((tag) => (
-                    <TagChip key={tag.id} tag={tag} />
+                    <TagChip
+                      key={tag.id}
+                      tag={tag}
+                      removable
+                      onRemove={() => {
+                        void toggleFavoriteTag(tag.id).then(() => pushToast(t('profile.actions.tagUpdated'), 'success'));
+                      }}
+                    />
                   ))}
-                  <button className="icon-button" type="button" aria-label={t('common.add')}>
+                  <button className="icon-button" type="button" aria-label={t('common.add')} onClick={() => setTagPickerOpen((value) => !value)}>
                     <Plus size={18} />
                   </button>
                 </div>
+                {tagPickerOpen ? (
+                  <div className="inline-picker">
+                    {remainingTags.map((tag) => (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() => {
+                          void toggleFavoriteTag(tag.id).then(() => pushToast(t('profile.actions.tagUpdated'), 'success'));
+                          setTagPickerOpen(false);
+                        }}
+                      >
+                        <TagChip tag={tag} />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
             <div className="settings-row">
@@ -170,7 +211,13 @@ export function ProfilePage() {
                 <div className="settings-label">{t('profile.organization.primaryCollection')}</div>
                 <div className="settings-description">{t('profile.organization.primaryCollectionDescription')}</div>
               </div>
-              <select className="select-control" value="collection-studies" onChange={() => undefined}>
+              <select
+                className="select-control"
+                value={settings.primaryCollectionId}
+                onChange={(event) => {
+                  void setPrimaryCollection(event.target.value).then(() => pushToast(t('profile.actions.primaryCollectionUpdated'), 'success'));
+                }}
+              >
                 {collections.map((collection) => (
                   <option key={collection.id} value={collection.id}>
                     {collection.name}
@@ -185,15 +232,43 @@ export function ProfilePage() {
                 <div className="settings-description">{t('profile.organization.quickPinsDescription')}</div>
                 <div className="quick-pins mt-3">
                   {quickPins.map((note) => (
-                    <span className="mini-note" key={note.id}>
-                      <NoteThumbnail thumbnail={note.thumbnail} />
-                      <span>{note.title}</span>
+                    <span className="mini-note-shell" key={note.id}>
+                      <Link className="mini-note" to={`/notes/${note.id}`}>
+                        <NoteThumbnail thumbnail={note.thumbnail} />
+                        <span>{note.title}</span>
+                      </Link>
+                      <button
+                        className="mini-remove"
+                        type="button"
+                        aria-label={t('common.remove')}
+                        onClick={() => {
+                          void toggleQuickPin(note.id).then(() => pushToast(t('profile.actions.pinUpdated'), 'success'));
+                        }}
+                      >
+                        ×
+                      </button>
                     </span>
                   ))}
-                  <button className="icon-button" type="button" aria-label={t('common.add')}>
+                  <button className="icon-button" type="button" aria-label={t('common.add')} onClick={() => setPinPickerOpen((value) => !value)}>
                     <Plus size={18} />
                   </button>
                 </div>
+                {pinPickerOpen ? (
+                  <div className="inline-picker">
+                    {remainingPins.map((note) => (
+                      <button
+                        key={note.id}
+                        type="button"
+                        onClick={() => {
+                          void toggleQuickPin(note.id).then(() => pushToast(t('profile.actions.pinUpdated'), 'success'));
+                          setPinPickerOpen(false);
+                        }}
+                      >
+                        {note.title}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
           </section>
@@ -201,10 +276,33 @@ export function ProfilePage() {
 
         <section className="profile-right">
           <Panel title={t('profile.security.title')}>
-            <SecurityRow icon={UserCheck} label={t('profile.security.linkedAccount')} detail={t('profile.security.provider')} />
-            <SecurityRow icon={Mail} label={t('profile.security.email')} detail={user?.email ?? ''} />
-            <SecurityRow icon={CalendarClock} label={t('profile.security.lastLogin')} detail={t('profile.security.lastLoginValue')} />
-            <SecurityRow icon={HardDrive} label={t('profile.security.activeSessions')} detail={t('profile.security.sessionCount')} />
+            <SecurityRow
+              icon={UserCheck}
+              label={t('profile.security.linkedAccount')}
+              detail={t('profile.security.provider')}
+              onClick={() => pushToast(t('profile.actions.accountPreview'), 'info')}
+            />
+            <SecurityRow
+              icon={Mail}
+              label={t('profile.security.email')}
+              detail={user?.email ?? ''}
+              onClick={() => {
+                void navigator.clipboard?.writeText(user?.email ?? '');
+                pushToast(t('common.copied'), 'success');
+              }}
+            />
+            <SecurityRow
+              icon={CalendarClock}
+              label={t('profile.security.lastLogin')}
+              detail={t('profile.security.lastLoginValue')}
+              onClick={() => pushToast(t('topbar.localMode'), 'info')}
+            />
+            <SecurityRow
+              icon={HardDrive}
+              label={t('profile.security.activeSessions')}
+              detail={t('profile.security.sessionCount')}
+              onClick={() => pushToast(t('profile.actions.sessionsPreview'), 'info')}
+            />
             <button className="security-row" type="button" onClick={() => createExportFile(exportPayload(settings))}>
               <Download size={20} color="var(--color-success)" />
               <span>
@@ -237,13 +335,55 @@ export function ProfilePage() {
                 });
               }}
             />
+            <button
+              className="security-row"
+              type="button"
+              onClick={() => {
+                void resetDemoData(settings.language, settings).then(() => pushToast(t('profile.actions.demoReset'), 'success'));
+              }}
+            >
+              <RefreshCw size={20} color="var(--color-warning)" />
+              <span>
+                <span>{t('profile.security.resetDemo')}</span>
+                <span className="security-sub">{t('common.done')}</span>
+              </span>
+              <ChevronRight size={18} />
+            </button>
             <SecurityRow
               icon={Trash2}
               label={t('profile.security.deleteAccount')}
               detail={t('profile.security.deleteWarning')}
               danger
+              onClick={() => {
+                setDeleteConfirmOpen(true);
+                pushToast(t('profile.actions.deleteConfirm'), 'warning');
+              }}
             />
-            <SecurityRow icon={LogOut} label={t('profile.security.logout')} detail={t('profile.security.logoutDescription')} />
+            {deleteConfirmOpen ? (
+              <div className="confirm-box">
+                <span>{t('profile.security.deleteWarning')}</span>
+                <div>
+                  <button type="button" onClick={() => setDeleteConfirmOpen(false)}>
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteConfirmOpen(false);
+                      pushToast(t('profile.actions.deleteSkipped'), 'success');
+                    }}
+                  >
+                    {t('common.done')}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            <SecurityRow
+              icon={LogOut}
+              label={t('profile.security.logout')}
+              detail={t('profile.security.logoutDescription')}
+              onClick={() => pushToast(t('profile.actions.logout'), 'warning')}
+            />
           </Panel>
 
           <Panel title={t('profile.plan.title')}>
@@ -256,7 +396,7 @@ export function ProfilePage() {
               <PlanRow icon={HardDrive} label={t('profile.plan.storage')} value={t('profile.plan.storageLimit')} />
               <PlanRow icon={Folder} label={t('profile.plan.attachments')} value={t('profile.plan.attachmentLimit')} />
               <PlanRow icon={CalendarClock} label={t('profile.plan.history')} value={t('profile.plan.historyLimit')} />
-              <button className="upgrade-button mt-4" type="button">
+              <button className="upgrade-button mt-4" type="button" onClick={() => pushToast(t('profile.actions.upgrade'), 'info')}>
                 <Crown size={18} />
                 {t('profile.plan.upgrade')}
               </button>
@@ -328,21 +468,23 @@ function SecurityRow({
   label,
   detail,
   danger = false,
+  onClick,
 }: {
   icon: typeof UserCheck;
   label: string;
   detail: string;
   danger?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div className={danger ? 'security-row danger' : 'security-row'}>
+    <button className={danger ? 'security-row danger' : 'security-row'} type="button" onClick={onClick}>
       <Icon size={20} />
       <span>
         <span>{label}</span>
         <span className="security-sub">{detail}</span>
       </span>
       <ChevronRight size={18} />
-    </div>
+    </button>
   );
 }
 
@@ -354,13 +496,4 @@ function PlanRow({ icon: Icon, label, value }: { icon: typeof FileText; label: s
       <span className="plan-value">{value}</span>
     </div>
   );
-}
-
-function initials(name?: string) {
-  return (name ?? appSettings.productName)
-    .split(' ')
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 }

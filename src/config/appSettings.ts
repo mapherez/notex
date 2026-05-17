@@ -12,5 +12,9 @@ export const defaultUserSettings: UserSettings = {
   username: settings.defaultSettings.username,
   startupPage: settings.defaultSettings.startupPage,
   preferredLayout: settings.defaultSettings.preferredLayout as UserSettings['preferredLayout'],
+  sidebarCollapsed: settings.defaultSettings.sidebarCollapsed,
+  primaryCollectionId: settings.defaultSettings.primaryCollectionId,
+  favoriteTagIds: settings.defaultSettings.favoriteTagIds,
+  quickPinNoteIds: settings.defaultSettings.quickPinNoteIds,
   updatedAt: new Date().toISOString(),
 };

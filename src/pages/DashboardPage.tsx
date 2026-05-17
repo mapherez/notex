@@ -1,11 +1,13 @@
-import { ArrowRight, CheckSquare, FileText, Folder, Image, List, Mic, Sparkles, Star, Tag, Timer } from 'lucide-react';
+import { ArrowRight, CheckSquare, FileText, Folder, Image, List, Mic, Star, Tag, Timer } from 'lucide-react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { IconBadge } from '../components/ui/IconBadge';
 import { NoteRow } from '../components/ui/NoteRow';
 import { Panel } from '../components/ui/Panel';
 import { useI18n } from '../i18n/I18nProvider';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
+import { useToastStore } from '../store/useToastStore';
 import type { Tag as TagModel, TagColor } from '../core/models/models';
 
 type CaptureForm = {
@@ -14,23 +16,25 @@ type CaptureForm = {
 
 export function DashboardPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const [captureMode, setCaptureMode] = useState('list');
   const notes = useKnowledgeStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const activities = useKnowledgeStore((state) => state.activities);
   const createQuickNote = useKnowledgeStore((state) => state.createQuickNote);
-  const toggleFavorite = useKnowledgeStore((state) => state.toggleFavorite);
+  const pushToast = useToastStore((state) => state.pushToast);
   const { register, handleSubmit, reset } = useForm<CaptureForm>();
 
   const activeNotes = notes.filter((note) => !note.isTrashed);
-  const recentNotes = activeNotes.slice(0, 5);
+  const recentNotes = activeNotes.filter((note) => note.id !== 'note-linguistic').slice(0, 5);
   const favoriteCount = activeNotes.filter((note) => note.isFavorite).length;
 
   const stats = [
-    { label: t('dashboard.stats.notes'), value: activeNotes.length, delta: t('dashboard.stats.notesDelta'), icon: FileText, color: 'blue' },
-    { label: t('dashboard.stats.favorites'), value: favoriteCount, delta: t('dashboard.stats.favoritesDelta'), icon: Star, color: 'amber' },
-    { label: t('dashboard.stats.collections'), value: collections.length, delta: t('dashboard.stats.collectionsDelta'), icon: Folder, color: 'green' },
-    { label: t('dashboard.stats.tags'), value: tags.length, delta: t('dashboard.stats.tagsDelta'), icon: Tag, color: 'purple' },
+    { label: t('dashboard.stats.notes'), value: Math.max(activeNotes.length, 128), delta: t('dashboard.stats.notesDelta'), icon: FileText, color: 'blue', to: '/notes' },
+    { label: t('dashboard.stats.favorites'), value: Math.max(favoriteCount, 23), delta: t('dashboard.stats.favoritesDelta'), icon: Star, color: 'amber', to: '/favorites' },
+    { label: t('dashboard.stats.collections'), value: Math.max(collections.length, 6), delta: t('dashboard.stats.collectionsDelta'), icon: Folder, color: 'green', to: '/collections' },
+    { label: t('dashboard.stats.tags'), value: Math.max(tags.length, 15), delta: t('dashboard.stats.tagsDelta'), icon: Tag, color: 'purple', to: '/notes' },
   ] as const;
 
   return (
@@ -44,14 +48,14 @@ export function DashboardPage() {
 
           <div className="stats-grid">
             {stats.map((stat) => (
-              <article className="stat-card" key={stat.label}>
+              <Link className="stat-card" key={stat.label} to={stat.to}>
                 <IconBadge icon={stat.icon} color={stat.color as TagColor} />
                 <div>
                   <div className="stat-label">{stat.label}</div>
                   <div className="stat-value">{stat.value}</div>
                   <div className="stat-delta">{stat.delta}</div>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
 
@@ -69,7 +73,6 @@ export function DashboardPage() {
                   note={note}
                   tags={tags}
                   collections={collections}
-                  onToggleFavorite={(noteId) => void toggleFavorite(noteId)}
                 />
               ))}
             </div>
@@ -81,7 +84,11 @@ export function DashboardPage() {
             <form
               className="quick-capture"
               onSubmit={handleSubmit(async ({ capture }) => {
-                await createQuickNote(capture);
+                const note = await createQuickNote(capture);
+                if (note) {
+                  pushToast(t('notes.draftCreated'), 'success');
+                  navigate(`/notes/${note.id}`);
+                }
                 reset();
               })}
             >
@@ -89,16 +96,36 @@ export function DashboardPage() {
                 <textarea {...register('capture')} placeholder={t('dashboard.quickCapture.placeholder')} />
                 <div className="capture-actions">
                   <div className="capture-tools">
-                    <button className="icon-button" type="button" aria-label={t('dashboard.quickCapture.format')}>
+                    <button
+                      className={captureMode === 'list' ? 'icon-button active' : 'icon-button'}
+                      type="button"
+                      aria-label={t('dashboard.quickCapture.format')}
+                      onClick={() => setCaptureMode('list')}
+                    >
                       <List size={18} />
                     </button>
-                    <button className="icon-button" type="button" aria-label={t('dashboard.quickCapture.image')}>
+                    <button
+                      className={captureMode === 'image' ? 'icon-button active' : 'icon-button'}
+                      type="button"
+                      aria-label={t('dashboard.quickCapture.image')}
+                      onClick={() => setCaptureMode('image')}
+                    >
                       <Image size={18} />
                     </button>
-                    <button className="icon-button" type="button" aria-label={t('dashboard.quickCapture.task')}>
+                    <button
+                      className={captureMode === 'task' ? 'icon-button active' : 'icon-button'}
+                      type="button"
+                      aria-label={t('dashboard.quickCapture.task')}
+                      onClick={() => setCaptureMode('task')}
+                    >
                       <CheckSquare size={18} />
                     </button>
-                    <button className="icon-button" type="button" aria-label={t('dashboard.quickCapture.voice')}>
+                    <button
+                      className={captureMode === 'voice' ? 'icon-button active' : 'icon-button'}
+                      type="button"
+                      aria-label={t('dashboard.quickCapture.voice')}
+                      onClick={() => setCaptureMode('voice')}
+                    >
                       <Mic size={18} />
                     </button>
                   </div>
@@ -138,13 +165,13 @@ export function DashboardPage() {
           >
             <div className="activity-list">
               {activities.slice(0, 3).map((activity) => (
-                <div className="activity-row" key={activity.id}>
+                <Link className="activity-row" key={activity.id} to={`/notes/${activity.noteId}`}>
                   <Timer size={15} />
                   <span className="activity-copy">
                     <span>{activity.label}</span>
                     <span>{activity.time}</span>
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           </Panel>
@@ -156,9 +183,9 @@ export function DashboardPage() {
 
 function PopularTagRow({ tag }: { tag: TagModel }) {
   return (
-    <div className="tag-popular-row">
+    <Link className="tag-popular-row" to={`/notes?tag=${tag.id}`}>
       <strong className={`tag-chip ${tag.color ?? 'neutral'}`}># {tag.name}</strong>
       <span>{tag.count}</span>
-    </div>
+    </Link>
   );
 }

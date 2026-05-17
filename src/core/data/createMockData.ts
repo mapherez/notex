@@ -135,7 +135,7 @@ export function createMockData(locale: Locale): MockDataBundle {
       relatedLinks: (notesCopy.linguistic.relatedLinks ?? []).map((title, index) => ({
         id: `related-${index + 1}`,
         title,
-        href: '#',
+        href: index === 0 ? '/notes?tag=tag-grammar' : '/notes?tag=tag-portuguese',
       })),
       thumbnail: { variant: 'text' },
       version: 1,

@@ -1,4 +1,5 @@
-import { NavLink, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Archive,
   ChevronDown,
@@ -15,7 +16,10 @@ import {
 import clsx from 'clsx';
 import { appSettings } from '../../config/appSettings';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
+import { useToastStore } from '../../store/useToastStore';
+import type { NoteType } from '../../core/models/models';
 
 const navItems = [
   { to: '/', labelKey: 'navigation.home', icon: Home },
@@ -27,32 +31,85 @@ const navItems = [
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
+  const [newNoteOpen, setNewNoteOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const settings = useAppStore((state) => state.settings);
+  const setSidebarCollapsed = useAppStore((state) => state.setSidebarCollapsed);
   const collections = useKnowledgeStore((state) => state.collections);
   const user = useKnowledgeStore((state) => state.user);
+  const createDraftNote = useKnowledgeStore((state) => state.createDraftNote);
+  const pushToast = useToastStore((state) => state.pushToast);
+  const activeCollectionId = searchParams.get('collection');
+
+  async function createNote(type: NoteType = 'standard') {
+    const note = await createDraftNote({
+      type,
+      title: t('notes.draftTitle'),
+      intro: t('notes.draftIntro'),
+      collectionId: settings.primaryCollectionId,
+      tagIds: ['tag-ideas'],
+    });
+    pushToast(t('notes.draftCreated'), 'success');
+    setNewNoteOpen(false);
+    onClose();
+    navigate(`/notes/${note.id}`);
+  }
 
   return (
     <>
       {open ? <button className="sidebar-backdrop" type="button" aria-label={t('common.close')} onClick={onClose} /> : null}
-      <aside className={clsx('sidebar', open && 'open')}>
+      <aside className={clsx('sidebar', open && 'open', settings.sidebarCollapsed && 'collapsed')}>
         <div className="sidebar-header">
           <Link className="brand" to="/" onClick={onClose}>
-            <span className="logo-mark">{appSettings.productName.charAt(0)}</span>
+            <img className="logo-image" src="/assets/notex-logo.svg" alt="" />
             <span>{appSettings.productName}</span>
           </Link>
-          <button className="icon-button" type="button" aria-label={t('navigation.collapse')} onClick={onClose}>
+          <button
+            className="icon-button"
+            type="button"
+            aria-label={t('navigation.collapse')}
+            onClick={() => void setSidebarCollapsed(!settings.sidebarCollapsed)}
+          >
             <ChevronsLeft size={18} />
           </button>
         </div>
 
-        <button className="primary-action" type="button">
-          <span className="primary-action-main">
+        <div className="primary-action">
+          <button className="primary-action-main" type="button" onClick={() => void createNote('standard')}>
             <Plus size={20} />
             {t('navigation.newNote')}
-          </span>
-          <span className="primary-action-side">
+          </button>
+          <button
+            className="primary-action-side"
+            type="button"
+            aria-label={t('navigation.newNote')}
+            onClick={() => setNewNoteOpen((value) => !value)}
+          >
             <ChevronDown size={18} />
-          </span>
-        </button>
+          </button>
+          {newNoteOpen ? (
+            <div className="floating-menu sidebar-new-menu">
+              <button type="button" onClick={() => void createNote('standard')}>
+                <FileText size={17} />
+                {t('navigation.newStandardNote')}
+              </button>
+              <button type="button" onClick={() => void createNote('linguistic_doubt')}>
+                <FileText size={17} />
+                {t('navigation.newLanguageNote')}
+              </button>
+              <button type="button" onClick={() => void createNote('reference')}>
+                <Archive size={17} />
+                {t('navigation.newReference')}
+              </button>
+              <button type="button" onClick={() => void createNote('snippet')}>
+                <FileText size={17} />
+                {t('navigation.newSnippet')}
+              </button>
+            </div>
+          ) : null}
+        </div>
 
         <nav className="sidebar-section" aria-label={t('navigation.notes')}>
           {navItems.map(({ to, labelKey, icon: Icon }) => (
@@ -72,18 +129,24 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         <div className="sidebar-section">
           <div className="sidebar-section-title">
             <span>{t('navigation.collections')}</span>
-            <Plus size={16} />
+            <button className="inline-icon-button" type="button" onClick={() => navigate('/collections')} aria-label={t('common.add')}>
+              <Plus size={16} />
+            </button>
           </div>
           {collections.map((collection) => (
-            <NavLink
+            <Link
               key={collection.id}
-              to="/collections"
-              className={clsx('nav-item', `collection-${collection.color ?? 'neutral'}`)}
+              to={`/notes?collection=${collection.id}`}
+              className={clsx(
+                'nav-item',
+                `collection-${collection.color ?? 'neutral'}`,
+                location.pathname === '/notes' && activeCollectionId === collection.id && 'active',
+              )}
               onClick={onClose}
             >
               <Folder size={21} strokeWidth={1.8} />
               <span>{collection.name}</span>
-            </NavLink>
+            </Link>
           ))}
           <NavLink to="/collections" className="nav-item" onClick={onClose}>
             <Archive size={20} strokeWidth={1.8} />
@@ -108,7 +171,9 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         </section>
 
         <Link className="user-footer" to="/profile" onClick={onClose}>
-          <span className="avatar">{initials(user?.name)}</span>
+          <span className="avatar">
+            <img src="/assets/avatar-ricardo.svg" alt="" />
+          </span>
           <span className="user-meta">
             <span className="user-name">{user?.name}</span>
             <span className="user-email">{user?.email}</span>
@@ -118,13 +183,4 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       </aside>
     </>
   );
-}
-
-function initials(name?: string) {
-  return (name ?? appSettings.productName)
-    .split(' ')
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 }

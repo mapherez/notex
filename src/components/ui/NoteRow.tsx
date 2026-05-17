@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
-import { MoreVertical, Star } from 'lucide-react';
+import { useState } from 'react';
+import { ArchiveRestore, Copy, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { Collection, Note, Tag } from '../../core/models/models';
+import { useKnowledgeStore } from '../../store/useKnowledgeStore';
+import { useToastStore } from '../../store/useToastStore';
 import { NoteThumbnail } from './NoteThumbnail';
 import { TagChip } from './TagChip';
 
@@ -21,8 +24,45 @@ export function NoteRow({
   onAction?: (noteId: string) => void;
 }) {
   const { t } = useI18n();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const toggleFavorite = useKnowledgeStore((state) => state.toggleFavorite);
+  const togglePinned = useKnowledgeStore((state) => state.togglePinned);
+  const moveToTrash = useKnowledgeStore((state) => state.moveToTrash);
+  const restoreNote = useKnowledgeStore((state) => state.restoreNote);
+  const duplicateNote = useKnowledgeStore((state) => state.duplicateNote);
+  const pushToast = useToastStore((state) => state.pushToast);
   const primaryTag = tags.find((tag) => note.tagIds.includes(tag.id));
   const collection = collections.find((item) => item.id === note.collectionId);
+
+  async function handleFavorite() {
+    await (onToggleFavorite ? onToggleFavorite(note.id) : toggleFavorite(note.id));
+    pushToast(t('notes.favoriteChanged'), 'success');
+    setMenuOpen(false);
+  }
+
+  async function handleTrash() {
+    if (onAction) {
+      onAction(note.id);
+    } else if (note.isTrashed) {
+      await restoreNote(note.id);
+    } else {
+      await moveToTrash(note.id);
+    }
+    pushToast(t('notes.trashChanged'), 'warning');
+    setMenuOpen(false);
+  }
+
+  async function handlePin() {
+    await togglePinned(note.id);
+    pushToast(t('notes.pinChanged'), 'success');
+    setMenuOpen(false);
+  }
+
+  async function handleDuplicate() {
+    await duplicateNote(note.id, `${note.title} (${t('common.copy')})`);
+    pushToast(t('notes.duplicated'), 'success');
+    setMenuOpen(false);
+  }
 
   return (
     <article className="note-row">
@@ -37,33 +77,60 @@ export function NoteRow({
         <p className="note-intro">{note.content.intro}</p>
       </Link>
       {primaryTag ? <TagChip tag={primaryTag} color={primaryTag.color} /> : collection ? <TagChip tag={collection} /> : null}
-      <span className="note-time">{formatDisplayTime(note.updatedAt)}</span>
+      <span className="note-time">{formatDisplayTime(note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
       <button
         className="icon-button"
         type="button"
-        aria-label={actionLabel ?? t('common.more')}
+        aria-label={actionLabel ?? t('notes.openMenu')}
         onClick={(event) => {
           event.preventDefault();
-          if (onAction) {
-            onAction(note.id);
-            return;
-          }
-          onToggleFavorite?.(note.id);
+          setMenuOpen((value) => !value);
         }}
       >
         <MoreVertical size={18} />
       </button>
+      {menuOpen ? (
+        <div className="floating-menu note-row-menu">
+          <Link to={`/notes/${note.id}`}>{t('common.open')}</Link>
+          <button type="button" onClick={() => void handleFavorite()}>
+            <Star size={16} />
+            {note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
+          </button>
+          <button type="button" onClick={() => void handlePin()}>
+            <Pin size={16} />
+            {note.isPinned ? t('common.unpin') : t('common.pin')}
+          </button>
+          <button type="button" onClick={() => void handleDuplicate()}>
+            <Copy size={16} />
+            {t('common.duplicate')}
+          </button>
+          <button type="button" onClick={() => void handleTrash()}>
+            {note.isTrashed ? <ArchiveRestore size={16} /> : <Trash2 size={16} />}
+            {note.isTrashed ? t('notes.restore') : t('notes.moveToTrash')}
+          </button>
+        </div>
+      ) : null}
     </article>
   );
 }
 
-function formatDisplayTime(value: string) {
+function formatDisplayTime(value: string, today: string, yesterday: string) {
   const date = new Date(value);
   const now = new Date();
   const sameDay = date.toDateString() === now.toDateString();
+  const mockDay = value.slice(0, 10);
+  const mockTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (mockDay === '2024-05-18') {
+    return `${today}, ${mockTime}`;
+  }
+
+  if (mockDay === '2024-05-17') {
+    return `${yesterday}, ${mockTime}`;
+  }
 
   if (sameDay) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return mockTime;
   }
 
   return date.toLocaleDateString([], { day: '2-digit', month: 'short' });

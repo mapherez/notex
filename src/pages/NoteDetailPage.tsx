@@ -1,27 +1,82 @@
 import { ChevronLeft, Copy, ExternalLink, FileText, Folder, Lightbulb, MoreVertical, Plus, Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { EmptyState } from '../components/ui/EmptyState';
 import { Panel } from '../components/ui/Panel';
 import { TagChip } from '../components/ui/TagChip';
 import { useI18n } from '../i18n/I18nProvider';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
+import { useToastStore } from '../store/useToastStore';
 
 export function NoteDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t, locale } = useI18n();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
+  const [exampleOpen, setExampleOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [exampleText, setExampleText] = useState('');
+  const [linkTitle, setLinkTitle] = useState('');
+  const [linkHref, setLinkHref] = useState('');
   const notes = useKnowledgeStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const user = useKnowledgeStore((state) => state.user);
+  const isReady = useKnowledgeStore((state) => state.isReady);
   const toggleFavorite = useKnowledgeStore((state) => state.toggleFavorite);
-  const note = notes.find((item) => item.id === id) ?? notes.find((item) => !item.isTrashed);
+  const togglePinned = useKnowledgeStore((state) => state.togglePinned);
+  const moveToTrash = useKnowledgeStore((state) => state.moveToTrash);
+  const duplicateNote = useKnowledgeStore((state) => state.duplicateNote);
+  const markNoteOpened = useKnowledgeStore((state) => state.markNoteOpened);
+  const updateNoteTags = useKnowledgeStore((state) => state.updateNoteTags);
+  const addAdditionalExample = useKnowledgeStore((state) => state.addAdditionalExample);
+  const addRelatedLink = useKnowledgeStore((state) => state.addRelatedLink);
+  const pushToast = useToastStore((state) => state.pushToast);
+  const note = notes.find((item) => item.id === id);
+
+  useEffect(() => {
+    if (note) {
+      void markNoteOpened(note.id);
+    }
+  }, [markNoteOpened, note?.id]);
+
+  if (!isReady) {
+    return null;
+  }
 
   if (!note) {
-    return null;
+    return (
+      <div className="page-content list-page-grid">
+        <button className="back-button" type="button" onClick={() => navigate(-1)}>
+          <ChevronLeft size={20} />
+          {t('common.back')}
+        </button>
+        <EmptyState />
+      </div>
+    );
   }
 
   const noteTags = tags.filter((tag) => note.tagIds.includes(tag.id));
   const collection = collections.find((item) => item.id === note.collectionId);
+  const availableTags = tags.filter((tag) => !note.tagIds.includes(tag.id));
+  const currentNote = note;
+
+  async function copyText(text: string, message: string) {
+    await navigator.clipboard?.writeText(text);
+    pushToast(message, 'success');
+  }
+
+  async function removeTag(tagId: string) {
+    await updateNoteTags(currentNote.id, currentNote.tagIds.filter((tag) => tag !== tagId));
+    pushToast(t('noteDetail.tagUpdated'), 'success');
+  }
+
+  async function addTag(tagId: string) {
+    await updateNoteTags(currentNote.id, [...currentNote.tagIds, tagId]);
+    setTagPickerOpen(false);
+    pushToast(t('noteDetail.tagUpdated'), 'success');
+  }
 
   return (
     <>
@@ -35,7 +90,9 @@ export function NoteDetailPage() {
             className="icon-button"
             type="button"
             aria-label={note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
-            onClick={() => void toggleFavorite(note.id)}
+            onClick={() => {
+              void toggleFavorite(note.id).then(() => pushToast(t('notes.favoriteChanged'), 'success'));
+            }}
           >
             <Star size={20} fill={note.isFavorite ? 'var(--color-warning)' : 'transparent'} color="var(--color-warning)" />
           </button>
@@ -43,9 +100,56 @@ export function NoteDetailPage() {
             <FileText size={17} color="var(--color-text-muted)" />
             {t('common.saved')}
           </span>
-          <button className="icon-button" type="button" aria-label={t('common.more')}>
+          <button className="icon-button" type="button" aria-label={t('common.more')} onClick={() => setMoreOpen((value) => !value)}>
             <MoreVertical size={20} />
           </button>
+          {moreOpen ? (
+            <div className="floating-menu document-menu">
+              <button
+                type="button"
+                onClick={() => {
+                  void togglePinned(note.id).then(() => pushToast(t('notes.pinChanged'), 'success'));
+                  setMoreOpen(false);
+                }}
+              >
+                {note.isPinned ? t('common.unpin') : t('common.pin')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void duplicateNote(note.id, `${note.title} (${t('common.copy')})`).then((created) => {
+                    pushToast(t('notes.duplicated'), 'success');
+                    if (created) {
+                      navigate(`/notes/${created.id}`);
+                    }
+                  });
+                  setMoreOpen(false);
+                }}
+              >
+                {t('common.duplicate')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void copyText(window.location.href, t('noteDetail.copiedLink'));
+                  setMoreOpen(false);
+                }}
+              >
+                {t('common.copyLink')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void moveToTrash(note.id).then(() => {
+                    pushToast(t('notes.trashChanged'), 'warning');
+                    navigate('/trash');
+                  });
+                }}
+              >
+                {t('notes.moveToTrash')}
+              </button>
+            </div>
+          ) : null}
         </div>
       </header>
 
@@ -61,7 +165,7 @@ export function NoteDetailPage() {
           <h1 className="document-title">{note.title}</h1>
           <div className="tag-row">
             {noteTags.map((tag) => (
-              <TagChip key={tag.id} tag={tag} removable />
+              <TagChip key={tag.id} tag={tag} removable onRemove={() => void removeTag(tag.id)} />
             ))}
           </div>
           <p className="document-intro">{note.content.intro}</p>
@@ -100,6 +204,14 @@ export function NoteDetailPage() {
                         {row.example.split('\n').map((line) => (
                           <p key={line}>{line}</p>
                         ))}
+                        <button
+                          className="copy-row-button"
+                          type="button"
+                          aria-label={t('noteDetail.copyExample')}
+                          onClick={() => void copyText(row.example, t('noteDetail.copiedExample'))}
+                        >
+                          <Copy size={18} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -154,45 +266,108 @@ export function NoteDetailPage() {
           <Panel title={t('noteDetail.tags')}>
             <div className="tag-row">
               {noteTags.map((tag) => (
-                <TagChip key={tag.id} tag={tag} removable />
+                <TagChip key={tag.id} tag={tag} removable onRemove={() => void removeTag(tag.id)} />
               ))}
             </div>
-            <button className="nav-item mt-4" type="button">
+            <button className="nav-item mt-4" type="button" onClick={() => setTagPickerOpen((value) => !value)}>
               <Plus size={18} />
               {t('noteDetail.addTag')}
             </button>
+            {tagPickerOpen ? (
+              <div className="inline-picker">
+                {availableTags.map((tag) => (
+                  <button key={tag.id} type="button" onClick={() => void addTag(tag.id)}>
+                    <TagChip tag={tag} />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </Panel>
 
           <Panel title={t('noteDetail.additionalExamples')}>
             <ul className="side-list">
               {note.content.additionalExamples?.map((example) => <li key={example}>{example}</li>)}
             </ul>
-            <button className="nav-item mt-4" type="button">
+            <button className="nav-item mt-4" type="button" onClick={() => setExampleOpen((value) => !value)}>
               <Plus size={18} />
               {t('noteDetail.addExample')}
             </button>
+            {exampleOpen ? (
+              <form
+                className="inline-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void addAdditionalExample(note.id, exampleText).then(() => {
+                    setExampleText('');
+                    setExampleOpen(false);
+                    pushToast(t('noteDetail.exampleAdded'), 'success');
+                  });
+                }}
+              >
+                <textarea value={exampleText} onChange={(event) => setExampleText(event.target.value)} placeholder={t('noteDetail.examplePlaceholder')} />
+                <button type="submit">{t('common.save')}</button>
+              </form>
+            ) : null}
           </Panel>
 
           <Panel title={t('noteDetail.relatedLinks')}>
             <div className="side-list">
               {note.relatedLinks?.map((link) => (
-                <a className="linked-row" href={link.href} key={link.id}>
-                  <span className="inline-actions">
-                    <FileText size={17} />
-                    {link.title}
-                  </span>
-                  <ExternalLink size={15} />
-                </a>
+                <RelatedLinkRow key={link.id} href={link.href} title={link.title} />
               ))}
             </div>
-            <button className="nav-item mt-4" type="button">
+            <button className="nav-item mt-4" type="button" onClick={() => setLinkOpen((value) => !value)}>
               <Plus size={18} />
               {t('noteDetail.addLink')}
             </button>
+            {linkOpen ? (
+              <form
+                className="inline-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void addRelatedLink(note.id, linkTitle, linkHref).then(() => {
+                    setLinkTitle('');
+                    setLinkHref('');
+                    setLinkOpen(false);
+                    pushToast(t('noteDetail.linkAdded'), 'success');
+                  });
+                }}
+              >
+                <input value={linkTitle} onChange={(event) => setLinkTitle(event.target.value)} placeholder={t('noteDetail.linkTitlePlaceholder')} />
+                <input value={linkHref} onChange={(event) => setLinkHref(event.target.value)} placeholder={t('noteDetail.linkUrlPlaceholder')} />
+                <button type="submit">{t('common.save')}</button>
+              </form>
+            ) : null}
           </Panel>
         </aside>
       </div>
     </>
+  );
+}
+
+function RelatedLinkRow({ href, title }: { href: string; title: string }) {
+  const content = (
+    <>
+      <span className="inline-actions">
+        <FileText size={17} />
+        {title}
+      </span>
+      <ExternalLink size={15} />
+    </>
+  );
+
+  if (href.startsWith('/')) {
+    return (
+      <Link className="linked-row" to={href}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <a className="linked-row" href={href}>
+      {content}
+    </a>
   );
 }
 

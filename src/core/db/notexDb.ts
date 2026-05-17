@@ -89,3 +89,20 @@ export async function replaceKnowledge({
     await db.userSettings.put(userSettings);
   });
 }
+
+export async function resetKnowledge(bundle: MockDataBundle, settings: UserSettings) {
+  await db.transaction('rw', [db.notes, db.tags, db.collections, db.users, db.activities, db.userSettings], async () => {
+    await db.notes.clear();
+    await db.tags.clear();
+    await db.collections.clear();
+    await db.users.clear();
+    await db.activities.clear();
+    await db.userSettings.clear();
+    await db.notes.bulkPut(bundle.notes);
+    await db.tags.bulkPut(bundle.tags);
+    await db.collections.bulkPut(bundle.collections);
+    await db.users.put(bundle.user);
+    await db.activities.bulkPut(bundle.activities);
+    await db.userSettings.put(settings);
+  });
+}

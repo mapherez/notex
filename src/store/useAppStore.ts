@@ -11,6 +11,10 @@ type AppStore = {
   setLanguage: (language: Locale) => Promise<void>;
   setPreferredLayout: (layout: PreferredLayout) => Promise<void>;
   setStartupPage: (startupPage: string) => Promise<void>;
+  setSidebarCollapsed: (sidebarCollapsed: boolean) => Promise<void>;
+  setPrimaryCollection: (primaryCollectionId: string) => Promise<void>;
+  toggleFavoriteTag: (tagId: string) => Promise<void>;
+  toggleQuickPin: (noteId: string) => Promise<void>;
   replaceSettings: (settings: UserSettings) => Promise<void>;
 };
 
@@ -21,38 +25,68 @@ async function persist(settings: UserSettings) {
   });
 }
 
+function normalizeSettings(settings?: Partial<UserSettings> | null): UserSettings {
+  return {
+    ...defaultUserSettings,
+    ...settings,
+    favoriteTagIds: settings?.favoriteTagIds ?? defaultUserSettings.favoriteTagIds,
+    quickPinNoteIds: settings?.quickPinNoteIds ?? defaultUserSettings.quickPinNoteIds,
+    updatedAt: settings?.updatedAt ?? defaultUserSettings.updatedAt,
+  };
+}
+
+async function updateSettings(set: (state: Partial<AppStore>) => void, next: UserSettings) {
+  set({ settings: next });
+  await persist(next);
+}
+
 export const useAppStore = create<AppStore>((set, get) => ({
   settings: defaultUserSettings,
   isHydrated: false,
   hydrateSettings: async () => {
     const stored = await readUserSettings(defaultUserSettings.id);
     set({
-      settings: stored ?? defaultUserSettings,
+      settings: normalizeSettings(stored),
       isHydrated: true,
     });
   },
   setTheme: async (theme) => {
     const settings = { ...get().settings, theme };
-    set({ settings });
-    await persist(settings);
+    await updateSettings(set, settings);
   },
   setLanguage: async (language) => {
     const settings = { ...get().settings, language };
-    set({ settings });
-    await persist(settings);
+    await updateSettings(set, settings);
   },
   setPreferredLayout: async (preferredLayout) => {
     const settings = { ...get().settings, preferredLayout };
-    set({ settings });
-    await persist(settings);
+    await updateSettings(set, settings);
   },
   setStartupPage: async (startupPage) => {
     const settings = { ...get().settings, startupPage };
-    set({ settings });
-    await persist(settings);
+    await updateSettings(set, settings);
+  },
+  setSidebarCollapsed: async (sidebarCollapsed) => {
+    const settings = { ...get().settings, sidebarCollapsed };
+    await updateSettings(set, settings);
+  },
+  setPrimaryCollection: async (primaryCollectionId) => {
+    const settings = { ...get().settings, primaryCollectionId };
+    await updateSettings(set, settings);
+  },
+  toggleFavoriteTag: async (tagId) => {
+    const current = get().settings.favoriteTagIds;
+    const favoriteTagIds = current.includes(tagId) ? current.filter((id) => id !== tagId) : [...current, tagId];
+    const settings = { ...get().settings, favoriteTagIds };
+    await updateSettings(set, settings);
+  },
+  toggleQuickPin: async (noteId) => {
+    const current = get().settings.quickPinNoteIds;
+    const quickPinNoteIds = current.includes(noteId) ? current.filter((id) => id !== noteId) : [...current, noteId].slice(-4);
+    const settings = { ...get().settings, quickPinNoteIds };
+    await updateSettings(set, settings);
   },
   replaceSettings: async (settings) => {
-    set({ settings });
-    await persist(settings);
+    await updateSettings(set, normalizeSettings(settings));
   },
 }));

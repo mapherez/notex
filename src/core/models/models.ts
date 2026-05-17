@@ -120,6 +120,10 @@ export type UserSettings = {
   username: string;
   startupPage: StartupPage | string;
   preferredLayout: PreferredLayout;
+  sidebarCollapsed: boolean;
+  primaryCollectionId: string;
+  favoriteTagIds: string[];
+  quickPinNoteIds: string[];
   updatedAt: string;
 };
 
@@ -138,4 +142,12 @@ export type NoteXExport = {
   tags: Tag[];
   collections: Collection[];
   userSettings: UserSettings;
+};
+
+export type NewNoteInput = {
+  type?: NoteType;
+  title: string;
+  intro: string;
+  collectionId?: string | null;
+  tagIds?: string[];
 };

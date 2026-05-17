@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
+import { ToastViewport } from './components/ui/ToastViewport';
 import { I18nProvider } from './i18n/I18nProvider';
 import { DashboardPage } from './pages/DashboardPage';
 import { CollectionsPage, NotesListPage } from './pages/NotesListPage';
@@ -47,6 +48,7 @@ export function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
+        <ToastViewport />
       </BrowserRouter>
     </I18nProvider>
   );

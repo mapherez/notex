@@ -5,7 +5,11 @@
     "language": "pt",
     "username": "Ricardo",
     "startupPage": "/",
-    "preferredLayout": "list"
+    "preferredLayout": "list",
+    "sidebarCollapsed": false,
+    "primaryCollectionId": "collection-studies",
+    "favoriteTagIds": ["tag-work", "tag-ideas", "tag-study", "tag-inspiration"],
+    "quickPinNoteIds": ["note-product-ideas", "note-roadmap", "note-terminal"]
   },
   "storage": {
     "quotaGb": 10,

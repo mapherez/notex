@@ -1,20 +1,27 @@
 import { Folder } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { EmptyState } from '../components/ui/EmptyState';
 import { IconBadge } from '../components/ui/IconBadge';
 import { NoteRow } from '../components/ui/NoteRow';
+import { filterNotes } from '../core/utils/noteFilters';
 import { useI18n } from '../i18n/I18nProvider';
+import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
 
 type ListMode = 'all' | 'favorites' | 'recent' | 'trash';
 
 export function NotesListPage({ mode }: { mode: ListMode }) {
   const { t } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
   const notes = useKnowledgeStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
-  const moveToTrash = useKnowledgeStore((state) => state.moveToTrash);
-  const restoreNote = useKnowledgeStore((state) => state.restoreNote);
+  const preferredLayout = useAppStore((state) => state.settings.preferredLayout);
+  const query = searchParams.get('q');
+  const tagId = searchParams.get('tag');
+  const collectionId = searchParams.get('collection');
+  const activeTag = tags.find((tag) => tag.id === tagId);
+  const activeCollection = collections.find((collection) => collection.id === collectionId);
 
   const copy = {
     all: { title: t('notes.title'), subtitle: t('notes.subtitle') },
@@ -23,18 +30,13 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
     trash: { title: t('notes.trashTitle'), subtitle: t('notes.trashSubtitle') },
   }[mode];
 
-  const filtered = notes.filter((note) => {
-    if (mode === 'trash') {
-      return note.isTrashed;
-    }
-    if (note.isTrashed) {
-      return false;
-    }
-    if (mode === 'favorites') {
-      return note.isFavorite;
-    }
-    return true;
+  const filtered = filterNotes(notes, {
+    mode,
+    query,
+    tagId,
+    collectionId,
   });
+  const hasFilters = Boolean(query || tagId || collectionId);
 
   return (
     <div className="page-content list-page-grid">
@@ -43,16 +45,26 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
         <p className="page-subtitle">{copy.subtitle}</p>
       </header>
 
+      {hasFilters ? (
+        <div className="filter-bar">
+          <span>{t('notes.filteredBy')}</span>
+          {query ? <strong>{query}</strong> : null}
+          {activeTag ? <strong># {activeTag.name}</strong> : null}
+          {activeCollection ? <strong>{activeCollection.name}</strong> : null}
+          <button type="button" onClick={() => setSearchParams({})}>
+            {t('notes.clearFilters')}
+          </button>
+        </div>
+      ) : null}
+
       {filtered.length ? (
-        <div className="note-list">
+        <div className={preferredLayout === 'grid' ? 'note-list notes-grid' : 'note-list'}>
           {filtered.map((note) => (
             <NoteRow
               key={note.id}
               note={note}
               tags={tags}
               collections={collections}
-              actionLabel={mode === 'trash' ? t('notes.restore') : t('notes.moveToTrash')}
-              onAction={(noteId) => void (mode === 'trash' ? restoreNote(noteId) : moveToTrash(noteId))}
             />
           ))}
         </div>
@@ -79,7 +91,7 @@ export function CollectionsPage() {
         {collections.map((collection) => {
           const count = notes.filter((note) => note.collectionId === collection.id && !note.isTrashed).length;
           return (
-            <Link className="collection-card" to="/notes" key={collection.id}>
+            <Link className="collection-card" to={`/notes?collection=${collection.id}`} key={collection.id}>
               <IconBadge icon={Folder} color={collection.color} />
               <div>
                 <div className="stat-label">{collection.name}</div>
