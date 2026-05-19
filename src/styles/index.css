@@ -144,8 +144,7 @@
   .sidebar.collapsed .storage-card,
   .sidebar.collapsed .user-meta,
   .sidebar.collapsed .user-footer svg,
-  .sidebar.collapsed .primary-action-side,
-  .sidebar.collapsed .sidebar-section .nav-item:last-child {
+  .sidebar.collapsed .primary-action-side {
     display: none;
   }
 

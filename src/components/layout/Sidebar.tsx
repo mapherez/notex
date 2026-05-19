@@ -141,11 +141,6 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               <span>{collection.name}</span>
             </Link>
           ))}
-          <NavLink to="/collections" className="nav-item" onClick={onClose}>
-            <Archive size={20} strokeWidth={1.8} />
-            <span>{t('navigation.seeMore')}</span>
-            <ChevronDown size={16} />
-          </NavLink>
         </div>
 
         <div className="sidebar-spacer" />
