@@ -93,6 +93,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
               note={note}
               tags={tags}
               collections={collections}
+              timeValue={mode === 'recent' ? note.lastOpenedAt ?? note.updatedAt : undefined}
             />
           ))}
         </div>
@@ -236,24 +237,29 @@ export function CollectionsPage() {
                 </form>
               ) : (
                 <>
-                  <Link className="collection-card-main" to={`/notes?collection=${collection.id}`}>
-                    <IconBadge icon={Folder} color={collection.color} />
-                    <div>
-                      <div className="stat-label">{collection.name}</div>
-                      <div className="stat-delta">
-                        {count} {t('navigation.notes')}
+                  <div className="collection-card-header">
+                    <Link className="collection-card-main" to={`/notes?collection=${collection.id}`}>
+                      <IconBadge icon={Folder} color={collection.color} />
+                      <div>
+                        <div className="stat-label">{collection.name}</div>
+                        <div className="stat-delta">
+                          {count} {t('navigation.notes')}
+                        </div>
                       </div>
+                    </Link>
+                    <div className="collection-card-actions">
+                      <button className="collection-action-button" type="button" aria-label={t('collections.edit')} onClick={() => beginEdit(collection)}>
+                        <Edit3 size={16} />
+                      </button>
+                      <button
+                        className="collection-action-button danger"
+                        type="button"
+                        aria-label={t('collections.delete')}
+                        onClick={() => void removeCollection(collection.id)}
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                  </Link>
-                  <div className="collection-card-actions">
-                    <button className="collection-action-button" type="button" onClick={() => beginEdit(collection)}>
-                      <Edit3 size={16} />
-                      {t('collections.edit')}
-                    </button>
-                    <button className="collection-action-button danger" type="button" onClick={() => void removeCollection(collection.id)}>
-                      <Trash2 size={16} />
-                      {t('collections.delete')}
-                    </button>
                   </div>
                 </>
               )}

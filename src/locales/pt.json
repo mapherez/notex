@@ -76,10 +76,7 @@
       "favorites": "Favoritos",
       "collections": "Coleções",
       "tags": "Tags",
-      "notesDelta": "+ 12 esta semana",
-      "favoritesDelta": "+ 3 esta semana",
-      "collectionsDelta": "Sem alterações",
-      "tagsDelta": "+ 5 esta semana"
+      "weekDelta": "+ {{count}} esta semana"
     },
     "recentNotes": "Notas recentes",
     "quickCapture": {

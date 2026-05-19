@@ -1,50 +1,83 @@
-import { ArrowRight, CheckSquare, FileText, Folder, Image, List, Mic, Star, Tag, Timer } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowRight, FileText, Folder, Star, Tag, Timer } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { IconBadge } from '../components/ui/IconBadge';
 import { NoteRow } from '../components/ui/NoteRow';
 import { Panel } from '../components/ui/Panel';
+import { SearchBox } from '../components/ui/SearchBox';
+import { filterNotes } from '../core/utils/noteFilters';
 import { useI18n } from '../i18n/I18nProvider';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
-import type { Tag as TagModel, TagColor } from '../core/models/models';
+import type { Collection, Note, Tag as TagModel, TagColor } from '../core/models/models';
 
 type CaptureForm = {
   capture: string;
 };
 
 export function DashboardPage() {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const navigate = useNavigate();
-  const [captureMode, setCaptureMode] = useState('list');
   const notes = useKnowledgeStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
-  const activities = useKnowledgeStore((state) => state.activities);
   const createQuickNote = useKnowledgeStore((state) => state.createQuickNote);
   const pushToast = useToastStore((state) => state.pushToast);
   const { register, handleSubmit, reset } = useForm<CaptureForm>();
 
   const activeNotes = notes.filter((note) => !note.isTrashed);
-  const recentNotes = activeNotes.filter((note) => note.id !== 'note-linguistic').slice(0, 5);
+  const recentNoteFeed = filterNotes(notes, { mode: 'recent' });
+  const recentNotes = recentNoteFeed.filter((note) => note.id !== 'note-linguistic').slice(0, 5);
+  const recentActivityNotes = recentNoteFeed.slice(0, 3);
   const favoriteCount = activeNotes.filter((note) => note.isFavorite).length;
+  const activeNotesThisWeek = activeNotes.filter((note) => isThisWeek(note.createdAt) || isThisWeek(note.updatedAt));
+  const tagCounts = countTags(activeNotes);
+  const popularTags = tags
+    .map((tag) => ({ ...tag, count: tagCounts.get(tag.id) ?? 0 }))
+    .filter((tag) => tag.count > 0)
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    .slice(0, 5);
 
   const stats = [
-    { label: t('dashboard.stats.notes'), value: Math.max(activeNotes.length, 128), delta: t('dashboard.stats.notesDelta'), icon: FileText, color: 'blue', to: '/notes' },
-    { label: t('dashboard.stats.favorites'), value: Math.max(favoriteCount, 23), delta: t('dashboard.stats.favoritesDelta'), icon: Star, color: 'amber', to: '/favorites' },
-    { label: t('dashboard.stats.collections'), value: Math.max(collections.length, 6), delta: t('dashboard.stats.collectionsDelta'), icon: Folder, color: 'green', to: '/collections' },
-    { label: t('dashboard.stats.tags'), value: Math.max(tags.length, 15), delta: t('dashboard.stats.tagsDelta'), icon: Tag, color: 'purple', to: '/tags' },
+    {
+      label: t('dashboard.stats.notes'),
+      value: activeNotes.length,
+      delta: formatWeekDelta(activeNotes.filter((note) => isThisWeek(note.createdAt)).length, t),
+      icon: FileText,
+      color: 'blue',
+      to: '/notes',
+    },
+    {
+      label: t('dashboard.stats.favorites'),
+      value: favoriteCount,
+      delta: formatWeekDelta(activeNotes.filter((note) => note.isFavorite && isThisWeek(note.updatedAt)).length, t),
+      icon: Star,
+      color: 'amber',
+      to: '/favorites',
+    },
+    {
+      label: t('dashboard.stats.collections'),
+      value: collections.length,
+      delta: formatWeekDelta(countTouchedCollections(activeNotesThisWeek, collections), t),
+      icon: Folder,
+      color: 'green',
+      to: '/collections',
+    },
+    {
+      label: t('dashboard.stats.tags'),
+      value: tags.length,
+      delta: formatWeekDelta(countTouchedTags(activeNotesThisWeek, tags), t),
+      icon: Tag,
+      color: 'purple',
+      to: '/tags',
+    },
   ] as const;
 
   return (
     <div className="page-content">
       <div className="dashboard-layout">
         <section className="dashboard-main">
-          <header>
-            <h1 className="page-title">{t('dashboard.greeting')}</h1>
-            <p className="page-subtitle">{t('dashboard.subtitle')}</p>
-          </header>
+          <SearchBox className="dashboard-search-box" />
 
           <div className="stats-grid">
             {stats.map((stat) => (
@@ -73,6 +106,7 @@ export function DashboardPage() {
                   note={note}
                   tags={tags}
                   collections={collections}
+                  timeValue={getRecentTimestamp(note)}
                 />
               ))}
             </div>
@@ -84,7 +118,7 @@ export function DashboardPage() {
             <form
               className="quick-capture"
               onSubmit={handleSubmit(async ({ capture }) => {
-                const note = await createQuickNote(capture);
+                const note = await createQuickNote(capture, t('dashboard.quickCapture.title'));
                 if (note) {
                   pushToast(t('notes.draftCreated'), 'success');
                   navigate(`/notes/${note.id}`);
@@ -95,40 +129,6 @@ export function DashboardPage() {
               <div className="capture-box">
                 <textarea {...register('capture')} placeholder={t('dashboard.quickCapture.placeholder')} />
                 <div className="capture-actions">
-                  <div className="capture-tools">
-                    <button
-                      className={captureMode === 'list' ? 'icon-button active' : 'icon-button'}
-                      type="button"
-                      aria-label={t('dashboard.quickCapture.format')}
-                      onClick={() => setCaptureMode('list')}
-                    >
-                      <List size={18} />
-                    </button>
-                    <button
-                      className={captureMode === 'image' ? 'icon-button active' : 'icon-button'}
-                      type="button"
-                      aria-label={t('dashboard.quickCapture.image')}
-                      onClick={() => setCaptureMode('image')}
-                    >
-                      <Image size={18} />
-                    </button>
-                    <button
-                      className={captureMode === 'task' ? 'icon-button active' : 'icon-button'}
-                      type="button"
-                      aria-label={t('dashboard.quickCapture.task')}
-                      onClick={() => setCaptureMode('task')}
-                    >
-                      <CheckSquare size={18} />
-                    </button>
-                    <button
-                      className={captureMode === 'voice' ? 'icon-button active' : 'icon-button'}
-                      type="button"
-                      aria-label={t('dashboard.quickCapture.voice')}
-                      onClick={() => setCaptureMode('voice')}
-                    >
-                      <Mic size={18} />
-                    </button>
-                  </div>
                   <button className="submit-button" type="submit" aria-label={t('dashboard.quickCapture.submit')}>
                     <ArrowRight size={18} />
                   </button>
@@ -146,12 +146,9 @@ export function DashboardPage() {
             }
           >
             <div className="tag-list">
-              {[...tags]
-                .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))
-                .slice(0, 5)
-                .map((tag) => (
-                  <PopularTagRow key={tag.id} tag={tag} />
-                ))}
+              {popularTags.map((tag) => (
+                <PopularTagRow key={tag.id} tag={tag} />
+              ))}
             </div>
           </Panel>
 
@@ -164,12 +161,12 @@ export function DashboardPage() {
             }
           >
             <div className="activity-list">
-              {activities.slice(0, 3).map((activity) => (
-                <Link className="activity-row" key={activity.id} to={`/notes/${activity.noteId}`}>
+              {recentActivityNotes.map((note) => (
+                <Link className="activity-row" key={note.id} to={`/notes/${note.id}`}>
                   <Timer size={15} />
                   <span className="activity-copy">
-                    <span>{activity.label}</span>
-                    <span>{activity.time}</span>
+                    <span>{note.title}</span>
+                    <span>{formatRecentTimestamp(getRecentTimestamp(note), locale, t)}</span>
                   </span>
                 </Link>
               ))}
@@ -179,6 +176,85 @@ export function DashboardPage() {
       </div>
     </div>
   );
+}
+
+function getRecentTimestamp(note: Note) {
+  return note.lastOpenedAt ?? note.updatedAt;
+}
+
+function countTags(notes: Note[]) {
+  const counts = new Map<string, number>();
+  notes.forEach((note) => {
+    new Set(note.tagIds).forEach((tagId) => {
+      counts.set(tagId, (counts.get(tagId) ?? 0) + 1);
+    });
+  });
+  return counts;
+}
+
+function countTouchedCollections(notes: Note[], collections: Collection[]) {
+  const collectionIds = new Set(collections.map((collection) => collection.id));
+  return new Set(notes.flatMap((note) => (note.collectionId && collectionIds.has(note.collectionId) ? [note.collectionId] : []))).size;
+}
+
+function countTouchedTags(notes: Note[], tags: TagModel[]) {
+  const tagIds = new Set(tags.map((tag) => tag.id));
+  return new Set(notes.flatMap((note) => note.tagIds.filter((tagId) => tagIds.has(tagId)))).size;
+}
+
+function formatWeekDelta(count: number, t: ReturnType<typeof useI18n>['t']) {
+  return t('dashboard.stats.weekDelta', { count });
+}
+
+function isThisWeek(value?: string | null) {
+  if (!value) {
+    return false;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const start = startOfWeek(new Date());
+  const end = new Date(start);
+  end.setDate(start.getDate() + 7);
+  return date >= start && date < end;
+}
+
+function startOfWeek(value: Date) {
+  const start = new Date(value);
+  start.setHours(0, 0, 0, 0);
+  const daysSinceMonday = (start.getDay() + 6) % 7;
+  start.setDate(start.getDate() - daysSinceMonday);
+  return start;
+}
+
+function formatRecentTimestamp(value: string, locale: string, t: ReturnType<typeof useI18n>['t']) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  const now = new Date();
+  const localeCode = locale === 'pt' ? 'pt-PT' : 'en-US';
+  const time = new Intl.DateTimeFormat(localeCode, { hour: '2-digit', minute: '2-digit' }).format(date);
+
+  if (date.toDateString() === now.toDateString()) {
+    return `${t('common.today')}, ${time}`;
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `${t('common.yesterday')}, ${time}`;
+  }
+
+  return new Intl.DateTimeFormat(localeCode, {
+    day: '2-digit',
+    month: 'short',
+    year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric',
+  }).format(date);
 }
 
 function PopularTagRow({ tag }: { tag: TagModel }) {

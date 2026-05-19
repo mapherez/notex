@@ -50,7 +50,7 @@ type KnowledgeStore = {
   initialize: (locale: Locale, userSettings?: UserSettings) => Promise<void>;
   createDraftNote: (input: NewNoteInput) => Promise<Note>;
   createNoteFromDraft: (draft: NoteEditDraft) => Promise<Note | null>;
-  createQuickNote: (content: string) => Promise<Note | null>;
+  createQuickNote: (content: string, title?: string) => Promise<Note | null>;
   toggleFavorite: (noteId: string) => Promise<void>;
   togglePinned: (noteId: string) => Promise<void>;
   markNoteOpened: (noteId: string) => Promise<void>;
@@ -172,14 +172,14 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
 
     return note;
   },
-  createQuickNote: async (content) => {
+  createQuickNote: async (content, title = 'Quick capture') => {
     const trimmed = content.trim();
     if (!trimmed) {
       return null;
     }
 
     return get().createDraftNote({
-      title: trimmed.length > 64 ? `${trimmed.slice(0, 61)}...` : trimmed,
+      title,
       intro: trimmed,
       collectionId: 'collection-ideas',
       tagIds: ['tag-ideas'],

@@ -16,6 +16,7 @@ export function NoteRow({
   onToggleFavorite,
   actionLabel,
   onAction,
+  timeValue,
 }: {
   note: Note;
   tags: Tag[];
@@ -23,6 +24,7 @@ export function NoteRow({
   onToggleFavorite?: (noteId: string) => void;
   actionLabel?: string;
   onAction?: (noteId: string) => void;
+  timeValue?: string | null;
 }) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -81,7 +83,7 @@ export function NoteRow({
         <p className="note-intro">{note.content.intro}</p>
       </Link>
       {primaryTag ? <TagChip tag={primaryTag} color={primaryTag.color} /> : collection ? <TagChip tag={collection} /> : null}
-      <span className="note-time">{formatDisplayTime(note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
+      <span className="note-time">{formatDisplayTime(timeValue ?? note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
       <div className="note-row-actions" ref={menuRef}>
         <button
           className="icon-button"

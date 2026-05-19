@@ -52,8 +52,21 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
   return (
     <>
-      {open ? <button className="sidebar-backdrop" type="button" aria-label={t('common.close')} onClick={onClose} /> : null}
-      <aside className={clsx('sidebar', open && 'open', settings.sidebarCollapsed && 'collapsed')}>
+      {open ? (
+        <button
+          className="sidebar-backdrop"
+          type="button"
+          aria-label={t("common.close")}
+          onClick={onClose}
+        />
+      ) : null}
+      <aside
+        className={clsx(
+          "sidebar",
+          open && "open",
+          settings.sidebarCollapsed && "collapsed",
+        )}
+      >
         <div className="sidebar-header">
           <Link className="brand" to="/" onClick={onClose}>
             <img className="logo-image" src="/assets/notex-logo.svg" alt="" />
@@ -62,55 +75,33 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <button
             className="icon-button"
             type="button"
-            aria-label={t('navigation.collapse')}
+            aria-label={t("navigation.collapse")}
             onClick={() => void setSidebarCollapsed(!settings.sidebarCollapsed)}
           >
             <ChevronsLeft size={18} />
           </button>
         </div>
 
-        <div className="primary-action" ref={newNoteRef}>
-          <button className="primary-action-main" type="button" onClick={() => createNote('standard')}>
-            <Plus size={20} />
-            {t('navigation.newNote')}
-          </button>
+        <div className="primary-action">
           <button
-            className="primary-action-side"
+            className="primary-action-main"
             type="button"
-            aria-label={t('navigation.newNote')}
-            onClick={() => setNewNoteOpen((value) => !value)}
+            onClick={() => createNote("standard")}
           >
-            <ChevronDown size={18} />
+            <Plus size={20} />
+            {t("navigation.newNote")}
           </button>
-          {newNoteOpen ? (
-            <div className="floating-menu sidebar-new-menu">
-              <button type="button" onClick={() => createNote('standard')}>
-                <FileText size={17} />
-                {t('navigation.newStandardNote')}
-              </button>
-              <button type="button" onClick={() => createNote('linguistic_doubt')}>
-                <FileText size={17} />
-                {t('navigation.newLanguageNote')}
-              </button>
-              <button type="button" onClick={() => createNote('reference')}>
-                <Archive size={17} />
-                {t('navigation.newReference')}
-              </button>
-              <button type="button" onClick={() => createNote('snippet')}>
-                <FileText size={17} />
-                {t('navigation.newSnippet')}
-              </button>
-            </div>
-          ) : null}
         </div>
 
-        <nav className="sidebar-section" aria-label={t('navigation.notes')}>
+        <nav className="sidebar-section" aria-label={t("navigation.notes")}>
           {navItems.map(({ to, labelKey, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
-              end={to === '/'}
-              className={({ isActive }) => clsx('nav-item', isActive && 'active')}
+              end={to === "/"}
+              className={({ isActive }) =>
+                clsx("nav-item", isActive && "active")
+              }
               onClick={onClose}
             >
               <Icon size={21} strokeWidth={1.8} />
@@ -121,8 +112,13 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
         <div className="sidebar-section">
           <div className="sidebar-section-title">
-            <span>{t('navigation.collections')}</span>
-            <button className="inline-icon-button" type="button" onClick={() => navigate('/collections')} aria-label={t('common.add')}>
+            <span>{t("navigation.collections")}</span>
+            <button
+              className="inline-icon-button"
+              type="button"
+              onClick={() => navigate("/collections")}
+              aria-label={t("common.add")}
+            >
               <Plus size={16} />
             </button>
           </div>
@@ -131,9 +127,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               key={collection.id}
               to={`/notes?collection=${collection.id}`}
               className={clsx(
-                'nav-item',
-                `collection-${collection.color ?? 'neutral'}`,
-                location.pathname === '/notes' && activeCollectionId === collection.id && 'active',
+                "nav-item",
+                `collection-${collection.color ?? "neutral"}`,
+                location.pathname === "/notes" &&
+                  activeCollectionId === collection.id &&
+                  "active",
               )}
               onClick={onClose}
             >

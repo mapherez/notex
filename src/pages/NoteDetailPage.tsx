@@ -1,4 +1,20 @@
-import { Check, ChevronLeft, ExternalLink, FileText, Folder, Lightbulb, MoreVertical, Pencil, Plus, Star, Trash2, X } from 'lucide-react';
+import {
+  Check,
+  ChevronLeft,
+  Copy,
+  ExternalLink,
+  FileText,
+  Folder,
+  Lightbulb,
+  Link as LinkIcon,
+  MoreVertical,
+  Pencil,
+  Pin,
+  Plus,
+  Star,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { EditableUsageExamplesTable } from '../components/editing/EditableUsageExamplesTable';
@@ -318,6 +334,7 @@ export function NoteDetailPage() {
                       setMoreOpen(false);
                     }}
                   >
+                    <Pin size={16} />
                     {note.isPinned ? t('common.unpin') : t('common.pin')}
                   </button>
                   <button
@@ -332,6 +349,7 @@ export function NoteDetailPage() {
                       setMoreOpen(false);
                     }}
                   >
+                    <Copy size={16} />
                     {t('common.duplicate')}
                   </button>
                   <button
@@ -341,6 +359,7 @@ export function NoteDetailPage() {
                       setMoreOpen(false);
                     }}
                   >
+                    <LinkIcon size={16} />
                     {t('common.copyLink')}
                   </button>
                   <button
@@ -352,6 +371,7 @@ export function NoteDetailPage() {
                       });
                     }}
                   >
+                    <Trash2 size={16} />
                     {t('notes.moveToTrash')}
                   </button>
                 </div>
