@@ -14,6 +14,7 @@ import type {
   Locale,
   NewNoteInput,
   Note,
+  NoteThumbnail,
   NoteStats,
   NoteType,
   NoteXExport,
@@ -57,6 +58,7 @@ type KnowledgeStore = {
   updateNoteTitle: (noteId: string, title: string) => Promise<void>;
   updateNoteIntro: (noteId: string, intro: string) => Promise<void>;
   updateNoteCollection: (noteId: string, collectionId: string | null) => Promise<void>;
+  updateNoteThumbnail: (noteId: string, thumbnail: NoteThumbnail) => Promise<void>;
   saveNoteDraft: (noteId: string, draft: NoteEditDraft) => Promise<Note | null>;
   updateMarkdownSection: (noteId: string, section: MarkdownContentSection, markdown: string) => Promise<void>;
   updateNoteTip: (noteId: string, title: string, body: string) => Promise<void>;
@@ -280,6 +282,22 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     const updated = finalizeNoteUpdate({
       ...note,
       collectionId,
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  updateNoteThumbnail: async (noteId, thumbnail) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    if (!note) {
+      return;
+    }
+
+    const updated = finalizeNoteUpdate({
+      ...note,
+      thumbnail,
     });
 
     await db.notes.put(updated);

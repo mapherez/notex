@@ -14,9 +14,12 @@ type AppStore = {
   setSidebarCollapsed: (sidebarCollapsed: boolean) => Promise<void>;
   setPrimaryCollection: (primaryCollectionId: string) => Promise<void>;
   toggleFavoriteTag: (tagId: string) => Promise<void>;
+  setQuickPinAt: (index: number, noteId: string | null) => Promise<void>;
   toggleQuickPin: (noteId: string) => Promise<void>;
   replaceSettings: (settings: UserSettings) => Promise<void>;
 };
+
+const maxQuickPins = 5;
 
 async function persist(settings: UserSettings) {
   await writeUserSettings({
@@ -80,9 +83,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const settings = { ...get().settings, favoriteTagIds };
     await updateSettings(set, settings);
   },
+  setQuickPinAt: async (index, noteId) => {
+    const nextSlots = [...get().settings.quickPinNoteIds.slice(0, maxQuickPins)];
+    const normalizedIndex = Math.max(0, Math.min(maxQuickPins - 1, index));
+    const dedupedSlots = noteId ? nextSlots.map((id) => (id === noteId ? '' : id)) : nextSlots;
+
+    dedupedSlots[normalizedIndex] = noteId ?? '';
+    const quickPinNoteIds = dedupedSlots.filter(Boolean).slice(0, maxQuickPins);
+    const settings = { ...get().settings, quickPinNoteIds };
+    await updateSettings(set, settings);
+  },
   toggleQuickPin: async (noteId) => {
     const current = get().settings.quickPinNoteIds;
-    const quickPinNoteIds = current.includes(noteId) ? current.filter((id) => id !== noteId) : [...current, noteId].slice(-4);
+    const quickPinNoteIds = current.includes(noteId) ? current.filter((id) => id !== noteId) : [...current, noteId].slice(-maxQuickPins);
     const settings = { ...get().settings, quickPinNoteIds };
     await updateSettings(set, settings);
   },

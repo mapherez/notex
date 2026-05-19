@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { ArchiveRestore, Copy, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { Collection, Note, Tag } from '../../core/models/models';
+import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { useToastStore } from '../../store/useToastStore';
@@ -35,7 +36,7 @@ export function NoteRow({
   const restoreNote = useKnowledgeStore((state) => state.restoreNote);
   const duplicateNote = useKnowledgeStore((state) => state.duplicateNote);
   const pushToast = useToastStore((state) => state.pushToast);
-  const primaryTag = tags.find((tag) => note.tagIds.includes(tag.id));
+  const primaryTag = sortTagsByName(tags).find((tag) => note.tagIds.includes(tag.id));
   const collection = collections.find((item) => item.id === note.collectionId);
 
   useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));

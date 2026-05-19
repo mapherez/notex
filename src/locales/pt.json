@@ -66,7 +66,14 @@
     "profile": "Abrir perfil",
     "settings": "Definições",
     "localMode": "Modo local",
-    "searchApplied": "Pesquisa aplicada"
+    "searchApplied": "Pesquisa aplicada",
+    "searchResults": "Resultados da pesquisa",
+    "noSearchResults": "Nenhuma nota encontrada",
+    "searchMatch": {
+      "collection": "Coleção",
+      "tag": "Tag",
+      "title": "Título"
+    }
   },
   "dashboard": {
     "greeting": "Olá, Ricardo 👋",
@@ -76,6 +83,7 @@
       "favorites": "Favoritos",
       "collections": "Coleções",
       "tags": "Tags",
+      "trash": "Lixeira",
       "weekDelta": "+ {{count}} esta semana"
     },
     "recentNotes": "Notas recentes",
@@ -87,6 +95,16 @@
       "image": "Imagem",
       "task": "Tarefa",
       "voice": "Voz"
+    },
+    "quickPins": {
+      "title": "Atalhos rápidos",
+      "add": "Adicionar atalho rápido",
+      "change": "Alterar atalho rápido",
+      "clear": "Limpar atalho",
+      "searchPlaceholder": "Pesquisar notas...",
+      "noMatches": "Nenhuma nota encontrada",
+      "noteFallback": "Ainda sem descrição",
+      "updated": "Atalhos rápidos atualizados"
     },
     "popularTags": "Tags populares",
     "recentActivity": "Atividade recente"
@@ -149,6 +167,9 @@
     "editingDraft": "Rascunho em edição",
     "localDraft": "Rascunho local",
     "savedLocal": "Guardado localmente",
+    "thumbnail": "Miniatura",
+    "changeThumbnail": "Alterar miniatura",
+    "thumbnailUpdated": "Miniatura atualizada",
     "titleRequired": "Adiciona um título antes de guardar esta nota",
     "summary": "Resumo",
     "summaryPlaceholder": "Escreve o resumo com Markdown...",
@@ -317,6 +338,7 @@
     },
     "values": {
       "lastActivity": "Hoje, 10:24",
+      "noActivity": "Ainda sem atividade",
       "streak": "12 dias 🔥"
     },
     "plan": {

@@ -27,7 +27,6 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
   const clearTrash = useKnowledgeStore((state) => state.clearTrash);
   const preferredLayout = useAppStore((state) => state.settings.preferredLayout);
   const pushToast = useToastStore((state) => state.pushToast);
-  const query = searchParams.get('q');
   const tagId = searchParams.get('tag');
   const collectionId = searchParams.get('collection');
   const activeTag = tags.find((tag) => tag.id === tagId);
@@ -42,11 +41,10 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
 
   const filtered = filterNotes(notes, {
     mode,
-    query,
     tagId,
     collectionId,
   });
-  const hasFilters = Boolean(query || tagId || collectionId);
+  const hasFilters = Boolean(tagId || collectionId);
   const trashCount = notes.filter((note) => note.isTrashed).length;
 
   async function handleClearTrash() {
@@ -76,7 +74,6 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
       {hasFilters ? (
         <div className="filter-bar">
           <span>{t('notes.filteredBy')}</span>
-          {query ? <strong>{query}</strong> : null}
           {activeTag ? <strong># {activeTag.name}</strong> : null}
           {activeCollection ? <strong>{activeCollection.name}</strong> : null}
           <button type="button" onClick={() => setSearchParams({})}>

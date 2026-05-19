@@ -11,6 +11,7 @@ import {
   Plus,
   Star,
   Tag,
+  Trash,
   Trash2,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -27,7 +28,7 @@ const navItems = [
   { to: '/favorites', labelKey: 'navigation.favorites', icon: Star },
   { to: '/recent', labelKey: 'navigation.recent', icon: Clock3 },
   { to: '/tags', labelKey: 'navigation.tags', icon: Tag },
-  { to: '/trash', labelKey: 'navigation.trash', icon: Trash2 },
+  { to: '/trash', labelKey: 'navigation.trash', icon: Trash },
 ] as const;
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -40,6 +41,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
   const settings = useAppStore((state) => state.settings);
   const setSidebarCollapsed = useAppStore((state) => state.setSidebarCollapsed);
   const collections = useKnowledgeStore((state) => state.collections);
+  const hasTrashedNotes = useKnowledgeStore((state) => state.notes.some((note) => note.isTrashed));
   const activeCollectionId = searchParams.get('collection');
 
   useClickOutside(newNoteRef, newNoteOpen, () => setNewNoteOpen(false));
@@ -94,20 +96,24 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         </div>
 
         <nav className="sidebar-section" aria-label={t("navigation.notes")}>
-          {navItems.map(({ to, labelKey, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === "/"}
-              className={({ isActive }) =>
-                clsx("nav-item", isActive && "active")
-              }
-              onClick={onClose}
-            >
-              <Icon size={21} strokeWidth={1.8} />
-              <span>{t(labelKey)}</span>
-            </NavLink>
-          ))}
+          {navItems.map(({ to, labelKey, icon }) => {
+            const Icon = to === '/trash' && hasTrashedNotes ? Trash2 : icon;
+
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === "/"}
+                className={({ isActive }) =>
+                  clsx("nav-item", isActive && "active")
+                }
+                onClick={onClose}
+              >
+                <Icon size={21} strokeWidth={1.8} />
+                <span>{t(labelKey)}</span>
+              </NavLink>
+            );
+          })}
         </nav>
 
         <div className="sidebar-section">

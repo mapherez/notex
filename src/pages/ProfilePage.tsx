@@ -1,7 +1,6 @@
 import {
   CalendarClock,
   ChevronRight,
-  Crown,
   Download,
   Edit3,
   FileText,
@@ -20,24 +19,22 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { IconBadge } from '../components/ui/IconBadge';
-import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
 import { TagChip } from '../components/ui/TagChip';
-import { appSettings } from '../config/appSettings';
 import { createExportFile, readImportFile } from '../core/services/exportImport';
+import { filterNotes } from '../core/utils/noteFilters';
+import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
-import type { Locale, PreferredLayout, ThemePreference } from '../core/models/models';
+import type { Locale, Note, PreferredLayout, ThemePreference } from '../core/models/models';
 
 export function ProfilePage() {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
-  const [pinPickerOpen, setPinPickerOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const settings = useAppStore((state) => state.settings);
   const setTheme = useAppStore((state) => state.setTheme);
@@ -46,7 +43,6 @@ export function ProfilePage() {
   const setStartupPage = useAppStore((state) => state.setStartupPage);
   const setPrimaryCollection = useAppStore((state) => state.setPrimaryCollection);
   const toggleFavoriteTag = useAppStore((state) => state.toggleFavoriteTag);
-  const toggleQuickPin = useAppStore((state) => state.toggleQuickPin);
   const replaceSettings = useAppStore((state) => state.replaceSettings);
   const notes = useKnowledgeStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
@@ -58,10 +54,15 @@ export function ProfilePage() {
   const pushToast = useToastStore((state) => state.pushToast);
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const favoriteNotes = activeNotes.filter((note) => note.isFavorite);
-  const favoriteTags = tags.filter((tag) => settings.favoriteTagIds.includes(tag.id));
-  const remainingTags = tags.filter((tag) => !settings.favoriteTagIds.includes(tag.id));
-  const quickPins = activeNotes.filter((note) => settings.quickPinNoteIds.includes(note.id));
-  const remainingPins = activeNotes.filter((note) => !settings.quickPinNoteIds.includes(note.id)).slice(0, 6);
+  const favoriteTags = sortTagsByFavoriteOrder(
+    tags.filter((tag) => settings.favoriteTagIds.includes(tag.id)),
+    settings.favoriteTagIds,
+  );
+  const remainingTags = sortTagsByName(tags.filter((tag) => !settings.favoriteTagIds.includes(tag.id)));
+  const mostRecentNote = filterNotes(notes, { mode: 'recent' })[0];
+  const lastActivityValue = mostRecentNote
+    ? formatRecentActivityTimestamp(getRecentTimestamp(mostRecentNote), locale, t)
+    : t('profile.values.noActivity');
 
   return (
     <div className="page-content list-page-grid">
@@ -97,14 +98,7 @@ export function ProfilePage() {
               <Metric icon={FileText} color="purple" label={t('profile.stats.notes')} value={String(activeNotes.length)} />
               <Metric icon={Folder} color="green" label={t('profile.stats.collections')} value={String(collections.length)} />
               <Metric icon={Star} color="amber" label={t('profile.stats.favorites')} value={String(favoriteNotes.length)} />
-              <Metric icon={CalendarClock} color="blue" label={t('profile.stats.lastActivity')} value={t('profile.values.lastActivity')} />
-              <Metric icon={UserCheck} color="pink" label={t('profile.stats.streak')} value={t('profile.values.streak')} />
-              <Metric
-                icon={HardDrive}
-                color="blue"
-                label={t('profile.stats.storage')}
-                value={`${appSettings.storage.usedGb} GB ${t('navigation.storageLimit')} (${t('navigation.storagePercent')})`}
-              />
+              <Metric icon={CalendarClock} color="blue" label={t('profile.stats.lastActivity')} value={lastActivityValue} />
             </div>
           </Panel>
         </section>
@@ -224,52 +218,6 @@ export function ProfilePage() {
                 ))}
               </select>
             </div>
-            <div className="settings-row">
-              <IconBadge icon={Star} color="orange" />
-              <div>
-                <div className="settings-label">{t('profile.organization.quickPins')}</div>
-                <div className="settings-description">{t('profile.organization.quickPinsDescription')}</div>
-                <div className="quick-pins mt-3">
-                  {quickPins.map((note) => (
-                    <span className="mini-note-shell" key={note.id}>
-                      <Link className="mini-note" to={`/notes/${note.id}`}>
-                        <NoteThumbnail thumbnail={note.thumbnail} />
-                        <span>{note.title}</span>
-                      </Link>
-                      <button
-                        className="mini-remove"
-                        type="button"
-                        aria-label={t('common.remove')}
-                        onClick={() => {
-                          void toggleQuickPin(note.id).then(() => pushToast(t('profile.actions.pinUpdated'), 'success'));
-                        }}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                  <button className="icon-button" type="button" aria-label={t('common.add')} onClick={() => setPinPickerOpen((value) => !value)}>
-                    <Plus size={18} />
-                  </button>
-                </div>
-                {pinPickerOpen ? (
-                  <div className="inline-picker">
-                    {remainingPins.map((note) => (
-                      <button
-                        key={note.id}
-                        type="button"
-                        onClick={() => {
-                          void toggleQuickPin(note.id).then(() => pushToast(t('profile.actions.pinUpdated'), 'success'));
-                          setPinPickerOpen(false);
-                        }}
-                      >
-                        {note.title}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </div>
           </section>
 
         </section>
@@ -385,23 +333,6 @@ export function ProfilePage() {
               onClick={() => pushToast(t('profile.actions.logout'), 'warning')}
             />
           </Panel>
-
-          <Panel title={t('profile.plan.title')}>
-            <div className="plan-card">
-              <div className="plan-heading">
-                <span className="plan-name">{t('profile.plan.name')}</span>
-                <span className="plan-badge">{t('profile.plan.current')}</span>
-              </div>
-              <PlanRow icon={FileText} label={t('profile.plan.notes')} value={t('profile.plan.notesLimit')} />
-              <PlanRow icon={HardDrive} label={t('profile.plan.storage')} value={t('profile.plan.storageLimit')} />
-              <PlanRow icon={Folder} label={t('profile.plan.attachments')} value={t('profile.plan.attachmentLimit')} />
-              <PlanRow icon={CalendarClock} label={t('profile.plan.history')} value={t('profile.plan.historyLimit')} />
-              <button className="upgrade-button mt-4" type="button" onClick={() => pushToast(t('profile.actions.upgrade'), 'info')}>
-                <Crown size={18} />
-                {t('profile.plan.upgrade')}
-              </button>
-            </div>
-          </Panel>
         </section>
       </div>
     </div>
@@ -488,12 +419,33 @@ function SecurityRow({
   );
 }
 
-function PlanRow({ icon: Icon, label, value }: { icon: typeof FileText; label: string; value: string }) {
-  return (
-    <div className="plan-row">
-      <Icon size={17} />
-      <span>{label}</span>
-      <span className="plan-value">{value}</span>
-    </div>
-  );
+function getRecentTimestamp(note: Note) {
+  return note.lastOpenedAt ?? note.updatedAt;
+}
+
+function formatRecentActivityTimestamp(value: string, locale: string, t: ReturnType<typeof useI18n>['t']) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  const now = new Date();
+  const localeCode = locale === 'pt' ? 'pt-PT' : 'en-US';
+  const time = new Intl.DateTimeFormat(localeCode, { hour: '2-digit', minute: '2-digit' }).format(date);
+
+  if (date.toDateString() === now.toDateString()) {
+    return `${t('common.today')}, ${time}`;
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `${t('common.yesterday')}, ${time}`;
+  }
+
+  return new Intl.DateTimeFormat(localeCode, {
+    day: '2-digit',
+    month: 'short',
+    year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric',
+  }).format(date);
 }

@@ -5,14 +5,14 @@ import { TopBar } from './TopBar';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 
-const searchRoutes = new Set(['/notes', '/favorites', '/recent', '/trash', '/collections', '/tags']);
+const searchRoutes = new Set(['/notes', '/favorites', '/recent', '/trash', '/collections', '/tags', '/profile']);
 
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { t } = useI18n();
   const sidebarCollapsed = useAppStore((state) => state.settings.sidebarCollapsed);
-  const showSearch = searchRoutes.has(location.pathname);
+  const showSearch = searchRoutes.has(location.pathname) || location.pathname.startsWith('/notes/');
   const heading =
     location.pathname === '/'
       ? {

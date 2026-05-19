@@ -1,12 +1,16 @@
-import { ArrowRight, FileText, Folder, Star, Tag, Timer } from 'lucide-react';
+import { ArrowRight, FileText, Folder, Plus, Search, Star, Tag, Timer, Trash, Trash2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { IconBadge } from '../components/ui/IconBadge';
+import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { NoteRow } from '../components/ui/NoteRow';
 import { Panel } from '../components/ui/Panel';
 import { SearchBox } from '../components/ui/SearchBox';
 import { filterNotes } from '../core/utils/noteFilters';
+import { useClickOutside } from '../core/utils/useClickOutside';
 import { useI18n } from '../i18n/I18nProvider';
+import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
 import type { Collection, Note, Tag as TagModel, TagColor } from '../core/models/models';
@@ -15,9 +19,17 @@ type CaptureForm = {
   capture: string;
 };
 
+const quickPinLimit = 5;
+
 export function DashboardPage() {
   const { locale, t } = useI18n();
   const navigate = useNavigate();
+  const quickPinPickerRef = useRef<HTMLDivElement>(null);
+  const quickPinInputRef = useRef<HTMLInputElement>(null);
+  const [activeQuickPinIndex, setActiveQuickPinIndex] = useState<number | null>(null);
+  const [quickPinQuery, setQuickPinQuery] = useState('');
+  const settings = useAppStore((state) => state.settings);
+  const setQuickPinAt = useAppStore((state) => state.setQuickPinAt);
   const notes = useKnowledgeStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
@@ -26,6 +38,18 @@ export function DashboardPage() {
   const { register, handleSubmit, reset } = useForm<CaptureForm>();
 
   const activeNotes = notes.filter((note) => !note.isTrashed);
+  const quickPinNotes = settings.quickPinNoteIds
+    .slice(0, quickPinLimit)
+    .flatMap((noteId) => activeNotes.find((note) => note.id === noteId) ?? []);
+  const quickPinSlots = Array.from({ length: quickPinLimit }, (_, index) => quickPinNotes[index] ?? null);
+  const pinnedNoteIds = new Set(quickPinNotes.map((note) => note.id));
+  const activeQuickPinNote = activeQuickPinIndex === null ? null : quickPinSlots[activeQuickPinIndex];
+  const quickPinOptions = activeNotes
+    .filter((note) => note.id === activeQuickPinNote?.id || !pinnedNoteIds.has(note.id))
+    .filter((note) => !quickPinQuery.trim() || normalizeSearchValue(note.title).includes(normalizeSearchValue(quickPinQuery)))
+    .sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' }))
+    .slice(0, 8);
+  const trashedNotes = notes.filter((note) => note.isTrashed);
   const recentNoteFeed = filterNotes(notes, { mode: 'recent' });
   const recentNotes = recentNoteFeed.filter((note) => note.id !== 'note-linguistic').slice(0, 5);
   const recentActivityNotes = recentNoteFeed.slice(0, 3);
@@ -71,7 +95,39 @@ export function DashboardPage() {
       color: 'purple',
       to: '/tags',
     },
+    {
+      label: t('dashboard.stats.trash'),
+      value: trashedNotes.length,
+      delta: formatWeekDelta(trashedNotes.filter((note) => isThisWeek(note.updatedAt)).length, t),
+      icon: trashedNotes.length ? Trash2 : Trash,
+      color: 'orange',
+      to: '/trash',
+    },
   ] as const;
+
+  useClickOutside(quickPinPickerRef, activeQuickPinIndex !== null, () => closeQuickPinPicker());
+
+  useEffect(() => {
+    if (activeQuickPinIndex !== null) {
+      requestAnimationFrame(() => quickPinInputRef.current?.focus());
+    }
+  }, [activeQuickPinIndex]);
+
+  function openQuickPinPicker(index: number) {
+    setActiveQuickPinIndex(index);
+    setQuickPinQuery('');
+  }
+
+  function closeQuickPinPicker() {
+    setActiveQuickPinIndex(null);
+    setQuickPinQuery('');
+  }
+
+  async function selectQuickPin(index: number, noteId: string | null) {
+    await setQuickPinAt(index, noteId);
+    closeQuickPinPicker();
+    pushToast(t('dashboard.quickPins.updated'), 'success');
+  }
 
   return (
     <div className="page-content">
@@ -91,6 +147,71 @@ export function DashboardPage() {
               </Link>
             ))}
           </div>
+
+          <section className="dashboard-quick-pins" ref={quickPinPickerRef}>
+            <div className="panel-header">
+              <h2 className="panel-title">{t('dashboard.quickPins.title')}</h2>
+            </div>
+            <div className="quick-pin-row">
+              {quickPinSlots.map((note, index) => (
+                <div className="quick-pin-slot" key={note?.id ?? `quick-pin-empty-${index}`}>
+                  <button
+                    className={note ? 'quick-pin-card' : 'quick-pin-card empty'}
+                    type="button"
+                    aria-label={note ? t('dashboard.quickPins.change') : t('dashboard.quickPins.add')}
+                    title={note?.title}
+                    onClick={() => openQuickPinPicker(index)}
+                  >
+                    {note ? (
+                      <>
+                        <NoteThumbnail thumbnail={note.thumbnail} />
+                        <span className="quick-pin-copy">
+                          <strong>{note.title}</strong>
+                          <span>{note.content.intro || t('dashboard.quickPins.noteFallback')}</span>
+                        </span>
+                      </>
+                    ) : (
+                      <Plus size={24} />
+                    )}
+                  </button>
+                  {activeQuickPinIndex === index ? (
+                    <div className="quick-pin-picker">
+                      <label className="quick-pin-search">
+                        <Search size={17} />
+                        <input
+                          ref={quickPinInputRef}
+                          value={quickPinQuery}
+                          onChange={(event) => setQuickPinQuery(event.target.value)}
+                          placeholder={t('dashboard.quickPins.searchPlaceholder')}
+                        />
+                      </label>
+                      <div className="quick-pin-options">
+                        {quickPinOptions.length ? (
+                          quickPinOptions.map((option) => (
+                            <button key={option.id} type="button" onClick={() => void selectQuickPin(index, option.id)}>
+                              <NoteThumbnail thumbnail={option.thumbnail} />
+                              <span>
+                                <strong>{option.title}</strong>
+                                <span>{option.content.intro || t('dashboard.quickPins.noteFallback')}</span>
+                              </span>
+                            </button>
+                          ))
+                        ) : (
+                          <span className="inline-help">{t('dashboard.quickPins.noMatches')}</span>
+                        )}
+                      </div>
+                      {note ? (
+                        <button className="quick-pin-clear" type="button" onClick={() => void selectQuickPin(index, null)}>
+                          <X size={15} />
+                          {t('dashboard.quickPins.clear')}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </section>
 
           <section>
             <div className="panel-header">
@@ -264,4 +385,12 @@ function PopularTagRow({ tag }: { tag: TagModel }) {
       <span>{tag.count}</span>
     </Link>
   );
+}
+
+function normalizeSearchValue(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }

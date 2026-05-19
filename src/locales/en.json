@@ -66,7 +66,14 @@
     "profile": "Open profile",
     "settings": "Settings",
     "localMode": "Local mode",
-    "searchApplied": "Search applied"
+    "searchApplied": "Search applied",
+    "searchResults": "Search results",
+    "noSearchResults": "No matching notes",
+    "searchMatch": {
+      "collection": "Collection",
+      "tag": "Tag",
+      "title": "Title"
+    }
   },
   "dashboard": {
     "greeting": "Hi, Ricardo 👋",
@@ -76,6 +83,7 @@
       "favorites": "Favorites",
       "collections": "Collections",
       "tags": "Tags",
+      "trash": "Trash",
       "weekDelta": "+ {{count}} this week"
     },
     "recentNotes": "Recent notes",
@@ -87,6 +95,16 @@
       "image": "Image",
       "task": "Task",
       "voice": "Voice"
+    },
+    "quickPins": {
+      "title": "Quick pins",
+      "add": "Add quick pin",
+      "change": "Change quick pin",
+      "clear": "Clear pin",
+      "searchPlaceholder": "Search notes...",
+      "noMatches": "No matching notes",
+      "noteFallback": "No description yet",
+      "updated": "Quick pins updated"
     },
     "popularTags": "Popular tags",
     "recentActivity": "Recent activity"
@@ -149,6 +167,9 @@
     "editingDraft": "Editing draft",
     "localDraft": "Local draft",
     "savedLocal": "Saved locally",
+    "thumbnail": "Thumbnail",
+    "changeThumbnail": "Change thumbnail",
+    "thumbnailUpdated": "Thumbnail updated",
     "titleRequired": "Add a title before saving this note",
     "summary": "Summary",
     "summaryPlaceholder": "Write the summary with Markdown...",
@@ -317,6 +338,7 @@
     },
     "values": {
       "lastActivity": "Today, 10:24",
+      "noActivity": "No activity yet",
       "streak": "12 days 🔥"
     },
     "plan": {

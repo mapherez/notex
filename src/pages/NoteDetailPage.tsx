@@ -15,23 +15,27 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { EditableUsageExamplesTable } from '../components/editing/EditableUsageExamplesTable';
 import { MarkdownEditor } from '../components/editing/MarkdownEditor';
 import { MarkdownPreview } from '../components/editing/MarkdownPreview';
 import { EmptyState } from '../components/ui/EmptyState';
+import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
 import { TagChip } from '../components/ui/TagChip';
-import type { Collection, Note, NoteType, RichTextBlock, TagColor } from '../core/models/models';
+import type { Collection, Note, NoteThumbnail as NoteThumbnailModel, NoteType, RichTextBlock, TagColor } from '../core/models/models';
 import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
 import { tagColorOptions } from '../core/utils/tagColors';
+import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useI18n } from '../i18n/I18nProvider';
+import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore, type NoteEditDraft } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
 
 const noteTypes: NoteType[] = ['standard', 'linguistic_doubt', 'reference', 'snippet'];
+const thumbnailVariants: NoteThumbnailModel['variant'][] = ['purple', 'paper', 'terminal', 'landscape', 'book', 'text'];
 
 export function NoteDetailPage() {
   const { id } = useParams();
@@ -43,8 +47,10 @@ export function NoteDetailPage() {
   const initialCollectionId = searchParams.get('collection') || null;
   const linkInputRef = useRef<HTMLInputElement>(null);
   const documentActionsRef = useRef<HTMLDivElement>(null);
+  const thumbnailPickerRef = useRef<HTMLDivElement>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
+  const [thumbnailPickerOpen, setThumbnailPickerOpen] = useState(false);
   const [exampleOpen, setExampleOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [exampleText, setExampleText] = useState('');
@@ -57,6 +63,7 @@ export function NoteDetailPage() {
   const [isEditing, setIsEditing] = useState(isNewNote);
   const [savingPage, setSavingPage] = useState(false);
   const [draft, setDraft] = useState<NoteEditDraft>(() => buildEmptyDraft(initialType, initialCollectionId, t('noteDetail.tip')));
+  const favoriteTagIds = useAppStore((state) => state.settings.favoriteTagIds);
   const notes = useKnowledgeStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
@@ -70,6 +77,7 @@ export function NoteDetailPage() {
   const saveNoteDraft = useKnowledgeStore((state) => state.saveNoteDraft);
   const createNoteFromDraft = useKnowledgeStore((state) => state.createNoteFromDraft);
   const updateNoteTags = useKnowledgeStore((state) => state.updateNoteTags);
+  const updateNoteThumbnail = useKnowledgeStore((state) => state.updateNoteThumbnail);
   const createTag = useKnowledgeStore((state) => state.createTag);
   const addAdditionalExample = useKnowledgeStore((state) => state.addAdditionalExample);
   const updateAdditionalExample = useKnowledgeStore((state) => state.updateAdditionalExample);
@@ -82,6 +90,7 @@ export function NoteDetailPage() {
   const note = isNewNote ? undefined : notes.find((item) => item.id === id);
 
   useClickOutside(documentActionsRef, moreOpen, () => setMoreOpen(false));
+  useClickOutside(thumbnailPickerRef, thumbnailPickerOpen, () => setThumbnailPickerOpen(false));
 
   useEffect(() => {
     if (isReady && note && !isNewNote) {
@@ -123,11 +132,11 @@ export function NoteDetailPage() {
     );
   }
 
-  const noteTags = note ? tags.filter((tag) => note.tagIds.includes(tag.id)) : [];
+  const noteTags = note ? sortTagsByName(tags.filter((tag) => note.tagIds.includes(tag.id))) : [];
   const collectionId = isEditing ? draft.collectionId : note?.collectionId ?? null;
   const collection = collections.find((item) => item.id === collectionId);
   const savedCollection = note ? collections.find((item) => item.id === note.collectionId) : undefined;
-  const availableTags = note ? tags.filter((tag) => !note.tagIds.includes(tag.id)) : [];
+  const availableTags = note ? sortTagsByFavoriteOrder(tags.filter((tag) => !note.tagIds.includes(tag.id)), favoriteTagIds) : [];
   const linkedNotes = note ? note.linkedNoteIds.flatMap((linkedId) => notes.find((item) => item.id === linkedId) ?? []) : [];
   const backlinkNotes = note ? notes.filter((item) => item.id !== note.id && item.linkedNoteIds.includes(note.id)) : [];
   const linkSearchActive = linkInput.trim().startsWith('/');
@@ -241,6 +250,16 @@ export function NoteDetailPage() {
     setNewTagColor('purple');
     setTagPickerOpen(false);
     pushToast(t('noteDetail.tagCreated'), 'success');
+  }
+
+  async function selectThumbnail(variant: NoteThumbnailModel['variant']) {
+    if (!note) {
+      return;
+    }
+
+    await updateNoteThumbnail(note.id, { variant });
+    setThumbnailPickerOpen(false);
+    pushToast(t('noteDetail.thumbnailUpdated'), 'success');
   }
 
   function startExampleEdit(index: number, example: string) {
@@ -384,51 +403,65 @@ export function NoteDetailPage() {
       <div className={note ? 'document-shell' : 'document-shell single-column'}>
         <article className="document-main">
           <div className="document-heading-row">
-            {isEditing ? (
-              <CollectionSelect collections={collections} value={draft.collectionId} onChange={(collectionId) => updateDraft({ collectionId })} />
-            ) : (
-              <CollectionBreadcrumb collection={collection} emptyText={t('noteDetail.noCollection')} />
-            )}
-            <div className="document-edit-actions">
+            <div className="document-title-stack">
               {isEditing ? (
-                <>
-                  <button className="editor-accept-button" disabled={savingPage} type="button" onClick={() => void savePageEdit()}>
-                    <Check size={17} />
-                    {t('common.save')}
-                  </button>
-                  <button className="editor-cancel-button" disabled={savingPage} type="button" onClick={cancelPageEdit}>
-                    <X size={17} />
-                    {t('common.cancel')}
-                  </button>
-                </>
+                <CollectionSelect collections={collections} value={draft.collectionId} onChange={(collectionId) => updateDraft({ collectionId })} />
               ) : (
-                <button className="editor-cancel-button" type="button" onClick={beginPageEdit}>
-                  <Pencil size={17} />
-                  {t('editor.edit')}
-                </button>
+                <CollectionBreadcrumb collection={collection} emptyText={t('noteDetail.noCollection')} />
               )}
+
+              {isEditing ? (
+                <input
+                  className="editable-control document-title-input"
+                  disabled={savingPage}
+                  onChange={(event) => updateDraft({ title: event.target.value })}
+                  placeholder={t('noteDetail.titlePlaceholder')}
+                  value={draft.title}
+                />
+              ) : (
+                <h1 className="document-title">{note?.title}</h1>
+              )}
+
+              {noteTags.length ? (
+                <div className="tag-row document-title-tags">
+                  {noteTags.map((tag) => (
+                    <TagChip key={tag.id} tag={tag} />
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div className="document-heading-side">
+              <div className="document-edit-actions">
+                {isEditing ? (
+                  <>
+                    <button className="editor-accept-button" disabled={savingPage} type="button" onClick={() => void savePageEdit()}>
+                      <Check size={17} />
+                      {t('common.save')}
+                    </button>
+                    <button className="editor-cancel-button" disabled={savingPage} type="button" onClick={cancelPageEdit}>
+                      <X size={17} />
+                      {t('common.cancel')}
+                    </button>
+                  </>
+                ) : (
+                  <button className="editor-cancel-button" type="button" onClick={beginPageEdit}>
+                    <Pencil size={17} />
+                    {t('editor.edit')}
+                  </button>
+                )}
+              </div>
+              {note ? (
+                <ThumbnailPicker
+                  current={note.thumbnail}
+                  onOpenChange={setThumbnailPickerOpen}
+                  onSelect={(variant) => void selectThumbnail(variant)}
+                  open={thumbnailPickerOpen}
+                  pickerRef={thumbnailPickerRef}
+                  t={t}
+                />
+              ) : null}
             </div>
           </div>
-
-          {isEditing ? (
-            <input
-              className="editable-control document-title-input"
-              disabled={savingPage}
-              onChange={(event) => updateDraft({ title: event.target.value })}
-              placeholder={t('noteDetail.titlePlaceholder')}
-              value={draft.title}
-            />
-          ) : (
-            <h1 className="document-title">{note?.title}</h1>
-          )}
-
-          {noteTags.length ? (
-            <div className="tag-row">
-              {noteTags.map((tag) => (
-                <TagChip key={tag.id} tag={tag} />
-              ))}
-            </div>
-          ) : null}
 
           {isEditing ? (
             <textarea
@@ -710,6 +743,60 @@ export function NoteDetailPage() {
         ) : null}
       </div>
     </>
+  );
+}
+
+function ThumbnailPicker({
+  current,
+  onOpenChange,
+  onSelect,
+  open,
+  pickerRef,
+  t,
+}: {
+  current?: NoteThumbnailModel;
+  onOpenChange: (open: boolean) => void;
+  onSelect: (variant: NoteThumbnailModel['variant']) => void;
+  open: boolean;
+  pickerRef: RefObject<HTMLDivElement>;
+  t: (key: string) => string;
+}) {
+  const currentThumbnail = current ?? { variant: 'text' as const };
+
+  return (
+    <div className="thumbnail-picker" ref={pickerRef}>
+      <button
+        className="thumbnail-picker-trigger"
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={t('noteDetail.changeThumbnail')}
+        title={t('noteDetail.changeThumbnail')}
+        onClick={() => onOpenChange(!open)}
+      >
+        <NoteThumbnail thumbnail={currentThumbnail} />
+        <span className="thumbnail-picker-edit" aria-hidden="true">
+          <Pencil size={13} />
+        </span>
+      </button>
+      {open ? (
+        <div className="thumbnail-picker-menu" role="menu" aria-label={t('noteDetail.thumbnail')}>
+          {thumbnailVariants.map((variant) => (
+            <button
+              className={variant === currentThumbnail.variant ? 'thumbnail-option active' : 'thumbnail-option'}
+              key={variant}
+              type="button"
+              role="menuitemradio"
+              aria-checked={variant === currentThumbnail.variant}
+              aria-label={`${t('noteDetail.changeThumbnail')}: ${variant}`}
+              onClick={() => onSelect(variant)}
+            >
+              <NoteThumbnail thumbnail={{ variant }} />
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

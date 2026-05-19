@@ -1,5 +1,6 @@
 import { Tag as TagIcon } from 'lucide-react';
 import { LabelManager } from '../components/ui/LabelManager';
+import { sortTagsByName } from '../core/utils/tagSorting';
 import { useI18n } from '../i18n/I18nProvider';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
@@ -12,7 +13,7 @@ export function TagsPage() {
   const updateTag = useKnowledgeStore((state) => state.updateTag);
   const deleteTag = useKnowledgeStore((state) => state.deleteTag);
   const pushToast = useToastStore((state) => state.pushToast);
-  const tagsWithCounts = tags.map((tag) => ({
+  const tagsWithCounts = sortTagsByName(tags).map((tag) => ({
     ...tag,
     count: notes.filter((note) => !note.isTrashed && note.tagIds.includes(tag.id)).length,
   }));
