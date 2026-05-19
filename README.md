@@ -149,32 +149,45 @@ Production should serve frontend and backend from the same origin.
 
 ## Docker Deployment
 
-Build the image:
+The repo includes a manual GitHub Action that builds and publishes the Docker image to GitHub Container Registry.
+
+To publish a new image:
+
+1. Push your changes to GitHub.
+2. Open GitHub Actions.
+3. Run `Build Docker Image` manually.
+4. Use `latest` or provide another tag.
+
+The default published image is:
+
+```text
+ghcr.io/mapherez/notex:latest
+```
+
+You can also build locally:
 
 ```bash
 docker build -t notex .
 ```
 
-Run it:
+For server deployment, copy `docker-compose.yml` and a production `.env` file to your server, then run:
 
 ```bash
-docker run -d \
-  --name notex \
-  -p 3000:3000 \
-  -v notex-data:/data \
-  -e GOOGLE_CLIENT_ID="..." \
-  -e GOOGLE_CLIENT_SECRET="..." \
-  -e GOOGLE_REDIRECT_URI="https://your-domain.com/api/auth/google/callback" \
-  -e SESSION_SECRET="..." \
-  -e TOKEN_ENCRYPTION_KEY="..." \
-  -e DATABASE_PATH="/data/notex.sqlite" \
-  -e APP_ORIGIN="https://your-domain.com" \
-  notex
+docker compose pull
+docker compose up -d
 ```
 
 The `/data` volume stores the SQLite database, including encrypted refresh tokens and browser session metadata.
 
 Put the container behind HTTPS in production. Cookies are marked `Secure` automatically when `APP_ORIGIN` starts with `https://`.
+
+If the GHCR package is private, log in on the server before pulling:
+
+```bash
+echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+```
+
+The token needs permission to read packages.
 
 ## Scripts
 
