@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
+import { CloudDataChoiceModal } from './components/sync/CloudDataChoiceModal';
 import { ToastViewport } from './components/ui/ToastViewport';
 import { useSyncBootstrap } from './core/services/useSyncBootstrap';
 import { I18nProvider } from './i18n/I18nProvider';
@@ -52,6 +53,7 @@ export function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
+        <CloudDataChoiceModal />
         <ToastViewport />
       </BrowserRouter>
     </I18nProvider>

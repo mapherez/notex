@@ -96,7 +96,7 @@ function sortNotes(notes: Note[]) {
   return [...notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-const collectionOrder = ['collection-work', 'collection-studies', 'collection-projects', 'collection-personal', 'collection-ideas'];
+const collectionOrder = ['collection-work', 'collection-personal'];
 
 function sortCollections(collections: Collection[]) {
   return [...collections].sort((a, b) => {

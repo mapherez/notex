@@ -12,6 +12,20 @@ import type {
 } from '../models/models';
 import type { MockDataBundle } from '../data/createMockData';
 
+const removedDefaultNoteIds = ['note-roadmap', 'note-product-ideas', 'note-terminal', 'note-japan', 'note-atomic-habits'];
+const removedDefaultTagIds = [
+  'tag-productivity',
+  'tag-development',
+  'tag-ideas',
+  'tag-study',
+  'tag-personal',
+  'tag-portuguese',
+  'tag-work',
+  'tag-inspiration',
+];
+const removedDefaultCollectionIds = ['collection-studies', 'collection-projects', 'collection-ideas'];
+const keptDefaultTagIds = ['tag-grammar', 'tag-doubt'];
+
 class NoteXDatabase extends Dexie {
   notes!: Table<Note, string>;
   tags!: Table<Tag, string>;
@@ -46,6 +60,73 @@ class NoteXDatabase extends Dexie {
       syncItems: 'entityKey, entityType, entityId, status, updatedAt',
       deviceSessions: 'id, lastSeenAt',
     });
+
+    this.version(3)
+      .stores({
+        notes: 'id, type, collectionId, isFavorite, isPinned, isArchived, isTrashed, updatedAt, lastOpenedAt, syncStatus',
+        tags: 'id, name',
+        collections: 'id, name',
+        users: 'id, email, googleSub',
+        activities: 'id, noteId, createdAt',
+        userSettings: 'id, language, theme, updatedAt',
+        syncState: 'id, provider, connected, email, updatedAt, lastSyncAt',
+        syncItems: 'entityKey, entityType, entityId, status, updatedAt',
+        deviceSessions: 'id, lastSeenAt',
+      })
+      .upgrade(async (tx) => {
+        const notes = tx.table<Note, string>('notes');
+        const tags = tx.table<Tag, string>('tags');
+        const collections = tx.table<Collection, string>('collections');
+        const activities = tx.table<ActivityItem, string>('activities');
+        const userSettings = tx.table<UserSettings, string>('userSettings');
+
+        await notes.bulkDelete(removedDefaultNoteIds);
+        await tags.bulkDelete(removedDefaultTagIds);
+        await collections.bulkDelete(removedDefaultCollectionIds);
+        await activities.where('noteId').anyOf(removedDefaultNoteIds).delete();
+
+        const linguisticNote = await notes.get('note-linguistic');
+        if (linguisticNote) {
+          await notes.put({
+            ...linguisticNote,
+            collectionId: 'collection-work',
+            tagIds: keptDefaultTagIds,
+            linkedNoteIds: [],
+            isFavorite: true,
+            syncStatus: 'local',
+            version: linguisticNote.version + 1,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+
+        const allNotes = await notes.toArray();
+        const cleanedNotes = allNotes
+          .filter((note) => note.id !== 'note-linguistic')
+          .map((note) => ({
+            ...note,
+            collectionId: removedDefaultCollectionIds.includes(note.collectionId ?? '') ? null : note.collectionId,
+            tagIds: note.tagIds.filter((tagId) => !removedDefaultTagIds.includes(tagId)),
+            linkedNoteIds: note.linkedNoteIds.filter((noteId) => !removedDefaultNoteIds.includes(noteId)),
+          }));
+        if (cleanedNotes.length) {
+          await notes.bulkPut(cleanedNotes);
+        }
+
+        const settings = await userSettings.get('local-user-settings');
+        if (settings) {
+          const quickPinNoteIds = settings.quickPinNoteIds.filter((noteId) => !removedDefaultNoteIds.includes(noteId));
+          const favoriteTagIds = settings.favoriteTagIds.filter((tagId) => keptDefaultTagIds.includes(tagId));
+          await userSettings.put({
+            ...settings,
+            primaryCollectionId: removedDefaultCollectionIds.includes(settings.primaryCollectionId)
+              ? 'collection-work'
+              : settings.primaryCollectionId,
+            favoriteTagIds: favoriteTagIds.length ? favoriteTagIds : keptDefaultTagIds,
+            quickPinNoteIds: quickPinNoteIds.length ? quickPinNoteIds : ['note-linguistic'],
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      });
   }
 }
 

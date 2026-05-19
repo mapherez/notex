@@ -1,10 +1,17 @@
 import { create } from 'zustand';
-import { readDeviceSessions, readSyncState, writeSyncState } from '../core/db/notexDb';
+import { db, readDeviceSessions, readSyncState, writeSyncState } from '../core/db/notexDb';
 import { requestGoogleConnection } from '../core/services/googleIdentity';
-import { countSyncWork, runGoogleDriveSync } from '../core/services/googleDriveSync';
+import {
+  clearGoogleDriveCloudData,
+  countSyncWork,
+  hasGoogleDriveCloudData,
+  replaceGoogleDriveWithLocalData,
+  replaceLocalDataWithGoogleDrive,
+  runGoogleDriveSync,
+} from '../core/services/googleDriveSync';
 import { ensureSyncState, GOOGLE_SYNC_ID, readLocalDeviceId } from '../core/services/syncQueue';
-import { buildGoogleUser } from '../core/utils/userProfile';
-import type { DeviceSession, SyncState } from '../core/models/models';
+import { buildGoogleUser, type GoogleUserProfile } from '../core/utils/userProfile';
+import type { DeviceSession, SyncState, User } from '../core/models/models';
 import { useAppStore } from './useAppStore';
 import { useKnowledgeStore } from './useKnowledgeStore';
 
@@ -16,13 +23,18 @@ type TokenCache = {
 type SyncStore = {
   syncState: SyncState | null;
   sessions: DeviceSession[];
+  cloudChoice: { email: string } | null;
   pendingCount: number;
   conflictCount: number;
   isSyncing: boolean;
   isConnecting: boolean;
+  isResolvingCloudChoice: boolean;
   hydrateSync: () => Promise<void>;
+  clearCloudData: () => Promise<void>;
   connectGoogle: () => Promise<void>;
   disconnectGoogle: () => Promise<void>;
+  removeDeviceSession: (deviceId: string) => Promise<void>;
+  resolveCloudChoice: (choice: 'local' | 'cloud') => Promise<void>;
   syncNow: () => Promise<void>;
   scheduleSync: () => void;
   refreshSyncMetadata: () => Promise<void>;
@@ -30,14 +42,18 @@ type SyncStore = {
 
 let tokenCache: TokenCache = null;
 let syncTimeout: number | null = null;
+let pendingConnection: ({ profile: GoogleUserProfile } & NonNullable<TokenCache>) | null = null;
+let pendingGoogleUser: User | null = null;
 
 export const useSyncStore = create<SyncStore>((set, get) => ({
   syncState: null,
   sessions: [],
+  cloudChoice: null,
   pendingCount: 0,
   conflictCount: 0,
   isSyncing: false,
   isConnecting: false,
+  isResolvingCloudChoice: false,
   hydrateSync: async () => {
     const syncState = await ensureSyncState();
     const [sessions, counts] = await Promise.all([readDeviceSessions(), countSyncWork()]);
@@ -46,6 +62,25 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       sessions,
       ...counts,
     });
+  },
+  clearCloudData: async () => {
+    const state = await ensureSyncState();
+    if (!state.connected) {
+      return;
+    }
+
+    set({ isSyncing: true });
+    try {
+      const accessToken = await getAccessToken();
+      await clearGoogleDriveCloudData(accessToken);
+      await get().refreshSyncMetadata();
+      set({ pendingCount: 0, conflictCount: 0, isSyncing: false });
+    } catch (error) {
+      await persistSyncError(error);
+      const syncState = await readSyncState();
+      set({ syncState: syncState ?? null, isSyncing: false });
+      throw error;
+    }
   },
   connectGoogle: async () => {
     set({ isConnecting: true });
@@ -75,6 +110,18 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
 
       await writeSyncState(syncState);
       await useKnowledgeStore.getState().setUser(user);
+      const cloudDataExists = await hasGoogleDriveCloudData(connection.accessToken);
+      if (cloudDataExists) {
+        pendingConnection = {
+          accessToken: connection.accessToken,
+          expiresAt: connection.expiresAt,
+          profile: connection.profile,
+        };
+        pendingGoogleUser = user;
+        set({ syncState, cloudChoice: { email: user.email ?? connection.profile.email }, isConnecting: false });
+        return;
+      }
+
       set({ syncState, isConnecting: false });
       await get().syncNow();
     } catch (error) {
@@ -93,7 +140,59 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
     await writeSyncState(syncState);
-    set({ syncState });
+    await db.deviceSessions.clear();
+    set({ syncState, sessions: [] });
+  },
+  removeDeviceSession: async (deviceId) => {
+    await db.deviceSessions.delete(deviceId);
+    const sessions = await readDeviceSessions();
+    set({ sessions });
+    await useAppStore.getState().replaceSettings(useAppStore.getState().settings);
+  },
+  resolveCloudChoice: async (choice) => {
+    if (!pendingConnection || !pendingGoogleUser) {
+      set({ cloudChoice: null });
+      return;
+    }
+
+    const googleUser = pendingGoogleUser;
+    set({ isResolvingCloudChoice: true });
+    try {
+      tokenCache = {
+        accessToken: pendingConnection.accessToken,
+        expiresAt: pendingConnection.expiresAt,
+      };
+      let result =
+        choice === 'cloud'
+          ? await replaceLocalDataWithGoogleDrive(pendingConnection.accessToken)
+          : await replaceGoogleDriveWithLocalData(pendingConnection.accessToken);
+      await db.transaction('rw', [db.users], async () => {
+        await db.users.clear();
+        await db.users.put(googleUser);
+      });
+      if (choice === 'cloud') {
+        result = await runGoogleDriveSync(pendingConnection.accessToken);
+      }
+      await Promise.all([
+        useKnowledgeStore.getState().refreshKnowledge(),
+        useAppStore.getState().hydrateSettings(),
+        get().refreshSyncMetadata(),
+      ]);
+      pendingConnection = null;
+      pendingGoogleUser = null;
+      set({
+        cloudChoice: null,
+        syncState: result.syncState,
+        pendingCount: result.pendingCount,
+        conflictCount: result.conflictCount,
+        isResolvingCloudChoice: false,
+      });
+    } catch (error) {
+      await persistSyncError(error);
+      const syncState = await readSyncState();
+      set({ syncState: syncState ?? null, isResolvingCloudChoice: false });
+      throw error;
+    }
   },
   syncNow: async () => {
     const state = await ensureSyncState();

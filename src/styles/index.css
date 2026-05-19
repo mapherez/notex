@@ -328,6 +328,72 @@
     flex: 1;
   }
 
+  .sidebar-sync-button {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: rgba(255, 255, 255, 0.025);
+    color: var(--color-text);
+    padding: var(--space-3);
+    text-align: left;
+  }
+
+  .sidebar-sync-button:hover,
+  .sidebar-sync-button:focus-visible {
+    border-color: var(--color-border-strong);
+    background: var(--color-hover);
+    outline: none;
+  }
+
+  .sidebar-sync-icon {
+    position: relative;
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+    color: var(--color-accent-strong);
+  }
+
+  .sidebar-sync-badge {
+    position: absolute;
+    right: -0.35rem;
+    top: -0.35rem;
+    display: grid;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    place-items: center;
+    border: 1px solid var(--color-sidebar);
+    border-radius: 999px;
+    background: var(--color-danger);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 800;
+  }
+
+  .sidebar-sync-sub {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--color-text-muted);
+    font-size: 0.76rem;
+  }
+
+  .sidebar.collapsed .sidebar-sync-button {
+    display: inline-grid;
+    width: 2.75rem;
+    grid-template-columns: 1fr;
+    padding: 0.25rem;
+  }
+
+  .sidebar.collapsed .sidebar-sync-button > span:last-child {
+    display: none;
+  }
+
   .storage-card,
   .user-footer {
     border: 1px solid var(--color-border);
@@ -387,6 +453,11 @@
       var(--color-surface-subtle);
     color: #fff;
     font-weight: 750;
+  }
+
+  .avatar-placeholder {
+    background: var(--color-surface-subtle);
+    color: var(--color-text-muted);
   }
 
   .avatar img,
@@ -571,6 +642,72 @@
     padding: var(--space-4);
     color: var(--color-text-muted);
     font-size: 0.9rem;
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.48);
+    padding: var(--space-5);
+    z-index: 120;
+  }
+
+  .choice-modal {
+    display: grid;
+    width: min(100%, 32rem);
+    gap: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface-elevated);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .choice-modal h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    line-height: 1.2;
+  }
+
+  .choice-modal p {
+    margin: 0;
+    color: var(--color-text-muted);
+    line-height: 1.55;
+  }
+
+  .choice-modal-actions {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .choice-modal-actions button {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    padding: var(--space-4);
+    text-align: left;
+  }
+
+  .choice-modal-actions button:hover,
+  .choice-modal-actions button:focus-visible {
+    border-color: var(--color-border-strong);
+    background: var(--color-hover);
+    outline: none;
+  }
+
+  .choice-modal-actions button span span:last-child {
+    display: block;
+    margin-top: var(--space-1);
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    line-height: 1.4;
   }
 
   .search-box input {
@@ -1792,6 +1929,11 @@
     font-weight: 780;
   }
 
+  .profile-avatar-placeholder {
+    background: var(--color-surface-subtle);
+    color: var(--color-text-muted);
+  }
+
   .profile-edit {
     position: absolute;
     right: 0.15rem;
@@ -1953,6 +2095,48 @@
     margin-top: var(--space-1);
     color: var(--color-text-muted);
     font-size: 0.82rem;
+  }
+
+  .sync-devices-panel {
+    display: grid;
+    gap: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-subtle);
+    padding: var(--space-4);
+  }
+
+  .sync-devices-panel p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+
+  .sync-device-list {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .sync-device-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    padding: var(--space-3);
+  }
+
+  .sync-device-badge {
+    display: inline-flex;
+    margin-left: var(--space-2);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-success) 16%, transparent);
+    color: var(--color-success);
+    padding: 0.1rem 0.45rem;
+    font-size: 0.7rem;
+    font-weight: 700;
   }
 
   .plan-card {

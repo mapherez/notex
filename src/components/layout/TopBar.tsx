@@ -1,4 +1,4 @@
-import { ChevronDown, Cloud, CloudOff, Menu, Moon, RefreshCw, Sun } from 'lucide-react';
+import { ChevronDown, Menu, Moon, Sun, UserRound } from 'lucide-react';
 import clsx from 'clsx';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,6 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { useSyncStore } from '../../store/useSyncStore';
-import { useToastStore } from '../../store/useToastStore';
 
 export function TopBar({
   heading,
@@ -27,12 +26,6 @@ export function TopBar({
   const theme = useAppStore((state) => state.settings.theme);
   const setTheme = useAppStore((state) => state.setTheme);
   const syncState = useSyncStore((state) => state.syncState);
-  const pendingCount = useSyncStore((state) => state.pendingCount);
-  const isSyncing = useSyncStore((state) => state.isSyncing);
-  const connectGoogle = useSyncStore((state) => state.connectGoogle);
-  const disconnectGoogle = useSyncStore((state) => state.disconnectGoogle);
-  const syncNow = useSyncStore((state) => state.syncNow);
-  const pushToast = useToastStore((state) => state.pushToast);
 
   useClickOutside(actionsRef, accountOpen, () => {
     setAccountOpen(false);
@@ -73,8 +66,12 @@ export function TopBar({
             setAccountOpen((value) => !value);
           }}
         >
-          <span className="avatar">
-            <img src={user?.avatarUrl ?? '/assets/avatar-ricardo.svg'} alt="" referrerPolicy="no-referrer" />
+          <span className={syncState?.connected && user?.avatarUrl ? 'avatar' : 'avatar avatar-placeholder'}>
+            {syncState?.connected && user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
+            ) : (
+              <UserRound size={20} strokeWidth={1.8} />
+            )}
           </span>
           <ChevronDown size={18} color="var(--color-text-muted)" />
         </button>
@@ -90,56 +87,6 @@ export function TopBar({
               }}
             >
               {t('topbar.profile')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (syncState?.connected) {
-                  void syncNow()
-                    .then(() => pushToast(t('sync.synced'), 'success'))
-                    .catch((error) => pushToast(error instanceof Error ? error.message : t('sync.failed'), 'warning'));
-                } else {
-                  void connectGoogle()
-                    .then(() => pushToast(t('sync.connected'), 'success'))
-                    .catch((error) => pushToast(error instanceof Error ? error.message : t('sync.failed'), 'warning'));
-                }
-                setAccountOpen(false);
-              }}
-            >
-              {syncState?.connected ? (
-                <>
-                  <RefreshCw size={16} />
-                  {isSyncing ? t('sync.syncing') : t('sync.syncNow')}
-                </>
-              ) : (
-                <>
-                  <Cloud size={16} />
-                  {t('sync.connect')}
-                </>
-              )}
-            </button>
-            {syncState?.connected ? (
-              <span className="menu-muted">{pendingCount ? t('sync.pendingCount', { count: pendingCount }) : t('sync.upToDate')}</span>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => {
-                if (syncState?.connected) {
-                  void disconnectGoogle().then(() => pushToast(t('sync.disconnected'), 'warning'));
-                } else {
-                  pushToast(t('topbar.localMode'), 'info');
-                }
-                setAccountOpen(false);
-              }}
-            >
-              {syncState?.connected ? (
-                <>
-                  <CloudOff size={16} />
-                  {t('sync.disconnect')}
-                </>
-              ) : (
-                t('topbar.localMode')
-              )}
             </button>
           </div>
         ) : null}

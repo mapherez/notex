@@ -7,9 +7,9 @@
     "startupPage": "/",
     "preferredLayout": "list",
     "sidebarCollapsed": false,
-    "primaryCollectionId": "collection-studies",
-    "favoriteTagIds": ["tag-work", "tag-ideas", "tag-study", "tag-inspiration"],
-    "quickPinNoteIds": ["note-product-ideas", "note-roadmap", "note-terminal"]
+    "primaryCollectionId": "collection-work",
+    "favoriteTagIds": ["tag-grammar", "tag-doubt"],
+    "quickPinNoteIds": ["note-linguistic"]
   },
   "storage": {
     "quotaGb": 10,

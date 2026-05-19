@@ -35,6 +35,154 @@ export type GoogleDriveSyncResult = {
   conflictCount: number;
 };
 
+export async function hasGoogleDriveCloudData(accessToken: string) {
+  const files = await listNoteXCloudFiles(accessToken);
+  return files.some((file) => file.name === MANIFEST_FILE_NAME || file.name === WORKSPACE_FILE_NAME || file.name.startsWith('notex-note-'));
+}
+
+export async function clearGoogleDriveCloudData(accessToken: string) {
+  const files = await listNoteXCloudFiles(accessToken);
+  await Promise.all(files.map((file) => deleteDriveFile(accessToken, file.id)));
+  await db.syncItems.clear();
+
+  const existingState = await ensureSyncState();
+  await writeSyncState({
+    ...existingState,
+    workspaceFileId: undefined,
+    manifestFileId: undefined,
+    lastSyncAt: undefined,
+    lastSyncStartedAt: undefined,
+    lastError: undefined,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function replaceGoogleDriveWithLocalData(accessToken: string): Promise<GoogleDriveSyncResult> {
+  await clearGoogleDriveCloudData(accessToken);
+  await touchCurrentDeviceSession();
+
+  const manifestEntries = new Map<string, CloudManifestNote>();
+  const notes = await db.notes.toArray();
+
+  for (const note of notes) {
+    const localHash = await hashNote(note);
+    const savedFile = await createJsonFile(accessToken, noteFileName(note.id), buildNotePayload(note), {
+      entityType: 'note',
+      entityId: note.id,
+    });
+    manifestEntries.set(note.id, toManifestNote(note, savedFile.id, localHash, savedFile.modifiedTime));
+    await markNoteSynced(note, savedFile, localHash);
+  }
+
+  const workspace = await buildWorkspacePayload();
+  const workspaceHash = await hashStableJson(workspace);
+  const savedWorkspaceFile = await saveWorkspaceFile(accessToken, undefined, workspace, workspaceHash);
+  const manifest: CloudManifestFile = {
+    schemaVersion: 1,
+    exportedAt: new Date().toISOString(),
+    workspace: {
+      fileId: savedWorkspaceFile.id,
+      hash: workspaceHash,
+      updatedAt: workspace.exportedAt,
+    },
+    notes: [...manifestEntries.values()].sort((a, b) => a.id.localeCompare(b.id)),
+  };
+  const manifestHash = await hashStableJson(manifest);
+  const savedManifestFile = await saveManifestFile(accessToken, undefined, manifest, manifestHash);
+  const finishedAt = new Date().toISOString();
+  const existingState = await ensureSyncState();
+  const syncState: SyncState = {
+    ...existingState,
+    connected: true,
+    workspaceFileId: savedWorkspaceFile.id,
+    manifestFileId: savedManifestFile.id,
+    lastSyncAt: finishedAt,
+    lastSyncStartedAt: undefined,
+    lastError: undefined,
+    updatedAt: finishedAt,
+  };
+  await writeSyncState(syncState);
+
+  return {
+    syncState,
+    pendingCount: 0,
+    conflictCount: await db.syncItems.where('status').equals('conflict').count(),
+  };
+}
+
+export async function replaceLocalDataWithGoogleDrive(accessToken: string): Promise<GoogleDriveSyncResult> {
+  const now = new Date().toISOString();
+  const existingState = await ensureSyncState();
+  await writeSyncState({ ...existingState, lastSyncStartedAt: now, lastError: undefined, updatedAt: now });
+
+  const files = await listAppDataFiles(accessToken);
+  const fileByName = new Map(files.map((file) => [file.name, file]));
+  const manifestFileId = existingState.manifestFileId ?? fileByName.get(MANIFEST_FILE_NAME)?.id;
+  const workspaceFileId = existingState.workspaceFileId ?? fileByName.get(WORKSPACE_FILE_NAME)?.id;
+  const remoteManifest = manifestFileId ? await readRemoteJson<CloudManifestFile>(accessToken, manifestFileId) : null;
+  const remoteWorkspace = workspaceFileId ? await readRemoteJson<CloudWorkspaceFile>(accessToken, workspaceFileId) : null;
+  const notes = await readCloudNotes(accessToken, remoteManifest);
+  const settings = remoteWorkspace?.userSettings ?? (await readUserSettings(defaultUserSettings.id)) ?? defaultUserSettings;
+  const sessions = mergeSessions(remoteWorkspace?.sessions ?? [], [
+    {
+      id: readLocalDeviceId(),
+      name: getDeviceName(),
+      userAgent: navigator.userAgent,
+      lastSeenAt: new Date().toISOString(),
+    },
+  ]);
+
+  await db.transaction('rw', [db.notes, db.tags, db.collections, db.activities, db.userSettings, db.deviceSessions, db.syncItems], async () => {
+    await db.notes.clear();
+    await db.tags.clear();
+    await db.collections.clear();
+    await db.activities.clear();
+    await db.userSettings.clear();
+    await db.deviceSessions.clear();
+    await db.syncItems.clear();
+    await db.notes.bulkPut(notes);
+    await db.tags.bulkPut(remoteWorkspace?.tags ?? []);
+    await db.collections.bulkPut(remoteWorkspace?.collections ?? []);
+    await db.activities.bulkPut(remoteWorkspace?.activities ?? []);
+    await db.userSettings.put(settings);
+    await db.deviceSessions.bulkPut(sessions);
+  });
+
+  for (const note of notes) {
+    const entry = remoteManifest?.notes.find((item) => item.id === note.id);
+    const hash = entry?.hash ?? (await hashNote(note));
+    await db.syncItems.put({
+      ...buildBaseSyncItem(noteKey(note.id), 'note', note.id),
+      driveFileId: entry?.fileId,
+      localHash: hash,
+      remoteHash: hash,
+      remoteModifiedTime: entry?.updatedAt,
+      status: 'synced',
+      lastSyncedAt: new Date().toISOString(),
+    });
+  }
+
+  const finishedAt = new Date().toISOString();
+  const latestState = await ensureSyncState();
+  const syncState: SyncState = {
+    ...latestState,
+    connected: true,
+    workspaceFileId,
+    manifestFileId,
+    lastSyncAt: finishedAt,
+    lastSyncStartedAt: undefined,
+    lastError: undefined,
+    updatedAt: finishedAt,
+  };
+  await writeSyncState(syncState);
+
+  return {
+    syncState,
+    pendingCount: 0,
+    conflictCount: 0,
+  };
+}
+
 export async function runGoogleDriveSync(accessToken: string): Promise<GoogleDriveSyncResult> {
   const now = new Date().toISOString();
   const existingState = await ensureSyncState();
@@ -203,6 +351,20 @@ async function pullMissingRemoteNotes(accessToken: string, manifestEntries: Map<
       lastSyncedAt: new Date().toISOString(),
     });
   }
+}
+
+async function readCloudNotes(accessToken: string, remoteManifest: CloudManifestFile | null) {
+  const notes: Note[] = [];
+  const noteEntries = (remoteManifest?.notes ?? []).filter((entry) => !entry.deletedAt && entry.fileId);
+
+  for (const entry of noteEntries) {
+    const payload = await readRemoteJson<CloudNoteFile>(accessToken, entry.fileId);
+    if (payload?.note) {
+      notes.push({ ...payload.note, syncStatus: 'synced' });
+    }
+  }
+
+  return notes;
 }
 
 async function pushDeletedNotes(
@@ -391,6 +553,21 @@ async function readRemoteJson<T>(accessToken: string, fileId: string): Promise<T
   }
 }
 
+async function listNoteXCloudFiles(accessToken: string) {
+  const files = await listAppDataFiles(accessToken);
+  return files.filter((file) => {
+    const entityType = file.appProperties?.entityType;
+    return (
+      file.name === MANIFEST_FILE_NAME ||
+      file.name === WORKSPACE_FILE_NAME ||
+      file.name.startsWith('notex-note-') ||
+      entityType === 'manifest' ||
+      entityType === 'workspace' ||
+      entityType === 'note'
+    );
+  });
+}
+
 async function deleteLocalNote(noteId: string) {
   await db.transaction('rw', [db.notes, db.activities], async () => {
     await db.notes.delete(noteId);
@@ -439,7 +616,13 @@ function mergeById<T extends { id: string }>(remoteItems: T[], localItems: T[]) 
 }
 
 function mergeSessions(remoteSessions: DeviceSession[], localSessions: DeviceSession[]) {
-  return mergeById(remoteSessions, localSessions).sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt));
+  const activeAfter = Date.now() - 1000 * 60 * 60 * 24 * 30;
+  return mergeById(remoteSessions, localSessions)
+    .filter((session) => {
+      const time = new Date(session.lastSeenAt).getTime();
+      return Number.isFinite(time) && time >= activeAfter;
+    })
+    .sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt));
 }
 
 function pickLatestSettings(localSettings: UserSettings, remoteSettings: UserSettings) {

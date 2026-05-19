@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { NavLink, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Archive,
+  Cloud,
   ChevronDown,
   ChevronsLeft,
   Clock3,
@@ -20,6 +21,8 @@ import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
+import { useSyncStore } from '../../store/useSyncStore';
+import { useToastStore } from '../../store/useToastStore';
 import type { NoteType } from '../../core/models/models';
 
 const navItems = [
@@ -42,6 +45,13 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
   const setSidebarCollapsed = useAppStore((state) => state.setSidebarCollapsed);
   const collections = useKnowledgeStore((state) => state.collections);
   const hasTrashedNotes = useKnowledgeStore((state) => state.notes.some((note) => note.isTrashed));
+  const syncState = useSyncStore((state) => state.syncState);
+  const pendingCount = useSyncStore((state) => state.pendingCount);
+  const isConnecting = useSyncStore((state) => state.isConnecting);
+  const isSyncing = useSyncStore((state) => state.isSyncing);
+  const connectGoogle = useSyncStore((state) => state.connectGoogle);
+  const syncNow = useSyncStore((state) => state.syncNow);
+  const pushToast = useToastStore((state) => state.pushToast);
   const activeCollectionId = searchParams.get('collection');
 
   useClickOutside(newNoteRef, newNoteOpen, () => setNewNoteOpen(false));
@@ -50,6 +60,19 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
     setNewNoteOpen(false);
     onClose();
     navigate(`/notes/new?type=${type}&collection=${settings.primaryCollectionId}`);
+  }
+
+  function handleSyncClick() {
+    if (syncState?.connected) {
+      void syncNow()
+        .then(() => pushToast(t('sync.synced'), 'success'))
+        .catch((error) => pushToast(error instanceof Error ? error.message : t('sync.failed'), 'warning'));
+      return;
+    }
+
+    void connectGoogle()
+      .then(() => pushToast(t('sync.connected'), 'success'))
+      .catch((error) => pushToast(error instanceof Error ? error.message : t('sync.failed'), 'warning'));
   }
 
   return (
@@ -148,6 +171,16 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         </div>
 
         <div className="sidebar-spacer" />
+        <button className="sidebar-sync-button" type="button" onClick={handleSyncClick}>
+          <span className="sidebar-sync-icon">
+            <Cloud size={20} />
+            {pendingCount ? <span className="sidebar-sync-badge">{pendingCount}</span> : null}
+          </span>
+          <span>
+            <span>{syncState?.connected ? (isSyncing ? t('sync.syncing') : t('sync.syncNow')) : isConnecting ? t('sync.connecting') : t('sync.connect')}</span>
+            <span className="sidebar-sync-sub">{pendingCount ? t('sync.pendingCount', { count: pendingCount }) : syncState?.connected ? t('sync.upToDate') : t('sync.localOnly')}</span>
+          </span>
+        </button>
       </aside>
     </>
   );

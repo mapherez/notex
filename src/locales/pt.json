@@ -272,6 +272,7 @@
     "title": "Perfil",
     "subtitle": "Gerencia a tua conta, preferências e dados pessoais.",
     "connectedWith": "Conectado com Google",
+    "localAccount": "Conta local",
     "statistics": "Estatísticas",
     "stats": {
       "notes": "Notas criadas",
@@ -326,7 +327,8 @@
       "email": "Email",
       "lastLogin": "Último login",
       "lastLoginValue": "Hoje, 10:24",
-      "activeSessions": "Sessões ativas",
+      "activeSessions": "Sessões NoteX ativas",
+      "syncDevices": "Dispositivos de sincronização",
       "exportData": "Exportar dados",
       "importData": "Importar dados",
       "resetDemo": "Restaurar demo",
@@ -334,7 +336,8 @@
       "deleteWarning": "Esta ação não pode ser desfeita",
       "logout": "Terminar sessão",
       "logoutDescription": "Sair da tua conta",
-      "sessionCount": "{{count}} sessões ativas"
+      "sessionCount": "{{count}} sessões ativas",
+      "deviceCount": "{{count}} dispositivos"
     },
     "values": {
       "lastActivity": "Hoje, 10:24",
@@ -373,21 +376,40 @@
     "connect": "Ligar Google Drive",
     "connecting": "A ligar...",
     "connectDescription": "Guarda e sincroniza o NoteX nos dados ocultos da app no Drive.",
+    "clearCloudData": "Limpar dados na cloud",
+    "clearCloudDataConfirm": "Limpar todos os dados NoteX guardados no Google Drive? As notas locais continuam neste dispositivo.",
+    "clearCloudDataDescription": "Apagar a cópia do NoteX guardada no Google Drive.",
+    "cloudChoiceDescription": "O NoteX encontrou dados na cloud para {{email}}. Escolhe que dados devem ser usados neste dispositivo.",
+    "cloudChoiceTitle": "Usar dados locais ou da cloud?",
+    "cloudDataCleared": "Dados na cloud limpos",
+    "cloudDataLoaded": "Dados da cloud carregados",
     "connected": "Sincronização com Google Drive ligada",
     "disconnect": "Desligar sincronização Google",
     "disconnectDescription": "Continuar a usar o NoteX localmente neste dispositivo.",
     "disconnected": "Sincronização Google desligada",
     "failed": "A sincronização falhou",
     "lastSynced": "Última sincronização {{date}}",
+    "localDataUploaded": "Dados locais enviados",
     "localOnly": "Modo apenas local",
     "notConnected": "Não ligado",
     "pendingCount": "{{count}} alterações pendentes",
     "conflictCount": "{{count}} conflitos por rever",
-    "sessionsNote": "Estas são sessões do NoteX no navegador, não sessões da conta Google.",
+    "currentDevice": "Dispositivo atual",
+    "deviceRemoved": "Dispositivo removido",
+    "devicesDescription": "Dispositivos que sincronizaram este workspace NoteX através do Google Drive nos últimos 30 dias.",
+    "lastSeen": "Última sincronização {{date}}",
+    "noDevices": "Ainda não há dispositivos de sincronização ativos.",
+    "removeDevice": "Remover dispositivo",
+    "sessionsNote": "Estes são dispositivos de sincronização NoteX, não sessões da conta Google.",
     "syncNow": "Sincronizar agora",
+    "syncStatus": "Estado da sincronização",
     "syncing": "A sincronizar...",
     "synced": "Sincronização concluída",
-    "upToDate": "Atualizado"
+    "upToDate": "Atualizado",
+    "useCloudData": "Usar dados da cloud",
+    "useCloudDataDescription": "Substituir os dados locais deste dispositivo pela cópia do Google Drive.",
+    "useLocalData": "Usar dados locais",
+    "useLocalDataDescription": "Manter os dados deste dispositivo e substituir a cópia do Google Drive."
   },
   "collections": {
     "create": "Criar coleção",
@@ -413,23 +435,12 @@
       "handle": "@ricardosilva"
     },
     "tags": [
-      { "id": "tag-productivity", "name": "produtividade", "color": "blue", "count": 23 },
-      { "id": "tag-development", "name": "desenvolvimento", "color": "green", "count": 18 },
-      { "id": "tag-ideas", "name": "ideias", "color": "amber", "count": 15 },
-      { "id": "tag-study", "name": "estudo", "color": "purple", "count": 12 },
-      { "id": "tag-personal", "name": "pessoal", "color": "pink", "count": 9 },
       { "id": "tag-grammar", "name": "gramática", "color": "purple", "count": 7 },
-      { "id": "tag-portuguese", "name": "português", "color": "green", "count": 6 },
-      { "id": "tag-doubt", "name": "duvida", "color": "neutral", "count": 5 },
-      { "id": "tag-work", "name": "trabalho", "color": "blue", "count": 4 },
-      { "id": "tag-inspiration", "name": "inspiração", "color": "purple", "count": 4 }
+      { "id": "tag-doubt", "name": "duvida", "color": "neutral", "count": 5 }
     ],
     "collections": [
       { "id": "collection-work", "name": "Trabalho", "color": "blue", "icon": "folder" },
-      { "id": "collection-studies", "name": "Estudos", "color": "green", "icon": "folder" },
-      { "id": "collection-projects", "name": "Projetos", "color": "orange", "icon": "folder" },
-      { "id": "collection-personal", "name": "Pessoal", "color": "pink", "icon": "folder" },
-      { "id": "collection-ideas", "name": "Ideias", "color": "yellow", "icon": "folder" }
+      { "id": "collection-personal", "name": "Pessoal", "color": "pink", "icon": "folder" }
     ],
     "notes": {
       "linguistic": {
@@ -499,9 +510,7 @@
       }
     },
     "activities": [
-      { "noteId": "note-roadmap", "label": "Nota “Roadmap do Projeto” editada", "time": "Hoje, 10:24" },
-      { "noteId": "note-product-ideas", "label": "Nota “Ideias para o novo produto” criada", "time": "Ontem, 18:45" },
-      { "noteId": "note-terminal", "label": "Nota “Comandos úteis - Terminal” editada", "time": "Ontem, 09:15" }
+      { "noteId": "note-linguistic", "label": "Nota “Dúvida linguística: “a ver” ou “haver”?” editada", "time": "Hoje, 10:24" }
     ]
   }
 }
