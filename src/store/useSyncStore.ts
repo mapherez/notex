@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { db, readDeviceSessions, readSyncState, writeSyncState } from '../core/db/notexDb';
-import { requestGoogleConnection } from '../core/services/googleIdentity';
+import {
+  getBrokerSession,
+  logoutBrokerSession,
+  removeBrokerSession,
+  requestBrokerAccessToken,
+  startGoogleBrokerLogin,
+  type BrokerSession,
+} from '../core/services/authBroker';
 import {
   clearGoogleDriveCloudData,
   countSyncWork,
@@ -10,7 +17,7 @@ import {
   runGoogleDriveSync,
 } from '../core/services/googleDriveSync';
 import { ensureSyncState, GOOGLE_SYNC_ID, readLocalDeviceId } from '../core/services/syncQueue';
-import { buildGoogleUser, type GoogleUserProfile } from '../core/utils/userProfile';
+import { buildGoogleUser } from '../core/utils/userProfile';
 import type { DeviceSession, SyncState, User } from '../core/models/models';
 import { useAppStore } from './useAppStore';
 import { useKnowledgeStore } from './useKnowledgeStore';
@@ -42,7 +49,6 @@ type SyncStore = {
 
 let tokenCache: TokenCache = null;
 let syncTimeout: number | null = null;
-let pendingConnection: ({ profile: GoogleUserProfile } & NonNullable<TokenCache>) | null = null;
 let pendingGoogleUser: User | null = null;
 
 export const useSyncStore = create<SyncStore>((set, get) => ({
@@ -55,13 +61,42 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   isConnecting: false,
   isResolvingCloudChoice: false,
   hydrateSync: async () => {
-    const syncState = await ensureSyncState();
-    const [sessions, counts] = await Promise.all([readDeviceSessions(), countSyncWork()]);
-    set({
-      syncState,
-      sessions,
-      ...counts,
-    });
+    const existingSyncState = await ensureSyncState();
+    const [brokerSession, counts] = await Promise.all([readBrokerSession(), countSyncWork()]);
+
+    if (brokerSession.connected) {
+      const { syncState, user, sessions } = await persistBrokerSession(existingSyncState, brokerSession);
+      set({ syncState, sessions, ...counts });
+
+      const isNewConnection = !existingSyncState.connected || existingSyncState.googleSub !== user.googleSub;
+      if (isNewConnection) {
+        try {
+          const accessToken = await getAccessToken();
+          const cloudDataExists = await hasGoogleDriveCloudData(accessToken);
+          if (cloudDataExists) {
+            pendingGoogleUser = user;
+            set({ cloudChoice: { email: user.email ?? brokerSession.profile.email } });
+            return;
+          }
+
+          await get().syncNow();
+        } catch (error) {
+          await persistSyncError(error);
+          const latestSyncState = await readSyncState();
+          set({ syncState: latestSyncState ?? syncState });
+        }
+      }
+      return;
+    }
+
+    if (existingSyncState.connected) {
+      const syncState = await markSyncDisconnected(existingSyncState, 'Reconnect Google to keep syncing');
+      set({ syncState, sessions: [], ...counts });
+      return;
+    }
+
+    const sessions = await readDeviceSessions();
+    set({ syncState: existingSyncState, sessions, ...counts });
   },
   clearCloudData: async () => {
     const state = await ensureSyncState();
@@ -84,55 +119,12 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   },
   connectGoogle: async () => {
     set({ isConnecting: true });
-    try {
-      const connection = await requestGoogleConnection('consent');
-      tokenCache = {
-        accessToken: connection.accessToken,
-        expiresAt: connection.expiresAt,
-      };
-      const now = new Date().toISOString();
-      const user = buildGoogleUser(connection.profile, now);
-      const existing = await ensureSyncState();
-      const syncState: SyncState = {
-        ...existing,
-        connected: true,
-        googleSub: user.googleSub,
-        email: user.email,
-        fullName: user.name,
-        firstName: user.firstName,
-        handle: user.handle,
-        avatarUrl: user.avatarUrl,
-        lastLoginAt: now,
-        deviceId: readLocalDeviceId(),
-        updatedAt: now,
-        lastError: undefined,
-      };
-
-      await writeSyncState(syncState);
-      await useKnowledgeStore.getState().setUser(user);
-      const cloudDataExists = await hasGoogleDriveCloudData(connection.accessToken);
-      if (cloudDataExists) {
-        pendingConnection = {
-          accessToken: connection.accessToken,
-          expiresAt: connection.expiresAt,
-          profile: connection.profile,
-        };
-        pendingGoogleUser = user;
-        set({ syncState, cloudChoice: { email: user.email ?? connection.profile.email }, isConnecting: false });
-        return;
-      }
-
-      set({ syncState, isConnecting: false });
-      await get().syncNow();
-    } catch (error) {
-      await persistSyncError(error);
-      const syncState = await readSyncState();
-      set({ syncState: syncState ?? null, isConnecting: false });
-      throw error;
-    }
+    startGoogleBrokerLogin();
+    await new Promise<void>(() => undefined);
   },
   disconnectGoogle: async () => {
     tokenCache = null;
+    await logoutBrokerSession().catch(() => undefined);
     const existing = await ensureSyncState();
     const syncState: SyncState = {
       ...existing,
@@ -149,41 +141,41 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     set({ syncState, sessions: [] });
   },
   removeDeviceSession: async (deviceId) => {
-    await db.deviceSessions.delete(deviceId);
-    const sessions = await readDeviceSessions();
-    set({ sessions });
-    await useAppStore.getState().replaceSettings(useAppStore.getState().settings);
+    await removeBrokerSession(deviceId);
+    const brokerSession = await readBrokerSession();
+    if (brokerSession.connected) {
+      set({ sessions: mapBrokerSessions(brokerSession.sessions) });
+      return;
+    }
+
+    set({ sessions: [] });
   },
   resolveCloudChoice: async (choice) => {
-    if (!pendingConnection || !pendingGoogleUser) {
+    const googleUser = pendingGoogleUser ?? useKnowledgeStore.getState().user;
+    if (!googleUser) {
       set({ cloudChoice: null });
       return;
     }
 
-    const googleUser = pendingGoogleUser;
     set({ isResolvingCloudChoice: true });
     try {
-      tokenCache = {
-        accessToken: pendingConnection.accessToken,
-        expiresAt: pendingConnection.expiresAt,
-      };
+      const accessToken = await getAccessToken();
       let result =
         choice === 'cloud'
-          ? await replaceLocalDataWithGoogleDrive(pendingConnection.accessToken)
-          : await replaceGoogleDriveWithLocalData(pendingConnection.accessToken);
+          ? await replaceLocalDataWithGoogleDrive(accessToken)
+          : await replaceGoogleDriveWithLocalData(accessToken);
       await db.transaction('rw', [db.users], async () => {
         await db.users.clear();
         await db.users.put(googleUser);
       });
       if (choice === 'cloud') {
-        result = await runGoogleDriveSync(pendingConnection.accessToken);
+        result = await runGoogleDriveSync(accessToken);
       }
       await Promise.all([
         useKnowledgeStore.getState().refreshKnowledge(),
         useAppStore.getState().hydrateSettings(),
         get().refreshSyncMetadata(),
       ]);
-      pendingConnection = null;
       pendingGoogleUser = null;
       set({
         cloudChoice: null,
@@ -239,7 +231,17 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     }, 1500);
   },
   refreshSyncMetadata: async () => {
-    const [syncState, sessions, counts] = await Promise.all([readSyncState(), readDeviceSessions(), countSyncWork()]);
+    const [syncState, brokerSession, counts] = await Promise.all([readSyncState(), readBrokerSession(), countSyncWork()]);
+    if (brokerSession.connected) {
+      set({
+        syncState: syncState ?? null,
+        sessions: mapBrokerSessions(brokerSession.sessions),
+        ...counts,
+      });
+      return;
+    }
+
+    const sessions = syncState?.connected ? [] : await readDeviceSessions();
     set({
       syncState: syncState ?? null,
       sessions,
@@ -253,12 +255,72 @@ async function getAccessToken() {
     return tokenCache.accessToken;
   }
 
-  const connection = await requestGoogleConnection('');
+  const connection = await requestBrokerAccessToken();
   tokenCache = {
     accessToken: connection.accessToken,
     expiresAt: connection.expiresAt,
   };
   return connection.accessToken;
+}
+
+async function readBrokerSession(): Promise<BrokerSession> {
+  try {
+    return await getBrokerSession();
+  } catch {
+    return { connected: false, sessions: [] };
+  }
+}
+
+async function persistBrokerSession(existing: SyncState, brokerSession: Extract<BrokerSession, { connected: true }>) {
+  const user = buildGoogleUser(brokerSession.profile, brokerSession.lastLoginAt);
+  const now = new Date().toISOString();
+  const syncState: SyncState = {
+    ...existing,
+    connected: true,
+    googleSub: user.googleSub,
+    email: user.email,
+    fullName: user.name,
+    firstName: user.firstName,
+    handle: user.handle,
+    avatarUrl: user.avatarUrl,
+    lastLoginAt: brokerSession.lastLoginAt,
+    deviceId: brokerSession.currentSessionId || readLocalDeviceId(),
+    updatedAt: now,
+    lastError: undefined,
+  };
+
+  await writeSyncState(syncState);
+  await db.transaction('rw', [db.users], async () => {
+    await db.users.clear();
+    await db.users.put(user);
+  });
+  await useKnowledgeStore.getState().refreshKnowledge();
+
+  return {
+    syncState,
+    user,
+    sessions: mapBrokerSessions(brokerSession.sessions),
+  };
+}
+
+async function markSyncDisconnected(existing: SyncState, lastError?: string) {
+  const syncState: SyncState = {
+    ...existing,
+    connected: false,
+    lastError,
+    updatedAt: new Date().toISOString(),
+  };
+  await writeSyncState(syncState);
+  return syncState;
+}
+
+function mapBrokerSessions(sessions: Extract<BrokerSession, { connected: true }>['sessions']): DeviceSession[] {
+  return sessions.map((session) => ({
+    id: session.id,
+    name: session.name,
+    userAgent: session.userAgent,
+    lastSeenAt: session.lastSeenAt,
+  }));
 }
 
 async function persistSyncError(error: unknown) {
