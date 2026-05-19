@@ -16,6 +16,7 @@ import {
   Settings2,
   Shield,
   Star,
+  Tag as TagIcon,
   Trash2,
   Upload,
   UserCheck,
@@ -23,6 +24,7 @@ import {
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { IconBadge } from '../components/ui/IconBadge';
+import { LabelManager } from '../components/ui/LabelManager';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
 import { TagChip } from '../components/ui/TagChip';
@@ -56,6 +58,9 @@ export function ProfilePage() {
   const exportPayload = useKnowledgeStore((state) => state.exportPayload);
   const importPayload = useKnowledgeStore((state) => state.importPayload);
   const resetDemoData = useKnowledgeStore((state) => state.resetDemoData);
+  const createTag = useKnowledgeStore((state) => state.createTag);
+  const updateTag = useKnowledgeStore((state) => state.updateTag);
+  const deleteTag = useKnowledgeStore((state) => state.deleteTag);
   const pushToast = useToastStore((state) => state.pushToast);
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const favoriteNotes = activeNotes.filter((note) => note.isFavorite);
@@ -271,6 +276,34 @@ export function ProfilePage() {
                 ) : null}
               </div>
             </div>
+          </section>
+
+          <section className="settings-card">
+            <h2 className="settings-title">
+              <TagIcon size={20} color="var(--color-accent-strong)" />
+              {t('profile.labels.title')}
+            </h2>
+            <p className="settings-description mb-4">{t('profile.labels.description')}</p>
+            <LabelManager
+              tags={tags}
+              onCreate={async (name, color) => {
+                const created = await createTag(name, color);
+                if (created) {
+                  pushToast(t('profile.labels.created'), 'success');
+                }
+              }}
+              onUpdate={async (tagId, input) => {
+                await updateTag(tagId, input);
+                pushToast(t('profile.labels.updated'), 'success');
+              }}
+              onDelete={async (tagId) => {
+                if (!window.confirm(t('profile.labels.deleteConfirm'))) {
+                  return;
+                }
+                await deleteTag(tagId);
+                pushToast(t('profile.labels.deleted'), 'warning');
+              }}
+            />
           </section>
         </section>
 

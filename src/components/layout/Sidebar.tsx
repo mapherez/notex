@@ -18,7 +18,6 @@ import { appSettings } from '../../config/appSettings';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
-import { useToastStore } from '../../store/useToastStore';
 import type { NoteType } from '../../core/models/models';
 
 const navItems = [
@@ -39,22 +38,12 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
   const setSidebarCollapsed = useAppStore((state) => state.setSidebarCollapsed);
   const collections = useKnowledgeStore((state) => state.collections);
   const user = useKnowledgeStore((state) => state.user);
-  const createDraftNote = useKnowledgeStore((state) => state.createDraftNote);
-  const pushToast = useToastStore((state) => state.pushToast);
   const activeCollectionId = searchParams.get('collection');
 
-  async function createNote(type: NoteType = 'standard') {
-    const note = await createDraftNote({
-      type,
-      title: t('notes.draftTitle'),
-      intro: t('notes.draftIntro'),
-      collectionId: settings.primaryCollectionId,
-      tagIds: ['tag-ideas'],
-    });
-    pushToast(t('notes.draftCreated'), 'success');
+  function createNote(type: NoteType = 'standard') {
     setNewNoteOpen(false);
     onClose();
-    navigate(`/notes/${note.id}`);
+    navigate(`/notes/new?type=${type}&collection=${settings.primaryCollectionId}`);
   }
 
   return (
@@ -77,7 +66,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         </div>
 
         <div className="primary-action">
-          <button className="primary-action-main" type="button" onClick={() => void createNote('standard')}>
+          <button className="primary-action-main" type="button" onClick={() => createNote('standard')}>
             <Plus size={20} />
             {t('navigation.newNote')}
           </button>
@@ -91,19 +80,19 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           </button>
           {newNoteOpen ? (
             <div className="floating-menu sidebar-new-menu">
-              <button type="button" onClick={() => void createNote('standard')}>
+              <button type="button" onClick={() => createNote('standard')}>
                 <FileText size={17} />
                 {t('navigation.newStandardNote')}
               </button>
-              <button type="button" onClick={() => void createNote('linguistic_doubt')}>
+              <button type="button" onClick={() => createNote('linguistic_doubt')}>
                 <FileText size={17} />
                 {t('navigation.newLanguageNote')}
               </button>
-              <button type="button" onClick={() => void createNote('reference')}>
+              <button type="button" onClick={() => createNote('reference')}>
                 <Archive size={17} />
                 {t('navigation.newReference')}
               </button>
-              <button type="button" onClick={() => void createNote('snippet')}>
+              <button type="button" onClick={() => createNote('snippet')}>
                 <FileText size={17} />
                 {t('navigation.newSnippet')}
               </button>

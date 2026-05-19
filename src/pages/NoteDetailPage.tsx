@@ -1,24 +1,44 @@
-import { ChevronLeft, Copy, ExternalLink, FileText, Folder, Lightbulb, MoreVertical, Plus, Star } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Check, ChevronLeft, ExternalLink, FileText, Folder, Lightbulb, MoreVertical, Pencil, Plus, Star, Trash2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { EditableUsageExamplesTable } from '../components/editing/EditableUsageExamplesTable';
+import { MarkdownEditor } from '../components/editing/MarkdownEditor';
+import { MarkdownPreview } from '../components/editing/MarkdownPreview';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Panel } from '../components/ui/Panel';
 import { TagChip } from '../components/ui/TagChip';
+import type { Collection, Note, NoteType, RichTextBlock, TagColor } from '../core/models/models';
+import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
+import { tagColorOptions } from '../core/utils/tagColors';
 import { useI18n } from '../i18n/I18nProvider';
-import { useKnowledgeStore } from '../store/useKnowledgeStore';
+import { useKnowledgeStore, type NoteEditDraft } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
+
+const noteTypes: NoteType[] = ['standard', 'linguistic_doubt', 'reference', 'snippet'];
 
 export function NoteDetailPage() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t, locale } = useI18n();
+  const isNewNote = id === 'new';
+  const initialType = parseNoteType(searchParams.get('type'));
+  const initialCollectionId = searchParams.get('collection') || null;
+  const linkInputRef = useRef<HTMLInputElement>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [exampleOpen, setExampleOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [exampleText, setExampleText] = useState('');
-  const [linkTitle, setLinkTitle] = useState('');
-  const [linkHref, setLinkHref] = useState('');
+  const [linkInput, setLinkInput] = useState('');
+  const [newTagName, setNewTagName] = useState('');
+  const [newTagColor, setNewTagColor] = useState<TagColor>('purple');
+  const [editingExampleIndex, setEditingExampleIndex] = useState<number | null>(null);
+  const [editingExampleText, setEditingExampleText] = useState('');
+  const [selectedLinkedNoteId, setSelectedLinkedNoteId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(isNewNote);
+  const [savingPage, setSavingPage] = useState(false);
+  const [draft, setDraft] = useState<NoteEditDraft>(() => buildEmptyDraft(initialType, initialCollectionId, t('noteDetail.tip')));
   const notes = useKnowledgeStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
@@ -29,23 +49,49 @@ export function NoteDetailPage() {
   const moveToTrash = useKnowledgeStore((state) => state.moveToTrash);
   const duplicateNote = useKnowledgeStore((state) => state.duplicateNote);
   const markNoteOpened = useKnowledgeStore((state) => state.markNoteOpened);
+  const saveNoteDraft = useKnowledgeStore((state) => state.saveNoteDraft);
+  const createNoteFromDraft = useKnowledgeStore((state) => state.createNoteFromDraft);
   const updateNoteTags = useKnowledgeStore((state) => state.updateNoteTags);
+  const createTag = useKnowledgeStore((state) => state.createTag);
   const addAdditionalExample = useKnowledgeStore((state) => state.addAdditionalExample);
+  const updateAdditionalExample = useKnowledgeStore((state) => state.updateAdditionalExample);
+  const deleteAdditionalExample = useKnowledgeStore((state) => state.deleteAdditionalExample);
   const addRelatedLink = useKnowledgeStore((state) => state.addRelatedLink);
+  const deleteRelatedLink = useKnowledgeStore((state) => state.deleteRelatedLink);
+  const addLinkedNote = useKnowledgeStore((state) => state.addLinkedNote);
+  const deleteLinkedNote = useKnowledgeStore((state) => state.deleteLinkedNote);
   const pushToast = useToastStore((state) => state.pushToast);
-  const note = notes.find((item) => item.id === id);
+  const note = isNewNote ? undefined : notes.find((item) => item.id === id);
 
   useEffect(() => {
-    if (note) {
+    if (isReady && note && !isNewNote) {
       void markNoteOpened(note.id);
     }
-  }, [markNoteOpened, note?.id]);
+  }, [isNewNote, isReady, markNoteOpened, note?.id]);
+
+  useEffect(() => {
+    if (isNewNote) {
+      setIsEditing(true);
+      setDraft(buildEmptyDraft(initialType, initialCollectionId, t('noteDetail.tip')));
+      return;
+    }
+
+    if (note && !isEditing) {
+      setDraft(buildDraftFromNote(note, t('noteDetail.tip')));
+    }
+  }, [initialCollectionId, initialType, isEditing, isNewNote, note, t]);
+
+  useEffect(() => {
+    if (linkOpen) {
+      requestAnimationFrame(() => linkInputRef.current?.focus());
+    }
+  }, [linkOpen]);
 
   if (!isReady) {
     return null;
   }
 
-  if (!note) {
+  if (!isNewNote && !note) {
     return (
       <div className="page-content list-page-grid">
         <button className="back-button" type="button" onClick={() => navigate(-1)}>
@@ -57,10 +103,84 @@ export function NoteDetailPage() {
     );
   }
 
-  const noteTags = tags.filter((tag) => note.tagIds.includes(tag.id));
-  const collection = collections.find((item) => item.id === note.collectionId);
-  const availableTags = tags.filter((tag) => !note.tagIds.includes(tag.id));
-  const currentNote = note;
+  const noteTags = note ? tags.filter((tag) => note.tagIds.includes(tag.id)) : [];
+  const collectionId = isEditing ? draft.collectionId : note?.collectionId ?? null;
+  const collection = collections.find((item) => item.id === collectionId);
+  const savedCollection = note ? collections.find((item) => item.id === note.collectionId) : undefined;
+  const availableTags = note ? tags.filter((tag) => !note.tagIds.includes(tag.id)) : [];
+  const linkedNotes = note ? note.linkedNoteIds.flatMap((linkedId) => notes.find((item) => item.id === linkedId) ?? []) : [];
+  const backlinkNotes = note ? notes.filter((item) => item.id !== note.id && item.linkedNoteIds.includes(note.id)) : [];
+  const linkSearchActive = linkInput.trim().startsWith('/');
+  const linkSearchQuery = linkSearchActive ? linkInput.trim().slice(1).toLowerCase() : '';
+  const linkableNotes = notes
+    .filter((item) => item.id !== note?.id && !item.isTrashed && !note?.linkedNoteIds.includes(item.id))
+    .filter((item) => !linkSearchQuery || item.title.toLowerCase().includes(linkSearchQuery))
+    .slice(0, 6);
+  const saveStatusLabel = getSaveStatusLabel({ isEditing, isNewNote, note, saving: savingPage, t });
+
+  function updateDraft(input: Partial<NoteEditDraft>) {
+    setDraft((current) => ({ ...current, ...input }));
+  }
+
+  function beginPageEdit() {
+    if (!note) {
+      return;
+    }
+
+    setDraft(buildDraftFromNote(note, t('noteDetail.tip')));
+    setIsEditing(true);
+  }
+
+  function cancelPageEdit() {
+    if (isNewNote) {
+      navigate(-1);
+      return;
+    }
+
+    if (note) {
+      setDraft(buildDraftFromNote(note, t('noteDetail.tip')));
+    }
+    setIsEditing(false);
+  }
+
+  async function savePageEdit() {
+    if (!draft.title.trim()) {
+      pushToast(t('noteDetail.titleRequired'), 'warning');
+      return;
+    }
+
+    setSavingPage(true);
+    try {
+      if (isNewNote) {
+        const created = await createNoteFromDraft(draft);
+        if (!created) {
+          pushToast(t('noteDetail.titleRequired'), 'warning');
+          return;
+        }
+
+        pushToast(t('noteDetail.noteCreated'), 'success');
+        setIsEditing(false);
+        navigate(`/notes/${created.id}`, { replace: true });
+        return;
+      }
+
+      if (!note) {
+        return;
+      }
+
+      const updated = await saveNoteDraft(note.id, draft);
+      if (!updated) {
+        pushToast(t('noteDetail.titleRequired'), 'warning');
+        return;
+      }
+
+      setDraft(buildDraftFromNote(updated, t('noteDetail.tip')));
+      setIsEditing(false);
+      pushToast(t('noteDetail.noteSaved'), 'success');
+    } finally {
+      setSavingPage(false);
+    }
+  }
 
   async function copyText(text: string, message: string) {
     await navigator.clipboard?.writeText(text);
@@ -68,14 +188,92 @@ export function NoteDetailPage() {
   }
 
   async function removeTag(tagId: string) {
-    await updateNoteTags(currentNote.id, currentNote.tagIds.filter((tag) => tag !== tagId));
+    if (!note) {
+      return;
+    }
+
+    await updateNoteTags(note.id, note.tagIds.filter((tag) => tag !== tagId));
     pushToast(t('noteDetail.tagUpdated'), 'success');
   }
 
   async function addTag(tagId: string) {
-    await updateNoteTags(currentNote.id, [...currentNote.tagIds, tagId]);
+    if (!note) {
+      return;
+    }
+
+    await updateNoteTags(note.id, [...note.tagIds, tagId]);
     setTagPickerOpen(false);
     pushToast(t('noteDetail.tagUpdated'), 'success');
+  }
+
+  async function createAndAddTag() {
+    if (!note) {
+      return;
+    }
+
+    const created = await createTag(newTagName, newTagColor);
+    if (!created) {
+      return;
+    }
+
+    await updateNoteTags(note.id, [...note.tagIds, created.id]);
+    setNewTagName('');
+    setNewTagColor('purple');
+    setTagPickerOpen(false);
+    pushToast(t('noteDetail.tagCreated'), 'success');
+  }
+
+  function startExampleEdit(index: number, example: string) {
+    setEditingExampleIndex(index);
+    setEditingExampleText(example);
+  }
+
+  function cancelExampleEdit() {
+    setEditingExampleIndex(null);
+    setEditingExampleText('');
+  }
+
+  async function saveExampleEdit(index: number) {
+    if (!note) {
+      return;
+    }
+
+    await updateAdditionalExample(note.id, index, editingExampleText);
+    cancelExampleEdit();
+    pushToast(t('noteDetail.exampleUpdated'), 'success');
+  }
+
+  function selectLinkedNote(linkedNoteId: string) {
+    const selected = notes.find((item) => item.id === linkedNoteId);
+    if (!selected) {
+      return;
+    }
+
+    setSelectedLinkedNoteId(selected.id);
+    setLinkInput(selected.title);
+  }
+
+  async function saveRelatedLink() {
+    if (!note) {
+      return;
+    }
+
+    if (selectedLinkedNoteId) {
+      await addLinkedNote(note.id, selectedLinkedNoteId);
+    } else {
+      const href = normalizeExternalHref(linkInput);
+      const title = titleFromExternalHref(linkInput);
+      if (!href || !title) {
+        pushToast(t('noteDetail.linkUrlRequired'), 'warning');
+        return;
+      }
+      await addRelatedLink(note.id, title, href);
+    }
+
+    setLinkInput('');
+    setSelectedLinkedNoteId(null);
+    setLinkOpen(false);
+    pushToast(t('noteDetail.linkAdded'), 'success');
   }
 
   return (
@@ -86,266 +284,601 @@ export function NoteDetailPage() {
           {t('common.back')}
         </button>
         <div className="document-actions">
-          <button
-            className="icon-button"
-            type="button"
-            aria-label={note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
-            onClick={() => {
-              void toggleFavorite(note.id).then(() => pushToast(t('notes.favoriteChanged'), 'success'));
-            }}
-          >
-            <Star size={20} fill={note.isFavorite ? 'var(--color-warning)' : 'transparent'} color="var(--color-warning)" />
-          </button>
+          {note ? (
+            <button
+              className="icon-button"
+              type="button"
+              aria-label={note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
+              onClick={() => {
+                void toggleFavorite(note.id).then(() => pushToast(t('notes.favoriteChanged'), 'success'));
+              }}
+            >
+              <Star size={20} fill={note.isFavorite ? 'var(--color-warning)' : 'transparent'} color="var(--color-warning)" />
+            </button>
+          ) : null}
           <span className="inline-actions">
             <FileText size={17} color="var(--color-text-muted)" />
-            {t('common.saved')}
+            {saveStatusLabel}
           </span>
-          <button className="icon-button" type="button" aria-label={t('common.more')} onClick={() => setMoreOpen((value) => !value)}>
-            <MoreVertical size={20} />
-          </button>
-          {moreOpen ? (
-            <div className="floating-menu document-menu">
-              <button
-                type="button"
-                onClick={() => {
-                  void togglePinned(note.id).then(() => pushToast(t('notes.pinChanged'), 'success'));
-                  setMoreOpen(false);
-                }}
-              >
-                {note.isPinned ? t('common.unpin') : t('common.pin')}
+          {note ? (
+            <>
+              <button className="icon-button" type="button" aria-label={t('common.more')} onClick={() => setMoreOpen((value) => !value)}>
+                <MoreVertical size={20} />
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  void duplicateNote(note.id, `${note.title} (${t('common.copy')})`).then((created) => {
-                    pushToast(t('notes.duplicated'), 'success');
-                    if (created) {
-                      navigate(`/notes/${created.id}`);
-                    }
-                  });
-                  setMoreOpen(false);
-                }}
-              >
-                {t('common.duplicate')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  void copyText(window.location.href, t('noteDetail.copiedLink'));
-                  setMoreOpen(false);
-                }}
-              >
-                {t('common.copyLink')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  void moveToTrash(note.id).then(() => {
-                    pushToast(t('notes.trashChanged'), 'warning');
-                    navigate('/trash');
-                  });
-                }}
-              >
-                {t('notes.moveToTrash')}
-              </button>
-            </div>
+              {moreOpen ? (
+                <div className="floating-menu document-menu">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void togglePinned(note.id).then(() => pushToast(t('notes.pinChanged'), 'success'));
+                      setMoreOpen(false);
+                    }}
+                  >
+                    {note.isPinned ? t('common.unpin') : t('common.pin')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void duplicateNote(note.id, `${note.title} (${t('common.copy')})`).then((created) => {
+                        pushToast(t('notes.duplicated'), 'success');
+                        if (created) {
+                          navigate(`/notes/${created.id}`);
+                        }
+                      });
+                      setMoreOpen(false);
+                    }}
+                  >
+                    {t('common.duplicate')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void copyText(window.location.href, t('noteDetail.copiedLink'));
+                      setMoreOpen(false);
+                    }}
+                  >
+                    {t('common.copyLink')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void moveToTrash(note.id).then(() => {
+                        pushToast(t('notes.trashChanged'), 'warning');
+                        navigate('/trash');
+                      });
+                    }}
+                  >
+                    {t('notes.moveToTrash')}
+                  </button>
+                </div>
+              ) : null}
+            </>
           ) : null}
         </div>
       </header>
 
-      <div className="document-shell">
+      <div className={note ? 'document-shell' : 'document-shell single-column'}>
         <article className="document-main">
-          {collection ? (
-            <Link className="breadcrumb" to="/collections">
-              <Folder size={20} />
-              {collection.name}
-            </Link>
+          <div className="document-heading-row">
+            {isEditing ? (
+              <CollectionSelect collections={collections} value={draft.collectionId} onChange={(collectionId) => updateDraft({ collectionId })} />
+            ) : (
+              <CollectionBreadcrumb collection={collection} emptyText={t('noteDetail.noCollection')} />
+            )}
+            <div className="document-edit-actions">
+              {isEditing ? (
+                <>
+                  <button className="editor-accept-button" disabled={savingPage} type="button" onClick={() => void savePageEdit()}>
+                    <Check size={17} />
+                    {t('common.save')}
+                  </button>
+                  <button className="editor-cancel-button" disabled={savingPage} type="button" onClick={cancelPageEdit}>
+                    <X size={17} />
+                    {t('common.cancel')}
+                  </button>
+                </>
+              ) : (
+                <button className="editor-cancel-button" type="button" onClick={beginPageEdit}>
+                  <Pencil size={17} />
+                  {t('editor.edit')}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {isEditing ? (
+            <input
+              className="editable-control document-title-input"
+              disabled={savingPage}
+              onChange={(event) => updateDraft({ title: event.target.value })}
+              placeholder={t('noteDetail.titlePlaceholder')}
+              value={draft.title}
+            />
+          ) : (
+            <h1 className="document-title">{note?.title}</h1>
+          )}
+
+          {noteTags.length ? (
+            <div className="tag-row">
+              {noteTags.map((tag) => (
+                <TagChip key={tag.id} tag={tag} />
+              ))}
+            </div>
           ) : null}
 
-          <h1 className="document-title">{note.title}</h1>
-          <div className="tag-row">
-            {noteTags.map((tag) => (
-              <TagChip key={tag.id} tag={tag} removable onRemove={() => void removeTag(tag.id)} />
-            ))}
-          </div>
-          <p className="document-intro">{note.content.intro}</p>
+          {isEditing ? (
+            <textarea
+              className="editable-control document-intro-input"
+              disabled={savingPage}
+              onChange={(event) => updateDraft({ intro: event.target.value })}
+              placeholder={t('noteDetail.introPlaceholder')}
+              value={draft.intro}
+            />
+          ) : (
+            <p className="document-intro">{note?.content.intro}</p>
+          )}
 
           <section className="content-section">
             <h2 className="section-title">{t('noteDetail.summary')}</h2>
-            <div className="section-copy">
-              {note.content.summary?.map((block) => <p key={block.id}>{block.text}</p>)}
-            </div>
+            {isEditing ? (
+              <MarkdownEditor
+                label={t('noteDetail.summary')}
+                onChange={(summaryMarkdown) => updateDraft({ summaryMarkdown })}
+                placeholder={t('noteDetail.summaryPlaceholder')}
+                rows={8}
+                showActions={false}
+                value={draft.summaryMarkdown}
+              />
+            ) : (
+              <MarkdownPreview emptyText={t('noteDetail.emptySummary')} value={blocksToMarkdown(note?.content.summary)} />
+            )}
           </section>
 
           <section className="content-section">
             <h2 className="section-title">{t('noteDetail.explanation')}</h2>
-            <div className="section-copy">
-              {note.content.explanation?.map((block) => <p key={block.id}>{block.text}</p>)}
-            </div>
+            {isEditing ? (
+              <MarkdownEditor
+                label={t('noteDetail.explanation')}
+                onChange={(explanationMarkdown) => updateDraft({ explanationMarkdown })}
+                placeholder={t('noteDetail.explanationPlaceholder')}
+                rows={10}
+                showActions={false}
+                value={draft.explanationMarkdown}
+              />
+            ) : (
+              <MarkdownPreview emptyText={t('noteDetail.emptyExplanation')} value={blocksToMarkdown(note?.content.explanation)} />
+            )}
           </section>
 
-          {note.content.usageExamples?.rows.length ? (
-            <section className="content-section">
-              <h2 className="section-title">{t('noteDetail.usageExamples')}</h2>
-              <table className="usage-table">
-                <thead>
-                  <tr>
-                    <th>{t('noteDetail.table.expression')}</th>
-                    <th>{t('noteDetail.table.meaning')}</th>
-                    <th>{t('noteDetail.table.example')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {note.content.usageExamples.rows.map((row) => (
-                    <tr key={row.id}>
-                      <td>{row.expression}</td>
-                      <td>{row.meaning}</td>
-                      <td>
-                        {row.example.split('\n').map((line) => (
-                          <p key={line}>{line}</p>
-                        ))}
-                        <button
-                          className="copy-row-button"
-                          type="button"
-                          aria-label={t('noteDetail.copyExample')}
-                          onClick={() => void copyText(row.example, t('noteDetail.copiedExample'))}
-                        >
-                          <Copy size={18} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
+          <section className="content-section">
+            <h2 className="section-title">{t('noteDetail.usageExamples')}</h2>
+            <EditableUsageExamplesTable
+              controlledEditing={isEditing}
+              onRowsChange={(usageExamples) => updateDraft({ usageExamples })}
+              readOnly
+              rows={isEditing ? draft.usageExamples : note?.content.usageExamples?.rows ?? []}
+            />
+          </section>
+
+          {isEditing ? (
+            <EditableDraftTip
+              body={draft.tipBody}
+              onChange={(tipBody) => updateDraft({ tipBody, tipTitle: draft.tipTitle || t('noteDetail.tip') })}
+              title={draft.tipTitle || t('noteDetail.tip')}
+            />
+          ) : note?.content.tip ? (
+            <TipPreview body={note.content.tip.body} title={note.content.tip.title} />
           ) : null}
 
-          {note.content.tip ? (
-            <section className="content-section">
-              <div className="tip-box">
-                <Lightbulb size={22} color="var(--color-accent-strong)" />
-                <div>
-                  <h2 className="section-title">{note.content.tip.title}</h2>
-                  <p className="section-copy">{note.content.tip.body}</p>
-                </div>
-              </div>
-            </section>
+          {note ? (
+            <footer className="document-footer-stats">
+              <span>
+                {note.stats.wordCount} {t('noteDetail.words')} • {note.stats.characterCount} {t('noteDetail.characters')} •{' '}
+                {t('noteDetail.readingTime', { count: note.stats.readingTimeMinutes })}
+              </span>
+              <span>{t('noteDetail.lastEdit')}</span>
+            </footer>
           ) : null}
-
-          <footer className="document-footer-stats">
-            <span>
-              {note.stats.wordCount} {t('noteDetail.words')} • {note.stats.characterCount} {t('noteDetail.characters')} •{' '}
-              {t('noteDetail.readingTime', { count: note.stats.readingTimeMinutes })}
-            </span>
-            <span>{t('noteDetail.lastEdit')}</span>
-          </footer>
         </article>
 
-        <aside className="document-aside">
-          <Panel title={t('noteDetail.metadata')}>
-            <div className="meta-list">
-              <div className="meta-row">
-                <span>{t('noteDetail.createdAt')}</span>
-                <span className="meta-value">{formatDate(note.createdAt, locale)}</span>
+        {note ? (
+          <aside className="document-aside">
+            <Panel title={t('noteDetail.metadata')}>
+              <div className="meta-list">
+                <div className="meta-row">
+                  <span>{t('noteDetail.createdAt')}</span>
+                  <span className="meta-value">{formatDate(note.createdAt, locale)}</span>
+                </div>
+                <div className="meta-row">
+                  <span>{t('noteDetail.updatedAt')}</span>
+                  <span className="meta-value">{formatDate(note.updatedAt, locale)}</span>
+                </div>
+                <div className="meta-row">
+                  <span>{t('noteDetail.collectionLabel')}</span>
+                  <span className="meta-value">{savedCollection?.name}</span>
+                </div>
+                <div className="meta-row">
+                  <span>{t('noteDetail.author')}</span>
+                  <span className="meta-value">{user?.name}</span>
+                </div>
               </div>
-              <div className="meta-row">
-                <span>{t('noteDetail.updatedAt')}</span>
-                <span className="meta-value">{formatDate(note.updatedAt, locale)}</span>
-              </div>
-              <div className="meta-row">
-                <span>{t('noteDetail.collectionLabel')}</span>
-                <span className="meta-value">{collection?.name}</span>
-              </div>
-              <div className="meta-row">
-                <span>{t('noteDetail.author')}</span>
-                <span className="meta-value">{user?.name}</span>
-              </div>
-            </div>
-          </Panel>
+            </Panel>
 
-          <Panel title={t('noteDetail.tags')}>
-            <div className="tag-row">
-              {noteTags.map((tag) => (
-                <TagChip key={tag.id} tag={tag} removable onRemove={() => void removeTag(tag.id)} />
-              ))}
-            </div>
-            <button className="nav-item mt-4" type="button" onClick={() => setTagPickerOpen((value) => !value)}>
-              <Plus size={18} />
-              {t('noteDetail.addTag')}
-            </button>
-            {tagPickerOpen ? (
-              <div className="inline-picker">
-                {availableTags.map((tag) => (
-                  <button key={tag.id} type="button" onClick={() => void addTag(tag.id)}>
-                    <TagChip tag={tag} />
-                  </button>
+            <Panel title={t('noteDetail.tags')}>
+              <div className="tag-row">
+                {noteTags.map((tag) => (
+                  <TagChip key={tag.id} tag={tag} removable onRemove={() => void removeTag(tag.id)} />
                 ))}
               </div>
-            ) : null}
-          </Panel>
+              <button className="nav-item mt-4" type="button" onClick={() => setTagPickerOpen((value) => !value)}>
+                <Plus size={18} />
+                {t('noteDetail.addTag')}
+              </button>
+              {tagPickerOpen ? (
+                <div className="tag-picker-panel">
+                  {availableTags.length ? (
+                    <div className="inline-picker">
+                      {availableTags.map((tag) => (
+                        <button key={tag.id} type="button" onClick={() => void addTag(tag.id)}>
+                          <TagChip tag={tag} />
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="inline-help">{t('noteDetail.noTagsAvailable')}</p>
+                  )}
+                  <form
+                    className="inline-form tag-create-form"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void createAndAddTag();
+                    }}
+                  >
+                    <input value={newTagName} onChange={(event) => setNewTagName(event.target.value)} placeholder={t('noteDetail.newTagPlaceholder')} />
+                    <select className="select-control" value={newTagColor} onChange={(event) => setNewTagColor(event.target.value as TagColor)}>
+                      {tagColorOptions.map((color) => (
+                        <option key={color} value={color}>
+                          {t(`tags.colors.${color}`)}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="submit">{t('noteDetail.createAndAddTag')}</button>
+                  </form>
+                </div>
+              ) : null}
+            </Panel>
 
-          <Panel title={t('noteDetail.additionalExamples')}>
-            <ul className="side-list">
-              {note.content.additionalExamples?.map((example) => <li key={example}>{example}</li>)}
-            </ul>
-            <button className="nav-item mt-4" type="button" onClick={() => setExampleOpen((value) => !value)}>
-              <Plus size={18} />
-              {t('noteDetail.addExample')}
-            </button>
-            {exampleOpen ? (
-              <form
-                className="inline-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void addAdditionalExample(note.id, exampleText).then(() => {
-                    setExampleText('');
-                    setExampleOpen(false);
-                    pushToast(t('noteDetail.exampleAdded'), 'success');
-                  });
-                }}
-              >
-                <textarea value={exampleText} onChange={(event) => setExampleText(event.target.value)} placeholder={t('noteDetail.examplePlaceholder')} />
-                <button type="submit">{t('common.save')}</button>
-              </form>
-            ) : null}
-          </Panel>
+            <Panel title={t('noteDetail.additionalExamples')}>
+              <ul className="side-list">
+                {note.content.additionalExamples?.map((example, index) => (
+                  <li className="side-edit-row" key={`${example}-${index}`}>
+                    {editingExampleIndex === index ? (
+                      <span className="side-edit-form">
+                        <textarea value={editingExampleText} onChange={(event) => setEditingExampleText(event.target.value)} />
+                        <span className="side-row-actions">
+                          <button className="icon-button" type="button" aria-label={t('editor.accept')} onClick={() => void saveExampleEdit(index)}>
+                            <Check size={16} />
+                          </button>
+                          <button className="icon-button" type="button" aria-label={t('common.cancel')} onClick={cancelExampleEdit}>
+                            <X size={16} />
+                          </button>
+                        </span>
+                      </span>
+                    ) : (
+                      <>
+                        <span>{example}</span>
+                        <span className="side-row-actions">
+                          <button className="icon-button" type="button" aria-label={t('editor.edit')} onClick={() => startExampleEdit(index, example)}>
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            className="icon-button danger"
+                            type="button"
+                            aria-label={t('common.remove')}
+                            onClick={() => {
+                              void deleteAdditionalExample(note.id, index).then(() => pushToast(t('noteDetail.exampleDeleted'), 'warning'));
+                            }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </span>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <button className="nav-item mt-4" type="button" onClick={() => setExampleOpen((value) => !value)}>
+                <Plus size={18} />
+                {t('noteDetail.addExample')}
+              </button>
+              {exampleOpen ? (
+                <form
+                  className="inline-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void addAdditionalExample(note.id, exampleText).then(() => {
+                      setExampleText('');
+                      setExampleOpen(false);
+                      pushToast(t('noteDetail.exampleAdded'), 'success');
+                    });
+                  }}
+                >
+                  <textarea value={exampleText} onChange={(event) => setExampleText(event.target.value)} placeholder={t('noteDetail.examplePlaceholder')} />
+                  <button type="submit">{t('common.save')}</button>
+                </form>
+              ) : null}
+            </Panel>
 
-          <Panel title={t('noteDetail.relatedLinks')}>
-            <div className="side-list">
-              {note.relatedLinks?.map((link) => (
-                <RelatedLinkRow key={link.id} href={link.href} title={link.title} />
-              ))}
-            </div>
-            <button className="nav-item mt-4" type="button" onClick={() => setLinkOpen((value) => !value)}>
-              <Plus size={18} />
-              {t('noteDetail.addLink')}
-            </button>
-            {linkOpen ? (
-              <form
-                className="inline-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void addRelatedLink(note.id, linkTitle, linkHref).then(() => {
-                    setLinkTitle('');
-                    setLinkHref('');
-                    setLinkOpen(false);
-                    pushToast(t('noteDetail.linkAdded'), 'success');
-                  });
-                }}
-              >
-                <input value={linkTitle} onChange={(event) => setLinkTitle(event.target.value)} placeholder={t('noteDetail.linkTitlePlaceholder')} />
-                <input value={linkHref} onChange={(event) => setLinkHref(event.target.value)} placeholder={t('noteDetail.linkUrlPlaceholder')} />
-                <button type="submit">{t('common.save')}</button>
-              </form>
-            ) : null}
-          </Panel>
-        </aside>
+            <Panel title={t('noteDetail.relatedLinks')}>
+              <div className="side-list">
+                {linkedNotes.map((linkedNote) => (
+                  <LinkedNoteRow
+                    key={linkedNote.id}
+                    noteId={linkedNote.id}
+                    title={linkedNote.title}
+                    onRemove={() => {
+                      void deleteLinkedNote(note.id, linkedNote.id).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'));
+                    }}
+                  />
+                ))}
+                {note.relatedLinks?.map((link) => (
+                  <RelatedLinkRow
+                    key={link.id}
+                    href={link.href}
+                    title={link.title}
+                    onRemove={() => {
+                      void deleteRelatedLink(note.id, link.id).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'));
+                    }}
+                  />
+                ))}
+              </div>
+              <button className="nav-item mt-4" type="button" onClick={() => setLinkOpen((value) => !value)}>
+                <Plus size={18} />
+                {t('noteDetail.addLink')}
+              </button>
+              {linkOpen ? (
+                <form
+                  className="inline-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void saveRelatedLink();
+                  }}
+                >
+                  <input
+                    ref={linkInputRef}
+                    value={linkInput}
+                    onChange={(event) => {
+                      setLinkInput(event.target.value);
+                      setSelectedLinkedNoteId(null);
+                    }}
+                    placeholder={t('noteDetail.linkInputPlaceholder')}
+                    title={t('noteDetail.linkInputPlaceholder')}
+                  />
+                  {linkSearchActive ? (
+                    <div className="note-link-picker">
+                      {linkableNotes.length ? (
+                        linkableNotes.map((linkableNote) => (
+                          <button key={linkableNote.id} type="button" onClick={() => selectLinkedNote(linkableNote.id)}>
+                            <FileText size={16} />
+                            {linkableNote.title}
+                          </button>
+                        ))
+                      ) : (
+                        <span>{t('noteDetail.noLinkableNotes')}</span>
+                      )}
+                    </div>
+                  ) : null}
+                  <button type="submit">{t('common.save')}</button>
+                </form>
+              ) : null}
+              {backlinkNotes.length ? (
+                <div className="backlink-section">
+                  <h3>{t('noteDetail.backlinks')}</h3>
+                  <div className="side-list">
+                    {backlinkNotes.map((backlink) => (
+                      <LinkedNoteRow key={backlink.id} noteId={backlink.id} title={backlink.title} />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </Panel>
+          </aside>
+        ) : null}
       </div>
     </>
   );
 }
 
-function RelatedLinkRow({ href, title }: { href: string; title: string }) {
+function buildEmptyDraft(type: NoteType, collectionId: string | null, tipTitle: string): NoteEditDraft {
+  return {
+    type,
+    title: '',
+    collectionId,
+    intro: '',
+    summaryMarkdown: '',
+    explanationMarkdown: '',
+    usageExamples: [emptyUsageRow()],
+    tipTitle,
+    tipBody: '',
+  };
+}
+
+function buildDraftFromNote(note: Note, fallbackTipTitle: string): NoteEditDraft {
+  return {
+    type: note.type,
+    title: note.title,
+    collectionId: note.collectionId,
+    intro: note.content.intro ?? '',
+    summaryMarkdown: blocksToMarkdown(note.content.summary),
+    explanationMarkdown: blocksToMarkdown(note.content.explanation),
+    usageExamples: note.content.usageExamples?.rows.length ? note.content.usageExamples.rows : [emptyUsageRow()],
+    tipTitle: note.content.tip?.title ?? fallbackTipTitle,
+    tipBody: note.content.tip?.body ?? '',
+    tagIds: note.tagIds,
+  };
+}
+
+function emptyUsageRow() {
+  return {
+    id: `usage-${crypto.randomUUID()}`,
+    expression: '',
+    meaning: '',
+    example: '',
+  };
+}
+
+function getSaveStatusLabel({
+  isEditing,
+  isNewNote,
+  note,
+  saving,
+  t,
+}: {
+  isEditing: boolean;
+  isNewNote: boolean;
+  note?: Note;
+  saving: boolean;
+  t: (key: string) => string;
+}) {
+  if (saving) {
+    return t('noteDetail.saving');
+  }
+
+  if (isNewNote) {
+    return t('noteDetail.unsavedDraft');
+  }
+
+  if (isEditing) {
+    return t('noteDetail.editingDraft');
+  }
+
+  if (note?.saveState === 'draft') {
+    return t('noteDetail.localDraft');
+  }
+
+  if (note?.syncStatus === 'local') {
+    return t('noteDetail.savedLocal');
+  }
+
+  return t('common.saved');
+}
+
+function CollectionBreadcrumb({ collection, emptyText }: { collection?: Collection; emptyText: string }) {
+  if (!collection) {
+    return (
+      <span className="breadcrumb">
+        <Folder size={20} />
+        {emptyText}
+      </span>
+    );
+  }
+
+  return (
+    <Link className="breadcrumb" to="/collections">
+      <Folder size={20} />
+      {collection.name}
+    </Link>
+  );
+}
+
+function CollectionSelect({
+  collections,
+  onChange,
+  value,
+}: {
+  collections: Collection[];
+  onChange: (collectionId: string | null) => void;
+  value: string | null;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <div className="editable-collection-field editing">
+      <Folder size={20} />
+      <select className="select-control" value={value ?? ''} onChange={(event) => onChange(event.target.value || null)}>
+        <option value="">{t('noteDetail.noCollection')}</option>
+        {collections.map((item) => (
+          <option key={item.id} value={item.id}>
+            {item.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function EditableDraftTip({
+  body,
+  onChange,
+  title,
+}: {
+  body: string;
+  onChange: (body: string) => void;
+  title: string;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <section className="content-section">
+      <div className="tip-box editable-tip-box">
+        <Lightbulb size={22} color="var(--color-accent-strong)" />
+        <div>
+          <h2 className="section-title">{title}</h2>
+          <MarkdownEditor
+            compact
+            label={t('noteDetail.tip')}
+            onChange={onChange}
+            placeholder={t('noteDetail.tipPlaceholder')}
+            rows={5}
+            showActions={false}
+            value={body}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TipPreview({ body, title }: { body: string; title: string }) {
+  const { t } = useI18n();
+
+  return (
+    <section className="content-section">
+      <div className="tip-box">
+        <Lightbulb size={22} color="var(--color-accent-strong)" />
+        <div>
+          <h2 className="section-title">{title}</h2>
+          <MarkdownPreview emptyText={t('noteDetail.emptyTip')} value={body} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function blocksToMarkdown(blocks?: RichTextBlock[]) {
+  return blocks?.map((block) => block.text).filter(Boolean).join('\n\n') ?? '';
+}
+
+function LinkedNoteRow({ noteId, onRemove, title }: { noteId: string; onRemove?: () => void; title: string }) {
+  return (
+    <span className="linked-row-shell">
+      <Link className="linked-row" to={`/notes/${noteId}`}>
+        <span className="inline-actions">
+          <FileText size={17} />
+          {title}
+        </span>
+        <ExternalLink size={15} />
+      </Link>
+      {onRemove ? (
+        <button className="icon-button danger" type="button" aria-label={title} onClick={onRemove}>
+          <Trash2 size={16} />
+        </button>
+      ) : null}
+    </span>
+  );
+}
+
+function RelatedLinkRow({ href, onRemove, title }: { href: string; onRemove?: () => void; title: string }) {
   const content = (
     <>
       <span className="inline-actions">
@@ -358,17 +891,35 @@ function RelatedLinkRow({ href, title }: { href: string; title: string }) {
 
   if (href.startsWith('/')) {
     return (
-      <Link className="linked-row" to={href}>
-        {content}
-      </Link>
+      <span className="linked-row-shell">
+        <Link className="linked-row" to={href}>
+          {content}
+        </Link>
+        {onRemove ? (
+          <button className="icon-button danger" type="button" aria-label={title} onClick={onRemove}>
+            <Trash2 size={16} />
+          </button>
+        ) : null}
+      </span>
     );
   }
 
   return (
-    <a className="linked-row" href={href}>
-      {content}
-    </a>
+    <span className="linked-row-shell">
+      <a className="linked-row" href={href}>
+        {content}
+      </a>
+      {onRemove ? (
+        <button className="icon-button danger" type="button" aria-label={title} onClick={onRemove}>
+          <Trash2 size={16} />
+        </button>
+      ) : null}
+    </span>
   );
+}
+
+function parseNoteType(value: string | null): NoteType {
+  return noteTypes.includes(value as NoteType) ? (value as NoteType) : 'standard';
 }
 
 function formatDate(value: string, locale: string) {

@@ -14,11 +14,31 @@ import type {
   Locale,
   NewNoteInput,
   Note,
+  NoteStats,
+  NoteType,
   NoteXExport,
+  RichTextBlock,
   Tag,
+  TagColor,
+  UsageExample,
   User,
   UserSettings,
 } from '../core/models/models';
+
+type MarkdownContentSection = 'explanation' | 'summary';
+
+export type NoteEditDraft = {
+  type?: NoteType;
+  title: string;
+  collectionId: string | null;
+  intro: string;
+  summaryMarkdown: string;
+  explanationMarkdown: string;
+  usageExamples: UsageExample[];
+  tipTitle: string;
+  tipBody: string;
+  tagIds?: string[];
+};
 
 type KnowledgeStore = {
   notes: Note[];
@@ -29,15 +49,34 @@ type KnowledgeStore = {
   isReady: boolean;
   initialize: (locale: Locale, userSettings?: UserSettings) => Promise<void>;
   createDraftNote: (input: NewNoteInput) => Promise<Note>;
+  createNoteFromDraft: (draft: NoteEditDraft) => Promise<Note | null>;
   createQuickNote: (content: string) => Promise<Note | null>;
   toggleFavorite: (noteId: string) => Promise<void>;
   togglePinned: (noteId: string) => Promise<void>;
   markNoteOpened: (noteId: string) => Promise<void>;
+  updateNoteTitle: (noteId: string, title: string) => Promise<void>;
+  updateNoteIntro: (noteId: string, intro: string) => Promise<void>;
+  updateNoteCollection: (noteId: string, collectionId: string | null) => Promise<void>;
+  saveNoteDraft: (noteId: string, draft: NoteEditDraft) => Promise<Note | null>;
+  updateMarkdownSection: (noteId: string, section: MarkdownContentSection, markdown: string) => Promise<void>;
+  updateNoteTip: (noteId: string, title: string, body: string) => Promise<void>;
   moveToTrash: (noteId: string) => Promise<void>;
   restoreNote: (noteId: string) => Promise<void>;
   updateNoteTags: (noteId: string, tagIds: string[]) => Promise<void>;
+  createTag: (name: string, color?: TagColor) => Promise<Tag | null>;
+  updateTag: (tagId: string, input: { name: string; color?: TagColor }) => Promise<void>;
+  deleteTag: (tagId: string) => Promise<void>;
+  addUsageExample: (noteId: string, input: Omit<UsageExample, 'id'>) => Promise<void>;
+  updateUsageExample: (noteId: string, rowId: string, input: Omit<UsageExample, 'id'>) => Promise<void>;
+  deleteUsageExample: (noteId: string, rowId: string) => Promise<void>;
+  replaceUsageExamples: (noteId: string, rows: UsageExample[]) => Promise<void>;
   addAdditionalExample: (noteId: string, example: string) => Promise<void>;
+  updateAdditionalExample: (noteId: string, index: number, example: string) => Promise<void>;
+  deleteAdditionalExample: (noteId: string, index: number) => Promise<void>;
   addRelatedLink: (noteId: string, title: string, href: string) => Promise<void>;
+  deleteRelatedLink: (noteId: string, linkId: string) => Promise<void>;
+  addLinkedNote: (noteId: string, linkedNoteId: string) => Promise<void>;
+  deleteLinkedNote: (noteId: string, linkedNoteId: string) => Promise<void>;
   duplicateNote: (noteId: string, title: string) => Promise<Note | null>;
   resetDemoData: (locale: Locale, settings: UserSettings) => Promise<void>;
   exportPayload: (settings: UserSettings) => NoteXExport;
@@ -61,11 +100,15 @@ function sortCollections(collections: Collection[]) {
   });
 }
 
+function sortTags(tags: Tag[]) {
+  return [...tags].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 const initialKnowledge = createMockData(defaultUserSettings.language);
 
 export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
   notes: sortNotes(initialKnowledge.notes),
-  tags: initialKnowledge.tags,
+  tags: sortTags(initialKnowledge.tags),
   collections: sortCollections(initialKnowledge.collections),
   user: initialKnowledge.user,
   activities: [...initialKnowledge.activities].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
@@ -76,6 +119,7 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     set({
       ...knowledge,
       notes: sortNotes(knowledge.notes),
+      tags: sortTags(knowledge.tags),
       collections: sortCollections(knowledge.collections),
       activities: [...knowledge.activities].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
       isReady: true,
@@ -84,6 +128,30 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
   createDraftNote: async (input) => {
     const note = buildLocalNote({
       input,
+      authorId: get().user?.id ?? 'user-local',
+    });
+    const activity = buildActivity(note.id, note.title);
+
+    await db.transaction('rw', [db.notes, db.activities], async () => {
+      await db.notes.put(note);
+      await db.activities.put(activity);
+    });
+
+    set((state) => ({
+      notes: sortNotes([note, ...state.notes]),
+      activities: [activity, ...state.activities],
+    }));
+
+    return note;
+  },
+  createNoteFromDraft: async (draft) => {
+    const normalized = normalizeNoteEditDraft(draft);
+    if (!normalized) {
+      return null;
+    }
+
+    const note = buildLocalNoteFromDraft({
+      draft: normalized,
       authorId: get().user?.id ?? 'user-local',
     });
     const activity = buildActivity(note.id, note.title);
@@ -163,6 +231,140 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       notes: state.notes.map((item) => (item.id === noteId ? updated : item)),
     }));
   },
+  updateNoteTitle: async (noteId, title) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    if (!note) {
+      return;
+    }
+
+    const nextTitle = title.trim() || note.title;
+    const updated = finalizeNoteUpdate({
+      ...note,
+      title: nextTitle,
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  updateNoteIntro: async (noteId, intro) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    if (!note) {
+      return;
+    }
+
+    const updated = finalizeNoteUpdate({
+      ...note,
+      content: {
+        ...note.content,
+        intro: intro.trim(),
+      },
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  updateNoteCollection: async (noteId, collectionId) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    if (!note) {
+      return;
+    }
+
+    const updated = finalizeNoteUpdate({
+      ...note,
+      collectionId,
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  saveNoteDraft: async (noteId, draft) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    const normalized = normalizeNoteEditDraft(draft);
+    if (!note || !normalized) {
+      return null;
+    }
+
+    const updated = finalizeNoteUpdate({
+      ...note,
+      type: normalized.type ?? note.type,
+      title: normalized.title,
+      collectionId: normalized.collectionId,
+      content: {
+        ...note.content,
+        intro: normalized.intro,
+        summary: markdownToBlocks(normalized.summaryMarkdown, `${note.id}-summary`),
+        explanation: markdownToBlocks(normalized.explanationMarkdown, `${note.id}-explanation`),
+        usageExamples: normalized.usageExamples.length ? { rows: normalized.usageExamples } : null,
+        tip: normalized.tipBody || normalized.tipTitle
+          ? {
+              id: note.content.tip?.id ?? createId(),
+              title: normalized.tipTitle || note.content.tip?.title || 'Tip',
+              body: normalized.tipBody,
+            }
+          : null,
+      },
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+
+    return updated;
+  },
+  updateMarkdownSection: async (noteId, section, markdown) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    if (!note) {
+      return;
+    }
+
+    const updated = finalizeNoteUpdate({
+      ...note,
+      content: {
+        ...note.content,
+        [section]: markdownToBlocks(markdown, `${noteId}-${section}`),
+      },
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  updateNoteTip: async (noteId, title, body) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    if (!note) {
+      return;
+    }
+
+    const trimmedTitle = title.trim();
+    const trimmedBody = body.trim();
+    const updated = finalizeNoteUpdate({
+      ...note,
+      content: {
+        ...note.content,
+        tip:
+          trimmedTitle || trimmedBody
+            ? {
+                id: note.content.tip?.id ?? createId(),
+                title: trimmedTitle || note.content.tip?.title || '',
+                body: trimmedBody,
+              }
+            : null,
+      },
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
   moveToTrash: async (noteId) => {
     const note = get().notes.find((item) => item.id === noteId);
     if (!note) {
@@ -193,7 +395,162 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       return;
     }
 
-    const updated = { ...note, tagIds, updatedAt: new Date().toISOString() };
+    const updated = finalizeNoteUpdate({ ...note, tagIds: uniqueIds(tagIds) });
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  createTag: async (name, color = 'neutral') => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const existing = get().tags.find((tag) => tag.name.toLowerCase() === trimmed.toLowerCase());
+    if (existing) {
+      return existing;
+    }
+
+    const tag: Tag = {
+      id: createTagId(trimmed),
+      name: trimmed,
+      color,
+      count: 0,
+    };
+
+    await db.tags.put(tag);
+    set((state) => ({
+      tags: sortTags([...state.tags, tag]),
+    }));
+
+    return tag;
+  },
+  updateTag: async (tagId, input) => {
+    const tag = get().tags.find((item) => item.id === tagId);
+    const trimmed = input.name.trim();
+    if (!tag || !trimmed) {
+      return;
+    }
+
+    const updated: Tag = {
+      ...tag,
+      name: trimmed,
+      color: input.color ?? tag.color ?? 'neutral',
+    };
+
+    await db.tags.put(updated);
+    set((state) => ({
+      tags: sortTags(state.tags.map((item) => (item.id === tagId ? updated : item))),
+    }));
+  },
+  deleteTag: async (tagId) => {
+    const noteUpdates = get().notes
+      .filter((note) => note.tagIds.includes(tagId))
+      .map((note) => finalizeNoteUpdate({ ...note, tagIds: note.tagIds.filter((id) => id !== tagId) }));
+
+    await db.transaction('rw', [db.tags, db.notes], async () => {
+      await db.tags.delete(tagId);
+      if (noteUpdates.length) {
+        await db.notes.bulkPut(noteUpdates);
+      }
+    });
+
+    set((state) => {
+      const updatedNotes = noteUpdates.length
+        ? state.notes.map((note) => noteUpdates.find((updated) => updated.id === note.id) ?? note)
+        : state.notes;
+
+      return {
+        tags: state.tags.filter((tag) => tag.id !== tagId),
+        notes: sortNotes(updatedNotes),
+      };
+    });
+  },
+  addUsageExample: async (noteId, input) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    const row = normalizeUsageExampleInput(input);
+    if (!note || !row) {
+      return;
+    }
+
+    const updated = finalizeNoteUpdate({
+      ...note,
+      content: {
+        ...note.content,
+        usageExamples: {
+          rows: [...(note.content.usageExamples?.rows ?? []), { id: createId(), ...row }],
+        },
+      },
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  updateUsageExample: async (noteId, rowId, input) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    const row = normalizeUsageExampleInput(input);
+    if (!note || !row) {
+      return;
+    }
+
+    const rows = note.content.usageExamples?.rows ?? [];
+    const updated = finalizeNoteUpdate({
+      ...note,
+      content: {
+        ...note.content,
+        usageExamples: {
+          rows: rows.map((item) => (item.id === rowId ? { id: rowId, ...row } : item)),
+        },
+      },
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  deleteUsageExample: async (noteId, rowId) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    if (!note) {
+      return;
+    }
+
+    const rows = note.content.usageExamples?.rows.filter((row) => row.id !== rowId) ?? [];
+    const updated = finalizeNoteUpdate({
+      ...note,
+      content: {
+        ...note.content,
+        usageExamples: rows.length ? { rows } : null,
+      },
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  replaceUsageExamples: async (noteId, rows) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    if (!note) {
+      return;
+    }
+
+    const normalizedRows = rows.flatMap((row) => {
+      const normalized = normalizeUsageExampleInput(row);
+      return normalized ? [{ id: row.id || createId(), ...normalized }] : [];
+    });
+
+    const updated = finalizeNoteUpdate({
+      ...note,
+      content: {
+        ...note.content,
+        usageExamples: normalizedRows.length ? { rows: normalizedRows } : null,
+      },
+    });
+
     await db.notes.put(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
@@ -206,14 +563,59 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       return;
     }
 
-    const updated = {
+    const updated = finalizeNoteUpdate({
       ...note,
       content: {
         ...note.content,
         additionalExamples: [...(note.content.additionalExamples ?? []), trimmed],
       },
-      updatedAt: new Date().toISOString(),
-    };
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  updateAdditionalExample: async (noteId, index, example) => {
+    const trimmed = example.trim();
+    const note = get().notes.find((item) => item.id === noteId);
+    if (!note || !trimmed) {
+      return;
+    }
+
+    const examples = [...(note.content.additionalExamples ?? [])];
+    if (index < 0 || index >= examples.length) {
+      return;
+    }
+
+    examples[index] = trimmed;
+    const updated = finalizeNoteUpdate({
+      ...note,
+      content: {
+        ...note.content,
+        additionalExamples: examples,
+      },
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  deleteAdditionalExample: async (noteId, index) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    if (!note) {
+      return;
+    }
+
+    const examples = (note.content.additionalExamples ?? []).filter((_, itemIndex) => itemIndex !== index);
+    const updated = finalizeNoteUpdate({
+      ...note,
+      content: {
+        ...note.content,
+        additionalExamples: examples,
+      },
+    });
 
     await db.notes.put(updated);
     set((state) => ({
@@ -228,18 +630,70 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       return;
     }
 
-    const updated = {
+    const updated = finalizeNoteUpdate({
       ...note,
       relatedLinks: [
         ...(note.relatedLinks ?? []),
         {
           id: createId(),
           title: trimmedTitle,
-          href: trimmedHref || `/notes/${noteId}`,
+          href: trimmedHref,
         },
       ],
-      updatedAt: new Date().toISOString(),
-    };
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  deleteRelatedLink: async (noteId, linkId) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    if (!note) {
+      return;
+    }
+
+    const updated = finalizeNoteUpdate({
+      ...note,
+      relatedLinks: (note.relatedLinks ?? []).filter((link) => link.id !== linkId),
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  addLinkedNote: async (noteId, linkedNoteId) => {
+    if (noteId === linkedNoteId) {
+      return;
+    }
+
+    const note = get().notes.find((item) => item.id === noteId);
+    const linkedNote = get().notes.find((item) => item.id === linkedNoteId);
+    if (!note || !linkedNote) {
+      return;
+    }
+
+    const updated = finalizeNoteUpdate({
+      ...note,
+      linkedNoteIds: uniqueIds([...note.linkedNoteIds, linkedNoteId]),
+    });
+
+    await db.notes.put(updated);
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
+  },
+  deleteLinkedNote: async (noteId, linkedNoteId) => {
+    const note = get().notes.find((item) => item.id === noteId);
+    if (!note) {
+      return;
+    }
+
+    const updated = finalizeNoteUpdate({
+      ...note,
+      linkedNoteIds: note.linkedNoteIds.filter((id) => id !== linkedNoteId),
+    });
 
     await db.notes.put(updated);
     set((state) => ({
@@ -282,7 +736,7 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     await resetKnowledge(bundle, settings);
     set({
       notes: sortNotes(bundle.notes),
-      tags: bundle.tags,
+      tags: sortTags(bundle.tags),
       collections: sortCollections(bundle.collections),
       user: bundle.user,
       activities: [...bundle.activities].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
@@ -301,7 +755,7 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     await replaceKnowledge(payload);
     set({
       notes: sortNotes(payload.notes),
-      tags: payload.tags,
+      tags: sortTags(payload.tags),
       collections: sortCollections(payload.collections),
     });
     return payload.userSettings;
@@ -310,6 +764,107 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
 
 function createId() {
   return crypto.randomUUID();
+}
+
+function createTagId(name: string) {
+  const slug = name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 40);
+
+  return `tag-${slug || 'label'}-${createId().slice(0, 8)}`;
+}
+
+function uniqueIds(ids: string[]) {
+  return [...new Set(ids)];
+}
+
+function normalizeUsageExampleInput(input: Omit<UsageExample, 'id'>) {
+  const expression = input.expression.trim();
+  const meaning = input.meaning.trim();
+  const example = input.example.trim();
+
+  if (!expression && !meaning && !example) {
+    return null;
+  }
+
+  return {
+    expression,
+    meaning,
+    example,
+  };
+}
+
+function normalizeNoteEditDraft(input: NoteEditDraft): NoteEditDraft | null {
+  const title = input.title.trim();
+  if (!title) {
+    return null;
+  }
+
+  const usageExamples = input.usageExamples.flatMap((row) => {
+    const normalized = normalizeUsageExampleInput(row);
+    return normalized ? [{ id: row.id || createId(), ...normalized }] : [];
+  });
+
+  return {
+    ...input,
+    title,
+    collectionId: input.collectionId || null,
+    intro: input.intro.trim(),
+    summaryMarkdown: input.summaryMarkdown.trimEnd(),
+    explanationMarkdown: input.explanationMarkdown.trimEnd(),
+    usageExamples,
+    tipTitle: input.tipTitle.trim(),
+    tipBody: input.tipBody.trimEnd(),
+    tagIds: input.tagIds ? uniqueIds(input.tagIds) : undefined,
+  };
+}
+
+function markdownToBlocks(markdown: string, prefix: string): RichTextBlock[] {
+  const text = markdown.trimEnd();
+  if (!text) {
+    return [];
+  }
+
+  return [{ id: `${prefix}-${createId()}`, text }];
+}
+
+function finalizeNoteUpdate(note: Note): Note {
+  const updated = {
+    ...note,
+    saveState: 'saved',
+    syncStatus: 'local',
+    updatedAt: new Date().toISOString(),
+    version: note.version + 1,
+  } satisfies Note;
+
+  return {
+    ...updated,
+    stats: calculateNoteStats(updated),
+  };
+}
+
+function calculateNoteStats(note: Note): NoteStats {
+  const text = [
+    note.title,
+    note.content.intro ?? '',
+    ...(note.content.summary?.map((block) => block.text) ?? []),
+    ...(note.content.explanation?.map((block) => block.text) ?? []),
+    ...(note.content.usageExamples?.rows.flatMap((row) => [row.expression, row.meaning, row.example]) ?? []),
+    note.content.tip?.title ?? '',
+    note.content.tip?.body ?? '',
+    ...(note.content.additionalExamples ?? []),
+  ].join(' ');
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+
+  return {
+    wordCount,
+    characterCount: text.length,
+    readingTimeMinutes: Math.max(1, Math.ceil(wordCount / 180)),
+  };
 }
 
 function buildActivity(noteId: string, label: string): ActivityItem {
@@ -362,5 +917,54 @@ function buildLocalNote({ input, authorId }: { input: NewNoteInput; authorId: st
     thumbnail: { variant: 'text' },
     version: 1,
     syncStatus: 'local',
+  };
+}
+
+function buildLocalNoteFromDraft({ draft, authorId }: { draft: NoteEditDraft; authorId: string }): Note {
+  const now = new Date().toISOString();
+  const note: Note = {
+    id: createId(),
+    type: draft.type ?? 'standard',
+    title: draft.title,
+    collectionId: draft.collectionId ?? 'collection-ideas',
+    tagIds: draft.tagIds ?? ['tag-ideas'],
+    linkedNoteIds: [],
+    isFavorite: false,
+    isPinned: false,
+    isArchived: false,
+    isTrashed: false,
+    saveState: 'saved',
+    authorId,
+    createdAt: now,
+    updatedAt: now,
+    lastOpenedAt: now,
+    content: {
+      intro: draft.intro,
+      summary: markdownToBlocks(draft.summaryMarkdown, `new-summary`),
+      explanation: markdownToBlocks(draft.explanationMarkdown, `new-explanation`),
+      usageExamples: draft.usageExamples.length ? { rows: draft.usageExamples } : null,
+      tip: draft.tipBody || draft.tipTitle
+        ? {
+            id: createId(),
+            title: draft.tipTitle || 'Tip',
+            body: draft.tipBody,
+          }
+        : null,
+      additionalExamples: [],
+    },
+    stats: {
+      wordCount: 0,
+      characterCount: 0,
+      readingTimeMinutes: 1,
+    },
+    relatedLinks: [],
+    thumbnail: { variant: 'text' },
+    version: 1,
+    syncStatus: 'local',
+  };
+
+  return {
+    ...note,
+    stats: calculateNoteStats(note),
   };
 }

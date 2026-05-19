@@ -23,10 +23,17 @@ Backend, auth, sync, file upload, image attachments, and cloud storage are out o
 - Note types are labels only for now. They should not create different templates or editing flows.
 - Read mode should stay close to the existing reference layout.
 - Edit mode may introduce clear inline editor panels inside each section, as long as the read-mode layout remains faithful.
-- Saving is per field for now. Each editable field should have explicit `Accept` and `Cancel` actions.
-- New notes should not immediately persist as complete saved notes. A new note becomes persistent after the user accepts/saves any field.
-- Markdown preview should work like GitHub-style writing: `Write` and `Preview` tabs, with raw Markdown editing and a rendered preview.
-- Markdown preview is read-only for V1.
+- Main note editing uses a page-level edit mode for V1:
+  - existing notes show a single `Edit` button near the note heading
+  - clicking `Edit` makes collection, title, intro, summary, explanation, usage examples, and tip editable together
+  - `Save` commits the whole page draft
+  - `Cancel` restores the saved note state
+- Tags, additional examples, and related links keep their focused controls for now.
+- New notes should not immediately persist as complete saved notes. A new note becomes persistent after the user clicks page-level `Save`.
+- New-note creation requires a title.
+- Markdown editing should use `Text` and `Preview` tabs.
+- `Text` mode exposes raw Markdown.
+- `Preview` mode is read-only for V1, matching the rendered final look before the user accepts changes.
 - Images are intentionally deferred. Do not add image URL insertion, local upload, attachment tables, or image export/import in this phase.
 - Success criterion: the user can create a blank note, edit title/body/tags/examples/links, reload, and everything persists locally.
 
@@ -36,7 +43,7 @@ Backend, auth, sync, file upload, image attachments, and cloud storage are out o
   - `EditableTextField` for simple fields such as title and brief description.
   - Pencil icon in read mode.
   - Checkmark and X icons in edit mode.
-  - `MarkdownEditor` with textarea, formatting toolbar, and `Write` / `Preview` tabs.
+  - `MarkdownEditor` with textarea, formatting toolbar, and `Text` / `Preview` tabs.
   - Markdown editor uses visible `Accept` and `Cancel` buttons.
 - Markdown support should cover the V1 subset:
   - headings
@@ -114,12 +121,15 @@ Backend, auth, sync, file upload, image attachments, and cloud storage are out o
 ## Step 5: Usage Examples Table
 
 - Keep the usage examples section as a dedicated structured table editor, not a generic Markdown field.
-- Make the examples table editable:
+- Make the examples table editable as a whole table:
   - add row
   - edit expression
   - edit meaning
   - edit example text
   - delete row
+- Entering edit mode should make all rows and all columns editable at once.
+- Expression, meaning, and example cells should all use textareas.
+- The user should be able to accept or cancel the full table edit as one operation.
 - Use compact editing controls so the table still resembles the mockup.
 - Example text can use the Markdown editor in compact mode if it does not make the table feel too heavy.
 
@@ -151,11 +161,13 @@ Backend, auth, sync, file upload, image attachments, and cloud storage are out o
 ## Step 7: New Note Creation Flow
 
 - Make `New Note` open a proper editable draft.
-- Draft starts with empty title, description, summary, explanation, examples, tip, and links.
-- User can build the full note using the same editing controls.
-- The draft should persist to IndexedDB only after the user accepts/saves any field.
+- Draft starts with empty title, description, summary, explanation, examples, and tip.
+- Tags, additional examples, and related links can be managed after the note is saved, using the existing focused controls.
+- User can build the main note body using the same page-level editing controls.
+- The draft should persist to IndexedDB only after the user clicks page-level `Save`.
+- Save should refuse to create a new note until the title is filled.
 - Once persisted, the note should be recoverable after reload.
-- Save state should show as local/draft/saved using the existing top-bar area.
+- Save state should show unsaved draft / editing draft / local draft / saved locally using the existing top-bar area.
 
 ## Step 8: QA + Visual Pass
 
