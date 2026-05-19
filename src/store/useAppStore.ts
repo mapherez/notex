@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { defaultUserSettings } from '../config/appSettings';
 import { readUserSettings, writeUserSettings } from '../core/db/notexDb';
+import { enqueueWorkspaceSync } from '../core/services/syncQueue';
 import type { Locale, PreferredLayout, ThemePreference, UserSettings } from '../core/models/models';
 
 type AppStore = {
@@ -26,6 +27,7 @@ async function persist(settings: UserSettings) {
     ...settings,
     updatedAt: new Date().toISOString(),
   });
+  void enqueueWorkspaceSync();
 }
 
 function normalizeSettings(settings?: Partial<UserSettings> | null): UserSettings {

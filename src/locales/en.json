@@ -76,7 +76,7 @@
     }
   },
   "dashboard": {
-    "greeting": "Hi, Ricardo 👋",
+    "greeting": "Hi, {{name}} 👋",
     "subtitle": "Here is your organized knowledge.",
     "stats": {
       "notes": "Notes",
@@ -334,7 +334,7 @@
       "deleteWarning": "This action cannot be undone",
       "logout": "Log out",
       "logoutDescription": "Leave your account",
-      "sessionCount": "2 active sessions"
+      "sessionCount": "{{count}} active sessions"
     },
     "values": {
       "lastActivity": "Today, 10:24",
@@ -368,6 +368,26 @@
       "deleteSkipped": "Demo account kept",
       "demoReset": "Demo data restored"
     }
+  },
+  "sync": {
+    "connect": "Connect Google Drive",
+    "connecting": "Connecting...",
+    "connectDescription": "Back up and sync NoteX through hidden Drive app data.",
+    "connected": "Google Drive sync connected",
+    "disconnect": "Disconnect Google sync",
+    "disconnectDescription": "Keep using NoteX locally on this device.",
+    "disconnected": "Google sync disconnected",
+    "failed": "Sync failed",
+    "lastSynced": "Last synced {{date}}",
+    "localOnly": "Local-only mode",
+    "notConnected": "Not connected",
+    "pendingCount": "{{count}} pending changes",
+    "conflictCount": "{{count}} conflicts need review",
+    "sessionsNote": "These are NoteX browser sessions, not Google account sessions.",
+    "syncNow": "Sync now",
+    "syncing": "Syncing...",
+    "synced": "Sync complete",
+    "upToDate": "Up to date"
   },
   "collections": {
     "create": "Create collection",

@@ -1,4 +1,4 @@
-import { ChevronDown, Menu, Moon, Sun } from 'lucide-react';
+import { ChevronDown, Cloud, CloudOff, Menu, Moon, RefreshCw, Sun } from 'lucide-react';
 import clsx from 'clsx';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
+import { useSyncStore } from '../../store/useSyncStore';
 import { useToastStore } from '../../store/useToastStore';
 
 export function TopBar({
@@ -25,6 +26,12 @@ export function TopBar({
   const user = useKnowledgeStore((state) => state.user);
   const theme = useAppStore((state) => state.settings.theme);
   const setTheme = useAppStore((state) => state.setTheme);
+  const syncState = useSyncStore((state) => state.syncState);
+  const pendingCount = useSyncStore((state) => state.pendingCount);
+  const isSyncing = useSyncStore((state) => state.isSyncing);
+  const connectGoogle = useSyncStore((state) => state.connectGoogle);
+  const disconnectGoogle = useSyncStore((state) => state.disconnectGoogle);
+  const syncNow = useSyncStore((state) => state.syncNow);
   const pushToast = useToastStore((state) => state.pushToast);
 
   useClickOutside(actionsRef, accountOpen, () => {
@@ -67,13 +74,14 @@ export function TopBar({
           }}
         >
           <span className="avatar">
-            <img src="/assets/avatar-ricardo.svg" alt="" />
+            <img src={user?.avatarUrl ?? '/assets/avatar-ricardo.svg'} alt="" referrerPolicy="no-referrer" />
           </span>
           <ChevronDown size={18} color="var(--color-text-muted)" />
         </button>
         {accountOpen ? (
           <div className="floating-menu topbar-menu account-menu">
             <strong>{user?.name}</strong>
+            <span className="menu-muted">{syncState?.connected ? syncState.email ?? user?.email : t('topbar.localMode')}</span>
             <button
               type="button"
               onClick={() => {
@@ -86,20 +94,52 @@ export function TopBar({
             <button
               type="button"
               onClick={() => {
-                pushToast(t('topbar.localMode'), 'info');
+                if (syncState?.connected) {
+                  void syncNow()
+                    .then(() => pushToast(t('sync.synced'), 'success'))
+                    .catch((error) => pushToast(error instanceof Error ? error.message : t('sync.failed'), 'warning'));
+                } else {
+                  void connectGoogle()
+                    .then(() => pushToast(t('sync.connected'), 'success'))
+                    .catch((error) => pushToast(error instanceof Error ? error.message : t('sync.failed'), 'warning'));
+                }
                 setAccountOpen(false);
               }}
             >
-              {t('topbar.localMode')}
+              {syncState?.connected ? (
+                <>
+                  <RefreshCw size={16} />
+                  {isSyncing ? t('sync.syncing') : t('sync.syncNow')}
+                </>
+              ) : (
+                <>
+                  <Cloud size={16} />
+                  {t('sync.connect')}
+                </>
+              )}
             </button>
+            {syncState?.connected ? (
+              <span className="menu-muted">{pendingCount ? t('sync.pendingCount', { count: pendingCount }) : t('sync.upToDate')}</span>
+            ) : null}
             <button
               type="button"
               onClick={() => {
-                pushToast(t('profile.actions.logout'), 'warning');
+                if (syncState?.connected) {
+                  void disconnectGoogle().then(() => pushToast(t('sync.disconnected'), 'warning'));
+                } else {
+                  pushToast(t('topbar.localMode'), 'info');
+                }
                 setAccountOpen(false);
               }}
             >
-              {t('profile.security.logout')}
+              {syncState?.connected ? (
+                <>
+                  <CloudOff size={16} />
+                  {t('sync.disconnect')}
+                </>
+              ) : (
+                t('topbar.localMode')
+              )}
             </button>
           </div>
         ) : null}

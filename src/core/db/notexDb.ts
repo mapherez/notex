@@ -1,5 +1,15 @@
 import Dexie, { type Table } from 'dexie';
-import type { ActivityItem, Collection, Note, Tag, User, UserSettings } from '../models/models';
+import type {
+  ActivityItem,
+  Collection,
+  DeviceSession,
+  Note,
+  SyncItem,
+  SyncState,
+  Tag,
+  User,
+  UserSettings,
+} from '../models/models';
 import type { MockDataBundle } from '../data/createMockData';
 
 class NoteXDatabase extends Dexie {
@@ -9,6 +19,9 @@ class NoteXDatabase extends Dexie {
   users!: Table<User, string>;
   activities!: Table<ActivityItem, string>;
   userSettings!: Table<UserSettings, string>;
+  syncState!: Table<SyncState, string>;
+  syncItems!: Table<SyncItem, string>;
+  deviceSessions!: Table<DeviceSession, string>;
 
   constructor() {
     super('notex-local-db');
@@ -20,6 +33,18 @@ class NoteXDatabase extends Dexie {
       users: 'id, email',
       activities: 'id, noteId, createdAt',
       userSettings: 'id, language, theme, updatedAt',
+    });
+
+    this.version(2).stores({
+      notes: 'id, type, collectionId, isFavorite, isPinned, isArchived, isTrashed, updatedAt, lastOpenedAt, syncStatus',
+      tags: 'id, name',
+      collections: 'id, name',
+      users: 'id, email, googleSub',
+      activities: 'id, noteId, createdAt',
+      userSettings: 'id, language, theme, updatedAt',
+      syncState: 'id, provider, connected, email, updatedAt, lastSyncAt',
+      syncItems: 'entityKey, entityType, entityId, status, updatedAt',
+      deviceSessions: 'id, lastSeenAt',
     });
   }
 }
@@ -66,6 +91,22 @@ export async function readUserSettings(id: string) {
 
 export async function writeUserSettings(settings: UserSettings) {
   await db.userSettings.put(settings);
+}
+
+export async function readSyncState() {
+  return db.syncState.get('google-drive');
+}
+
+export async function writeSyncState(state: SyncState) {
+  await db.syncState.put(state);
+}
+
+export async function readSyncItems() {
+  return db.syncItems.toArray();
+}
+
+export async function readDeviceSessions() {
+  return db.deviceSessions.toArray();
 }
 
 export async function replaceKnowledge({

@@ -2212,6 +2212,14 @@
     padding: var(--space-2) var(--space-3);
   }
 
+  .floating-menu .menu-muted {
+    display: block;
+    padding: 0 var(--space-3) var(--space-2);
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
   .floating-menu button,
   .floating-menu a {
     display: flex;
@@ -2244,7 +2252,7 @@
   }
 
   .account-menu {
-    width: 14rem;
+    width: 17rem;
   }
 
   .note-row-menu {

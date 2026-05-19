@@ -12,6 +12,12 @@ export type SaveState = 'saved' | 'draft';
 
 export type SyncStatus = 'local' | 'pending' | 'synced' | 'conflict';
 
+export type SyncProvider = 'google-drive';
+
+export type SyncEntityType = 'note' | 'workspace' | 'manifest';
+
+export type SyncItemStatus = 'pending' | 'synced' | 'conflict' | 'deleted';
+
 export type RichTextBlock = {
   id: string;
   text: string;
@@ -108,9 +114,13 @@ export type Collection = {
 export type User = {
   id: string;
   name: string;
+  firstName?: string;
   email?: string;
   avatarUrl?: string;
   handle?: string;
+  googleSub?: string;
+  provider?: 'local' | 'google';
+  lastLoginAt?: string;
 };
 
 export type UserSettings = {
@@ -133,6 +143,85 @@ export type ActivityItem = {
   label: string;
   time: string;
   createdAt: string;
+};
+
+export type DeviceSession = {
+  id: string;
+  name: string;
+  lastSeenAt: string;
+  userAgent?: string;
+};
+
+export type SyncState = {
+  id: SyncProvider;
+  provider: SyncProvider;
+  connected: boolean;
+  googleSub?: string;
+  email?: string;
+  fullName?: string;
+  firstName?: string;
+  handle?: string;
+  avatarUrl?: string;
+  lastLoginAt?: string;
+  lastSyncAt?: string;
+  lastSyncStartedAt?: string;
+  lastError?: string;
+  deviceId: string;
+  workspaceFileId?: string;
+  manifestFileId?: string;
+  updatedAt: string;
+};
+
+export type SyncItem = {
+  entityKey: string;
+  entityType: SyncEntityType;
+  entityId: string;
+  driveFileId?: string;
+  localHash?: string;
+  remoteHash?: string;
+  remoteModifiedTime?: string;
+  status: SyncItemStatus;
+  error?: string;
+  deletedAt?: string;
+  lastSyncedAt?: string;
+  updatedAt: string;
+};
+
+export type CloudNoteFile = {
+  schemaVersion: 1;
+  exportedAt: string;
+  note: Note;
+};
+
+export type CloudWorkspaceFile = {
+  schemaVersion: 1;
+  exportedAt: string;
+  user?: User | null;
+  userSettings: UserSettings;
+  tags: Tag[];
+  collections: Collection[];
+  activities: ActivityItem[];
+  sessions: DeviceSession[];
+};
+
+export type CloudManifestNote = {
+  id: string;
+  fileId: string;
+  hash: string;
+  version: number;
+  updatedAt: string;
+  deletedAt?: string;
+};
+
+export type CloudManifestFile = {
+  schemaVersion: 1;
+  exportedAt: string;
+  workspace?: {
+    fileId: string;
+    hash: string;
+    updatedAt: string;
+  };
+  notes: CloudManifestNote[];
 };
 
 export type NoteXExport = {

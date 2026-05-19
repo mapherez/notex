@@ -1,6 +1,8 @@
 import {
   CalendarClock,
   ChevronRight,
+  Cloud,
+  CloudOff,
   Download,
   Edit3,
   FileText,
@@ -28,6 +30,7 @@ import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSortin
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
+import { useSyncStore } from '../store/useSyncStore';
 import { useToastStore } from '../store/useToastStore';
 import type { Locale, Note, PreferredLayout, ThemePreference } from '../core/models/models';
 
@@ -51,6 +54,15 @@ export function ProfilePage() {
   const exportPayload = useKnowledgeStore((state) => state.exportPayload);
   const importPayload = useKnowledgeStore((state) => state.importPayload);
   const resetDemoData = useKnowledgeStore((state) => state.resetDemoData);
+  const syncState = useSyncStore((state) => state.syncState);
+  const sessions = useSyncStore((state) => state.sessions);
+  const pendingCount = useSyncStore((state) => state.pendingCount);
+  const conflictCount = useSyncStore((state) => state.conflictCount);
+  const isConnecting = useSyncStore((state) => state.isConnecting);
+  const isSyncing = useSyncStore((state) => state.isSyncing);
+  const connectGoogle = useSyncStore((state) => state.connectGoogle);
+  const disconnectGoogle = useSyncStore((state) => state.disconnectGoogle);
+  const syncNow = useSyncStore((state) => state.syncNow);
   const pushToast = useToastStore((state) => state.pushToast);
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const favoriteNotes = activeNotes.filter((note) => note.isFavorite);
@@ -63,6 +75,47 @@ export function ProfilePage() {
   const lastActivityValue = mostRecentNote
     ? formatRecentActivityTimestamp(getRecentTimestamp(mostRecentNote), locale, t)
     : t('profile.values.noActivity');
+  const accountConnected = Boolean(syncState?.connected);
+  const accountEmail = syncState?.email ?? user?.email ?? t('sync.notConnected');
+  const lastLoginAt = syncState?.lastLoginAt ?? user?.lastLoginAt;
+  const lastLoginValue = lastLoginAt
+    ? formatRecentActivityTimestamp(lastLoginAt, locale, t)
+    : t('sync.notConnected');
+  const sessionCountValue = t('profile.security.sessionCount', { count: sessions.length });
+  const syncStatusDetail = getSyncStatusDetail({
+    connected: accountConnected,
+    isConnecting,
+    isSyncing,
+    pendingCount,
+    conflictCount,
+    lastSyncAt: syncState?.lastSyncAt,
+    lastError: syncState?.lastError,
+    locale,
+    t,
+  });
+
+  async function handleConnectGoogle() {
+    try {
+      await connectGoogle();
+      pushToast(t('sync.connected'), 'success');
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : t('sync.failed'), 'warning');
+    }
+  }
+
+  async function handleSyncNow() {
+    try {
+      await syncNow();
+      pushToast(t('sync.synced'), 'success');
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : t('sync.failed'), 'warning');
+    }
+  }
+
+  async function handleDisconnectGoogle() {
+    await disconnectGoogle();
+    pushToast(t('sync.disconnected'), 'warning');
+  }
 
   return (
     <div className="page-content list-page-grid">
@@ -75,7 +128,7 @@ export function ProfilePage() {
         <section className="profile-left">
           <article className="profile-card">
             <div className="profile-avatar">
-              <img src="/assets/avatar-ricardo.svg" alt="" />
+              <img src={user?.avatarUrl ?? '/assets/avatar-ricardo.svg'} alt="" referrerPolicy="no-referrer" />
               <button
                 className="icon-button profile-edit"
                 type="button"
@@ -89,7 +142,7 @@ export function ProfilePage() {
             <div className="handle">{user?.handle}</div>
             <div className="connected">
               <span className="logo-mark h-5 w-5 text-xs">G</span>
-              {t('profile.connectedWith')}
+              {accountConnected ? t('profile.connectedWith') : t('sync.localOnly')}
             </div>
           </article>
 
@@ -225,15 +278,15 @@ export function ProfilePage() {
         <section className="profile-right">
           <Panel title={t('profile.security.title')}>
             <SecurityRow
-              icon={UserCheck}
+              icon={accountConnected ? Cloud : CloudOff}
               label={t('profile.security.linkedAccount')}
-              detail={t('profile.security.provider')}
-              onClick={() => pushToast(t('profile.actions.accountPreview'), 'info')}
+              detail={syncStatusDetail}
+              onClick={accountConnected ? handleSyncNow : handleConnectGoogle}
             />
             <SecurityRow
               icon={Mail}
               label={t('profile.security.email')}
-              detail={user?.email ?? ''}
+              detail={accountEmail}
               onClick={() => {
                 void navigator.clipboard?.writeText(user?.email ?? '');
                 pushToast(t('common.copied'), 'success');
@@ -242,15 +295,30 @@ export function ProfilePage() {
             <SecurityRow
               icon={CalendarClock}
               label={t('profile.security.lastLogin')}
-              detail={t('profile.security.lastLoginValue')}
+              detail={lastLoginValue}
               onClick={() => pushToast(t('topbar.localMode'), 'info')}
             />
             <SecurityRow
               icon={HardDrive}
               label={t('profile.security.activeSessions')}
-              detail={t('profile.security.sessionCount')}
-              onClick={() => pushToast(t('profile.actions.sessionsPreview'), 'info')}
+              detail={sessionCountValue}
+              onClick={() => pushToast(t('sync.sessionsNote'), 'info')}
             />
+            {accountConnected ? (
+              <SecurityRow
+                icon={RefreshCw}
+                label={isSyncing ? t('sync.syncing') : t('sync.syncNow')}
+                detail={syncStatusDetail}
+                onClick={handleSyncNow}
+              />
+            ) : (
+              <SecurityRow
+                icon={Cloud}
+                label={isConnecting ? t('sync.connecting') : t('sync.connect')}
+                detail={t('sync.connectDescription')}
+                onClick={handleConnectGoogle}
+              />
+            )}
             <button className="security-row" type="button" onClick={() => createExportFile(exportPayload(settings))}>
               <Download size={20} color="var(--color-success)" />
               <span>
@@ -328,9 +396,9 @@ export function ProfilePage() {
             ) : null}
             <SecurityRow
               icon={LogOut}
-              label={t('profile.security.logout')}
-              detail={t('profile.security.logoutDescription')}
-              onClick={() => pushToast(t('profile.actions.logout'), 'warning')}
+              label={accountConnected ? t('sync.disconnect') : t('profile.security.logout')}
+              detail={accountConnected ? t('sync.disconnectDescription') : t('profile.security.logoutDescription')}
+              onClick={accountConnected ? handleDisconnectGoogle : () => pushToast(t('profile.actions.logout'), 'warning')}
             />
           </Panel>
         </section>
@@ -448,4 +516,56 @@ function formatRecentActivityTimestamp(value: string, locale: string, t: ReturnT
     month: 'short',
     year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric',
   }).format(date);
+}
+
+function getSyncStatusDetail({
+  connected,
+  isConnecting,
+  isSyncing,
+  pendingCount,
+  conflictCount,
+  lastSyncAt,
+  lastError,
+  locale,
+  t,
+}: {
+  connected: boolean;
+  isConnecting: boolean;
+  isSyncing: boolean;
+  pendingCount: number;
+  conflictCount: number;
+  lastSyncAt?: string;
+  lastError?: string;
+  locale: string;
+  t: ReturnType<typeof useI18n>['t'];
+}) {
+  if (lastError) {
+    return lastError;
+  }
+
+  if (isConnecting) {
+    return t('sync.connecting');
+  }
+
+  if (!connected) {
+    return t('sync.localOnly');
+  }
+
+  if (isSyncing) {
+    return t('sync.syncing');
+  }
+
+  if (conflictCount) {
+    return t('sync.conflictCount', { count: conflictCount });
+  }
+
+  if (pendingCount) {
+    return t('sync.pendingCount', { count: pendingCount });
+  }
+
+  if (lastSyncAt) {
+    return t('sync.lastSynced', { date: formatRecentActivityTimestamp(lastSyncAt, locale, t) });
+  }
+
+  return t('sync.connected');
 }

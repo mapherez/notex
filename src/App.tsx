@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { ToastViewport } from './components/ui/ToastViewport';
+import { useSyncBootstrap } from './core/services/useSyncBootstrap';
 import { I18nProvider } from './i18n/I18nProvider';
 import { DashboardPage } from './pages/DashboardPage';
 import { CollectionsPage, NotesListPage } from './pages/NotesListPage';
@@ -17,6 +18,7 @@ export function App() {
   const hydrateSettings = useAppStore((state) => state.hydrateSettings);
   const initialize = useKnowledgeStore((state) => state.initialize);
   const isReady = useKnowledgeStore((state) => state.isReady);
+  useSyncBootstrap(isHydrated && isReady);
 
   useEffect(() => {
     void hydrateSettings();
