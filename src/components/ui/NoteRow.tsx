@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ArchiveRestore, Copy, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { Collection, Note, Tag } from '../../core/models/models';
+import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { useToastStore } from '../../store/useToastStore';
 import { NoteThumbnail } from './NoteThumbnail';
@@ -25,6 +26,7 @@ export function NoteRow({
 }) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const toggleFavorite = useKnowledgeStore((state) => state.toggleFavorite);
   const togglePinned = useKnowledgeStore((state) => state.togglePinned);
   const moveToTrash = useKnowledgeStore((state) => state.moveToTrash);
@@ -33,6 +35,8 @@ export function NoteRow({
   const pushToast = useToastStore((state) => state.pushToast);
   const primaryTag = tags.find((tag) => note.tagIds.includes(tag.id));
   const collection = collections.find((item) => item.id === note.collectionId);
+
+  useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
 
   async function handleFavorite() {
     await (onToggleFavorite ? onToggleFavorite(note.id) : toggleFavorite(note.id));
@@ -78,38 +82,40 @@ export function NoteRow({
       </Link>
       {primaryTag ? <TagChip tag={primaryTag} color={primaryTag.color} /> : collection ? <TagChip tag={collection} /> : null}
       <span className="note-time">{formatDisplayTime(note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
-      <button
-        className="icon-button"
-        type="button"
-        aria-label={actionLabel ?? t('notes.openMenu')}
-        onClick={(event) => {
-          event.preventDefault();
-          setMenuOpen((value) => !value);
-        }}
-      >
-        <MoreVertical size={18} />
-      </button>
-      {menuOpen ? (
-        <div className="floating-menu note-row-menu">
-          <Link to={`/notes/${note.id}`}>{t('common.open')}</Link>
-          <button type="button" onClick={() => void handleFavorite()}>
-            <Star size={16} />
-            {note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
-          </button>
-          <button type="button" onClick={() => void handlePin()}>
-            <Pin size={16} />
-            {note.isPinned ? t('common.unpin') : t('common.pin')}
-          </button>
-          <button type="button" onClick={() => void handleDuplicate()}>
-            <Copy size={16} />
-            {t('common.duplicate')}
-          </button>
-          <button type="button" onClick={() => void handleTrash()}>
-            {note.isTrashed ? <ArchiveRestore size={16} /> : <Trash2 size={16} />}
-            {note.isTrashed ? t('notes.restore') : t('notes.moveToTrash')}
-          </button>
-        </div>
-      ) : null}
+      <div className="note-row-actions" ref={menuRef}>
+        <button
+          className="icon-button"
+          type="button"
+          aria-label={actionLabel ?? t('notes.openMenu')}
+          onClick={(event) => {
+            event.preventDefault();
+            setMenuOpen((value) => !value);
+          }}
+        >
+          <MoreVertical size={18} />
+        </button>
+        {menuOpen ? (
+          <div className="floating-menu note-row-menu">
+            <Link to={`/notes/${note.id}`}>{t('common.open')}</Link>
+            <button type="button" onClick={() => void handleFavorite()}>
+              <Star size={16} />
+              {note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
+            </button>
+            <button type="button" onClick={() => void handlePin()}>
+              <Pin size={16} />
+              {note.isPinned ? t('common.unpin') : t('common.pin')}
+            </button>
+            <button type="button" onClick={() => void handleDuplicate()}>
+              <Copy size={16} />
+              {t('common.duplicate')}
+            </button>
+            <button type="button" onClick={() => void handleTrash()}>
+              {note.isTrashed ? <ArchiveRestore size={16} /> : <Trash2 size={16} />}
+              {note.isTrashed ? t('notes.restore') : t('notes.moveToTrash')}
+            </button>
+          </div>
+        ) : null}
+      </div>
     </article>
   );
 }

@@ -1638,6 +1638,28 @@
     gap: var(--space-6);
   }
 
+  .page-header-actions {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .danger-action-button,
+  .collection-action-button {
+    display: inline-flex;
+    min-height: 2.55rem;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    border: 1px solid color-mix(in srgb, var(--color-danger) 48%, var(--color-border));
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+    color: var(--color-danger);
+    padding: 0 var(--space-4);
+    font-weight: 740;
+  }
+
   .collection-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1652,6 +1674,86 @@
     border-radius: var(--radius-card);
     background: var(--color-surface);
     padding: var(--space-5);
+  }
+
+  .collection-card-main {
+    display: grid;
+    gap: var(--space-4);
+    color: inherit;
+  }
+
+  .collection-create-row,
+  .collection-edit-form {
+    display: grid;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .collection-create-row {
+    grid-template-columns: minmax(0, 1fr) 10rem auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    padding: var(--space-3);
+  }
+
+  .collection-create-row input,
+  .collection-edit-form input {
+    min-width: 0;
+    height: 2.65rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-input);
+    color: var(--color-text);
+    padding: 0 var(--space-3);
+    outline: none;
+  }
+
+  .collection-create-row button {
+    display: inline-flex;
+    min-height: 2.65rem;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--color-accent);
+    color: #fff;
+    padding: 0 var(--space-4);
+    font-weight: 750;
+  }
+
+  .collection-edit-form {
+    align-content: start;
+  }
+
+  .collection-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .collection-action-button {
+    min-height: 2.35rem;
+    border-color: var(--color-border);
+    background: var(--color-input);
+    color: var(--color-text-muted);
+    padding: 0 var(--space-3);
+    font-size: 0.88rem;
+  }
+
+  .collection-action-button:hover {
+    border-color: var(--color-accent);
+    color: var(--color-text);
+  }
+
+  .collection-action-button.danger {
+    color: var(--color-danger);
+  }
+
+  .collection-action-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
   }
 
   .filter-bar {
@@ -1698,6 +1800,12 @@
 
   .notes-grid .note-time {
     display: none;
+  }
+
+  .note-row-actions {
+    position: relative;
+    display: inline-flex;
+    justify-content: flex-end;
   }
 
   .floating-menu {
@@ -1758,8 +1866,8 @@
   }
 
   .note-row-menu {
-    right: var(--space-4);
-    top: calc(50% + 1.35rem);
+    right: 0;
+    top: calc(100% + var(--space-2));
   }
 
   .document-menu {
@@ -2407,6 +2515,16 @@
   .usage-table {
     display: block;
     overflow-x: auto;
+  }
+
+  .page-header-actions,
+  .collection-card-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .collection-create-row {
+    grid-template-columns: 1fr;
   }
 
   .document-heading-row {

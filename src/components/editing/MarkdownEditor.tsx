@@ -26,6 +26,7 @@ import {
   type MarkdownTableAction,
   type MarkdownTextEdit,
 } from '../../core/utils/markdownTables';
+import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { MarkdownPreview } from './MarkdownPreview';
 
@@ -56,6 +57,7 @@ export function MarkdownEditor({
 }) {
   const { t } = useI18n();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const tableToolRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<MarkdownEditorTab>('text');
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
@@ -63,6 +65,8 @@ export function MarkdownEditor({
   const [selectionEnd, setSelectionEnd] = useState(0);
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const canEditCurrentTable = useMemo(() => hasMarkdownTableAtCursor(draft, selectionStart), [draft, selectionStart]);
+
+  useClickOutside(tableToolRef, tableMenuOpen, () => setTableMenuOpen(false));
 
   useEffect(() => {
     setDraft(value);
@@ -256,7 +260,7 @@ export function MarkdownEditor({
               <Link2 size={17} />
             </ToolbarButton>
             <span className="toolbar-divider" />
-            <div className="table-tool">
+            <div className="table-tool" ref={tableToolRef}>
               <button
                 className="markdown-tool-button"
                 type="button"

@@ -62,7 +62,11 @@ type KnowledgeStore = {
   updateNoteTip: (noteId: string, title: string, body: string) => Promise<void>;
   moveToTrash: (noteId: string) => Promise<void>;
   restoreNote: (noteId: string) => Promise<void>;
+  clearTrash: () => Promise<void>;
   updateNoteTags: (noteId: string, tagIds: string[]) => Promise<void>;
+  createCollection: (name: string, color?: TagColor) => Promise<Collection | null>;
+  updateCollection: (collectionId: string, input: { name: string; color?: TagColor }) => Promise<void>;
+  deleteCollection: (collectionId: string) => Promise<void>;
   createTag: (name: string, color?: TagColor) => Promise<Tag | null>;
   updateTag: (tagId: string, input: { name: string; color?: TagColor }) => Promise<void>;
   deleteTag: (tagId: string) => Promise<void>;
@@ -389,6 +393,42 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
   },
+  clearTrash: async () => {
+    const trashedIds = get().notes.filter((note) => note.isTrashed).map((note) => note.id);
+    if (!trashedIds.length) {
+      return;
+    }
+
+    const trashedIdSet = new Set(trashedIds);
+    const linkedNoteUpdates = get().notes
+      .filter((note) => !trashedIdSet.has(note.id) && note.linkedNoteIds.some((linkedId) => trashedIdSet.has(linkedId)))
+      .map((note) =>
+        finalizeNoteUpdate({
+          ...note,
+          linkedNoteIds: note.linkedNoteIds.filter((linkedId) => !trashedIdSet.has(linkedId)),
+        }),
+      );
+
+    await db.transaction('rw', [db.notes, db.activities], async () => {
+      await db.notes.bulkDelete(trashedIds);
+      if (linkedNoteUpdates.length) {
+        await db.notes.bulkPut(linkedNoteUpdates);
+      }
+      await db.activities.where('noteId').anyOf(trashedIds).delete();
+    });
+
+    set((state) => {
+      const linkedUpdateMap = new Map(linkedNoteUpdates.map((note) => [note.id, note]));
+      const remainingNotes = state.notes
+        .filter((note) => !trashedIdSet.has(note.id))
+        .map((note) => linkedUpdateMap.get(note.id) ?? note);
+
+      return {
+        notes: sortNotes(remainingNotes),
+        activities: state.activities.filter((activity) => !trashedIdSet.has(activity.noteId)),
+      };
+    });
+  },
   updateNoteTags: async (noteId, tagIds) => {
     const note = get().notes.find((item) => item.id === noteId);
     if (!note) {
@@ -400,6 +440,75 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
+  },
+  createCollection: async (name, color = 'neutral') => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const existing = get().collections.find((collection) => collection.name.toLowerCase() === trimmed.toLowerCase());
+    if (existing) {
+      return existing;
+    }
+
+    const collection: Collection = {
+      id: createCollectionId(trimmed),
+      name: trimmed,
+      color,
+      icon: 'folder',
+    };
+
+    await db.collections.put(collection);
+    set((state) => ({
+      collections: sortCollections([...state.collections, collection]),
+    }));
+
+    return collection;
+  },
+  updateCollection: async (collectionId, input) => {
+    const collection = get().collections.find((item) => item.id === collectionId);
+    const trimmed = input.name.trim();
+    if (!collection || !trimmed) {
+      return;
+    }
+
+    const updated: Collection = {
+      ...collection,
+      name: trimmed,
+      color: input.color ?? collection.color ?? 'neutral',
+    };
+
+    await db.collections.put(updated);
+    set((state) => ({
+      collections: sortCollections(state.collections.map((item) => (item.id === collectionId ? updated : item))),
+    }));
+  },
+  deleteCollection: async (collectionId) => {
+    const collection = get().collections.find((item) => item.id === collectionId);
+    if (!collection) {
+      return;
+    }
+
+    const noteUpdates = get().notes
+      .filter((note) => note.collectionId === collectionId)
+      .map((note) => finalizeNoteUpdate({ ...note, collectionId: null }));
+
+    await db.transaction('rw', [db.collections, db.notes], async () => {
+      await db.collections.delete(collectionId);
+      if (noteUpdates.length) {
+        await db.notes.bulkPut(noteUpdates);
+      }
+    });
+
+    set((state) => {
+      const noteUpdateMap = new Map(noteUpdates.map((note) => [note.id, note]));
+
+      return {
+        collections: state.collections.filter((item) => item.id !== collectionId),
+        notes: sortNotes(state.notes.map((note) => noteUpdateMap.get(note.id) ?? note)),
+      };
+    });
   },
   createTag: async (name, color = 'neutral') => {
     const trimmed = name.trim();
@@ -776,6 +885,18 @@ function createTagId(name: string) {
     .slice(0, 40);
 
   return `tag-${slug || 'label'}-${createId().slice(0, 8)}`;
+}
+
+function createCollectionId(name: string) {
+  const slug = name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 40);
+
+  return `collection-${slug || 'group'}-${createId().slice(0, 8)}`;
 }
 
 function uniqueIds(ids: string[]) {

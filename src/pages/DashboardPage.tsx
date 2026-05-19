@@ -34,7 +34,7 @@ export function DashboardPage() {
     { label: t('dashboard.stats.notes'), value: Math.max(activeNotes.length, 128), delta: t('dashboard.stats.notesDelta'), icon: FileText, color: 'blue', to: '/notes' },
     { label: t('dashboard.stats.favorites'), value: Math.max(favoriteCount, 23), delta: t('dashboard.stats.favoritesDelta'), icon: Star, color: 'amber', to: '/favorites' },
     { label: t('dashboard.stats.collections'), value: Math.max(collections.length, 6), delta: t('dashboard.stats.collectionsDelta'), icon: Folder, color: 'green', to: '/collections' },
-    { label: t('dashboard.stats.tags'), value: Math.max(tags.length, 15), delta: t('dashboard.stats.tagsDelta'), icon: Tag, color: 'purple', to: '/notes' },
+    { label: t('dashboard.stats.tags'), value: Math.max(tags.length, 15), delta: t('dashboard.stats.tagsDelta'), icon: Tag, color: 'purple', to: '/tags' },
   ] as const;
 
   return (
@@ -140,7 +140,7 @@ export function DashboardPage() {
           <Panel
             title={t('dashboard.popularTags')}
             action={
-              <Link className="link-accent" to="/notes">
+              <Link className="link-accent" to="/tags">
                 {t('common.viewAllTags')}
               </Link>
             }

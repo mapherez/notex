@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { NavLink, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Archive,
   ChevronDown,
-  ChevronRight,
   ChevronsLeft,
   Clock3,
   FileText,
@@ -11,10 +10,12 @@ import {
   Home,
   Plus,
   Star,
+  Tag,
   Trash2,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { appSettings } from '../../config/appSettings';
+import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
@@ -25,20 +26,23 @@ const navItems = [
   { to: '/notes', labelKey: 'navigation.notes', icon: FileText },
   { to: '/favorites', labelKey: 'navigation.favorites', icon: Star },
   { to: '/recent', labelKey: 'navigation.recent', icon: Clock3 },
+  { to: '/tags', labelKey: 'navigation.tags', icon: Tag },
   { to: '/trash', labelKey: 'navigation.trash', icon: Trash2 },
 ] as const;
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
   const [newNoteOpen, setNewNoteOpen] = useState(false);
+  const newNoteRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
   const settings = useAppStore((state) => state.settings);
   const setSidebarCollapsed = useAppStore((state) => state.setSidebarCollapsed);
   const collections = useKnowledgeStore((state) => state.collections);
-  const user = useKnowledgeStore((state) => state.user);
   const activeCollectionId = searchParams.get('collection');
+
+  useClickOutside(newNoteRef, newNoteOpen, () => setNewNoteOpen(false));
 
   function createNote(type: NoteType = 'standard') {
     setNewNoteOpen(false);
@@ -65,7 +69,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           </button>
         </div>
 
-        <div className="primary-action">
+        <div className="primary-action" ref={newNoteRef}>
           <button className="primary-action-main" type="button" onClick={() => createNote('standard')}>
             <Plus size={20} />
             {t('navigation.newNote')}
@@ -145,30 +149,6 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         </div>
 
         <div className="sidebar-spacer" />
-
-        <section className="storage-card" aria-label={t('navigation.storage')}>
-          <div className="storage-title">{t('navigation.storage')}</div>
-          <div className="storage-track">
-            <span className="storage-bar" />
-          </div>
-          <div className="storage-meta">
-            <span>{t('navigation.storagePercent')}</span>
-            <span>
-              {t('navigation.storageUsed')} {t('navigation.storageLimit')}
-            </span>
-          </div>
-        </section>
-
-        <Link className="user-footer" to="/profile" onClick={onClose}>
-          <span className="avatar">
-            <img src="/assets/avatar-ricardo.svg" alt="" />
-          </span>
-          <span className="user-meta">
-            <span className="user-name">{user?.name}</span>
-            <span className="user-email">{user?.email}</span>
-          </span>
-          <ChevronRight size={17} />
-        </Link>
       </aside>
     </>
   );

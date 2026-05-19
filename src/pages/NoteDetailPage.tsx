@@ -10,6 +10,7 @@ import { TagChip } from '../components/ui/TagChip';
 import type { Collection, Note, NoteType, RichTextBlock, TagColor } from '../core/models/models';
 import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
 import { tagColorOptions } from '../core/utils/tagColors';
+import { useClickOutside } from '../core/utils/useClickOutside';
 import { useI18n } from '../i18n/I18nProvider';
 import { useKnowledgeStore, type NoteEditDraft } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
@@ -25,6 +26,7 @@ export function NoteDetailPage() {
   const initialType = parseNoteType(searchParams.get('type'));
   const initialCollectionId = searchParams.get('collection') || null;
   const linkInputRef = useRef<HTMLInputElement>(null);
+  const documentActionsRef = useRef<HTMLDivElement>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [exampleOpen, setExampleOpen] = useState(false);
@@ -62,6 +64,8 @@ export function NoteDetailPage() {
   const deleteLinkedNote = useKnowledgeStore((state) => state.deleteLinkedNote);
   const pushToast = useToastStore((state) => state.pushToast);
   const note = isNewNote ? undefined : notes.find((item) => item.id === id);
+
+  useClickOutside(documentActionsRef, moreOpen, () => setMoreOpen(false));
 
   useEffect(() => {
     if (isReady && note && !isNewNote) {
@@ -283,7 +287,7 @@ export function NoteDetailPage() {
           <ChevronLeft size={20} />
           {t('common.back')}
         </button>
-        <div className="document-actions">
+        <div className="document-actions" ref={documentActionsRef}>
           {note ? (
             <button
               className="icon-button"

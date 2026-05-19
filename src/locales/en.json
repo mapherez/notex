@@ -35,6 +35,7 @@
     "notes": "Notes",
     "favorites": "Favorites",
     "recent": "Recent",
+    "tags": "Tags",
     "trash": "Trash",
     "collections": "Collections",
     "profile": "Profile",
@@ -102,6 +103,9 @@
     "recentSubtitle": "Notes recently opened or edited.",
     "trashTitle": "Trash",
     "trashSubtitle": "Removed notes that can still be recovered.",
+    "clearTrash": "Clear trash",
+    "clearTrashConfirm": "Permanently delete every note in the trash? This cannot be undone.",
+    "trashCleared": "Trash cleared",
     "collectionsTitle": "Collections",
     "collectionsSubtitle": "Group knowledge by areas of work.",
     "allNotes": "All notes",
@@ -131,6 +135,12 @@
       "purple": "Purple",
       "yellow": "Yellow"
     }
+  },
+  "tagsPage": {
+    "title": "Tags",
+    "subtitle": "Manage the labels used to organize notes.",
+    "managerTitle": "Tag management",
+    "description": "Create tags, rename them, change colors, and delete tags you no longer use."
   },
   "noteDetail": {
     "collectionLabel": "Collection",
@@ -341,6 +351,16 @@
     }
   },
   "collections": {
+    "create": "Create collection",
+    "newPlaceholder": "New collection name",
+    "edit": "Edit",
+    "delete": "Delete",
+    "name": "Collection name",
+    "color": "Collection color",
+    "created": "Collection created",
+    "updated": "Collection updated",
+    "deleted": "Collection deleted",
+    "deleteConfirm": "Delete this collection? Notes assigned to it will stay in the app without a collection.",
     "work": "Work",
     "studies": "Studies",
     "projects": "Projects",

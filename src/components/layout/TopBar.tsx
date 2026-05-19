@@ -2,6 +2,7 @@ import { Bell, ChevronDown, Menu, Moon, Search, Sun } from 'lucide-react';
 import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
@@ -18,6 +19,7 @@ export function TopBar({
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const user = useKnowledgeStore((state) => state.user);
@@ -25,6 +27,11 @@ export function TopBar({
   const setTheme = useAppStore((state) => state.setTheme);
   const pushToast = useToastStore((state) => state.pushToast);
   const query = searchParams.get('q') ?? '';
+
+  useClickOutside(actionsRef, notificationOpen || accountOpen, () => {
+    setNotificationOpen(false);
+    setAccountOpen(false);
+  });
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -73,12 +80,16 @@ export function TopBar({
       ) : (
         <span />
       )}
-      <div className="topbar-actions">
+      <div className="topbar-actions" ref={actionsRef}>
         <button
           className="icon-button"
           type="button"
           aria-label={t('topbar.theme')}
-          onClick={() => void setTheme(theme === 'dark' ? 'light' : 'dark')}
+          onClick={() => {
+            setNotificationOpen(false);
+            setAccountOpen(false);
+            void setTheme(theme === 'dark' ? 'light' : 'dark');
+          }}
         >
           {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
         </button>
@@ -86,7 +97,10 @@ export function TopBar({
           className="icon-button notification-button"
           type="button"
           aria-label={t('topbar.notifications')}
-          onClick={() => setNotificationOpen((value) => !value)}
+          onClick={() => {
+            setAccountOpen(false);
+            setNotificationOpen((value) => !value);
+          }}
         >
           <Bell size={22} />
           <span className="notification-badge">3</span>
@@ -118,7 +132,15 @@ export function TopBar({
             </button>
           </div>
         ) : null}
-        <button className="avatar-button" type="button" aria-label={t('topbar.account')} onClick={() => setAccountOpen((value) => !value)}>
+        <button
+          className="avatar-button"
+          type="button"
+          aria-label={t('topbar.account')}
+          onClick={() => {
+            setNotificationOpen(false);
+            setAccountOpen((value) => !value);
+          }}
+        >
           <span className="avatar">
             <img src="/assets/avatar-ricardo.svg" alt="" />
           </span>
@@ -136,10 +158,22 @@ export function TopBar({
             >
               {t('topbar.profile')}
             </button>
-            <button type="button" onClick={() => pushToast(t('topbar.localMode'), 'info')}>
+            <button
+              type="button"
+              onClick={() => {
+                pushToast(t('topbar.localMode'), 'info');
+                setAccountOpen(false);
+              }}
+            >
               {t('topbar.localMode')}
             </button>
-            <button type="button" onClick={() => pushToast(t('profile.actions.logout'), 'warning')}>
+            <button
+              type="button"
+              onClick={() => {
+                pushToast(t('profile.actions.logout'), 'warning');
+                setAccountOpen(false);
+              }}
+            >
               {t('profile.security.logout')}
             </button>
           </div>

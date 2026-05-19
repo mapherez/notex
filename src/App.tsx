@@ -7,6 +7,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { CollectionsPage, NotesListPage } from './pages/NotesListPage';
 import { NoteDetailPage } from './pages/NoteDetailPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { TagsPage } from './pages/TagsPage';
 import { useAppStore } from './store/useAppStore';
 import { useKnowledgeStore } from './store/useKnowledgeStore';
 
@@ -42,6 +43,7 @@ export function App() {
             <Route path="/notes/:id" element={<NoteDetailPage />} />
             <Route path="/favorites" element={<NotesListPage mode="favorites" />} />
             <Route path="/recent" element={<NotesListPage mode="recent" />} />
+            <Route path="/tags" element={<TagsPage />} />
             <Route path="/trash" element={<NotesListPage mode="trash" />} />
             <Route path="/collections" element={<CollectionsPage />} />
             <Route path="/profile" element={<ProfilePage />} />

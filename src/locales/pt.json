@@ -35,6 +35,7 @@
     "notes": "Notas",
     "favorites": "Favoritos",
     "recent": "Recentes",
+    "tags": "Tags",
     "trash": "Lixeira",
     "collections": "Coleções",
     "profile": "Perfil",
@@ -102,6 +103,9 @@
     "recentSubtitle": "Notas abertas ou editadas recentemente.",
     "trashTitle": "Lixeira",
     "trashSubtitle": "Notas removidas que ainda podes recuperar.",
+    "clearTrash": "Limpar lixeira",
+    "clearTrashConfirm": "Apagar permanentemente todas as notas na lixeira? Esta ação não pode ser desfeita.",
+    "trashCleared": "Lixeira limpa",
     "collectionsTitle": "Coleções",
     "collectionsSubtitle": "Agrupa conhecimento por áreas de trabalho.",
     "allNotes": "Todas as notas",
@@ -131,6 +135,12 @@
       "purple": "Roxo",
       "yellow": "Amarelo"
     }
+  },
+  "tagsPage": {
+    "title": "Tags",
+    "subtitle": "Gere as etiquetas usadas para organizar notas.",
+    "managerTitle": "Gestão de tags",
+    "description": "Cria tags, muda nomes, altera cores e apaga as tags que já não usas."
   },
   "noteDetail": {
     "collectionLabel": "Coleção",
@@ -341,6 +351,16 @@
     }
   },
   "collections": {
+    "create": "Criar coleção",
+    "newPlaceholder": "Nome da nova coleção",
+    "edit": "Editar",
+    "delete": "Apagar",
+    "name": "Nome da coleção",
+    "color": "Cor da coleção",
+    "created": "Coleção criada",
+    "updated": "Coleção atualizada",
+    "deleted": "Coleção apagada",
+    "deleteConfirm": "Apagar esta coleção? As notas associadas continuam na app sem coleção.",
     "work": "Trabalho",
     "studies": "Estudos",
     "projects": "Projetos",

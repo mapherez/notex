@@ -4,7 +4,7 @@ export type ThemePreference = 'dark' | 'light';
 
 export type PreferredLayout = 'list' | 'grid';
 
-export type StartupPage = '/' | '/notes' | '/favorites' | '/recent' | '/collections' | '/profile';
+export type StartupPage = '/' | '/notes' | '/favorites' | '/recent' | '/tags' | '/collections' | '/profile';
 
 export type NoteType = 'standard' | 'linguistic_doubt' | 'reference' | 'snippet';
 
