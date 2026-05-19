@@ -32,6 +32,7 @@ import { useClickOutside } from '../core/utils/useClickOutside';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore, type NoteEditDraft } from '../store/useKnowledgeStore';
+import { useSyncStore } from '../store/useSyncStore';
 import { useToastStore } from '../store/useToastStore';
 
 const noteTypes: NoteType[] = ['standard', 'linguistic_doubt', 'reference', 'snippet'];
@@ -68,6 +69,7 @@ export function NoteDetailPage() {
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const user = useKnowledgeStore((state) => state.user);
+  const accountConnected = useSyncStore((state) => Boolean(state.syncState?.connected));
   const isReady = useKnowledgeStore((state) => state.isReady);
   const toggleFavorite = useKnowledgeStore((state) => state.toggleFavorite);
   const togglePinned = useKnowledgeStore((state) => state.togglePinned);
@@ -556,7 +558,7 @@ export function NoteDetailPage() {
                 </div>
                 <div className="meta-row">
                   <span>{t('noteDetail.author')}</span>
-                  <span className="meta-value">{user?.name}</span>
+                  <span className="meta-value">{accountConnected ? user?.name : t('profile.localUser')}</span>
                 </div>
               </div>
             </Panel>

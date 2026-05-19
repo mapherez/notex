@@ -83,7 +83,7 @@ export function ProfilePage() {
     ? formatRecentActivityTimestamp(getRecentTimestamp(mostRecentNote), locale, t)
     : t('profile.values.noActivity');
   const accountConnected = Boolean(syncState?.connected);
-  const accountEmail = syncState?.email ?? user?.email ?? t('sync.notConnected');
+  const accountEmail = accountConnected ? syncState?.email ?? user?.email ?? t('sync.notConnected') : '';
   const lastLoginAt = syncState?.lastLoginAt ?? user?.lastLoginAt;
   const lastLoginValue = lastLoginAt
     ? formatRecentActivityTimestamp(lastLoginAt, locale, t)
@@ -160,8 +160,8 @@ export function ProfilePage() {
                 <Edit3 size={16} />
               </button>
             </div>
-            <h2 className="panel-title">{user?.name}</h2>
-            <div className="handle">{user?.handle}</div>
+            <h2 className="panel-title">{accountConnected ? user?.name : t("profile.localUser")}</h2>
+            {accountConnected && user?.handle ? <div className="handle">{user.handle}</div> : null}
             <div className="connected">
               {accountConnected ? (
                 <>
@@ -373,11 +373,13 @@ export function ProfilePage() {
               label={isSyncing ? t("sync.syncing") : t("sync.syncStatus")}
               detail={syncStatusDetail}
             />
-            <SecurityRow
-              icon={Mail}
-              label={t("profile.security.email")}
-              detail={accountEmail}
-            />
+            {accountConnected ? (
+              <SecurityRow
+                icon={Mail}
+                label={t("profile.security.email")}
+                detail={accountEmail}
+              />
+            ) : null}
             <SecurityRow
               icon={CalendarClock}
               label={t("profile.security.lastLogin")}

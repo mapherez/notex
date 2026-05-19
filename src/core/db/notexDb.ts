@@ -127,6 +127,34 @@ class NoteXDatabase extends Dexie {
           });
         }
       });
+
+    this.version(4)
+      .stores({
+        notes: 'id, type, collectionId, isFavorite, isPinned, isArchived, isTrashed, updatedAt, lastOpenedAt, syncStatus',
+        tags: 'id, name',
+        collections: 'id, name',
+        users: 'id, email, googleSub',
+        activities: 'id, noteId, createdAt',
+        userSettings: 'id, language, theme, updatedAt',
+        syncState: 'id, provider, connected, email, updatedAt, lastSyncAt',
+        syncItems: 'entityKey, entityType, entityId, status, updatedAt',
+        deviceSessions: 'id, lastSeenAt',
+      })
+      .upgrade(async (tx) => {
+        const users = tx.table<User, string>('users');
+        const syncState = tx.table<SyncState, string>('syncState');
+        const [user, googleState] = await Promise.all([users.toArray(), syncState.get('google-drive')]);
+        const currentUser = user[0];
+
+        if (!googleState?.connected && currentUser?.provider !== 'google' && !currentUser?.googleSub) {
+          await users.clear();
+          await users.put({
+            id: 'user-local',
+            provider: 'local',
+            name: 'Local user',
+          });
+        }
+      });
   }
 }
 

@@ -1,4 +1,4 @@
-import { ArrowRight, FileText, Folder, Plus, Search, Star, Tag, Timer, Trash, Trash2, X } from 'lucide-react';
+import { ArrowRight, Edit3, FileText, Folder, Plus, Search, Star, Tag, Timer, Trash, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
@@ -158,9 +158,16 @@ export function DashboardPage() {
                   <button
                     className={note ? 'quick-pin-card' : 'quick-pin-card empty'}
                     type="button"
-                    aria-label={note ? t('dashboard.quickPins.change') : t('dashboard.quickPins.add')}
+                    aria-label={note ? note.title : t('dashboard.quickPins.add')}
                     title={note?.title}
-                    onClick={() => openQuickPinPicker(index)}
+                    onClick={() => {
+                      if (note) {
+                        navigate(`/notes/${note.id}`);
+                        return;
+                      }
+
+                      openQuickPinPicker(index);
+                    }}
                   >
                     {note ? (
                       <>
@@ -174,6 +181,20 @@ export function DashboardPage() {
                       <Plus size={24} />
                     )}
                   </button>
+                  {note ? (
+                    <button
+                      className="quick-pin-edit"
+                      type="button"
+                      aria-label={t('dashboard.quickPins.change')}
+                      title={t('dashboard.quickPins.change')}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openQuickPinPicker(index);
+                      }}
+                    >
+                      <Edit3 size={15} />
+                    </button>
+                  ) : null}
                   {activeQuickPinIndex === index ? (
                     <div className="quick-pin-picker">
                       <label className="quick-pin-search">

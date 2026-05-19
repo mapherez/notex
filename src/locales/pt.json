@@ -273,6 +273,7 @@
     "subtitle": "Gerencia a tua conta, preferências e dados pessoais.",
     "connectedWith": "Conectado com Google",
     "localAccount": "Conta local",
+    "localUser": "Utilizador local",
     "statistics": "Estatísticas",
     "stats": {
       "notes": "Notas criadas",
@@ -430,9 +431,9 @@
   },
   "mock": {
     "user": {
-      "name": "Ricardo Silva",
-      "email": "ricardo@email.com",
-      "handle": "@ricardosilva"
+      "name": "Utilizador local",
+      "email": "",
+      "handle": ""
     },
     "tags": [
       { "id": "tag-grammar", "name": "gramática", "color": "purple", "count": 7 },

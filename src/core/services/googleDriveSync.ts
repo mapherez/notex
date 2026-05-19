@@ -11,19 +11,14 @@ import { db, readAllKnowledge, readDeviceSessions, readSyncItems, readUserSettin
 import { defaultUserSettings } from '../../config/appSettings';
 import { hashStableJson } from '../utils/stableJson';
 import type {
-  ActivityItem,
   CloudManifestFile,
   CloudManifestNote,
   CloudNoteFile,
   CloudWorkspaceFile,
-  Collection,
   DeviceSession,
   Note,
   SyncItem,
   SyncState,
-  Tag,
-  User,
-  UserSettings,
 } from '../models/models';
 
 const MANIFEST_FILE_NAME = 'notex-manifest.json';
@@ -194,12 +189,9 @@ export async function runGoogleDriveSync(accessToken: string): Promise<GoogleDri
   const manifestFileId = existingState.manifestFileId ?? fileByName.get(MANIFEST_FILE_NAME)?.id;
   const workspaceFileId = existingState.workspaceFileId ?? fileByName.get(WORKSPACE_FILE_NAME)?.id;
   const remoteManifest = manifestFileId ? await readRemoteJson<CloudManifestFile>(accessToken, manifestFileId) : null;
-  const remoteWorkspace = workspaceFileId ? await readRemoteJson<CloudWorkspaceFile>(accessToken, workspaceFileId) : null;
-
-  await mergeWorkspace(remoteWorkspace);
 
   const manifestEntries = new Map((remoteManifest?.notes ?? []).map((entry) => [entry.id, entry]));
-  await syncNotes(accessToken, manifestEntries);
+  await pushLocalNotes(accessToken, manifestEntries);
   const workspace = await buildWorkspacePayload();
   const workspaceHash = await hashStableJson(workspace);
   const savedWorkspaceFile = await saveWorkspaceFile(accessToken, workspaceFileId, workspace, workspaceHash);
@@ -255,36 +247,19 @@ export async function countSyncWork() {
   };
 }
 
-async function syncNotes(accessToken: string, manifestEntries: Map<string, CloudManifestNote>) {
-  await pullMissingRemoteNotes(accessToken, manifestEntries);
-
+async function pushLocalNotes(accessToken: string, manifestEntries: Map<string, CloudManifestNote>) {
   const syncItems = new Map((await readSyncItems()).map((item) => [item.entityKey, item]));
   const notes = await db.notes.toArray();
+  const localNoteIds = new Set(notes.map((note) => note.id));
 
   for (const note of notes) {
     const key = noteKey(note.id);
     const item = syncItems.get(key);
     const remoteEntry = manifestEntries.get(note.id);
-
-    if (remoteEntry?.deletedAt) {
-      if (item?.status === 'pending') {
-        await createConflictCopy(accessToken, manifestEntries, remoteEntry);
-      } else {
-        await deleteLocalNote(note.id);
-        await db.syncItems.put({
-          ...buildBaseSyncItem(key, 'note', note.id),
-          status: 'synced',
-          remoteHash: remoteEntry.hash,
-          remoteModifiedTime: remoteEntry.updatedAt,
-          deletedAt: remoteEntry.deletedAt,
-          lastSyncedAt: new Date().toISOString(),
-        });
-        continue;
-      }
-    }
-
     const localHash = await hashNote(note);
-    if (!remoteEntry?.fileId) {
+    const shouldCreateRemoteFile = !remoteEntry?.fileId || remoteEntry.deletedAt;
+
+    if (shouldCreateRemoteFile) {
       const savedFile = await createJsonFile(accessToken, noteFileName(note.id), buildNotePayload(note), {
         entityType: 'note',
         entityId: note.id,
@@ -294,16 +269,8 @@ async function syncNotes(accessToken: string, manifestEntries: Map<string, Cloud
       continue;
     }
 
-    const hasSyncHistory = Boolean(item?.localHash || item?.remoteHash);
-    const locallyChanged =
-      item?.status === 'pending' || (hasSyncHistory ? localHash !== item?.localHash : note.updatedAt > remoteEntry.updatedAt);
-    const remotelyChanged = Boolean(item?.remoteHash && remoteEntry.hash !== item.remoteHash);
-
+    const locallyChanged = item?.status === 'pending' || item?.localHash !== localHash || remoteEntry.hash !== localHash;
     if (locallyChanged) {
-      if (remotelyChanged || (!hasSyncHistory && remoteEntry.hash !== localHash)) {
-        await createConflictCopy(accessToken, manifestEntries, remoteEntry);
-      }
-
       const savedFile = await updateJsonFile(accessToken, remoteEntry.fileId, buildNotePayload(note), {
         entityType: 'note',
         entityId: note.id,
@@ -313,44 +280,11 @@ async function syncNotes(accessToken: string, manifestEntries: Map<string, Cloud
       continue;
     }
 
-    if (remoteEntry.hash !== localHash) {
-      const remotePayload = await readRemoteJson<CloudNoteFile>(accessToken, remoteEntry.fileId);
-      if (remotePayload?.note) {
-        const remoteNote = { ...remotePayload.note, syncStatus: 'synced' } satisfies Note;
-        await db.notes.put(remoteNote);
-        await markNoteSynced(remoteNote, { id: remoteEntry.fileId, modifiedTime: remoteEntry.updatedAt }, remoteEntry.hash);
-      }
-      continue;
-    }
-
     await markNoteSynced(note, { id: remoteEntry.fileId, modifiedTime: remoteEntry.updatedAt }, localHash);
   }
 
   await pushDeletedNotes(accessToken, manifestEntries, syncItems);
-}
-
-async function pullMissingRemoteNotes(accessToken: string, manifestEntries: Map<string, CloudManifestNote>) {
-  const localNoteIds = new Set((await db.notes.toCollection().primaryKeys()) as string[]);
-  const missingEntries = [...manifestEntries.values()].filter((entry) => !entry.deletedAt && !localNoteIds.has(entry.id));
-
-  for (const entry of missingEntries) {
-    const payload = await readRemoteJson<CloudNoteFile>(accessToken, entry.fileId);
-    if (!payload?.note) {
-      continue;
-    }
-
-    const note = { ...payload.note, syncStatus: 'synced' } satisfies Note;
-    await db.notes.put(note);
-    await db.syncItems.put({
-      ...buildBaseSyncItem(noteKey(note.id), 'note', note.id),
-      driveFileId: entry.fileId,
-      localHash: entry.hash,
-      remoteHash: entry.hash,
-      remoteModifiedTime: entry.updatedAt,
-      status: 'synced',
-      lastSyncedAt: new Date().toISOString(),
-    });
-  }
+  await deleteRemoteNotesMissingLocally(accessToken, manifestEntries, localNoteIds);
 }
 
 async function readCloudNotes(accessToken: string, remoteManifest: CloudManifestFile | null) {
@@ -378,18 +312,11 @@ async function pushDeletedNotes(
     const remoteEntry = manifestEntries.get(item.entityId);
     const driveFileId = item.driveFileId ?? remoteEntry?.fileId;
     if (driveFileId) {
-      await deleteDriveFile(accessToken, driveFileId);
+      await tryDeleteDriveFile(accessToken, driveFileId);
     }
 
     const deletedAt = item.deletedAt ?? new Date().toISOString();
-    manifestEntries.set(item.entityId, {
-      id: item.entityId,
-      fileId: driveFileId ?? '',
-      hash: item.remoteHash ?? '',
-      version: 0,
-      updatedAt: deletedAt,
-      deletedAt,
-    });
+    manifestEntries.delete(item.entityId);
     await db.syncItems.put({
       ...item,
       status: 'synced',
@@ -400,30 +327,29 @@ async function pushDeletedNotes(
   }
 }
 
-async function mergeWorkspace(remoteWorkspace: CloudWorkspaceFile | null) {
-  if (!remoteWorkspace) {
-    return;
-  }
+async function deleteRemoteNotesMissingLocally(
+  accessToken: string,
+  manifestEntries: Map<string, CloudManifestNote>,
+  localNoteIds: Set<string>,
+) {
+  const missingRemoteEntries = [...manifestEntries.values()].filter((entry) => !localNoteIds.has(entry.id));
 
-  const [knowledge, settings, sessions] = await Promise.all([
-    readAllKnowledge(),
-    readUserSettings(defaultUserSettings.id),
-    readDeviceSessions(),
-  ]);
-  const mergedSettings = pickLatestSettings(settings ?? defaultUserSettings, remoteWorkspace.userSettings);
-  const mergedUser = mergeUser(knowledge.user, remoteWorkspace.user);
-
-  await db.transaction('rw', [db.tags, db.collections, db.activities, db.users, db.userSettings, db.deviceSessions], async () => {
-    await db.tags.bulkPut(mergeById(remoteWorkspace.tags, knowledge.tags));
-    await db.collections.bulkPut(mergeById(remoteWorkspace.collections, knowledge.collections));
-    await db.activities.bulkPut(mergeById(remoteWorkspace.activities, knowledge.activities));
-    if (mergedUser) {
-      await db.users.clear();
-      await db.users.put(mergedUser);
+  for (const entry of missingRemoteEntries) {
+    if (entry.fileId) {
+      await tryDeleteDriveFile(accessToken, entry.fileId);
     }
-    await db.userSettings.put(mergedSettings);
-    await db.deviceSessions.bulkPut(mergeSessions(remoteWorkspace.sessions, sessions));
-  });
+    manifestEntries.delete(entry.id);
+    await db.syncItems.delete(noteKey(entry.id));
+  }
+}
+
+async function tryDeleteDriveFile(accessToken: string, fileId: string) {
+  try {
+    await deleteDriveFile(accessToken, fileId);
+  } catch {
+    // Local data is the source of truth for normal sync. A missing remote file
+    // should not block cleaning the manifest.
+  }
 }
 
 async function buildWorkspacePayload(): Promise<CloudWorkspaceFile> {
@@ -481,45 +407,6 @@ async function saveManifestFile(
     : createJsonFile(accessToken, MANIFEST_FILE_NAME, manifest, appProperties);
 }
 
-async function createConflictCopy(
-  accessToken: string,
-  manifestEntries: Map<string, CloudManifestNote>,
-  remoteEntry: CloudManifestNote,
-) {
-  const remotePayload = await readRemoteJson<CloudNoteFile>(accessToken, remoteEntry.fileId);
-  if (!remotePayload?.note) {
-    return;
-  }
-
-  const now = new Date().toISOString();
-  const conflictNote: Note = {
-    ...remotePayload.note,
-    id: crypto.randomUUID(),
-    title: `${remotePayload.note.title} (Conflict copy)`,
-    createdAt: now,
-    updatedAt: now,
-    version: 1,
-    syncStatus: 'conflict',
-  };
-  const hash = await hashNote(conflictNote);
-  const savedFile = await createJsonFile(accessToken, noteFileName(conflictNote.id), buildNotePayload(conflictNote), {
-    entityType: 'note',
-    entityId: conflictNote.id,
-  });
-
-  await db.notes.put(conflictNote);
-  manifestEntries.set(conflictNote.id, toManifestNote(conflictNote, savedFile.id, hash, savedFile.modifiedTime));
-  await db.syncItems.put({
-    ...buildBaseSyncItem(noteKey(conflictNote.id), 'note', conflictNote.id),
-    driveFileId: savedFile.id,
-    localHash: hash,
-    remoteHash: hash,
-    remoteModifiedTime: savedFile.modifiedTime,
-    status: 'conflict',
-    lastSyncedAt: new Date().toISOString(),
-  });
-}
-
 async function markNoteSynced(note: Note, file: Pick<DriveFileMetadata, 'id' | 'modifiedTime'>, hash: string) {
   const syncedNote = { ...note, syncStatus: 'synced' } satisfies Note;
   await db.notes.put(syncedNote);
@@ -565,13 +452,6 @@ async function listNoteXCloudFiles(accessToken: string) {
       entityType === 'workspace' ||
       entityType === 'note'
     );
-  });
-}
-
-async function deleteLocalNote(noteId: string) {
-  await db.transaction('rw', [db.notes, db.activities], async () => {
-    await db.notes.delete(noteId);
-    await db.activities.where('noteId').equals(noteId).delete();
   });
 }
 
@@ -623,16 +503,4 @@ function mergeSessions(remoteSessions: DeviceSession[], localSessions: DeviceSes
       return Number.isFinite(time) && time >= activeAfter;
     })
     .sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt));
-}
-
-function pickLatestSettings(localSettings: UserSettings, remoteSettings: UserSettings) {
-  return remoteSettings.updatedAt > localSettings.updatedAt ? remoteSettings : localSettings;
-}
-
-function mergeUser(localUser?: User | null, remoteUser?: User | null) {
-  if (localUser?.provider === 'google') {
-    return localUser;
-  }
-
-  return remoteUser ?? localUser ?? null;
 }

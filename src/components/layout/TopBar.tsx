@@ -1,4 +1,4 @@
-import { ChevronDown, Menu, Moon, Sun, UserRound } from 'lucide-react';
+import { ChevronDown, LogOut, Menu, Moon, Sun, UserRound } from 'lucide-react';
 import clsx from 'clsx';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { useSyncStore } from '../../store/useSyncStore';
+import { useToastStore } from '../../store/useToastStore';
 
 export function TopBar({
   heading,
@@ -26,6 +27,8 @@ export function TopBar({
   const theme = useAppStore((state) => state.settings.theme);
   const setTheme = useAppStore((state) => state.setTheme);
   const syncState = useSyncStore((state) => state.syncState);
+  const disconnectGoogle = useSyncStore((state) => state.disconnectGoogle);
+  const pushToast = useToastStore((state) => state.pushToast);
 
   useClickOutside(actionsRef, accountOpen, () => {
     setAccountOpen(false);
@@ -77,8 +80,14 @@ export function TopBar({
         </button>
         {accountOpen ? (
           <div className="floating-menu topbar-menu account-menu">
-            <strong>{user?.name}</strong>
-            <span className="menu-muted">{syncState?.connected ? syncState.email ?? user?.email : t('topbar.localMode')}</span>
+            {syncState?.connected ? (
+              <>
+                <strong>{user?.name}</strong>
+                <span className="menu-muted">{syncState.email ?? user?.email}</span>
+              </>
+            ) : (
+              <span className="menu-muted">{t('profile.localUser')}</span>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -88,6 +97,18 @@ export function TopBar({
             >
               {t('topbar.profile')}
             </button>
+            {syncState?.connected ? (
+              <button
+                type="button"
+                onClick={() => {
+                  void disconnectGoogle().then(() => pushToast(t('sync.disconnected'), 'warning'));
+                  setAccountOpen(false);
+                }}
+              >
+                <LogOut size={16} />
+                {t('profile.security.logout')}
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>

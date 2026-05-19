@@ -6,6 +6,7 @@ import { getDisplayFirstName } from '../../core/utils/userProfile';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
+import { useSyncStore } from '../../store/useSyncStore';
 
 const searchRoutes = new Set(['/notes', '/favorites', '/recent', '/trash', '/collections', '/tags', '/profile']);
 
@@ -15,11 +16,12 @@ export function AppShell() {
   const { t } = useI18n();
   const sidebarCollapsed = useAppStore((state) => state.settings.sidebarCollapsed);
   const user = useKnowledgeStore((state) => state.user);
+  const accountConnected = useSyncStore((state) => Boolean(state.syncState?.connected));
   const showSearch = searchRoutes.has(location.pathname) || location.pathname.startsWith('/notes/');
   const heading =
     location.pathname === '/'
       ? {
-          title: t('dashboard.greeting', { name: getDisplayFirstName(user) }),
+          title: t('dashboard.greeting', { name: accountConnected ? getDisplayFirstName(user) : t('profile.localUser') }),
           subtitle: t('dashboard.subtitle'),
         }
       : undefined;

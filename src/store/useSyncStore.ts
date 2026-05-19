@@ -141,6 +141,11 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     };
     await writeSyncState(syncState);
     await db.deviceSessions.clear();
+    await useKnowledgeStore.getState().setUser({
+      id: 'user-local',
+      provider: 'local',
+      name: 'Local user',
+    });
     set({ syncState, sessions: [] });
   },
   removeDeviceSession: async (deviceId) => {
@@ -224,7 +229,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   },
   scheduleSync: () => {
     const state = get().syncState;
-    if (!state?.connected || !tokenCache || Date.now() >= tokenCache.expiresAt || syncTimeout) {
+    if (!state?.connected || syncTimeout) {
       return;
     }
 

@@ -95,7 +95,8 @@ export function createMockData(locale: Locale): MockDataBundle {
 
   const user: User = {
     id: 'user-local',
-    ...mock.user,
+    provider: 'local',
+    name: getLocaleValue<string>(locale, 'profile.localUser'),
   };
 
   const notes: Note[] = [
