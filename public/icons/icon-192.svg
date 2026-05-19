@@ -1,4 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="NoteX">
-  <rect width="192" height="192" rx="42" fill="#6d4cff"/>
-  <path d="M52 130V62h24l38 68h26V62h-24v68H92L54 62H28v68h24z" fill="#f7f5ff"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" aria-label="NoteX" role="img" viewBox="0 0 192 192"><rect width="192" height="192" fill="#6d4cff" rx="42"/><path fill="#f7f5ff" d="M52 130V62h24l38 68h26V62h-24v68H92L54 62H28v68h24z"/></svg>
