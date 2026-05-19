@@ -71,7 +71,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       >
         <div className="sidebar-header">
           <Link className="brand" to="/" onClick={onClose}>
-            <img className="logo-image" src="/assets/notex-logo.svg" alt="" />
+            <img className="logo-image" src="/assets/notex_logo.png" alt="" />
             <span>{appSettings.productName}</span>
           </Link>
           <button
@@ -97,7 +97,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
         <nav className="sidebar-section" aria-label={t("navigation.notes")}>
           {navItems.map(({ to, labelKey, icon }) => {
-            const Icon = to === '/trash' && hasTrashedNotes ? Trash2 : icon;
+            const Icon = to === "/trash" && hasTrashedNotes ? Trash2 : icon;
 
             return (
               <NavLink

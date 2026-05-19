@@ -33,6 +33,7 @@ export function TagsPage() {
         <p className="settings-description mb-4">{t('tagsPage.description')}</p>
         <LabelManager
           tags={tagsWithCounts}
+          getTagHref={(tag) => `/notes?tag=${tag.id}`}
           onCreate={async (name, color) => {
             const created = await createTag(name, color);
             if (created) {

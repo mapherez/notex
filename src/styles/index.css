@@ -2377,6 +2377,21 @@
     width: fit-content;
   }
 
+  .label-tag-link {
+    width: fit-content;
+    border-radius: 0.62rem;
+  }
+
+  .label-tag-link:hover .tag-chip,
+  .label-tag-link:focus-visible .tag-chip {
+    background: color-mix(in srgb, currentColor 20%, var(--color-chip));
+  }
+
+  .label-tag-link:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+    outline-offset: 3px;
+  }
+
   .icon-button.danger {
     color: var(--color-danger);
   }

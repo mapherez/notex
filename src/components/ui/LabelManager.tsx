@@ -1,5 +1,6 @@
 import { Check, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Tag, TagColor } from '../../core/models/models';
 import { tagColorOptions } from '../../core/utils/tagColors';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -11,11 +12,13 @@ type TagDraft = {
 };
 
 export function LabelManager({
+  getTagHref,
   onCreate,
   onDelete,
   onUpdate,
   tags,
 }: {
+  getTagHref?: (tag: Tag) => string;
   onCreate: (name: string, color: TagColor) => Promise<void> | void;
   onDelete: (tagId: string) => Promise<void> | void;
   onUpdate: (tagId: string, input: TagDraft) => Promise<void> | void;
@@ -82,10 +85,18 @@ export function LabelManager({
         {tags.map((tag) => {
           const draft = drafts[tag.id] ?? { name: tag.name, color: tag.color ?? 'neutral' };
           const changed = draft.name !== tag.name || draft.color !== (tag.color ?? 'neutral');
+          const chip = <TagChip tag={{ name: draft.name || tag.name, color: draft.color }} />;
+          const tagHref = getTagHref?.(tag);
 
           return (
             <div className="label-row" key={tag.id}>
-              <TagChip tag={{ name: draft.name || tag.name, color: draft.color }} />
+              {tagHref ? (
+                <Link className="label-tag-link" to={tagHref}>
+                  {chip}
+                </Link>
+              ) : (
+                chip
+              )}
               <input
                 aria-label={t('profile.labels.name')}
                 value={draft.name}
