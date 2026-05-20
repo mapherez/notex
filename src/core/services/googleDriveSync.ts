@@ -137,13 +137,8 @@ export async function replaceLocalDataWithGoogleDrive(accessToken: string): Prom
     MANIFEST_FILE_NAME,
     'manifest',
   );
-  const { file: workspaceFile, payload: remoteWorkspace } = await readLatestSyncJson<CloudWorkspaceFile>(
-    accessToken,
-    files,
-    WORKSPACE_FILE_NAME,
-    'workspace',
-  );
   const manifestEntries = new Map((remoteManifest?.notes ?? []).map((entry) => [entry.id, entry]));
+  const { file: workspaceFile, payload: remoteWorkspace } = await readWorkspaceSyncJson(accessToken, files, remoteManifest);
   await mergeRemoteNoteFilesIntoManifest(accessToken, files, manifestEntries);
   const noteRecords = remoteManifest ? await readRemoteNotes(accessToken, [...manifestEntries.values()]) : await readCloudNoteFiles(accessToken, files);
   const notes = noteRecords.flatMap((record) => (record.note ? [{ ...record.note, syncStatus: 'synced' } satisfies Note] : []));
@@ -229,7 +224,6 @@ export async function runGoogleDriveSync(accessToken: string): Promise<GoogleDri
   const pullResult = await pullRemoteNoteChanges(accessToken, manifestEntries);
   const pushResult = await pushLocalNoteChanges(accessToken, manifestEntries);
   const workspaceResult = await syncWorkspace(accessToken, files, remoteManifest);
-  let safetyPulled = false;
   const shouldSaveManifest = orphanNotesMerged || pullResult.changed || pushResult.changed || workspaceResult.changed || !manifestFile;
   let savedManifestFile = manifestFile;
 
@@ -237,25 +231,6 @@ export async function runGoogleDriveSync(accessToken: string): Promise<GoogleDri
     const manifest = buildManifest(manifestEntries, workspaceResult.fileId, workspaceResult.hash, workspaceResult.updatedAt);
     const manifestHash = await hashStableJson(manifest);
     savedManifestFile = await saveManifestFile(accessToken, manifestFile?.id, manifest, manifestHash);
-  }
-
-  if (pushResult.pushed || workspaceResult.pushed) {
-    const latestFiles = await listAppDataFiles(accessToken);
-    const { payload: latestManifest } = await readLatestSyncJson<CloudManifestFile>(
-      accessToken,
-      latestFiles,
-      MANIFEST_FILE_NAME,
-      'manifest',
-    );
-    const latestEntries = new Map((latestManifest?.notes ?? []).map((entry) => [entry.id, entry]));
-    const safetyMergedOrphans = await mergeRemoteNoteFilesIntoManifest(accessToken, latestFiles, latestEntries);
-    const safetyResult = await pullRemoteNoteChanges(accessToken, latestEntries);
-    safetyPulled = safetyResult.pulled;
-    if (safetyMergedOrphans) {
-      const manifest = buildManifest(latestEntries, workspaceResult.fileId, workspaceResult.hash, workspaceResult.updatedAt);
-      const manifestHash = await hashStableJson(manifest);
-      savedManifestFile = await saveManifestFile(accessToken, savedManifestFile?.id, manifest, manifestHash);
-    }
   }
 
   const finishedAt = new Date().toISOString();
@@ -281,7 +256,7 @@ export async function runGoogleDriveSync(accessToken: string): Promise<GoogleDri
     syncState: updatedState,
     pendingCount,
     conflictCount,
-    pulledChanges: pullResult.pulled || workspaceResult.pulled || safetyPulled,
+    pulledChanges: pullResult.pulled || workspaceResult.pulled,
     pushedChanges: pushResult.pushed || workspaceResult.pushed || orphanNotesMerged,
   };
 }
@@ -578,12 +553,7 @@ async function syncWorkspace(
   files: DriveFileMetadata[],
   remoteManifest: CloudManifestFile | null,
 ): Promise<WorkspaceSyncResult> {
-  const { file: workspaceFile, payload: remoteWorkspace } = await readLatestSyncJson<CloudWorkspaceFile>(
-    accessToken,
-    files,
-    WORKSPACE_FILE_NAME,
-    'workspace',
-  );
+  const { file: workspaceFile, payload: remoteWorkspace } = await readWorkspaceSyncJson(accessToken, files, remoteManifest);
   const item = await db.syncItems.get(workspaceKey());
   const localWorkspace = await buildWorkspacePayload();
   const localHash = await hashWorkspace(localWorkspace);
@@ -854,13 +824,12 @@ async function mergeRemoteNoteFilesIntoManifest(
 
   for (const file of noteFiles) {
     const hintedNoteId = file.appProperties?.entityId;
-    const existingById = hintedNoteId ? manifestEntries.get(hintedNoteId) : undefined;
     const fileAlreadyIndexed = [...manifestEntries.values()].some((entry) => entry.fileId === file.id);
     if (fileAlreadyIndexed) {
       continue;
     }
 
-    if (existingById?.deletedAt && getDriveFileTime(file) <= new Date(existingById.updatedAt).getTime()) {
+    if (hintedNoteId && manifestEntries.has(hintedNoteId)) {
       continue;
     }
 
@@ -870,7 +839,7 @@ async function mergeRemoteNoteFilesIntoManifest(
     }
 
     const currentEntry = manifestEntries.get(payload.note.id);
-    if (currentEntry?.deletedAt && getDriveFileTime(file) <= new Date(currentEntry.updatedAt).getTime()) {
+    if (currentEntry) {
       continue;
     }
 
@@ -1093,6 +1062,23 @@ async function readLatestSyncJson<T>(
   }
 
   return { payload: null };
+}
+
+async function readWorkspaceSyncJson(
+  accessToken: string,
+  files: DriveFileMetadata[],
+  remoteManifest: CloudManifestFile | null,
+): Promise<{ file?: DriveFileMetadata; payload: CloudWorkspaceFile | null }> {
+  const manifestWorkspaceFileId = remoteManifest?.workspace?.fileId;
+  if (manifestWorkspaceFileId) {
+    const manifestWorkspaceFile = files.find((file) => file.id === manifestWorkspaceFileId && !file.trashed);
+    const payload = await readRemoteJson<CloudWorkspaceFile>(accessToken, manifestWorkspaceFileId);
+    if (payload) {
+      return { file: manifestWorkspaceFile, payload };
+    }
+  }
+
+  return readLatestSyncJson<CloudWorkspaceFile>(accessToken, files, WORKSPACE_FILE_NAME, 'workspace');
 }
 
 function selectSyncFileCandidates(files: DriveFileMetadata[], fileName: string, entityType: SyncFileEntityType) {
