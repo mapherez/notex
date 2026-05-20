@@ -27,7 +27,6 @@
     "duplicate": "Duplicate",
     "copyLink": "Copy link",
     "clear": "Clear",
-    "copied": "Copied",
     "done": "Done"
   },
   "navigation": {
@@ -38,17 +37,7 @@
     "tags": "Tags",
     "trash": "Trash",
     "collections": "Collections",
-    "profile": "Profile",
     "newNote": "New note",
-    "newStandardNote": "Standard note",
-    "newLanguageNote": "Language doubt",
-    "newReference": "Reference",
-    "newSnippet": "Snippet",
-    "seeMore": "See more",
-    "storage": "Storage",
-    "storageUsed": "6.8 GB used",
-    "storageLimit": "of 10 GB",
-    "storagePercent": "68%",
     "collapse": "Collapse menu",
     "expand": "Open menu"
   },
@@ -56,17 +45,8 @@
     "searchPlaceholder": "Search notes, titles, tags...",
     "keyboardHint": "⌘ K",
     "theme": "Toggle theme",
-    "notifications": "Notifications",
     "account": "Account",
-    "notificationTitle": "Updates",
-    "notificationOne": "Project roadmap updated",
-    "notificationTwo": "New note ready to review",
-    "notificationThree": "Local export available",
-    "markRead": "Mark as read",
     "profile": "Open profile",
-    "settings": "Settings",
-    "localMode": "Local mode",
-    "searchApplied": "Search applied",
     "searchResults": "Search results",
     "noSearchResults": "No matching notes",
     "searchMatch": {
@@ -90,11 +70,7 @@
     "quickCapture": {
       "title": "Quick capture",
       "placeholder": "Write something quickly...",
-      "submit": "Save capture",
-      "format": "List",
-      "image": "Image",
-      "task": "Task",
-      "voice": "Voice"
+      "submit": "Save capture"
     },
     "quickPins": {
       "title": "Quick pins",
@@ -123,16 +99,11 @@
     "trashCleared": "Trash cleared",
     "collectionsTitle": "Collections",
     "collectionsSubtitle": "Group knowledge by areas of work.",
-    "allNotes": "All notes",
     "restore": "Restore",
     "moveToTrash": "Move to trash",
-    "updated": "Updated",
-    "created": "Created",
     "filteredBy": "Active filter",
     "clearFilters": "Clear filters",
     "openMenu": "Open note actions",
-    "draftTitle": "New local note",
-    "draftIntro": "Draft created to test local navigation.",
     "draftCreated": "Local note created",
     "pinChanged": "Pinned state updated",
     "favoriteChanged": "Favorite updated",
@@ -159,7 +130,6 @@
   },
   "noteDetail": {
     "collectionLabel": "Collection",
-    "fieldUpdated": "Note updated",
     "noteCreated": "Note created",
     "noteSaved": "Note saved",
     "saving": "Saving...",
@@ -194,19 +164,13 @@
     "editUsageTable": "Edit table",
     "relatedLinks": "Linked to",
     "addLink": "Add link",
-    "titleLabel": "Title",
     "titlePlaceholder": "Untitled note",
-    "introLabel": "Brief description",
     "introPlaceholder": "Write a brief description...",
     "newTagPlaceholder": "New label name",
     "noTagsAvailable": "Every existing label is already attached.",
     "noCollection": "No collection",
-    "copyExample": "Copy example",
-    "selectTag": "Choose tag",
     "examplePlaceholder": "Write a new example...",
-    "linkTitlePlaceholder": "Link title",
     "linkInputPlaceholder": "Type / to search notes, or paste a website address",
-    "linkUrlPlaceholder": "URL",
     "linkUrlRequired": "Enter a website address or select an existing note",
     "tagUpdated": "Tags updated",
     "tagCreated": "Label created and attached",
@@ -214,15 +178,10 @@
     "exampleUpdated": "Example updated",
     "exampleDeleted": "Example deleted",
     "emptyUsageExamples": "No usage examples yet.",
-    "usageTableUpdated": "Usage examples updated",
-    "usageRowAdded": "Usage example added",
-    "usageRowUpdated": "Usage example updated",
-    "usageRowDeleted": "Usage example deleted",
     "linkAdded": "Link added",
     "linkDeleted": "Link removed",
     "noLinkableNotes": "No matching notes",
     "backlinks": "Backlinks",
-    "copiedExample": "Example copied",
     "copiedLink": "Link copied",
     "words": "words",
     "characters": "characters",
@@ -279,9 +238,7 @@
       "notes": "Notes created",
       "collections": "Collections",
       "favorites": "Favorites",
-      "lastActivity": "Last activity",
-      "streak": "Day streak",
-      "storage": "Storage used"
+      "lastActivity": "Last activity"
     },
     "preferences": {
       "title": "Preferences",
@@ -306,13 +263,9 @@
       "favoriteTags": "Favorite tags",
       "favoriteTagsDescription": "Tags you use most frequently",
       "primaryCollection": "Primary collection",
-      "primaryCollectionDescription": "Your main collection",
-      "quickPins": "Quick pins",
-      "quickPinsDescription": "Notes pinned for quick access"
+      "primaryCollectionDescription": "Your main collection"
     },
     "labels": {
-      "title": "Labels",
-      "description": "Create labels, rename them, change colors, and delete labels you no longer use.",
       "name": "Label name",
       "color": "Label color",
       "newPlaceholder": "Create a new label...",
@@ -323,54 +276,21 @@
     },
     "security": {
       "title": "Account and security",
-      "linkedAccount": "Linked account",
-      "provider": "Google",
       "email": "Email",
       "lastLogin": "Last login",
-      "lastLoginValue": "Today, 10:24",
-      "activeSessions": "Active NoteX sessions",
       "syncDevices": "Sync devices",
       "exportData": "Export data",
       "importData": "Import data",
-      "resetDemo": "Restore demo",
-      "deleteAccount": "Delete account",
-      "deleteWarning": "This action cannot be undone",
       "logout": "Log out",
-      "logoutDescription": "Leave your account",
-      "sessionCount": "{{count}} active sessions",
       "deviceCount": "{{count}} sync devices"
     },
     "values": {
-      "lastActivity": "Today, 10:24",
-      "noActivity": "No activity yet",
-      "streak": "12 days 🔥"
-    },
-    "plan": {
-      "title": "Current plan",
-      "name": "Free plan",
-      "current": "Current",
-      "notes": "Notes",
-      "storage": "Storage",
-      "attachments": "Attachments per note",
-      "history": "Version history",
-      "upgrade": "Upgrade to Pro",
-      "notesLimit": "128 / 500",
-      "storageLimit": "6.8 GB / 10 GB",
-      "attachmentLimit": "Up to 20 MB",
-      "historyLimit": "7 days"
+      "noActivity": "No activity yet"
     },
     "actions": {
       "avatarUpdated": "Avatar editor opened in demo mode",
       "tagUpdated": "Favorite tags updated",
-      "pinUpdated": "Quick pins updated",
-      "primaryCollectionUpdated": "Primary collection updated",
-      "accountPreview": "Local account panel opened",
-      "sessionsPreview": "Local sessions in demo mode",
-      "logout": "Demo session ended locally",
-      "upgrade": "Upgrade flow opened in demo mode",
-      "deleteConfirm": "Delete confirmation opened",
-      "deleteSkipped": "Demo account kept",
-      "demoReset": "Demo data restored"
+      "primaryCollectionUpdated": "Primary collection updated"
     }
   },
   "sync": {
@@ -385,8 +305,6 @@
     "cloudDataCleared": "Cloud data cleared",
     "cloudDataLoaded": "Cloud data loaded",
     "connected": "Google Drive sync connected",
-    "disconnect": "Disconnect Google sync",
-    "disconnectDescription": "Keep using NoteX locally on this device.",
     "disconnected": "Google sync disconnected",
     "failed": "Sync failed",
     "lastSynced": "Last synced {{date}}",
@@ -401,7 +319,6 @@
     "lastSeen": "Last synced {{date}}",
     "noDevices": "No active sync devices yet.",
     "removeDevice": "Remove sync device",
-    "sessionsNote": "These are NoteX sync devices, not Google account sessions.",
     "syncNow": "Sync now",
     "syncStatus": "Sync status",
     "syncing": "Syncing...",
@@ -427,22 +344,12 @@
     "created": "Collection created",
     "updated": "Collection updated",
     "deleted": "Collection deleted",
-    "deleteConfirm": "Delete this collection? Notes assigned to it will stay in the app without a collection.",
-    "work": "Work",
-    "studies": "Studies",
-    "projects": "Projects",
-    "personal": "Personal",
-    "ideas": "Ideas"
+    "deleteConfirm": "Delete this collection? Notes assigned to it will stay in the app without a collection."
   },
   "mock": {
-    "user": {
-      "name": "Local user",
-      "email": "",
-      "handle": ""
-    },
     "tags": [
-      { "id": "tag-grammar", "name": "grammar", "color": "purple", "count": 7 },
-      { "id": "tag-doubt", "name": "doubt", "color": "neutral", "count": 5 }
+      { "id": "tag-grammar", "name": "grammar", "color": "purple" },
+      { "id": "tag-doubt", "name": "doubt", "color": "neutral" }
     ],
     "collections": [
       { "id": "collection-work", "name": "Work", "color": "blue", "icon": "folder" },
@@ -483,36 +390,6 @@
           "Impersonal verbs",
           "Everyday expressions"
         ]
-      },
-      "projectRoadmap": {
-        "title": "Project roadmap",
-        "intro": "Detailed plan for project phases and deliveries.",
-        "summary": ["Define phases, risks, deliverables, and metrics to keep the launch predictable."],
-        "tagline": "Detailed plan for project phases and deliveries..."
-      },
-      "productIdeas": {
-        "title": "Ideas for the new product",
-        "intro": "Brainstorm of features and differentiators.",
-        "summary": ["Hypotheses to validate with users and turn into testable experiences."],
-        "tagline": "Brainstorm of features and differentiators..."
-      },
-      "terminalCommands": {
-        "title": "Useful commands - Terminal",
-        "intro": "List of commands I use day to day.",
-        "summary": ["Quick reference for diagnostic, navigation, and maintenance commands."],
-        "tagline": "List of commands I use day to day..."
-      },
-      "japanTrip": {
-        "title": "Trip to Japan",
-        "intro": "Places to visit, experiences, and useful tips.",
-        "summary": ["Personal notes for organizing itinerary, costs, transport, and bookings."],
-        "tagline": "Places to visit, experiences, and useful tips..."
-      },
-      "atomicHabits": {
-        "title": "Summary - Atomic Habits",
-        "intro": "Main ideas and learnings from the book.",
-        "summary": ["Systems beat goals when habits are small, clear, and repeatable."],
-        "tagline": "Main ideas and learnings from the book..."
       }
     },
     "activities": [

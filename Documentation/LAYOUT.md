@@ -2,38 +2,28 @@
 
 ## Left Sidebar
 
-Always visible on desktop.
-Drawer on mobile.
+Visible on desktop and available as a drawer on mobile.
 
 Contains:
 
-- Logo (NoteX)
-- New Note CTA
-- Home
-- Notes
-- Favorites
-- Recent
-- Trash
+- Logo
+- New note action
+- Primary navigation
 - Collections
-- Storage block
-- User mini profile footer
+- Google Drive sync action and pending-change count
+- Privacy and terms links
 
 ## Top Bar
 
 Contains:
 
-- Search bar
+- Centered search bar
 - Theme toggle
-- Notifications
-- User avatar
+- Profile menu
 
 ## Design Rules
 
-- Premium dark theme default
-- Rounded corners
-- Subtle borders
-- Layered dark surfaces
-- Minimal gradients
-- Purple accent color
-- Controlled spacing
-- No generic SaaS dashboard look
+- Dense, work-focused knowledge management UI
+- Stable spacing and responsive constraints
+- Reusable theme tokens and locale strings
+- No decorative storage widgets or mock account data

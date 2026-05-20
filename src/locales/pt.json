@@ -27,7 +27,6 @@
     "duplicate": "Duplicar",
     "copyLink": "Copiar ligação",
     "clear": "Limpar",
-    "copied": "Copiado",
     "done": "Concluído"
   },
   "navigation": {
@@ -38,17 +37,7 @@
     "tags": "Tags",
     "trash": "Lixeira",
     "collections": "Coleções",
-    "profile": "Perfil",
     "newNote": "Nova nota",
-    "newStandardNote": "Nota standard",
-    "newLanguageNote": "Dúvida linguística",
-    "newReference": "Referência",
-    "newSnippet": "Snippet",
-    "seeMore": "Ver mais",
-    "storage": "Armazenamento",
-    "storageUsed": "6.8 GB usados",
-    "storageLimit": "de 10 GB",
-    "storagePercent": "68%",
     "collapse": "Recolher menu",
     "expand": "Abrir menu"
   },
@@ -56,17 +45,8 @@
     "searchPlaceholder": "Pesquisar notas, títulos, etiquetas...",
     "keyboardHint": "⌘ K",
     "theme": "Alternar tema",
-    "notifications": "Notificações",
     "account": "Conta",
-    "notificationTitle": "Atualizações",
-    "notificationOne": "Roadmap do Projeto atualizado",
-    "notificationTwo": "Nova nota pronta para rever",
-    "notificationThree": "Exportação local disponível",
-    "markRead": "Marcar como lidas",
     "profile": "Abrir perfil",
-    "settings": "Definições",
-    "localMode": "Modo local",
-    "searchApplied": "Pesquisa aplicada",
     "searchResults": "Resultados da pesquisa",
     "noSearchResults": "Nenhuma nota encontrada",
     "searchMatch": {
@@ -90,11 +70,7 @@
     "quickCapture": {
       "title": "Captura rápida",
       "placeholder": "Escreve algo rapidamente...",
-      "submit": "Guardar captura",
-      "format": "Lista",
-      "image": "Imagem",
-      "task": "Tarefa",
-      "voice": "Voz"
+      "submit": "Guardar captura"
     },
     "quickPins": {
       "title": "Atalhos rápidos",
@@ -123,16 +99,11 @@
     "trashCleared": "Lixeira limpa",
     "collectionsTitle": "Coleções",
     "collectionsSubtitle": "Agrupa conhecimento por áreas de trabalho.",
-    "allNotes": "Todas as notas",
     "restore": "Restaurar",
     "moveToTrash": "Mover para a lixeira",
-    "updated": "Atualizada",
-    "created": "Criada",
     "filteredBy": "Filtro ativo",
     "clearFilters": "Limpar filtros",
     "openMenu": "Abrir ações da nota",
-    "draftTitle": "Nova nota local",
-    "draftIntro": "Rascunho criado para testar a navegação local.",
     "draftCreated": "Nota local criada",
     "pinChanged": "Estado de fixação atualizado",
     "favoriteChanged": "Favorito atualizado",
@@ -159,7 +130,6 @@
   },
   "noteDetail": {
     "collectionLabel": "Coleção",
-    "fieldUpdated": "Nota atualizada",
     "noteCreated": "Nota criada",
     "noteSaved": "Nota guardada",
     "saving": "A guardar...",
@@ -194,19 +164,13 @@
     "editUsageTable": "Editar tabela",
     "relatedLinks": "Ligada a",
     "addLink": "Adicionar ligação",
-    "titleLabel": "Título",
     "titlePlaceholder": "Nota sem título",
-    "introLabel": "Descrição breve",
     "introPlaceholder": "Escreve uma descrição breve...",
     "newTagPlaceholder": "Nome da nova etiqueta",
     "noTagsAvailable": "Todas as etiquetas existentes já estão associadas.",
     "noCollection": "Sem coleção",
-    "copyExample": "Copiar exemplo",
-    "selectTag": "Escolher tag",
     "examplePlaceholder": "Escreve um novo exemplo...",
-    "linkTitlePlaceholder": "Título da ligação",
     "linkInputPlaceholder": "Escreve / para pesquisar notas, ou cola o endereço de um site",
-    "linkUrlPlaceholder": "URL",
     "linkUrlRequired": "Insere o endereço de um site ou seleciona uma nota existente",
     "tagUpdated": "Tags atualizadas",
     "tagCreated": "Etiqueta criada e associada",
@@ -214,15 +178,10 @@
     "exampleUpdated": "Exemplo atualizado",
     "exampleDeleted": "Exemplo apagado",
     "emptyUsageExamples": "Ainda não há exemplos de uso.",
-    "usageTableUpdated": "Exemplos de uso atualizados",
-    "usageRowAdded": "Exemplo de uso adicionado",
-    "usageRowUpdated": "Exemplo de uso atualizado",
-    "usageRowDeleted": "Exemplo de uso apagado",
     "linkAdded": "Ligação adicionada",
     "linkDeleted": "Ligação removida",
     "noLinkableNotes": "Nenhuma nota encontrada",
     "backlinks": "Backlinks",
-    "copiedExample": "Exemplo copiado",
     "copiedLink": "Ligação copiada",
     "words": "palavras",
     "characters": "caracteres",
@@ -279,9 +238,7 @@
       "notes": "Notas criadas",
       "collections": "Coleções",
       "favorites": "Favoritos",
-      "lastActivity": "Última atividade",
-      "streak": "Sequência de dias",
-      "storage": "Armazenamento usado"
+      "lastActivity": "Última atividade"
     },
     "preferences": {
       "title": "Preferências",
@@ -306,13 +263,9 @@
       "favoriteTags": "Tags favoritas",
       "favoriteTagsDescription": "As tags que usas com mais frequência",
       "primaryCollection": "Coleção principal",
-      "primaryCollectionDescription": "A tua coleção principal",
-      "quickPins": "Atalhos rápidos",
-      "quickPinsDescription": "Notas que fixaste para acesso rápido"
+      "primaryCollectionDescription": "A tua coleção principal"
     },
     "labels": {
-      "title": "Etiquetas",
-      "description": "Cria etiquetas, muda nomes, altera cores e apaga as etiquetas que já não usas.",
       "name": "Nome da etiqueta",
       "color": "Cor da etiqueta",
       "newPlaceholder": "Criar uma nova etiqueta...",
@@ -323,54 +276,21 @@
     },
     "security": {
       "title": "Conta e segurança",
-      "linkedAccount": "Conta ligada",
-      "provider": "Google",
       "email": "Email",
       "lastLogin": "Último login",
-      "lastLoginValue": "Hoje, 10:24",
-      "activeSessions": "Sessões NoteX ativas",
       "syncDevices": "Dispositivos de sincronização",
       "exportData": "Exportar dados",
       "importData": "Importar dados",
-      "resetDemo": "Restaurar demo",
-      "deleteAccount": "Apagar conta",
-      "deleteWarning": "Esta ação não pode ser desfeita",
       "logout": "Terminar sessão",
-      "logoutDescription": "Sair da tua conta",
-      "sessionCount": "{{count}} sessões ativas",
       "deviceCount": "{{count}} dispositivos"
     },
     "values": {
-      "lastActivity": "Hoje, 10:24",
-      "noActivity": "Ainda sem atividade",
-      "streak": "12 dias 🔥"
-    },
-    "plan": {
-      "title": "Plano atual",
-      "name": "Plano Gratuito",
-      "current": "Atual",
-      "notes": "Notas",
-      "storage": "Armazenamento",
-      "attachments": "Anexos por nota",
-      "history": "Histórico de versões",
-      "upgrade": "Fazer upgrade para Pro",
-      "notesLimit": "128 / 500",
-      "storageLimit": "6.8 GB / 10 GB",
-      "attachmentLimit": "Até 20 MB",
-      "historyLimit": "7 dias"
+      "noActivity": "Ainda sem atividade"
     },
     "actions": {
       "avatarUpdated": "Edição de avatar aberta em modo demo",
       "tagUpdated": "Tags favoritas atualizadas",
-      "pinUpdated": "Atalhos rápidos atualizados",
-      "primaryCollectionUpdated": "Coleção principal atualizada",
-      "accountPreview": "Painel local de conta aberto",
-      "sessionsPreview": "Sessões locais em modo demo",
-      "logout": "Sessão demo terminada localmente",
-      "upgrade": "Fluxo de upgrade aberto em modo demo",
-      "deleteConfirm": "Confirmação de eliminação aberta",
-      "deleteSkipped": "Conta demo mantida",
-      "demoReset": "Dados demo restaurados"
+      "primaryCollectionUpdated": "Coleção principal atualizada"
     }
   },
   "sync": {
@@ -385,8 +305,6 @@
     "cloudDataCleared": "Dados na cloud limpos",
     "cloudDataLoaded": "Dados da cloud carregados",
     "connected": "Sincronização com Google Drive ligada",
-    "disconnect": "Desligar sincronização Google",
-    "disconnectDescription": "Continuar a usar o NoteX localmente neste dispositivo.",
     "disconnected": "Sincronização Google desligada",
     "failed": "A sincronização falhou",
     "lastSynced": "Última sincronização {{date}}",
@@ -401,7 +319,6 @@
     "lastSeen": "Última sincronização {{date}}",
     "noDevices": "Ainda não há dispositivos de sincronização ativos.",
     "removeDevice": "Remover dispositivo",
-    "sessionsNote": "Estes são dispositivos de sincronização NoteX, não sessões da conta Google.",
     "syncNow": "Sincronizar agora",
     "syncStatus": "Estado da sincronização",
     "syncing": "A sincronizar...",
@@ -427,22 +344,12 @@
     "created": "Coleção criada",
     "updated": "Coleção atualizada",
     "deleted": "Coleção apagada",
-    "deleteConfirm": "Apagar esta coleção? As notas associadas continuam na app sem coleção.",
-    "work": "Trabalho",
-    "studies": "Estudos",
-    "projects": "Projetos",
-    "personal": "Pessoal",
-    "ideas": "Ideias"
+    "deleteConfirm": "Apagar esta coleção? As notas associadas continuam na app sem coleção."
   },
   "mock": {
-    "user": {
-      "name": "Utilizador local",
-      "email": "",
-      "handle": ""
-    },
     "tags": [
-      { "id": "tag-grammar", "name": "gramática", "color": "purple", "count": 7 },
-      { "id": "tag-doubt", "name": "duvida", "color": "neutral", "count": 5 }
+      { "id": "tag-grammar", "name": "gramática", "color": "purple" },
+      { "id": "tag-doubt", "name": "duvida", "color": "neutral" }
     ],
     "collections": [
       { "id": "collection-work", "name": "Trabalho", "color": "blue", "icon": "folder" },
@@ -483,36 +390,6 @@
           "Verbos impessoais",
           "Expressões do dia a dia"
         ]
-      },
-      "projectRoadmap": {
-        "title": "Roadmap do Projeto",
-        "intro": "Plano detalhado das fases e entregas do projeto.",
-        "summary": ["Definir fases, riscos, entregáveis e métricas para manter o lançamento previsível."],
-        "tagline": "Plano detalhado das fases e entregas do projeto..."
-      },
-      "productIdeas": {
-        "title": "Ideias para o novo produto",
-        "intro": "Brainstorm de funcionalidades e diferenciais.",
-        "summary": ["Lista de hipóteses para validar com utilizadores e transformar em experiências testáveis."],
-        "tagline": "Brainstorm de funcionalidades e diferenciais..."
-      },
-      "terminalCommands": {
-        "title": "Comandos úteis - Terminal",
-        "intro": "Lista de comandos que uso no dia a dia.",
-        "summary": ["Referência rápida para comandos de diagnóstico, navegação e manutenção."],
-        "tagline": "Lista de comandos que uso no dia a dia..."
-      },
-      "japanTrip": {
-        "title": "Viagem ao Japão",
-        "intro": "Sítios a visitar, experiências e dicas úteis.",
-        "summary": ["Notas pessoais para organizar roteiro, custos, transportes e reservas."],
-        "tagline": "Sítios a visitar, experiências e dicas úteis..."
-      },
-      "atomicHabits": {
-        "title": "Resumo - Livro Atomic Habits",
-        "intro": "Principais ideias e aprendizagens do livro.",
-        "summary": ["Sistemas vencem metas quando os hábitos são pequenos, claros e repetíveis."],
-        "tagline": "Principais ideias e aprendizagens do livro..."
       }
     },
     "activities": [

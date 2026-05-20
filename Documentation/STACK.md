@@ -8,27 +8,25 @@
 - TailwindCSS
 - React Router
 
-## State
+## State And Data
 
 - Zustand
-
-## Local Database
-
 - IndexedDB
 - Dexie.js
+
+## Backend
+
+- Node.js
+- SQLite through better-sqlite3
+- Google OAuth authorization code flow
 
 ## Utilities
 
 - lucide-react
 - clsx
 - react-hook-form
-- dayjs
-- uuid
 
 ## App Type
 
-- PWA
-
-## Hosting
-
-- Vercel
+- Offline-first PWA
+- Single Docker image for production

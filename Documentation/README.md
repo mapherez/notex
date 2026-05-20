@@ -1,41 +1,18 @@
 # NoteX
 
-Offline-first knowledge and notes web app.
+Offline-first knowledge management app built around structured notes, tags, collections, quick pins, and optional Google Drive sync.
 
-Core stack:
+Current scope:
 
-- React
-- TypeScript
-- Vite
-- TailwindCSS
-- React Router
-- IndexedDB
-- PWA
-- Vercel deployment
+- Local-first editing backed by IndexedDB/Dexie
+- Structured note sections with Markdown fields and editable usage-example tables
+- Tags, collections, favorites, trash, quick capture, and quick pins
+- Google Drive backup/sync through a Node auth broker
+- Docker deployment from one image that serves the frontend and backend
 
-V1 scope:
+Operational notes:
 
-- Local-first
-- Offline-first
-- No backend
-- No cloud sync
-- Manual export/import
-
-Critical rule:
-The UI must match the provided reference images exactly in:
-
-- layout structure
-- spacing
-- proportions
-- sidebar width
-- card sizes
-- colors
-- dark theme surfaces
-- borders
-- tags/chips
-- note detail layout
-- dashboard layout
-- profile page layout
-
-Do not redesign the product.
-Recreate the provided UI faithfully.
+- The app must remain usable without a Google account.
+- Cloud sync is used for backup and transfer between devices, not as the primary working store.
+- Runtime SQLite data lives under `data/` and must not be committed.
+- User-facing text should stay in `src/locales/en.json` and `src/locales/pt.json`.

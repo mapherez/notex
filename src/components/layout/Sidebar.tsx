@@ -1,9 +1,7 @@
 import { useRef, useState } from 'react';
 import { NavLink, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Archive,
   Cloud,
-  ChevronDown,
   ChevronsLeft,
   Clock3,
   FileText,

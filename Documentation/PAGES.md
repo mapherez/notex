@@ -2,45 +2,47 @@
 
 ## Dashboard
 
-Must include:
+Includes:
 
-- welcome header
-- stat cards
-- recent notes list
-- quick capture panel
-- popular tags panel
-- recent activity panel
+- Search
+- Stat shortcuts for notes, favorites, collections, tags, and trash
+- Quick pins
+- Recent notes
+- Quick capture
+- Popular tags
+- Recent activity
 
 ## Note Detail
 
-Must include:
+Includes:
 
-- title
-- collection
-- tags
-- intro
-- summary
-- explanation
-- usage examples table
-- tip box
-- metadata panel
-- additional examples
-- related links
-- footer stats
+- Edit, save, and cancel workflow
+- Collection, title, tags, intro, summary, explanation, examples, and tips
+- Thumbnail picker
+- Markdown editor with text and preview tabs
+- Structured usage-example table editor
+- Additional examples
+- Related links and backlinks
+- Metadata and note statistics
 
-This page must visually match the provided reference exactly.
+## Tags
+
+Includes tag creation, renaming, color updates, deletion, and note filtering by tag.
+
+## Collections
+
+Includes collection creation, renaming, color updates, deletion, and note filtering by collection.
 
 ## Profile
 
-Must include:
+Includes:
 
-- avatar
-- name
-- email
-- preferences
-- lightweight stats
-- organization preferences
-- account/security panel
-- plan card
+- Local or Google account identity
+- Basic statistics
+- Preferences
+- Favorite tags and primary collection
+- Sync status, sync devices, import/export, logout, and clear cloud data
 
-Must match provided reference exactly.
+## Legal
+
+`/privacy` and `/terms` render the app privacy and terms content.

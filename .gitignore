@@ -9,6 +9,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 coverage/
+data/
 .codex/
 *.local
 .DS_Store

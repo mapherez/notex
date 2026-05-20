@@ -10,8 +10,6 @@ import type {
   User,
 } from '../models/models';
 
-type LocalizedTag = Tag & { count: number };
-
 type LocalizedNoteCopy = {
   title: string;
   intro: string;
@@ -25,20 +23,13 @@ type LocalizedNoteCopy = {
   tip?: string;
   additionalExamples?: string[];
   relatedLinks?: string[];
-  tagline?: string;
 };
 
 type LocalizedMockData = {
-  user: Pick<User, 'name' | 'email' | 'handle'>;
-  tags: LocalizedTag[];
+  tags: Tag[];
   collections: Collection[];
   notes: {
     linguistic: LocalizedNoteCopy;
-    projectRoadmap: LocalizedNoteCopy;
-    productIdeas: LocalizedNoteCopy;
-    terminalCommands: LocalizedNoteCopy;
-    japanTrip: LocalizedNoteCopy;
-    atomicHabits: LocalizedNoteCopy;
   };
   activities: Array<Pick<ActivityItem, 'noteId' | 'label' | 'time'>>;
 };
@@ -54,10 +45,6 @@ export type MockDataBundle = {
 const date = {
   createdPrimary: '2024-05-17T21:10:00.000Z',
   updatedPrimary: '2024-05-18T10:24:00.000Z',
-  today: '2024-05-18T10:24:00.000Z',
-  yesterdayEvening: '2024-05-17T18:45:00.000Z',
-  yesterdayMorning: '2024-05-17T09:15:00.000Z',
-  previous: '2024-05-16T14:30:00.000Z',
 };
 
 function blocks(lines: string[], prefix: string): RichTextBlock[] {
@@ -154,60 +141,5 @@ export function createMockData(locale: Locale): MockDataBundle {
       createdAt: date.updatedPrimary,
       ...activity,
     })),
-  };
-}
-
-function createStandardNote({
-  id,
-  copy,
-  collectionId,
-  tagIds,
-  createdAt,
-  updatedAt,
-  thumbnail,
-  userId,
-  isFavorite = false,
-  isPinned = false,
-}: {
-  id: string;
-  copy: LocalizedNoteCopy;
-  collectionId: string;
-  tagIds: string[];
-  createdAt: string;
-  updatedAt: string;
-  thumbnail: NonNullable<Note['thumbnail']>['variant'];
-  userId: string;
-  isFavorite?: boolean;
-  isPinned?: boolean;
-}): Note {
-  return {
-    id,
-    type: 'standard',
-    title: copy.title,
-    collectionId,
-    tagIds,
-    linkedNoteIds: [],
-    isFavorite,
-    isPinned,
-    isArchived: false,
-    isTrashed: false,
-    saveState: 'saved',
-    authorId: userId,
-    createdAt,
-    updatedAt,
-    lastOpenedAt: updatedAt,
-    content: {
-      intro: copy.tagline ?? copy.intro,
-      summary: blocks(copy.summary, `${id}-summary`),
-      explanation: [],
-      usageExamples: null,
-      tip: null,
-      additionalExamples: [],
-    },
-    stats: statsFrom(copy),
-    relatedLinks: [],
-    thumbnail: { variant: thumbnail },
-    version: 1,
-    syncStatus: 'local',
   };
 }
