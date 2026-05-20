@@ -513,14 +513,27 @@
   }
 
   .topbar.with-search {
-    grid-template-columns: minmax(18rem, 58rem) auto;
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-4);
-    justify-content: space-between;
+  }
+
+  .topbar-search-area {
+    width: min(100%, var(--content-max));
+    margin: 0 auto;
+    padding-inline: 8rem;
   }
 
   .topbar.with-search .search-box-shell,
   .topbar.with-search .search-box {
     width: 100%;
+  }
+
+  .topbar.with-search .topbar-actions {
+    position: absolute;
+    top: 50%;
+    right: var(--page-gutter);
+    transform: translateY(-50%);
   }
 
   .topbar-heading {
@@ -3084,6 +3097,19 @@
   .topbar.with-search {
     grid-template-columns: auto minmax(0, 1fr) auto;
     gap: var(--space-3);
+  }
+
+  .topbar-search-area {
+    width: auto;
+    margin: 0;
+    padding-right: 0;
+  }
+
+  .topbar.with-search .topbar-actions {
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
   }
 
   .search-box,

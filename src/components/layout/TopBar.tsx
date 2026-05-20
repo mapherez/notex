@@ -40,7 +40,9 @@ export function TopBar({
         <Menu size={20} />
       </button>
       {showSearch ? (
-        <SearchBox />
+        <div className="topbar-search-area">
+          <SearchBox />
+        </div>
       ) : heading ? (
         <div className="topbar-heading">
           <h1>{heading.title}</h1>
