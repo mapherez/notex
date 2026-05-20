@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { CloudDataChoiceModal } from './components/sync/CloudDataChoiceModal';
+import { SyncConflictReviewModal } from './components/sync/SyncConflictReviewModal';
 import { ToastViewport } from './components/ui/ToastViewport';
 import { useSyncBootstrap } from './core/services/useSyncBootstrap';
 import { I18nProvider } from './i18n/I18nProvider';
@@ -57,6 +58,7 @@ export function App() {
           </Route>
         </Routes>
         <CloudDataChoiceModal />
+        <SyncConflictReviewModal />
         <ToastViewport />
       </BrowserRouter>
     </I18nProvider>

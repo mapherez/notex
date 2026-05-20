@@ -155,6 +155,39 @@ class NoteXDatabase extends Dexie {
           });
         }
       });
+
+    this.version(5)
+      .stores({
+        notes: 'id, type, collectionId, isFavorite, isPinned, isArchived, isTrashed, updatedAt, lastOpenedAt, syncStatus',
+        tags: 'id, name',
+        collections: 'id, name',
+        users: 'id, email, googleSub',
+        activities: 'id, noteId, createdAt',
+        userSettings: 'id, language, theme, updatedAt',
+        syncState: 'id, provider, connected, email, updatedAt, lastSyncAt',
+        syncItems: 'entityKey, entityType, entityId, status, updatedAt',
+        deviceSessions: 'id, lastSeenAt',
+      })
+      .upgrade(async (tx) => {
+        const syncItems = tx.table<SyncItem, string>('syncItems');
+        const items = await syncItems.toArray();
+        const upgraded = items.flatMap((item) => {
+          if (item.baseHash || !item.remoteHash) {
+            return [];
+          }
+
+          return [
+            {
+              ...item,
+              baseHash: item.remoteHash,
+            },
+          ];
+        });
+
+        if (upgraded.length) {
+          await syncItems.bulkPut(upgraded);
+        }
+      });
   }
 }
 

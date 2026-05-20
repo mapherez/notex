@@ -8,6 +8,7 @@ export type DriveFileMetadata = {
   md5Checksum?: string;
   size?: string;
   trashed?: boolean;
+  version?: string;
   appProperties?: Record<string, string>;
 };
 
@@ -23,7 +24,7 @@ export async function listAppDataFiles(accessToken: string) {
   do {
     const params = new URLSearchParams({
       spaces: 'appDataFolder',
-      fields: 'nextPageToken,files(id,name,modifiedTime,md5Checksum,size,trashed,appProperties)',
+      fields: 'nextPageToken,files(id,name,modifiedTime,md5Checksum,size,trashed,version,appProperties)',
       q: 'trashed = false',
       orderBy: 'modifiedTime desc',
       pageSize: '1000',
@@ -50,7 +51,7 @@ export async function createJsonFile(
   payload: unknown,
   appProperties?: Record<string, string>,
 ) {
-  return uploadJsonFile(accessToken, 'POST', `${DRIVE_UPLOAD_BASE}/files?uploadType=multipart&fields=id,name,modifiedTime,md5Checksum`, {
+  return uploadJsonFile(accessToken, 'POST', `${DRIVE_UPLOAD_BASE}/files?uploadType=multipart&fields=id,name,modifiedTime,md5Checksum,version`, {
     name,
     parents: ['appDataFolder'],
     appProperties,
@@ -66,7 +67,7 @@ export async function updateJsonFile(
   return uploadJsonFile(
     accessToken,
     'PATCH',
-    `${DRIVE_UPLOAD_BASE}/files/${fileId}?uploadType=multipart&fields=id,name,modifiedTime,md5Checksum`,
+    `${DRIVE_UPLOAD_BASE}/files/${fileId}?uploadType=multipart&fields=id,name,modifiedTime,md5Checksum,version`,
     { appProperties },
     payload,
   );

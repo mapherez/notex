@@ -6,6 +6,7 @@ import {
   FileText,
   Folder,
   Home,
+  AlertTriangle,
   Plus,
   Star,
   Tag,
@@ -43,9 +44,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
   const hasTrashedNotes = useKnowledgeStore((state) => state.notes.some((note) => note.isTrashed));
   const syncState = useSyncStore((state) => state.syncState);
   const pendingCount = useSyncStore((state) => state.pendingCount);
+  const conflictCount = useSyncStore((state) => state.conflictCount);
   const isConnecting = useSyncStore((state) => state.isConnecting);
   const isSyncing = useSyncStore((state) => state.isSyncing);
   const connectGoogle = useSyncStore((state) => state.connectGoogle);
+  const openConflictReview = useSyncStore((state) => state.openConflictReview);
   const syncNow = useSyncStore((state) => state.syncNow);
   const pushToast = useToastStore((state) => state.pushToast);
   const activeCollectionId = searchParams.get('collection');
@@ -59,6 +62,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
   }
 
   function handleSyncClick() {
+    if (conflictCount) {
+      openConflictReview();
+      return;
+    }
+
     if (syncState?.connected) {
       void syncNow()
         .then(() => pushToast(t('sync.synced'), 'success'))
@@ -155,12 +163,12 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         <div className="sidebar-spacer" />
         <button className="sidebar-sync-button" type="button" onClick={handleSyncClick}>
           <span className="sidebar-sync-icon">
-            <Cloud size={20} />
-            {pendingCount ? <span className="sidebar-sync-badge">{pendingCount}</span> : null}
+            {conflictCount ? <AlertTriangle size={20} /> : <Cloud size={20} />}
+            {pendingCount || conflictCount ? <span className="sidebar-sync-badge">{conflictCount || pendingCount}</span> : null}
           </span>
           <span>
-            <span>{syncState?.connected ? (isSyncing ? t('sync.syncing') : t('sync.syncNow')) : isConnecting ? t('sync.connecting') : t('sync.connect')}</span>
-            <span className="sidebar-sync-sub">{pendingCount ? t('sync.pendingCount', { count: pendingCount }) : syncState?.connected ? t('sync.upToDate') : t('sync.localOnly')}</span>
+            <span>{conflictCount ? t('sync.conflictReview') : syncState?.connected ? (isSyncing ? t('sync.syncing') : t('sync.syncNow')) : isConnecting ? t('sync.connecting') : t('sync.connect')}</span>
+            <span className="sidebar-sync-sub">{conflictCount ? t('sync.conflictCount', { count: conflictCount }) : pendingCount ? t('sync.pendingCount', { count: pendingCount }) : syncState?.connected ? t('sync.upToDate') : t('sync.localOnly')}</span>
           </span>
         </button>
         <nav className="sidebar-legal-links" aria-label={t('legal.navigationLabel')}>

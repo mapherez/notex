@@ -6,6 +6,7 @@ export function useSyncBootstrap(enabled: boolean) {
   const hydrateSync = useSyncStore((state) => state.hydrateSync);
   const scheduleSync = useSyncStore((state) => state.scheduleSync);
   const refreshSyncMetadata = useSyncStore((state) => state.refreshSyncMetadata);
+  const connected = useSyncStore((state) => Boolean(state.syncState?.connected));
 
   useEffect(() => {
     if (!enabled) {
@@ -41,11 +42,35 @@ export function useSyncBootstrap(enabled: boolean) {
     window.addEventListener(NOTEX_SYNC_QUEUED, handleQueued);
     window.addEventListener('online', handleOnline);
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    const pollingInterval = window.setInterval(() => {
+      scheduleSync();
+    }, 1000 * 60 * 3);
 
     return () => {
       window.removeEventListener(NOTEX_SYNC_QUEUED, handleQueued);
       window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.clearInterval(pollingInterval);
     };
   }, [enabled, refreshSyncMetadata, scheduleSync]);
+
+  useEffect(() => {
+    if (!enabled || !connected) {
+      return;
+    }
+
+    const events = new EventSource('/api/sync/events');
+    events.addEventListener('sync-hint', () => {
+      void refreshSyncMetadata();
+      scheduleSync();
+    });
+
+    events.onerror = () => {
+      events.close();
+    };
+
+    return () => {
+      events.close();
+    };
+  }, [connected, enabled, refreshSyncMetadata, scheduleSync]);
 }

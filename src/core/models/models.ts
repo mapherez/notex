@@ -18,6 +18,17 @@ export type SyncEntityType = 'note' | 'workspace' | 'manifest';
 
 export type SyncItemStatus = 'pending' | 'synced' | 'conflict' | 'deleted';
 
+export type SyncConflictPayload = {
+  detectedAt: string;
+  baseHash?: string;
+  localHash?: string;
+  remoteHash?: string;
+  localSnapshot?: Note | CloudWorkspaceFile | null;
+  remoteSnapshot?: Note | CloudWorkspaceFile | null;
+};
+
+export type SyncConflictResolution = 'local' | 'remote' | 'duplicate' | 'manual';
+
 export type RichTextBlock = {
   id: string;
   text: string;
@@ -176,10 +187,13 @@ export type SyncItem = {
   entityType: SyncEntityType;
   entityId: string;
   driveFileId?: string;
+  baseHash?: string;
   localHash?: string;
   remoteHash?: string;
   remoteModifiedTime?: string;
+  remoteVersion?: string;
   status: SyncItemStatus;
+  conflict?: SyncConflictPayload;
   error?: string;
   deletedAt?: string;
   lastSyncedAt?: string;
@@ -205,7 +219,7 @@ export type CloudWorkspaceFile = {
 
 export type CloudManifestNote = {
   id: string;
-  fileId: string;
+  fileId?: string;
   hash: string;
   version: number;
   updatedAt: string;

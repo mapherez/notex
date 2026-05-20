@@ -19,6 +19,7 @@ const googleUserInfoEndpoint = 'https://www.googleapis.com/oauth2/v3/userinfo';
 const googleAuthEndpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
 const googleScopes = ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/drive.appdata'];
 const accessTokenCache = new Map();
+const syncEventClients = new Map();
 
 mkdirSync(dirname(databasePath), { recursive: true });
 const db = new Database(databasePath);
@@ -129,6 +130,11 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    if (url.pathname.startsWith('/api/sync/')) {
+      await handleSyncRoute(req, res, url);
+      return;
+    }
+
     await serveStaticFile(req, res, url);
   } catch (error) {
     console.error(error);
@@ -223,6 +229,89 @@ async function handleAuthRoute(req, res, url) {
   }
 
   sendJson(res, 404, { error: 'not_found' });
+}
+
+async function handleSyncRoute(req, res, url) {
+  if (req.method === 'GET' && url.pathname === '/api/sync/events') {
+    const session = getCurrentSession(req);
+    if (!session) {
+      sendJson(res, 401, { error: 'not_authenticated' });
+      return;
+    }
+
+    openSyncEventStream(req, res, session);
+    return;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/sync/hint') {
+    const session = getCurrentSession(req);
+    if (!session) {
+      sendJson(res, 401, { error: 'not_authenticated' });
+      return;
+    }
+
+    broadcastSyncHint(session.google_sub, session.id);
+    sendJson(res, 200, { ok: true });
+    return;
+  }
+
+  sendJson(res, 404, { error: 'not_found' });
+}
+
+function openSyncEventStream(req, res, session) {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+    ...noStoreHeaders(),
+  });
+  res.write(': connected\n\n');
+
+  const client = {
+    id: randomUUID(),
+    sessionId: session.id,
+    googleSub: session.google_sub,
+    res,
+  };
+  const clients = syncEventClients.get(session.google_sub) ?? new Map();
+  clients.set(client.id, client);
+  syncEventClients.set(session.google_sub, clients);
+
+  const keepAlive = setInterval(() => {
+    res.write(': keep-alive\n\n');
+  }, 25000);
+
+  req.on('close', () => {
+    clearInterval(keepAlive);
+    const accountClients = syncEventClients.get(session.google_sub);
+    accountClients?.delete(client.id);
+    if (accountClients?.size === 0) {
+      syncEventClients.delete(session.google_sub);
+    }
+  });
+}
+
+function broadcastSyncHint(googleSub, sourceSessionId) {
+  const clients = syncEventClients.get(googleSub);
+  if (!clients?.size) {
+    return;
+  }
+
+  const event = {
+    type: 'sync-hint',
+    userId: googleSub,
+    deviceId: sourceSessionId,
+    timestamp: new Date().toISOString(),
+  };
+  const payload = `event: sync-hint\ndata: ${JSON.stringify(event)}\n\n`;
+
+  for (const client of clients.values()) {
+    if (client.sessionId === sourceSessionId) {
+      continue;
+    }
+
+    client.res.write(payload);
+  }
 }
 
 async function handleGoogleCallback(req, res, url) {

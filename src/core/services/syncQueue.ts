@@ -102,10 +102,20 @@ export function workspaceKey() {
 async function putSyncItem(input: Omit<SyncItem, 'updatedAt'>) {
   const existing = await db.syncItems.get(input.entityKey);
   const updatedAt = new Date().toISOString();
+  if (existing?.status === 'conflict') {
+    await db.syncItems.put({
+      ...existing,
+      updatedAt,
+    });
+    notifySyncQueued();
+    return;
+  }
 
   await db.syncItems.put({
     ...existing,
     ...input,
+    conflict: undefined,
+    error: undefined,
     updatedAt,
   });
 }

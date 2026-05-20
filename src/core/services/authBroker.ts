@@ -27,6 +27,13 @@ export type BrokerAccessToken = {
   expiresAt: number;
 };
 
+export type SyncHintEvent = {
+  type: 'sync-hint';
+  userId: string;
+  deviceId: string;
+  timestamp: string;
+};
+
 export async function getBrokerSession(): Promise<BrokerSession> {
   const response = await fetch('/api/auth/session', {
     credentials: 'include',
@@ -65,6 +72,15 @@ export async function removeBrokerSession(sessionId: string) {
   });
 
   await readJsonResponse<{ ok: boolean }>(response, 'Could not remove session');
+}
+
+export async function sendSyncHint() {
+  const response = await fetch('/api/sync/hint', {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  await readJsonResponse<{ ok: boolean }>(response, 'Could not notify other devices');
 }
 
 async function readJsonResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
