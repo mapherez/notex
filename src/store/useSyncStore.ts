@@ -21,9 +21,11 @@ import {
 } from '../core/services/googleDriveSync';
 import { ensureSyncState, GOOGLE_SYNC_ID, readLocalDeviceId } from '../core/services/syncQueue';
 import { buildGoogleUser } from '../core/utils/userProfile';
+import { getLocaleValue } from '../i18n/dictionaries';
 import type { DeviceSession, Note, SyncConflictResolution, SyncItem, SyncState, User } from '../core/models/models';
 import { useAppStore } from './useAppStore';
 import { useKnowledgeStore } from './useKnowledgeStore';
+import { useToastStore, type ToastTone } from './useToastStore';
 
 type TokenCache = {
   accessToken: string;
@@ -232,12 +234,18 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
 
     set({ isSyncing: true });
     try {
+      const previousConflictCount = get().conflictCount;
       let result = await runSingleGoogleDriveSync();
       while (syncRequested) {
         syncRequested = false;
         result = await runSingleGoogleDriveSync();
       }
       const conflicts = await readSyncConflicts();
+      if (result.conflictCount > previousConflictCount) {
+        pushLocalizedSyncToast('conflictDetected', 'warning');
+      } else if (result.pulledChanges) {
+        pushLocalizedSyncToast('remoteChangesSynced', 'success');
+      }
       set({
         syncState: result.syncState,
         pendingCount: result.pendingCount,
@@ -389,4 +397,9 @@ async function persistSyncError(error: unknown) {
     lastSyncStartedAt: undefined,
     updatedAt: new Date().toISOString(),
   });
+}
+
+function pushLocalizedSyncToast(key: 'remoteChangesSynced' | 'conflictDetected', tone: ToastTone) {
+  const language = useAppStore.getState().settings.language;
+  useToastStore.getState().pushToast(getLocaleValue<string>(language, `sync.${key}`), tone);
 }

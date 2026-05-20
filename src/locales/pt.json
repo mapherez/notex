@@ -316,6 +316,8 @@
     "conflictReviewTitle": "Rever conflitos de sincronização",
     "conflictList": "Itens em conflito",
     "conflictResolved": "Conflito resolvido",
+    "conflictDetected": "Conflito detetado - rever",
+    "remoteChangesSynced": "Alterações remotas sincronizadas",
     "noteConflict": "Conflito de nota",
     "workspaceConflict": "Conflito de workspace",
     "workspaceConflictDescription": "Os dados do workspace mudaram localmente e na cloud. Escolhe que versão deve passar a ser a origem.",

@@ -316,6 +316,8 @@
     "conflictReviewTitle": "Review sync conflicts",
     "conflictList": "Conflicted items",
     "conflictResolved": "Conflict resolved",
+    "conflictDetected": "Conflict detected - review",
+    "remoteChangesSynced": "Remote changes synced",
     "noteConflict": "Note conflict",
     "workspaceConflict": "Workspace conflict",
     "workspaceConflictDescription": "Workspace data changed locally and in the cloud. Choose which version should become the new source.",
