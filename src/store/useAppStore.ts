@@ -12,7 +12,6 @@ type AppStore = {
   setLanguage: (language: Locale) => Promise<void>;
   setPreferredLayout: (layout: PreferredLayout) => Promise<void>;
   setStartupPage: (startupPage: string) => Promise<void>;
-  setSidebarCollapsed: (sidebarCollapsed: boolean) => Promise<void>;
   setPrimaryCollection: (primaryCollectionId: string) => Promise<void>;
   toggleFavoriteTag: (tagId: string) => Promise<void>;
   setQuickPinAt: (index: number, noteId: string | null) => Promise<void>;
@@ -31,12 +30,20 @@ async function persist(settings: UserSettings) {
 }
 
 function normalizeSettings(settings?: Partial<UserSettings> | null): UserSettings {
+  const source = settings ?? {};
+
   return {
     ...defaultUserSettings,
-    ...settings,
-    favoriteTagIds: settings?.favoriteTagIds ?? defaultUserSettings.favoriteTagIds,
-    quickPinNoteIds: settings?.quickPinNoteIds ?? defaultUserSettings.quickPinNoteIds,
-    updatedAt: settings?.updatedAt ?? defaultUserSettings.updatedAt,
+    id: source.id ?? defaultUserSettings.id,
+    theme: source.theme ?? defaultUserSettings.theme,
+    language: source.language ?? defaultUserSettings.language,
+    username: source.username ?? defaultUserSettings.username,
+    startupPage: source.startupPage ?? defaultUserSettings.startupPage,
+    preferredLayout: source.preferredLayout ?? defaultUserSettings.preferredLayout,
+    primaryCollectionId: source.primaryCollectionId ?? defaultUserSettings.primaryCollectionId,
+    favoriteTagIds: source.favoriteTagIds ?? defaultUserSettings.favoriteTagIds,
+    quickPinNoteIds: source.quickPinNoteIds ?? defaultUserSettings.quickPinNoteIds,
+    updatedAt: source.updatedAt ?? defaultUserSettings.updatedAt,
   };
 }
 
@@ -69,10 +76,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
   setStartupPage: async (startupPage) => {
     const settings = { ...get().settings, startupPage };
-    await updateSettings(set, settings);
-  },
-  setSidebarCollapsed: async (sidebarCollapsed) => {
-    const settings = { ...get().settings, sidebarCollapsed };
     await updateSettings(set, settings);
   },
   setPrimaryCollection: async (primaryCollectionId) => {

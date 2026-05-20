@@ -6,7 +6,6 @@
     "username": "Local user",
     "startupPage": "/",
     "preferredLayout": "list",
-    "sidebarCollapsed": false,
     "primaryCollectionId": "collection-work",
     "favoriteTagIds": ["tag-grammar", "tag-doubt"],
     "quickPinNoteIds": ["note-linguistic"]

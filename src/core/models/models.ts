@@ -130,7 +130,6 @@ export type UserSettings = {
   username: string;
   startupPage: StartupPage | string;
   preferredLayout: PreferredLayout;
-  sidebarCollapsed: boolean;
   primaryCollectionId: string;
   favoriteTagIds: string[];
   quickPinNoteIds: string[];

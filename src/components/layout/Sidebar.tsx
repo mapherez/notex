@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import { NavLink, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Cloud,
-  ChevronsLeft,
   Clock3,
   FileText,
   Folder,
@@ -40,7 +39,6 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
   const location = useLocation();
   const navigate = useNavigate();
   const settings = useAppStore((state) => state.settings);
-  const setSidebarCollapsed = useAppStore((state) => state.setSidebarCollapsed);
   const collections = useKnowledgeStore((state) => state.collections);
   const hasTrashedNotes = useKnowledgeStore((state) => state.notes.some((note) => note.isTrashed));
   const syncState = useSyncStore((state) => state.syncState);
@@ -83,26 +81,12 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           onClick={onClose}
         />
       ) : null}
-      <aside
-        className={clsx(
-          "sidebar",
-          open && "open",
-          settings.sidebarCollapsed && "collapsed",
-        )}
-      >
+      <aside className={clsx("sidebar", open && "open")}>
         <div className="sidebar-header">
           <Link className="brand" to="/" onClick={onClose}>
             <img className="logo-image" src="/assets/notex_logo.png" alt="" />
             <span>{appSettings.productName}</span>
           </Link>
-          <button
-            className="icon-button"
-            type="button"
-            aria-label={t("navigation.collapse")}
-            onClick={() => void setSidebarCollapsed(!settings.sidebarCollapsed)}
-          >
-            <ChevronsLeft size={18} />
-          </button>
         </div>
 
         <div className="primary-action">

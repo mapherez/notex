@@ -114,10 +114,6 @@
     background: var(--color-canvas);
   }
 
-  .app-shell.sidebar-collapsed {
-    grid-template-columns: 5.75rem minmax(0, 1fr);
-  }
-
   .sidebar {
     position: sticky;
     top: 0;
@@ -130,36 +126,10 @@
     z-index: 20;
   }
 
-  .sidebar.collapsed {
-    align-items: center;
-    padding: var(--space-5) var(--space-3);
-  }
-
-  .sidebar.collapsed .brand span,
-  .sidebar.collapsed .primary-action-main,
-  .sidebar.collapsed .nav-item span,
-  .sidebar.collapsed .sidebar-section-title span,
-  .sidebar.collapsed .storage-card,
-  .sidebar.collapsed .user-meta,
-  .sidebar.collapsed .user-footer svg,
-  .sidebar.collapsed .primary-action-side {
-    display: none;
-  }
-
-  .sidebar.collapsed .sidebar-header,
-  .sidebar.collapsed .sidebar-section,
-  .sidebar.collapsed .user-footer {
-    width: 100%;
-  }
-
-  .sidebar.collapsed .sidebar-header {
-    justify-content: center;
-  }
-
   .sidebar-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     margin-bottom: var(--space-8);
   }
 
@@ -249,16 +219,6 @@
     border: 0;
     background: transparent;
     color: inherit;
-  }
-
-  .sidebar.collapsed .primary-action {
-    width: 2.75rem;
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar.collapsed .primary-action-main {
-    display: flex;
-    font-size: 0;
   }
 
   .sidebar-section {
@@ -403,21 +363,6 @@
     background: var(--color-hover);
     color: var(--color-text-muted);
     outline: none;
-  }
-
-  .sidebar.collapsed .sidebar-sync-button {
-    display: inline-grid;
-    width: 2.75rem;
-    grid-template-columns: 1fr;
-    padding: 0.25rem;
-  }
-
-  .sidebar.collapsed .sidebar-sync-button > span:last-child {
-    display: none;
-  }
-
-  .sidebar.collapsed .sidebar-legal-links {
-    display: none;
   }
 
   .storage-card,
