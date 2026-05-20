@@ -478,15 +478,16 @@
   }
 
   .topbar {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     min-height: var(--topbar-height);
     padding: calc(var(--page-gutter)/2) var(--page-gutter);
+    z-index: 90;
   }
 
   .topbar.with-search {
-    position: relative;
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-4);
   }
@@ -719,6 +720,7 @@
     justify-content: flex-end;
     justify-self: end;
     gap: var(--space-3);
+    z-index: 2;
   }
 
   .page-content {
@@ -2471,6 +2473,7 @@
 
   .account-menu {
     width: 17rem;
+    z-index: 110;
   }
 
   .note-row-menu {
