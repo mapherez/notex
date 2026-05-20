@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { defaultUserSettings } from '../config/appSettings';
-import { readUserSettings, writeUserSettings } from '../core/db/notexDb';
-import { enqueueWorkspaceSync } from '../core/services/syncQueue';
+import { db } from '../core/db/notexDb';
+import { notifySyncQueued, queueWorkspaceSync, runLocalMutation } from '../core/services/syncQueue';
 import type { Locale, PreferredLayout, ThemePreference, UserSettings } from '../core/models/models';
 
 type AppStore = {
@@ -22,11 +22,14 @@ type AppStore = {
 const maxQuickPins = 5;
 
 async function persist(settings: UserSettings) {
-  await writeUserSettings({
-    ...settings,
-    updatedAt: new Date().toISOString(),
-  });
-  void enqueueWorkspaceSync();
+  await runLocalMutation(() => db.transaction('rw', [db.userSettings, db.syncItems], async () => {
+    await db.userSettings.put({
+      ...settings,
+      updatedAt: new Date().toISOString(),
+    });
+    await queueWorkspaceSync();
+  }));
+  notifySyncQueued();
 }
 
 function normalizeSettings(settings?: Partial<UserSettings> | null): UserSettings {
@@ -56,7 +59,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   settings: defaultUserSettings,
   isHydrated: false,
   hydrateSettings: async () => {
-    const stored = await readUserSettings(defaultUserSettings.id);
+    const stored = await db.userSettings.get(defaultUserSettings.id);
     set({
       settings: normalizeSettings(stored),
       isHydrated: true,

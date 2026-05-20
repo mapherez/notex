@@ -42,15 +42,11 @@ export function useSyncBootstrap(enabled: boolean) {
     window.addEventListener(NOTEX_SYNC_QUEUED, handleQueued);
     window.addEventListener('online', handleOnline);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    const pollingInterval = window.setInterval(() => {
-      scheduleSync();
-    }, 1000 * 60 * 3);
 
     return () => {
       window.removeEventListener(NOTEX_SYNC_QUEUED, handleQueued);
       window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.clearInterval(pollingInterval);
     };
   }, [enabled, refreshSyncMetadata, scheduleSync]);
 

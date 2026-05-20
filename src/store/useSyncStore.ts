@@ -19,7 +19,7 @@ import {
   resolveSyncConflict,
   runGoogleDriveSync,
 } from '../core/services/googleDriveSync';
-import { ensureSyncState, GOOGLE_SYNC_ID, readLocalDeviceId } from '../core/services/syncQueue';
+import { ensureSyncState, GOOGLE_SYNC_ID, isLocalMutationActive, readLocalDeviceId } from '../core/services/syncQueue';
 import { buildGoogleUser } from '../core/utils/userProfile';
 import { getLocaleValue } from '../i18n/dictionaries';
 import type { DeviceSession, Note, SyncConflictResolution, SyncItem, SyncState, User } from '../core/models/models';
@@ -227,7 +227,7 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       return;
     }
 
-    if (get().isSyncing) {
+    if (get().isSyncing || isLocalMutationActive()) {
       syncRequested = true;
       return;
     }
@@ -235,12 +235,13 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     set({ isSyncing: true });
     try {
       const previousConflictCount = get().conflictCount;
-      let result = await runSingleGoogleDriveSync();
-      while (syncRequested) {
+      let result;
+      let conflicts;
+      do {
         syncRequested = false;
         result = await runSingleGoogleDriveSync();
-      }
-      const conflicts = await readSyncConflicts();
+        conflicts = await readSyncConflicts();
+      } while (syncRequested);
       if (result.conflictCount > previousConflictCount) {
         pushLocalizedSyncToast('conflictDetected', 'warning');
       } else if (result.pulledChanges) {

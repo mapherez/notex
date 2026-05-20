@@ -300,7 +300,7 @@ async function pullRemoteNoteChanges(accessToken: string, manifestEntries: Map<s
   for (const remoteEntry of [...manifestEntries.values()]) {
     const key = noteKey(remoteEntry.id);
     const syncItem = syncItems.get(key);
-    if (syncItem?.status === 'conflict') {
+    if (syncItem?.status === 'pending' || syncItem?.status === 'deleted' || syncItem?.status === 'conflict') {
       continue;
     }
 
@@ -311,19 +311,18 @@ async function pullRemoteNoteChanges(accessToken: string, manifestEntries: Map<s
 
     if (remoteEntry.deletedAt) {
       if (!localNote) {
-        await markNoteDeletedSynced(remoteEntry.id, remoteEntry);
-        changed = true;
+        changed = (await markNoteDeletedSynced(remoteEntry.id, remoteEntry, { skipIfProtected: true })) || changed;
         continue;
       }
 
       if (!baseHash || localHash === baseHash || syncItem?.status === 'synced') {
-        await applyRemoteDeletion(remoteEntry.id, remoteEntry);
-        changed = true;
-        pulled = true;
+        const applied = await applyRemoteDeletion(remoteEntry.id, remoteEntry);
+        changed = applied || changed;
+        pulled = applied || pulled;
         continue;
       }
 
-      await recordNoteConflict({
+      changed = (await recordNoteConflict({
         item: syncItem,
         noteId: remoteEntry.id,
         driveFileId: remoteEntry.fileId,
@@ -332,48 +331,34 @@ async function pullRemoteNoteChanges(accessToken: string, manifestEntries: Map<s
         remoteHash,
         localSnapshot: localNote,
         remoteSnapshot: null,
-      });
-      changed = true;
+        protectLocalChanges: true,
+      })) || changed;
       continue;
     }
 
     if (!localNote) {
-      if (syncItem?.status === 'deleted' && baseHash && remoteHash !== baseHash) {
-        const remoteNote = await readRemoteNote(accessToken, remoteEntry);
-        await recordNoteConflict({
-          item: syncItem,
-          noteId: remoteEntry.id,
-          driveFileId: remoteEntry.fileId,
-          baseHash,
-          localHash: undefined,
-          remoteHash,
-          localSnapshot: null,
-          remoteSnapshot: remoteNote,
-        });
-        changed = true;
-        continue;
-      }
-
       const remoteNote = await readRemoteNote(accessToken, remoteEntry);
       if (remoteNote) {
-        await applyRemoteNote(remoteNote, remoteEntry);
-        changed = true;
-        pulled = true;
+        const applied = await applyRemoteNote(remoteNote, remoteEntry);
+        changed = applied || changed;
+        pulled = applied || pulled;
       }
       continue;
     }
 
     if (localHash === remoteHash) {
-      await markNoteSynced(localNote, { id: remoteEntry.fileId ?? '', modifiedTime: remoteEntry.updatedAt }, remoteHash, remoteEntry);
+      await markNoteSynced(localNote, { id: remoteEntry.fileId ?? '', modifiedTime: remoteEntry.updatedAt }, remoteHash, remoteEntry, {
+        skipIfProtected: true,
+      });
       continue;
     }
 
     if (baseHash && localHash === baseHash && remoteHash !== baseHash) {
       const remoteNote = await readRemoteNote(accessToken, remoteEntry);
       if (remoteNote) {
-        await applyRemoteNote(remoteNote, remoteEntry);
-        changed = true;
-        pulled = true;
+        const applied = await applyRemoteNote(remoteNote, remoteEntry);
+        changed = applied || changed;
+        pulled = applied || pulled;
       }
       continue;
     }
@@ -382,18 +367,18 @@ async function pullRemoteNoteChanges(accessToken: string, manifestEntries: Map<s
       continue;
     }
 
-    if (!baseHash && syncItem?.status !== 'pending') {
+    if (!baseHash) {
       const remoteNote = await readRemoteNote(accessToken, remoteEntry);
       if (remoteNote) {
-        await applyRemoteNote(remoteNote, remoteEntry);
-        changed = true;
-        pulled = true;
+        const applied = await applyRemoteNote(remoteNote, remoteEntry);
+        changed = applied || changed;
+        pulled = applied || pulled;
       }
       continue;
     }
 
     const remoteNote = await readRemoteNote(accessToken, remoteEntry);
-    await recordNoteConflict({
+    changed = (await recordNoteConflict({
       item: syncItem,
       noteId: remoteEntry.id,
       driveFileId: remoteEntry.fileId,
@@ -402,8 +387,8 @@ async function pullRemoteNoteChanges(accessToken: string, manifestEntries: Map<s
       remoteHash,
       localSnapshot: localNote,
       remoteSnapshot: remoteNote,
-    });
-    changed = true;
+      protectLocalChanges: true,
+    })) || changed;
   }
 
   return { changed, pulled, pushed: false };
@@ -426,6 +411,23 @@ async function pushLocalNoteChanges(accessToken: string, manifestEntries: Map<st
     const localHash = await hashNote(note);
     const baseHash = getBaseHash(syncItem);
 
+    if (remoteEntry?.deletedAt) {
+      if (baseHash && remoteEntry.hash !== baseHash) {
+        await recordNoteConflict({
+          item: syncItem,
+          noteId: note.id,
+          driveFileId: remoteEntry.fileId,
+          baseHash,
+          localHash,
+          remoteHash: remoteEntry.hash,
+          localSnapshot: note,
+          remoteSnapshot: null,
+        });
+        changed = true;
+        continue;
+      }
+    }
+
     if (!remoteEntry || remoteEntry.deletedAt || !remoteEntry.fileId) {
       const savedFile = await createJsonFile(accessToken, noteFileName(note.id), buildNotePayload(note), {
         entityType: 'note',
@@ -433,14 +435,22 @@ async function pushLocalNoteChanges(accessToken: string, manifestEntries: Map<st
         hash: localHash,
       });
       manifestEntries.set(note.id, toManifestNote(note, savedFile, localHash));
-      await markNoteSynced(note, savedFile, localHash);
+      const marked = await markNoteSynced(note, savedFile, localHash, undefined, {
+        expectedSyncItemUpdatedAt: syncItem?.updatedAt ?? null,
+      });
       changed = true;
-      pushed = true;
+      pushed = pushed || marked;
       continue;
     }
 
     if (localHash === remoteEntry.hash) {
-      await markNoteSynced(note, { id: remoteEntry.fileId, modifiedTime: remoteEntry.updatedAt, version: remoteEntry.version.toString() }, localHash, remoteEntry);
+      await markNoteSynced(
+        note,
+        { id: remoteEntry.fileId, modifiedTime: remoteEntry.updatedAt, version: remoteEntry.version.toString() },
+        localHash,
+        remoteEntry,
+        { expectedSyncItemUpdatedAt: syncItem?.updatedAt ?? null },
+      );
       continue;
     }
 
@@ -483,9 +493,11 @@ async function pushLocalNoteChanges(accessToken: string, manifestEntries: Map<st
         hash: localHash,
       });
       manifestEntries.set(note.id, toManifestNote(note, savedFile, localHash));
-      await markNoteSynced(note, savedFile, localHash);
+      const marked = await markNoteSynced(note, savedFile, localHash, undefined, {
+        expectedSyncItemUpdatedAt: syncItem?.updatedAt ?? null,
+      });
       changed = true;
-      pushed = true;
+      pushed = pushed || marked;
     }
   }
 
@@ -540,9 +552,11 @@ async function pushDeletedNotes(
       deletedAt,
     };
     manifestEntries.set(item.entityId, tombstone);
-    await markNoteDeletedSynced(item.entityId, tombstone);
+    const marked = await markNoteDeletedSynced(item.entityId, tombstone, {
+      expectedSyncItemUpdatedAt: item.updatedAt,
+    });
     changed = true;
-    pushed = true;
+    pushed = pushed || marked;
   }
 
   return { changed, pulled: false, pushed };
@@ -577,6 +591,61 @@ async function syncWorkspace(
     await markWorkspaceSynced(remoteFileId, remoteHash, workspaceFile?.modifiedTime ?? remoteWorkspace.exportedAt);
     return {
       changed: false,
+      pulled: false,
+      pushed: false,
+      fileId: remoteFileId,
+      hash: remoteHash,
+      updatedAt: remoteWorkspace.exportedAt,
+    };
+  }
+
+  if (item?.status === 'conflict') {
+    return {
+      changed: false,
+      pulled: false,
+      pushed: false,
+      fileId: remoteFileId,
+      hash: remoteHash,
+      updatedAt: remoteWorkspace.exportedAt,
+    };
+  }
+
+  if (item?.status === 'pending') {
+    if (baseHash && remoteHash === baseHash) {
+      const savedFile = await saveWorkspaceFile(accessToken, remoteFileId, localWorkspace, localHash);
+      return {
+        changed: true,
+        pulled: false,
+        pushed: true,
+        fileId: savedFile.id,
+        hash: localHash,
+        updatedAt: localWorkspace.exportedAt,
+      };
+    }
+
+    await db.syncItems.put({
+      ...buildBaseSyncItem(workspaceKey(), 'workspace', 'workspace'),
+      ...item,
+      driveFileId: remoteFileId,
+      baseHash,
+      localHash,
+      remoteHash,
+      remoteModifiedTime: workspaceFile?.modifiedTime ?? remoteWorkspace.exportedAt,
+      remoteVersion: workspaceFile?.version,
+      status: 'conflict',
+      conflict: {
+        detectedAt: new Date().toISOString(),
+        baseHash,
+        localHash,
+        remoteHash,
+        localSnapshot: localWorkspace,
+        remoteSnapshot: remoteWorkspace,
+      },
+      updatedAt: new Date().toISOString(),
+    });
+
+    return {
+      changed: true,
       pulled: false,
       pushed: false,
       fileId: remoteFileId,
@@ -851,18 +920,36 @@ async function mergeRemoteNoteFilesIntoManifest(
   return changed;
 }
 
+type SyncWriteGuard = {
+  skipIfProtected?: boolean;
+  expectedSyncItemUpdatedAt?: string | null;
+};
+
 async function applyRemoteNote(remoteNote: Note, remoteEntry: CloudManifestNote) {
   const syncedNote = { ...remoteNote, syncStatus: 'synced' } satisfies Note;
-  await db.notes.put(syncedNote);
-  await markNoteSynced(syncedNote, { id: remoteEntry.fileId ?? '', modifiedTime: remoteEntry.updatedAt }, remoteEntry.hash, remoteEntry);
+  return markNoteSynced(
+    syncedNote,
+    { id: remoteEntry.fileId ?? '', modifiedTime: remoteEntry.updatedAt },
+    remoteEntry.hash,
+    remoteEntry,
+    { skipIfProtected: true },
+  );
 }
 
 async function applyRemoteDeletion(noteId: string, remoteEntry: CloudManifestNote) {
-  await db.transaction('rw', [db.notes, db.activities], async () => {
+  let applied = false;
+  await db.transaction('rw', [db.notes, db.activities, db.syncItems], async () => {
+    const currentItem = await db.syncItems.get(noteKey(noteId));
+    if (shouldSkipProtectedSyncWrite(currentItem, { skipIfProtected: true })) {
+      return;
+    }
+
     await db.notes.delete(noteId);
     await db.activities.where('noteId').equals(noteId).delete();
+    await db.syncItems.put(buildDeletedSyncedItem(noteId, remoteEntry));
+    applied = true;
   });
-  await markNoteDeletedSynced(noteId, remoteEntry);
+  return applied;
 }
 
 async function recordNoteConflict({
@@ -874,6 +961,7 @@ async function recordNoteConflict({
   remoteHash,
   localSnapshot,
   remoteSnapshot,
+  protectLocalChanges = false,
 }: {
   item?: SyncItem;
   noteId: string;
@@ -883,30 +971,41 @@ async function recordNoteConflict({
   remoteHash?: string;
   localSnapshot?: Note | null;
   remoteSnapshot?: Note | null;
+  protectLocalChanges?: boolean;
 }) {
   const now = new Date().toISOString();
-  if (localSnapshot) {
-    await db.notes.put({ ...localSnapshot, syncStatus: 'conflict' });
-  }
+  let recorded = false;
+  await db.transaction('rw', [db.notes, db.syncItems], async () => {
+    const currentItem = await db.syncItems.get(noteKey(noteId));
+    if (protectLocalChanges && shouldSkipProtectedSyncWrite(currentItem, { skipIfProtected: true })) {
+      return;
+    }
 
-  await db.syncItems.put({
-    ...buildBaseSyncItem(noteKey(noteId), 'note', noteId),
-    ...item,
-    driveFileId,
-    baseHash,
-    localHash,
-    remoteHash,
-    status: 'conflict',
-    conflict: {
-      detectedAt: now,
+    if (localSnapshot) {
+      await db.notes.put({ ...localSnapshot, syncStatus: 'conflict' });
+    }
+
+    await db.syncItems.put({
+      ...buildBaseSyncItem(noteKey(noteId), 'note', noteId),
+      ...item,
+      driveFileId,
       baseHash,
       localHash,
       remoteHash,
-      localSnapshot: localSnapshot ?? null,
-      remoteSnapshot: remoteSnapshot ?? null,
-    },
-    updatedAt: now,
+      status: 'conflict',
+      conflict: {
+        detectedAt: now,
+        baseHash,
+        localHash,
+        remoteHash,
+        localSnapshot: localSnapshot ?? null,
+        remoteSnapshot: remoteSnapshot ?? null,
+      },
+      updatedAt: now,
+    });
+    recorded = true;
   });
+  return recorded;
 }
 
 async function buildWorkspacePayload(): Promise<CloudWorkspaceFile> {
@@ -979,11 +1078,67 @@ async function markNoteSynced(
   file: Pick<DriveFileMetadata, 'id' | 'modifiedTime' | 'version'>,
   hash: string,
   remoteEntry?: CloudManifestNote,
+  guard: SyncWriteGuard = {},
 ) {
   const syncedNote = { ...note, syncStatus: 'synced' } satisfies Note;
-  await db.notes.put(syncedNote);
-  await db.syncItems.put({
-    ...buildBaseSyncItem(noteKey(note.id), 'note', note.id),
+  let marked = false;
+  await db.transaction('rw', [db.notes, db.syncItems], async () => {
+    const currentItem = await db.syncItems.get(noteKey(note.id));
+    if (shouldSkipProtectedSyncWrite(currentItem, guard)) {
+      if (currentItem && isOutdatedPendingSyncWrite(currentItem, guard)) {
+        await db.syncItems.put({
+          ...currentItem,
+          driveFileId: file.id || remoteEntry?.fileId,
+          baseHash: hash,
+          remoteHash: hash,
+          remoteModifiedTime: file.modifiedTime ?? remoteEntry?.updatedAt,
+          remoteVersion: file.version ?? remoteEntry?.version?.toString(),
+          error: undefined,
+        });
+      }
+      return;
+    }
+
+    await db.notes.put(syncedNote);
+    await db.syncItems.put(buildSyncedNoteItem(note.id, file, hash, remoteEntry));
+    marked = true;
+  });
+  return marked;
+}
+
+async function markNoteDeletedSynced(noteId: string, entry: CloudManifestNote, guard: SyncWriteGuard = {}) {
+  let marked = false;
+  await db.transaction('rw', [db.syncItems], async () => {
+    const currentItem = await db.syncItems.get(noteKey(noteId));
+    if (shouldSkipProtectedSyncWrite(currentItem, guard)) {
+      if (currentItem && isOutdatedPendingSyncWrite(currentItem, guard)) {
+        await db.syncItems.put({
+          ...currentItem,
+          driveFileId: entry.fileId,
+          baseHash: entry.hash,
+          remoteHash: entry.hash,
+          remoteModifiedTime: entry.updatedAt,
+          remoteVersion: entry.version.toString(),
+          error: undefined,
+        });
+      }
+      return;
+    }
+
+    await db.syncItems.put(buildDeletedSyncedItem(noteId, entry));
+    marked = true;
+  });
+  return marked;
+}
+
+function buildSyncedNoteItem(
+  noteId: string,
+  file: Pick<DriveFileMetadata, 'id' | 'modifiedTime' | 'version'>,
+  hash: string,
+  remoteEntry?: CloudManifestNote,
+): SyncItem {
+  return {
+    ...buildBaseSyncItem(noteKey(noteId), 'note', noteId),
     driveFileId: file.id || remoteEntry?.fileId,
     baseHash: hash,
     localHash: hash,
@@ -993,11 +1148,11 @@ async function markNoteSynced(
     status: 'synced',
     conflict: undefined,
     lastSyncedAt: new Date().toISOString(),
-  });
+  };
 }
 
-async function markNoteDeletedSynced(noteId: string, entry: CloudManifestNote) {
-  await db.syncItems.put({
+function buildDeletedSyncedItem(noteId: string, entry: CloudManifestNote): SyncItem {
+  return {
     ...buildBaseSyncItem(noteKey(noteId), 'note', noteId),
     driveFileId: entry.fileId,
     baseHash: entry.hash,
@@ -1009,7 +1164,35 @@ async function markNoteDeletedSynced(noteId: string, entry: CloudManifestNote) {
     deletedAt: entry.deletedAt,
     conflict: undefined,
     lastSyncedAt: new Date().toISOString(),
-  });
+  };
+}
+
+function shouldSkipProtectedSyncWrite(currentItem: SyncItem | undefined, guard: SyncWriteGuard) {
+  if (!currentItem || !isProtectedLocalSyncItem(currentItem)) {
+    return false;
+  }
+
+  if (guard.skipIfProtected) {
+    return true;
+  }
+
+  if ('expectedSyncItemUpdatedAt' in guard) {
+    return currentItem.updatedAt !== guard.expectedSyncItemUpdatedAt;
+  }
+
+  return false;
+}
+
+function isOutdatedPendingSyncWrite(currentItem: SyncItem | undefined, guard: SyncWriteGuard) {
+  return (
+    currentItem?.status === 'pending' &&
+    'expectedSyncItemUpdatedAt' in guard &&
+    currentItem.updatedAt !== guard.expectedSyncItemUpdatedAt
+  );
+}
+
+function isProtectedLocalSyncItem(item: SyncItem) {
+  return item.status === 'pending' || item.status === 'deleted' || item.status === 'conflict';
 }
 
 async function markWorkspaceSynced(fileId: string | undefined, hash: string, modifiedTime?: string, version?: string) {

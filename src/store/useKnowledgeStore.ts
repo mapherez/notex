@@ -4,11 +4,9 @@ import { createMockData } from '../core/data/createMockData';
 import {
   db,
   readAllKnowledge,
-  replaceKnowledge,
-  resetKnowledge,
   seedDatabaseIfEmpty,
 } from '../core/db/notexDb';
-import { enqueueDeletedNoteSync, enqueueNoteSync, enqueueWorkspaceSync } from '../core/services/syncQueue';
+import { notifySyncQueued, queueDeletedNoteSync, queueNoteSync, queueWorkspaceSync, runLocalMutation } from '../core/services/syncQueue';
 import type {
   ActivityItem,
   Collection,
@@ -113,6 +111,14 @@ function sortTags(tags: Tag[]) {
   return [...tags].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+async function persistNoteAndQueue(note: Note) {
+  await runLocalMutation(() => db.transaction('rw', [db.notes, db.syncItems], async () => {
+    await db.notes.put(note);
+    await queueNoteSync(note.id);
+  }));
+  notifySyncQueued();
+}
+
 const initialKnowledge = createMockData(defaultUserSettings.language);
 
 export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
@@ -146,12 +152,13 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     });
   },
   setUser: async (user) => {
-    await db.transaction('rw', [db.users], async () => {
+    await runLocalMutation(() => db.transaction('rw', [db.users, db.syncItems], async () => {
       await db.users.clear();
       await db.users.put(user);
-    });
+      await queueWorkspaceSync();
+    }));
     set({ user });
-    void enqueueWorkspaceSync();
+    notifySyncQueued();
   },
   createDraftNote: async (input) => {
     const note = buildLocalNote({
@@ -160,18 +167,19 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     });
     const activity = buildActivity(note.id, note.title);
 
-    await db.transaction('rw', [db.notes, db.activities], async () => {
+    await runLocalMutation(() => db.transaction('rw', [db.notes, db.activities, db.syncItems], async () => {
       await db.notes.put(note);
       await db.activities.put(activity);
-    });
+      await queueNoteSync(note.id);
+      await queueWorkspaceSync();
+    }));
 
     set((state) => ({
       notes: sortNotes([note, ...state.notes]),
       activities: [activity, ...state.activities],
     }));
 
-    void enqueueNoteSync(note.id);
-    void enqueueWorkspaceSync();
+    notifySyncQueued();
 
     return note;
   },
@@ -187,18 +195,19 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     });
     const activity = buildActivity(note.id, note.title);
 
-    await db.transaction('rw', [db.notes, db.activities], async () => {
+    await runLocalMutation(() => db.transaction('rw', [db.notes, db.activities, db.syncItems], async () => {
       await db.notes.put(note);
       await db.activities.put(activity);
-    });
+      await queueNoteSync(note.id);
+      await queueWorkspaceSync();
+    }));
 
     set((state) => ({
       notes: sortNotes([note, ...state.notes]),
       activities: [activity, ...state.activities],
     }));
 
-    void enqueueNoteSync(note.id);
-    void enqueueWorkspaceSync();
+    notifySyncQueued();
 
     return note;
   },
@@ -227,11 +236,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   togglePinned: async (noteId) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -245,11 +253,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       updatedAt: new Date().toISOString(),
     };
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   markNoteOpened: async (noteId) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -262,11 +269,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       lastOpenedAt: new Date().toISOString(),
     };
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: state.notes.map((item) => (item.id === noteId ? updated : item)),
     }));
-    void enqueueNoteSync(noteId);
   },
   updateNoteTitle: async (noteId, title) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -280,11 +286,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       title: nextTitle,
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   updateNoteIntro: async (noteId, intro) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -300,11 +305,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       },
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   updateNoteCollection: async (noteId, collectionId) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -317,11 +321,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       collectionId,
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   updateNoteThumbnail: async (noteId, thumbnail) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -334,11 +337,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       thumbnail,
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   saveNoteDraft: async (noteId, draft) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -368,11 +370,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       },
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
 
     return updated;
   },
@@ -390,11 +391,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       },
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   updateNoteTip: async (noteId, title, body) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -419,11 +419,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       },
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   moveToTrash: async (noteId) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -432,11 +431,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     }
 
     const updated = { ...note, isTrashed: true, updatedAt: new Date().toISOString() };
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   restoreNote: async (noteId) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -445,11 +443,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     }
 
     const updated = { ...note, isTrashed: false, updatedAt: new Date().toISOString() };
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   clearTrash: async () => {
     const trashedIds = get().notes.filter((note) => note.isTrashed).map((note) => note.id);
@@ -467,13 +464,21 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
         }),
       );
 
-    await db.transaction('rw', [db.notes, db.activities], async () => {
+    await runLocalMutation(() => db.transaction('rw', [db.notes, db.activities, db.syncItems], async () => {
       await db.notes.bulkDelete(trashedIds);
       if (linkedNoteUpdates.length) {
         await db.notes.bulkPut(linkedNoteUpdates);
       }
       await db.activities.where('noteId').anyOf(trashedIds).delete();
-    });
+      for (const noteId of trashedIds) {
+        await queueDeletedNoteSync(noteId);
+      }
+      for (const note of linkedNoteUpdates) {
+        await queueNoteSync(note.id);
+      }
+      await queueWorkspaceSync();
+    }));
+    notifySyncQueued();
 
     set((state) => {
       const linkedUpdateMap = new Map(linkedNoteUpdates.map((note) => [note.id, note]));
@@ -486,9 +491,6 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
         activities: state.activities.filter((activity) => !trashedIdSet.has(activity.noteId)),
       };
     });
-    trashedIds.forEach((noteId) => void enqueueDeletedNoteSync(noteId));
-    linkedNoteUpdates.forEach((note) => void enqueueNoteSync(note.id));
-    void enqueueWorkspaceSync();
   },
   updateNoteTags: async (noteId, tagIds) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -497,11 +499,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     }
 
     const updated = finalizeNoteUpdate({ ...note, tagIds: uniqueIds(tagIds) });
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   createCollection: async (name, color = 'neutral') => {
     const trimmed = name.trim();
@@ -521,11 +522,14 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       icon: 'folder',
     };
 
-    await db.collections.put(collection);
+    await runLocalMutation(() => db.transaction('rw', [db.collections, db.syncItems], async () => {
+      await db.collections.put(collection);
+      await queueWorkspaceSync();
+    }));
+    notifySyncQueued();
     set((state) => ({
       collections: sortCollections([...state.collections, collection]),
     }));
-    void enqueueWorkspaceSync();
 
     return collection;
   },
@@ -542,11 +546,14 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       color: input.color ?? collection.color ?? 'neutral',
     };
 
-    await db.collections.put(updated);
+    await runLocalMutation(() => db.transaction('rw', [db.collections, db.syncItems], async () => {
+      await db.collections.put(updated);
+      await queueWorkspaceSync();
+    }));
+    notifySyncQueued();
     set((state) => ({
       collections: sortCollections(state.collections.map((item) => (item.id === collectionId ? updated : item))),
     }));
-    void enqueueWorkspaceSync();
   },
   deleteCollection: async (collectionId) => {
     const collection = get().collections.find((item) => item.id === collectionId);
@@ -558,12 +565,17 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       .filter((note) => note.collectionId === collectionId)
       .map((note) => finalizeNoteUpdate({ ...note, collectionId: null }));
 
-    await db.transaction('rw', [db.collections, db.notes], async () => {
+    await runLocalMutation(() => db.transaction('rw', [db.collections, db.notes, db.syncItems], async () => {
       await db.collections.delete(collectionId);
       if (noteUpdates.length) {
         await db.notes.bulkPut(noteUpdates);
       }
-    });
+      await queueWorkspaceSync();
+      for (const note of noteUpdates) {
+        await queueNoteSync(note.id);
+      }
+    }));
+    notifySyncQueued();
 
     set((state) => {
       const noteUpdateMap = new Map(noteUpdates.map((note) => [note.id, note]));
@@ -573,8 +585,6 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
         notes: sortNotes(state.notes.map((note) => noteUpdateMap.get(note.id) ?? note)),
       };
     });
-    void enqueueWorkspaceSync();
-    noteUpdates.forEach((note) => void enqueueNoteSync(note.id));
   },
   createTag: async (name, color = 'neutral') => {
     const trimmed = name.trim();
@@ -594,11 +604,14 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       count: 0,
     };
 
-    await db.tags.put(tag);
+    await runLocalMutation(() => db.transaction('rw', [db.tags, db.syncItems], async () => {
+      await db.tags.put(tag);
+      await queueWorkspaceSync();
+    }));
+    notifySyncQueued();
     set((state) => ({
       tags: sortTags([...state.tags, tag]),
     }));
-    void enqueueWorkspaceSync();
 
     return tag;
   },
@@ -615,23 +628,31 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       color: input.color ?? tag.color ?? 'neutral',
     };
 
-    await db.tags.put(updated);
+    await runLocalMutation(() => db.transaction('rw', [db.tags, db.syncItems], async () => {
+      await db.tags.put(updated);
+      await queueWorkspaceSync();
+    }));
+    notifySyncQueued();
     set((state) => ({
       tags: sortTags(state.tags.map((item) => (item.id === tagId ? updated : item))),
     }));
-    void enqueueWorkspaceSync();
   },
   deleteTag: async (tagId) => {
     const noteUpdates = get().notes
       .filter((note) => note.tagIds.includes(tagId))
       .map((note) => finalizeNoteUpdate({ ...note, tagIds: note.tagIds.filter((id) => id !== tagId) }));
 
-    await db.transaction('rw', [db.tags, db.notes], async () => {
+    await runLocalMutation(() => db.transaction('rw', [db.tags, db.notes, db.syncItems], async () => {
       await db.tags.delete(tagId);
       if (noteUpdates.length) {
         await db.notes.bulkPut(noteUpdates);
       }
-    });
+      await queueWorkspaceSync();
+      for (const note of noteUpdates) {
+        await queueNoteSync(note.id);
+      }
+    }));
+    notifySyncQueued();
 
     set((state) => {
       const updatedNotes = noteUpdates.length
@@ -643,8 +664,6 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
         notes: sortNotes(updatedNotes),
       };
     });
-    void enqueueWorkspaceSync();
-    noteUpdates.forEach((note) => void enqueueNoteSync(note.id));
   },
   addUsageExample: async (noteId, input) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -663,11 +682,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       },
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   updateUsageExample: async (noteId, rowId, input) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -687,11 +705,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       },
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   deleteUsageExample: async (noteId, rowId) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -708,11 +725,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       },
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   replaceUsageExamples: async (noteId, rows) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -733,11 +749,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       },
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   addAdditionalExample: async (noteId, example) => {
     const trimmed = example.trim();
@@ -754,11 +769,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       },
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   updateAdditionalExample: async (noteId, index, example) => {
     const trimmed = example.trim();
@@ -781,11 +795,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       },
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   deleteAdditionalExample: async (noteId, index) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -802,11 +815,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       },
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   addRelatedLink: async (noteId, title, href) => {
     const trimmedTitle = title.trim();
@@ -828,11 +840,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       ],
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   deleteRelatedLink: async (noteId, linkId) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -845,11 +856,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       relatedLinks: (note.relatedLinks ?? []).filter((link) => link.id !== linkId),
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   addLinkedNote: async (noteId, linkedNoteId) => {
     if (noteId === linkedNoteId) {
@@ -867,11 +877,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       linkedNoteIds: uniqueIds([...note.linkedNoteIds, linkedNoteId]),
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   deleteLinkedNote: async (noteId, linkedNoteId) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -884,11 +893,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       linkedNoteIds: note.linkedNoteIds.filter((id) => id !== linkedNoteId),
     });
 
-    await db.notes.put(updated);
+    await persistNoteAndQueue(updated);
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
-    void enqueueNoteSync(noteId);
   },
   duplicateNote: async (noteId, title) => {
     const note = get().notes.find((item) => item.id === noteId);
@@ -910,22 +918,41 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     };
     const activity = buildActivity(duplicate.id, duplicate.title);
 
-    await db.transaction('rw', [db.notes, db.activities], async () => {
+    await runLocalMutation(() => db.transaction('rw', [db.notes, db.activities, db.syncItems], async () => {
       await db.notes.put(duplicate);
       await db.activities.put(activity);
-    });
+      await queueNoteSync(duplicate.id);
+      await queueWorkspaceSync();
+    }));
 
     set((state) => ({
       notes: sortNotes([duplicate, ...state.notes]),
       activities: [activity, ...state.activities],
     }));
-    void enqueueNoteSync(duplicate.id);
-    void enqueueWorkspaceSync();
+    notifySyncQueued();
     return duplicate;
   },
   resetDemoData: async (locale, settings) => {
     const bundle = createMockData(locale);
-    await resetKnowledge(bundle, settings);
+    await runLocalMutation(() => db.transaction('rw', [db.notes, db.tags, db.collections, db.users, db.activities, db.userSettings, db.syncItems], async () => {
+      await db.notes.clear();
+      await db.tags.clear();
+      await db.collections.clear();
+      await db.users.clear();
+      await db.activities.clear();
+      await db.userSettings.clear();
+      await db.syncItems.clear();
+      await db.notes.bulkPut(bundle.notes);
+      await db.tags.bulkPut(bundle.tags);
+      await db.collections.bulkPut(bundle.collections);
+      await db.users.put(bundle.user);
+      await db.activities.bulkPut(bundle.activities);
+      await db.userSettings.put(settings);
+      for (const note of bundle.notes) {
+        await queueNoteSync(note.id);
+      }
+      await queueWorkspaceSync();
+    }));
     set({
       notes: sortNotes(bundle.notes),
       tags: sortTags(bundle.tags),
@@ -934,8 +961,7 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       activities: [...bundle.activities].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
       isReady: true,
     });
-    bundle.notes.forEach((note) => void enqueueNoteSync(note.id));
-    void enqueueWorkspaceSync();
+    notifySyncQueued();
   },
   exportPayload: (settings) => ({
     version: 1,
@@ -946,14 +972,27 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     userSettings: settings,
   }),
   importPayload: async (payload) => {
-    await replaceKnowledge(payload);
+    await runLocalMutation(() => db.transaction('rw', [db.notes, db.tags, db.collections, db.userSettings, db.syncItems], async () => {
+      await db.notes.clear();
+      await db.tags.clear();
+      await db.collections.clear();
+      await db.userSettings.clear();
+      await db.syncItems.clear();
+      await db.notes.bulkPut(payload.notes);
+      await db.tags.bulkPut(payload.tags);
+      await db.collections.bulkPut(payload.collections);
+      await db.userSettings.put(payload.userSettings);
+      for (const note of payload.notes) {
+        await queueNoteSync(note.id);
+      }
+      await queueWorkspaceSync();
+    }));
     set({
       notes: sortNotes(payload.notes),
       tags: sortTags(payload.tags),
       collections: sortCollections(payload.collections),
     });
-    payload.notes.forEach((note) => void enqueueNoteSync(note.id));
-    void enqueueWorkspaceSync();
+    notifySyncQueued();
     return payload.userSettings;
   },
 }));
@@ -1176,3 +1215,4 @@ function buildLocalNoteFromDraft({ draft, authorId }: { draft: NoteEditDraft; au
     stats: calculateNoteStats(note),
   };
 }
+

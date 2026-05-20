@@ -5,9 +5,23 @@ export const NOTEX_SYNC_QUEUED = 'notex-sync-queued';
 export const GOOGLE_SYNC_ID = 'google-drive';
 
 const DEVICE_ID_KEY = 'notex-device-id';
+let localMutationDepth = 0;
 
 export function notifySyncQueued() {
   window.dispatchEvent(new Event(NOTEX_SYNC_QUEUED));
+}
+
+export async function runLocalMutation<T>(operation: () => Promise<T>) {
+  localMutationDepth += 1;
+  try {
+    return await operation();
+  } finally {
+    localMutationDepth = Math.max(0, localMutationDepth - 1);
+  }
+}
+
+export function isLocalMutationActive() {
+  return localMutationDepth > 0;
 }
 
 export function readLocalDeviceId() {
@@ -45,50 +59,32 @@ export async function ensureSyncState() {
   return state;
 }
 
-export async function enqueueNoteSync(noteId: string) {
-  const state = await readSyncState();
-  if (!state?.connected) {
-    return;
-  }
-
+export async function queueNoteSync(noteId: string) {
   await putSyncItem({
     entityKey: noteKey(noteId),
     entityType: 'note',
     entityId: noteId,
     status: 'pending',
   });
-  notifySyncQueued();
 }
 
-export async function enqueueDeletedNoteSync(noteId: string) {
-  const state = await readSyncState();
-  if (!state?.connected) {
-    return;
-  }
-
+export async function queueDeletedNoteSync(noteId: string, deletedAt = new Date().toISOString()) {
   await putSyncItem({
     entityKey: noteKey(noteId),
     entityType: 'note',
     entityId: noteId,
     status: 'deleted',
-    deletedAt: new Date().toISOString(),
+    deletedAt,
   });
-  notifySyncQueued();
 }
 
-export async function enqueueWorkspaceSync() {
-  const state = await readSyncState();
-  if (!state?.connected) {
-    return;
-  }
-
+export async function queueWorkspaceSync() {
   await putSyncItem({
     entityKey: workspaceKey(),
     entityType: 'workspace',
     entityId: 'workspace',
     status: 'pending',
   });
-  notifySyncQueued();
 }
 
 export function noteKey(noteId: string) {
@@ -107,7 +103,6 @@ async function putSyncItem(input: Omit<SyncItem, 'updatedAt'>) {
       ...existing,
       updatedAt,
     });
-    notifySyncQueued();
     return;
   }
 
@@ -115,6 +110,7 @@ async function putSyncItem(input: Omit<SyncItem, 'updatedAt'>) {
     ...existing,
     ...input,
     conflict: undefined,
+    deletedAt: input.status === 'deleted' ? input.deletedAt : undefined,
     error: undefined,
     updatedAt,
   });
