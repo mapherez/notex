@@ -23,6 +23,7 @@ import type {
 
 const MANIFEST_FILE_NAME = 'notex-manifest.json';
 const WORKSPACE_FILE_NAME = 'notex-workspace.json';
+type SyncFileEntityType = 'manifest' | 'workspace' | 'note';
 
 export type GoogleDriveSyncResult = {
   syncState: SyncState;
@@ -111,12 +112,24 @@ export async function replaceLocalDataWithGoogleDrive(accessToken: string): Prom
   await writeSyncState({ ...existingState, lastSyncStartedAt: now, lastError: undefined, updatedAt: now });
 
   const files = await listAppDataFiles(accessToken);
-  const fileByName = new Map(files.map((file) => [file.name, file]));
-  const manifestFileId = existingState.manifestFileId ?? fileByName.get(MANIFEST_FILE_NAME)?.id;
-  const workspaceFileId = existingState.workspaceFileId ?? fileByName.get(WORKSPACE_FILE_NAME)?.id;
-  const remoteManifest = manifestFileId ? await readRemoteJson<CloudManifestFile>(accessToken, manifestFileId) : null;
-  const remoteWorkspace = workspaceFileId ? await readRemoteJson<CloudWorkspaceFile>(accessToken, workspaceFileId) : null;
-  const notes = await readCloudNotes(accessToken, remoteManifest);
+  const { file: manifestFile, payload: remoteManifest } = await readLatestSyncJson<CloudManifestFile>(
+    accessToken,
+    files,
+    MANIFEST_FILE_NAME,
+    'manifest',
+  );
+  const { file: workspaceFile, payload: remoteWorkspace } = await readLatestSyncJson<CloudWorkspaceFile>(
+    accessToken,
+    files,
+    WORKSPACE_FILE_NAME,
+    'workspace',
+  );
+  const manifestFileId = manifestFile?.id;
+  const workspaceFileId = workspaceFile?.id;
+  const notes = remoteManifest ? await readCloudNotes(accessToken, remoteManifest) : await readCloudNoteFiles(accessToken, files);
+  if (!remoteManifest && !remoteWorkspace && !notes.length) {
+    throw new Error('No Google Drive data found');
+  }
   const settings = remoteWorkspace?.userSettings ?? (await readUserSettings(defaultUserSettings.id)) ?? defaultUserSettings;
   const sessions = mergeSessions(remoteWorkspace?.sessions ?? [], [
     {
@@ -185,10 +198,15 @@ export async function runGoogleDriveSync(accessToken: string): Promise<GoogleDri
   await touchCurrentDeviceSession();
 
   const files = await listAppDataFiles(accessToken);
-  const fileByName = new Map(files.map((file) => [file.name, file]));
-  const manifestFileId = existingState.manifestFileId ?? fileByName.get(MANIFEST_FILE_NAME)?.id;
-  const workspaceFileId = existingState.workspaceFileId ?? fileByName.get(WORKSPACE_FILE_NAME)?.id;
-  const remoteManifest = manifestFileId ? await readRemoteJson<CloudManifestFile>(accessToken, manifestFileId) : null;
+  const { file: manifestFile, payload: remoteManifest } = await readLatestSyncJson<CloudManifestFile>(
+    accessToken,
+    files,
+    MANIFEST_FILE_NAME,
+    'manifest',
+  );
+  const workspaceFile = selectLatestSyncFile(files, WORKSPACE_FILE_NAME, 'workspace');
+  const manifestFileId = manifestFile?.id;
+  const workspaceFileId = workspaceFile?.id;
 
   const manifestEntries = new Map((remoteManifest?.notes ?? []).map((entry) => [entry.id, entry]));
   await pushLocalNotes(accessToken, manifestEntries);
@@ -438,6 +456,57 @@ async function readRemoteJson<T>(accessToken: string, fileId: string): Promise<T
   } catch {
     return null;
   }
+}
+
+async function readLatestSyncJson<T>(
+  accessToken: string,
+  files: DriveFileMetadata[],
+  fileName: string,
+  entityType: SyncFileEntityType,
+): Promise<{ file?: DriveFileMetadata; payload: T | null }> {
+  for (const file of selectSyncFileCandidates(files, fileName, entityType)) {
+    const payload = await readRemoteJson<T>(accessToken, file.id);
+    if (payload) {
+      return { file, payload };
+    }
+  }
+
+  return { payload: null };
+}
+
+function selectLatestSyncFile(files: DriveFileMetadata[], fileName: string, entityType: SyncFileEntityType) {
+  return selectSyncFileCandidates(files, fileName, entityType)[0];
+}
+
+function selectSyncFileCandidates(files: DriveFileMetadata[], fileName: string, entityType: SyncFileEntityType) {
+  return files
+    .filter((file) => !file.trashed && (file.name === fileName || file.appProperties?.entityType === entityType))
+    .sort(compareDriveFilesByModifiedTime);
+}
+
+async function readCloudNoteFiles(accessToken: string, files: DriveFileMetadata[]) {
+  const notesById = new Map<string, Note>();
+  const noteFiles = files
+    .filter((file) => !file.trashed && (file.name.startsWith('notex-note-') || file.appProperties?.entityType === 'note'))
+    .sort(compareDriveFilesByModifiedTime);
+
+  for (const file of noteFiles) {
+    const payload = await readRemoteJson<CloudNoteFile>(accessToken, file.id);
+    if (payload?.note && !notesById.has(payload.note.id)) {
+      notesById.set(payload.note.id, { ...payload.note, syncStatus: 'synced' });
+    }
+  }
+
+  return [...notesById.values()];
+}
+
+function compareDriveFilesByModifiedTime(a: DriveFileMetadata, b: DriveFileMetadata) {
+  return getDriveFileTime(b) - getDriveFileTime(a);
+}
+
+function getDriveFileTime(file: DriveFileMetadata) {
+  const time = new Date(file.modifiedTime ?? '').getTime();
+  return Number.isFinite(time) ? time : 0;
 }
 
 async function listNoteXCloudFiles(accessToken: string) {

@@ -318,6 +318,7 @@
     "lastSeen": "Last synced {{date}}",
     "noDevices": "No active sync devices yet.",
     "removeDevice": "Remove sync device",
+    "resolvingCloudChoice": "Preparing your workspace...",
     "syncNow": "Sync now",
     "syncStatus": "Sync status",
     "syncing": "Syncing...",

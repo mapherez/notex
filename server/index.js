@@ -640,7 +640,10 @@ function getClientIp(req) {
 }
 
 function sendJson(res, status, payload) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    ...noStoreHeaders(),
+  });
   res.end(JSON.stringify(payload));
 }
 
@@ -650,8 +653,20 @@ function sendText(res, status, text) {
 }
 
 function redirect(res, location) {
-  res.writeHead(302, { Location: location });
+  res.writeHead(302, {
+    Location: location,
+    ...noStoreHeaders(),
+  });
   res.end();
+}
+
+function noStoreHeaders() {
+  return {
+    'Cache-Control': 'no-store',
+    Pragma: 'no-cache',
+    Expires: '0',
+    Vary: 'Cookie',
+  };
 }
 
 function getContentType(filePath) {

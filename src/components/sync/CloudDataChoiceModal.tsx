@@ -1,4 +1,4 @@
-import { Cloud, HardDrive } from 'lucide-react';
+import { Cloud, HardDrive, Loader2 } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useSyncStore } from '../../store/useSyncStore';
 import { useToastStore } from '../../store/useToastStore';
@@ -25,6 +25,12 @@ export function CloudDataChoiceModal() {
       <section className="choice-modal" role="dialog" aria-modal="true" aria-labelledby="cloud-data-choice-title">
         <h2 id="cloud-data-choice-title">{t('sync.cloudChoiceTitle')}</h2>
         <p>{t('sync.cloudChoiceDescription', { email: cloudChoice.email })}</p>
+        {isResolvingCloudChoice ? (
+          <div className="choice-modal-status" role="status" aria-live="polite">
+            <Loader2 size={18} />
+            <span>{t('sync.resolvingCloudChoice')}</span>
+          </div>
+        ) : null}
         <div className="choice-modal-actions">
           <button type="button" onClick={() => chooseData('local')} disabled={isResolvingCloudChoice}>
             <HardDrive size={20} />

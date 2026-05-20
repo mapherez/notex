@@ -7,6 +7,7 @@ export type DriveFileMetadata = {
   modifiedTime?: string;
   md5Checksum?: string;
   size?: string;
+  trashed?: boolean;
   appProperties?: Record<string, string>;
 };
 
@@ -22,7 +23,9 @@ export async function listAppDataFiles(accessToken: string) {
   do {
     const params = new URLSearchParams({
       spaces: 'appDataFolder',
-      fields: 'nextPageToken,files(id,name,modifiedTime,md5Checksum,size,appProperties)',
+      fields: 'nextPageToken,files(id,name,modifiedTime,md5Checksum,size,trashed,appProperties)',
+      q: 'trashed = false',
+      orderBy: 'modifiedTime desc',
       pageSize: '1000',
     });
     if (pageToken) {

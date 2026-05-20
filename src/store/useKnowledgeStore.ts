@@ -211,8 +211,8 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     return get().createDraftNote({
       title,
       intro: trimmed,
-      collectionId: 'collection-ideas',
-      tagIds: ['tag-ideas'],
+      collectionId: defaultUserSettings.primaryCollectionId,
+      tagIds: [],
     });
   },
   toggleFavorite: async (noteId) => {

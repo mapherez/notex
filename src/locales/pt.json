@@ -318,6 +318,7 @@
     "lastSeen": "Última sincronização {{date}}",
     "noDevices": "Ainda não há dispositivos de sincronização ativos.",
     "removeDevice": "Remover dispositivo",
+    "resolvingCloudChoice": "A preparar o teu workspace...",
     "syncNow": "Sincronizar agora",
     "syncStatus": "Estado da sincronização",
     "syncing": "A sincronizar...",
