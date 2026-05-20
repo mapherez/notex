@@ -412,6 +412,11 @@
     "useLocalData": "Usar dados locais",
     "useLocalDataDescription": "Manter os dados deste dispositivo e substituir a cópia do Google Drive."
   },
+  "legal": {
+    "navigationLabel": "Legal",
+    "privacyLink": "Privacidade",
+    "termsLink": "Termos"
+  },
   "collections": {
     "create": "Criar coleção",
     "newPlaceholder": "Nome da nova coleção",

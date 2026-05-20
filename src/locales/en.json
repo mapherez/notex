@@ -412,6 +412,11 @@
     "useLocalData": "Use local data",
     "useLocalDataDescription": "Keep this device's data and replace the Google Drive backup."
   },
+  "legal": {
+    "navigationLabel": "Legal",
+    "privacyLink": "Privacy",
+    "termsLink": "Terms"
+  },
   "collections": {
     "create": "Create collection",
     "newPlaceholder": "New collection name",

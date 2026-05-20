@@ -181,6 +181,14 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             <span className="sidebar-sync-sub">{pendingCount ? t('sync.pendingCount', { count: pendingCount }) : syncState?.connected ? t('sync.upToDate') : t('sync.localOnly')}</span>
           </span>
         </button>
+        <nav className="sidebar-legal-links" aria-label={t('legal.navigationLabel')}>
+          <NavLink className="sidebar-legal-link" to="/privacy" onClick={onClose}>
+            {t('legal.privacyLink')}
+          </NavLink>
+          <NavLink className="sidebar-legal-link" to="/terms" onClick={onClose}>
+            {t('legal.termsLink')}
+          </NavLink>
+        </nav>
       </aside>
     </>
   );
