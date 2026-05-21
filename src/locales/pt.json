@@ -390,6 +390,17 @@
     "privacyLink": "Privacidade",
     "termsLink": "Termos"
   },
+  "updater": {
+    "title": "Atualização disponível",
+    "versionLine": "Versão atual {{current}} → nova versão {{next}}",
+    "installNow": "Instalar agora",
+    "installing": "A instalar...",
+    "installingProgress": "A instalar... {{percent}}%",
+    "later": "Mais tarde",
+    "checkFailed": "Não foi possível verificar atualizações",
+    "installFailed": "Não foi possível instalar a atualização",
+    "unknownVersion": "desconhecida"
+  },
   "collections": {
     "create": "Criar coleção",
     "newPlaceholder": "Nome da nova coleção",

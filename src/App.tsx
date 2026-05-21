@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { CloudDataChoiceModal } from './components/sync/CloudDataChoiceModal';
 import { SyncConflictReviewModal } from './components/sync/SyncConflictReviewModal';
+import { AppUpdatePrompt } from './components/ui/AppUpdatePrompt';
 import { ToastViewport } from './components/ui/ToastViewport';
 import { cloudSyncEnabled } from './config/appSettings';
 import { useSyncBootstrap } from './core/services/useSyncBootstrap';
@@ -64,6 +65,7 @@ export function App() {
             <SyncConflictReviewModal />
           </>
         ) : null}
+        <AppUpdatePrompt enabled={isHydrated && isReady} />
         <ToastViewport />
       </BrowserRouter>
     </I18nProvider>
