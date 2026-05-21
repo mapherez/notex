@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { NOTEX_SYNC_QUEUED } from './syncQueue';
+import { cloudSyncEnabled } from '../../config/appSettings';
 import { useSyncStore } from '../../store/useSyncStore';
 
 export function useSyncBootstrap(enabled: boolean) {
@@ -9,7 +10,7 @@ export function useSyncBootstrap(enabled: boolean) {
   const connected = useSyncStore((state) => Boolean(state.syncState?.connected));
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !cloudSyncEnabled) {
       return;
     }
 
@@ -19,7 +20,7 @@ export function useSyncBootstrap(enabled: boolean) {
   }, [enabled, hydrateSync, scheduleSync]);
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !cloudSyncEnabled) {
       return;
     }
 
@@ -51,7 +52,7 @@ export function useSyncBootstrap(enabled: boolean) {
   }, [enabled, refreshSyncMetadata, scheduleSync]);
 
   useEffect(() => {
-    if (!enabled || !connected) {
+    if (!enabled || !cloudSyncEnabled || !connected) {
       return;
     }
 

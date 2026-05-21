@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SearchBox } from '../ui/SearchBox';
+import { cloudSyncEnabled } from '../../config/appSettings';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
@@ -29,6 +30,7 @@ export function TopBar({
   const syncState = useSyncStore((state) => state.syncState);
   const disconnectGoogle = useSyncStore((state) => state.disconnectGoogle);
   const pushToast = useToastStore((state) => state.pushToast);
+  const accountConnected = cloudSyncEnabled && Boolean(syncState?.connected);
 
   useClickOutside(actionsRef, accountOpen, () => {
     setAccountOpen(false);
@@ -71,8 +73,8 @@ export function TopBar({
             setAccountOpen((value) => !value);
           }}
         >
-          <span className={syncState?.connected && user?.avatarUrl ? 'avatar' : 'avatar avatar-placeholder'}>
-            {syncState?.connected && user?.avatarUrl ? (
+          <span className={accountConnected && user?.avatarUrl ? 'avatar' : 'avatar avatar-placeholder'}>
+            {accountConnected && user?.avatarUrl ? (
               <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
             ) : (
               <UserRound size={20} strokeWidth={1.8} />
@@ -82,10 +84,10 @@ export function TopBar({
         </button>
         {accountOpen ? (
           <div className="floating-menu topbar-menu account-menu">
-            {syncState?.connected ? (
+            {accountConnected ? (
               <>
                 <strong>{user?.name}</strong>
-                <span className="menu-muted">{syncState.email ?? user?.email}</span>
+                <span className="menu-muted">{syncState?.email ?? user?.email}</span>
               </>
             ) : (
               <span className="menu-muted">{t('profile.localUser')}</span>
@@ -99,7 +101,7 @@ export function TopBar({
             >
               {t('topbar.profile')}
             </button>
-            {syncState?.connected ? (
+            {accountConnected ? (
               <button
                 type="button"
                 onClick={() => {

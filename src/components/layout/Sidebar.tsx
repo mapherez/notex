@@ -14,7 +14,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import clsx from 'clsx';
-import { appSettings } from '../../config/appSettings';
+import { appSettings, cloudSyncEnabled } from '../../config/appSettings';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
@@ -161,16 +161,18 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         </div>
 
         <div className="sidebar-spacer" />
-        <button className="sidebar-sync-button" type="button" onClick={handleSyncClick}>
-          <span className="sidebar-sync-icon">
-            {conflictCount ? <AlertTriangle size={20} /> : <Cloud size={20} />}
-            {pendingCount || conflictCount ? <span className="sidebar-sync-badge">{conflictCount || pendingCount}</span> : null}
-          </span>
-          <span>
-            <span>{conflictCount ? t('sync.conflictReview') : syncState?.connected ? (isSyncing ? t('sync.syncing') : t('sync.syncNow')) : isConnecting ? t('sync.connecting') : t('sync.connect')}</span>
-            <span className="sidebar-sync-sub">{conflictCount ? t('sync.conflictCount', { count: conflictCount }) : pendingCount ? t('sync.pendingCount', { count: pendingCount }) : syncState?.connected ? t('sync.upToDate') : t('sync.localOnly')}</span>
-          </span>
-        </button>
+        {cloudSyncEnabled ? (
+          <button className="sidebar-sync-button" type="button" onClick={handleSyncClick}>
+            <span className="sidebar-sync-icon">
+              {conflictCount ? <AlertTriangle size={20} /> : <Cloud size={20} />}
+              {pendingCount || conflictCount ? <span className="sidebar-sync-badge">{conflictCount || pendingCount}</span> : null}
+            </span>
+            <span>
+              <span>{conflictCount ? t('sync.conflictReview') : syncState?.connected ? (isSyncing ? t('sync.syncing') : t('sync.syncNow')) : isConnecting ? t('sync.connecting') : t('sync.connect')}</span>
+              <span className="sidebar-sync-sub">{conflictCount ? t('sync.conflictCount', { count: conflictCount }) : pendingCount ? t('sync.pendingCount', { count: pendingCount }) : syncState?.connected ? t('sync.upToDate') : t('sync.localOnly')}</span>
+            </span>
+          </button>
+        ) : null}
         <nav className="sidebar-legal-links" aria-label={t('legal.navigationLabel')}>
           <NavLink className="sidebar-legal-link" to="/privacy" onClick={onClose}>
             {t('legal.privacyLink')}

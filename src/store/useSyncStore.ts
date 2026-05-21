@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { cloudSyncEnabled } from '../config/appSettings';
 import { db, readDeviceSessions, readSyncState, writeSyncState } from '../core/db/notexDb';
 import {
   getBrokerSession,
@@ -74,6 +75,22 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   isConnecting: false,
   isResolvingCloudChoice: false,
   hydrateSync: async () => {
+    if (!cloudSyncEnabled) {
+      set({
+        syncState: null,
+        sessions: [],
+        conflicts: [],
+        conflictReviewOpen: false,
+        cloudChoice: null,
+        pendingCount: 0,
+        conflictCount: 0,
+        isSyncing: false,
+        isConnecting: false,
+        isResolvingCloudChoice: false,
+      });
+      return;
+    }
+
     const existingSyncState = await ensureSyncState();
     const [brokerSession, counts, conflicts] = await Promise.all([readBrokerSession(), countSyncWork(), readSyncConflicts()]);
 
@@ -112,6 +129,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     set({ syncState: existingSyncState, sessions, conflicts, conflictReviewOpen: conflicts.length > 0, ...counts });
   },
   clearCloudData: async () => {
+    if (!cloudSyncEnabled) {
+      return;
+    }
+
     const state = await ensureSyncState();
     if (!state.connected) {
       return;
@@ -131,11 +152,21 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     }
   },
   connectGoogle: async () => {
+    if (!cloudSyncEnabled) {
+      set({ isConnecting: false });
+      return;
+    }
+
     set({ isConnecting: true });
     startGoogleBrokerLogin();
     await new Promise<void>(() => undefined);
   },
   disconnectGoogle: async () => {
+    if (!cloudSyncEnabled) {
+      set({ syncState: null, sessions: [], conflicts: [], conflictReviewOpen: false });
+      return;
+    }
+
     tokenCache = null;
     await logoutBrokerSession().catch(() => undefined);
     const existing = await ensureSyncState();
@@ -154,6 +185,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     set({ syncState, sessions: [], conflicts: [], conflictReviewOpen: false });
   },
   removeDeviceSession: async (deviceId) => {
+    if (!cloudSyncEnabled) {
+      return;
+    }
+
     await removeBrokerSession(deviceId);
     const brokerSession = await readBrokerSession();
     if (brokerSession.connected) {
@@ -166,6 +201,11 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   openConflictReview: () => set({ conflictReviewOpen: true }),
   closeConflictReview: () => set({ conflictReviewOpen: false }),
   resolveCloudChoice: async (choice) => {
+    if (!cloudSyncEnabled) {
+      set({ cloudChoice: null, isResolvingCloudChoice: false });
+      return;
+    }
+
     const googleUser = pendingGoogleUser ?? useKnowledgeStore.getState().user;
     if (!googleUser) {
       set({ cloudChoice: null });
@@ -213,6 +253,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     }
   },
   resolveConflict: async (entityKey, resolution, manualNote) => {
+    if (!cloudSyncEnabled) {
+      return;
+    }
+
     await resolveSyncConflict(entityKey, resolution, manualNote);
     await Promise.all([
       useKnowledgeStore.getState().refreshKnowledge(),
@@ -222,6 +266,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     await get().syncNow();
   },
   syncNow: async () => {
+    if (!cloudSyncEnabled) {
+      return;
+    }
+
     const state = await ensureSyncState();
     if (!state.connected) {
       return;
@@ -263,6 +311,10 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     }
   },
   scheduleSync: () => {
+    if (!cloudSyncEnabled) {
+      return;
+    }
+
     const state = get().syncState;
     if (!state?.connected || syncTimeout) {
       return;
@@ -274,6 +326,11 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
     }, 1500);
   },
   refreshSyncMetadata: async () => {
+    if (!cloudSyncEnabled) {
+      set({ syncState: null, sessions: [], conflicts: [], pendingCount: 0, conflictCount: 0 });
+      return;
+    }
+
     const [syncState, brokerSession, counts, conflicts] = await Promise.all([
       readSyncState(),
       readBrokerSession(),

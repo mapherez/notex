@@ -23,6 +23,7 @@ import { useRef, useState } from 'react';
 import { IconBadge } from '../components/ui/IconBadge';
 import { Panel } from '../components/ui/Panel';
 import { TagChip } from '../components/ui/TagChip';
+import { cloudSyncEnabled } from '../config/appSettings';
 import { createExportFile, readImportFile } from '../core/services/exportImport';
 import { filterNotes } from '../core/utils/noteFilters';
 import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
@@ -82,7 +83,7 @@ export function ProfilePage() {
   const lastActivityValue = mostRecentNote
     ? formatRecentActivityTimestamp(getRecentTimestamp(mostRecentNote), locale, t)
     : t('profile.values.noActivity');
-  const accountConnected = Boolean(syncState?.connected);
+  const accountConnected = cloudSyncEnabled && Boolean(syncState?.connected);
   const accountEmail = accountConnected ? syncState?.email ?? user?.email ?? t('sync.notConnected') : '';
   const lastLoginAt = syncState?.lastLoginAt ?? user?.lastLoginAt;
   const lastLoginValue = lastLoginAt
@@ -368,52 +369,56 @@ export function ProfilePage() {
 
         <section className="profile-right">
           <Panel title={t("profile.security.title")}>
-            <SecurityRow
-              icon={RefreshCw}
-              label={isSyncing ? t("sync.syncing") : t("sync.syncStatus")}
-              detail={syncStatusDetail}
-            />
-            {accountConnected ? (
-              <SecurityRow
-                icon={Mail}
-                label={t("profile.security.email")}
-                detail={accountEmail}
-              />
+            {cloudSyncEnabled ? (
+              <>
+                <SecurityRow
+                  icon={RefreshCw}
+                  label={isSyncing ? t("sync.syncing") : t("sync.syncStatus")}
+                  detail={syncStatusDetail}
+                />
+                {accountConnected ? (
+                  <SecurityRow
+                    icon={Mail}
+                    label={t("profile.security.email")}
+                    detail={accountEmail}
+                  />
+                ) : null}
+                <SecurityRow
+                  icon={CalendarClock}
+                  label={t("profile.security.lastLogin")}
+                  detail={lastLoginValue}
+                />
+                {accountConnected ? (
+                  <SecurityRow
+                    icon={Computer}
+                    label={t("profile.security.syncDevices")}
+                    detail={sessionCountValue}
+                    onClick={() => setSyncDevicesOpen((value) => !value)}
+                  />
+                ) : null}
+                {accountConnected && syncDevicesOpen ? (
+                  <SyncDevicesPanel
+                    currentDeviceId={currentDeviceId}
+                    locale={locale}
+                    onRemove={(deviceId) => {
+                      void removeDeviceSession(deviceId).then(() =>
+                        pushToast(t("sync.deviceRemoved"), "warning"),
+                      );
+                    }}
+                    sessions={sessions}
+                    t={t}
+                  />
+                ) : null}
+                {accountConnected ? null : (
+                  <SecurityRow
+                    icon={Cloud}
+                    label={isConnecting ? t("sync.connecting") : t("sync.connect")}
+                    detail={t("sync.connectDescription")}
+                    onClick={handleConnectGoogle}
+                  />
+                )}
+              </>
             ) : null}
-            <SecurityRow
-              icon={CalendarClock}
-              label={t("profile.security.lastLogin")}
-              detail={lastLoginValue}
-            />
-            {accountConnected ? (
-              <SecurityRow
-                icon={Computer}
-                label={t("profile.security.syncDevices")}
-                detail={sessionCountValue}
-                onClick={() => setSyncDevicesOpen((value) => !value)}
-              />
-            ) : null}
-            {accountConnected && syncDevicesOpen ? (
-              <SyncDevicesPanel
-                currentDeviceId={currentDeviceId}
-                locale={locale}
-                onRemove={(deviceId) => {
-                  void removeDeviceSession(deviceId).then(() =>
-                    pushToast(t("sync.deviceRemoved"), "warning"),
-                  );
-                }}
-                sessions={sessions}
-                t={t}
-              />
-            ) : null}
-            {accountConnected ? null : (
-              <SecurityRow
-                icon={Cloud}
-                label={isConnecting ? t("sync.connecting") : t("sync.connect")}
-                detail={t("sync.connectDescription")}
-                onClick={handleConnectGoogle}
-              />
-            )}
             <button
               className="security-row"
               type="button"
@@ -454,7 +459,7 @@ export function ProfilePage() {
                 });
               }}
             />
-            {accountConnected ? (
+            {cloudSyncEnabled && accountConnected ? (
               <>
                 <button
                   className="security-row danger"

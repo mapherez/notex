@@ -1,8 +1,8 @@
 # NoteX
 
-NoteX is an offline-first knowledge management app built around structured notes, tags, collections, quick pins, and Google Drive backup/sync.
+NoteX is a local/offline-first knowledge management app built around structured notes, tags, collections, and quick pins.
 
-The app stores working data locally in IndexedDB/Dexie so it remains usable offline. When Google sync is connected, NoteX uses a small Node auth broker to keep a durable Google session and silently refresh short-lived Google access tokens for Drive sync.
+The app currently runs in local-only mode. Google Drive sync and the Node auth broker code are still kept in the repository for possible future use, but cloud sync is disabled by `features.cloudSync` in `src/config/settings.json`.
 
 ## Stack
 
@@ -13,16 +13,16 @@ The app stores working data locally in IndexedDB/Dexie so it remains usable offl
 - Dexie / IndexedDB
 - React Router
 - Tailwind CSS
-- Node.js auth broker
-- SQLite via `better-sqlite3`
-- Google Drive `appDataFolder` sync
+- Node.js auth broker, parked for future sync work
+- SQLite via `better-sqlite3`, parked for future sync work
+- Google Drive `appDataFolder` sync, parked for future sync work
 
 ## Requirements
 
 - Node.js 20+
 - npm
 - Docker, optional for production deployment
-- A Google Cloud OAuth client for Google Drive sync
+- A Google Cloud OAuth client only if cloud sync is re-enabled later
 
 ## Local Development
 
@@ -38,7 +38,7 @@ Run the frontend only:
 npm run dev
 ```
 
-Run the backend broker in another terminal when testing Google login/sync locally:
+The backend broker is not needed for current local-only development. If cloud sync is re-enabled later, run it in another terminal:
 
 ```bash
 npm run server

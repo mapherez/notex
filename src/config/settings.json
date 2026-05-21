@@ -1,5 +1,8 @@
 {
   "productName": "NoteX",
+  "features": {
+    "cloudSync": false
+  },
   "defaultSettings": {
     "theme": "dark",
     "language": "pt",

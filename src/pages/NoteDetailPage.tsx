@@ -24,6 +24,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
 import { TagChip } from '../components/ui/TagChip';
+import { cloudSyncEnabled } from '../config/appSettings';
 import type { Collection, Note, NoteThumbnail as NoteThumbnailModel, NoteType, RichTextBlock, TagColor } from '../core/models/models';
 import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
 import { tagColorOptions } from '../core/utils/tagColors';
@@ -69,7 +70,8 @@ export function NoteDetailPage() {
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const user = useKnowledgeStore((state) => state.user);
-  const accountConnected = useSyncStore((state) => Boolean(state.syncState?.connected));
+  const syncConnected = useSyncStore((state) => Boolean(state.syncState?.connected));
+  const accountConnected = cloudSyncEnabled && syncConnected;
   const isReady = useKnowledgeStore((state) => state.isReady);
   const toggleFavorite = useKnowledgeStore((state) => state.toggleFavorite);
   const togglePinned = useKnowledgeStore((state) => state.togglePinned);

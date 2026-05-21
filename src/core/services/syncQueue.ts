@@ -1,4 +1,5 @@
 import { db, readSyncState, writeSyncState } from '../db/notexDb';
+import { cloudSyncEnabled } from '../../config/appSettings';
 import type { SyncItem, SyncState } from '../models/models';
 
 export const NOTEX_SYNC_QUEUED = 'notex-sync-queued';
@@ -8,6 +9,10 @@ const DEVICE_ID_KEY = 'notex-device-id';
 let localMutationDepth = 0;
 
 export function notifySyncQueued() {
+  if (!cloudSyncEnabled) {
+    return;
+  }
+
   window.dispatchEvent(new Event(NOTEX_SYNC_QUEUED));
 }
 
@@ -60,6 +65,10 @@ export async function ensureSyncState() {
 }
 
 export async function queueNoteSync(noteId: string) {
+  if (!cloudSyncEnabled) {
+    return;
+  }
+
   await putSyncItem({
     entityKey: noteKey(noteId),
     entityType: 'note',
@@ -69,6 +78,10 @@ export async function queueNoteSync(noteId: string) {
 }
 
 export async function queueDeletedNoteSync(noteId: string, deletedAt = new Date().toISOString()) {
+  if (!cloudSyncEnabled) {
+    return;
+  }
+
   await putSyncItem({
     entityKey: noteKey(noteId),
     entityType: 'note',
@@ -79,6 +92,10 @@ export async function queueDeletedNoteSync(noteId: string, deletedAt = new Date(
 }
 
 export async function queueWorkspaceSync() {
+  if (!cloudSyncEnabled) {
+    return;
+  }
+
   await putSyncItem({
     entityKey: workspaceKey(),
     entityType: 'workspace',

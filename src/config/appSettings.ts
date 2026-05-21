@@ -4,6 +4,7 @@ import type { UserSettings } from '../core/models/models';
 export type AppSettings = typeof settings;
 
 export const appSettings: AppSettings = settings;
+export const cloudSyncEnabled = settings.features.cloudSync;
 
 export const defaultUserSettings: UserSettings = {
   id: 'local-user-settings',

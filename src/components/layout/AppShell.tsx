@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { cloudSyncEnabled } from '../../config/appSettings';
 import { getDisplayFirstName } from '../../core/utils/userProfile';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
@@ -14,7 +15,8 @@ export function AppShell() {
   const location = useLocation();
   const { t } = useI18n();
   const user = useKnowledgeStore((state) => state.user);
-  const accountConnected = useSyncStore((state) => Boolean(state.syncState?.connected));
+  const syncConnected = useSyncStore((state) => Boolean(state.syncState?.connected));
+  const accountConnected = cloudSyncEnabled && syncConnected;
   const showSearch = searchRoutes.has(location.pathname) || location.pathname.startsWith('/notes/');
   const heading =
     location.pathname === '/'

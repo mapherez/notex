@@ -4,6 +4,7 @@ import { AppShell } from './components/layout/AppShell';
 import { CloudDataChoiceModal } from './components/sync/CloudDataChoiceModal';
 import { SyncConflictReviewModal } from './components/sync/SyncConflictReviewModal';
 import { ToastViewport } from './components/ui/ToastViewport';
+import { cloudSyncEnabled } from './config/appSettings';
 import { useSyncBootstrap } from './core/services/useSyncBootstrap';
 import { I18nProvider } from './i18n/I18nProvider';
 import { DashboardPage } from './pages/DashboardPage';
@@ -21,7 +22,7 @@ export function App() {
   const hydrateSettings = useAppStore((state) => state.hydrateSettings);
   const initialize = useKnowledgeStore((state) => state.initialize);
   const isReady = useKnowledgeStore((state) => state.isReady);
-  useSyncBootstrap(isHydrated && isReady);
+  useSyncBootstrap(cloudSyncEnabled && isHydrated && isReady);
 
   useEffect(() => {
     void hydrateSettings();
@@ -57,8 +58,12 @@ export function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
-        <CloudDataChoiceModal />
-        <SyncConflictReviewModal />
+        {cloudSyncEnabled ? (
+          <>
+            <CloudDataChoiceModal />
+            <SyncConflictReviewModal />
+          </>
+        ) : null}
         <ToastViewport />
       </BrowserRouter>
     </I18nProvider>
