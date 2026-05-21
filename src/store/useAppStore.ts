@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { defaultUserSettings } from '../config/appSettings';
-import { db } from '../core/db/notexDb';
 import { notifySyncQueued, queueWorkspaceSync, runLocalMutation } from '../core/services/syncQueue';
+import { db } from '../core/storage/notexRepository';
 import type { Locale, PreferredLayout, ThemePreference, UserSettings } from '../core/models/models';
 
 type AppStore = {

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { cloudSyncEnabled } from '../config/appSettings';
-import { db, readDeviceSessions, readSyncState, writeSyncState } from '../core/db/notexDb';
+import { db, readDeviceSessions, readSyncState, writeSyncState } from '../core/storage/notexRepository';
 import {
   getBrokerSession,
   logoutBrokerSession,

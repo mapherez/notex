@@ -1,5 +1,5 @@
-import { db, readSyncState, writeSyncState } from '../db/notexDb';
 import { cloudSyncEnabled } from '../../config/appSettings';
+import { db, readSyncState, writeSyncState } from '../storage/notexRepository';
 import type { SyncItem, SyncState } from '../models/models';
 
 export const NOTEX_SYNC_QUEUED = 'notex-sync-queued';

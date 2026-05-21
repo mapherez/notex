@@ -5,7 +5,7 @@ import {
   db,
   readAllKnowledge,
   seedDatabaseIfEmpty,
-} from '../core/db/notexDb';
+} from '../core/storage/notexRepository';
 import { notifySyncQueued, queueDeletedNoteSync, queueNoteSync, queueWorkspaceSync, runLocalMutation } from '../core/services/syncQueue';
 import type {
   ActivityItem,

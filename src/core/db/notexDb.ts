@@ -1,9 +1,11 @@
-import Dexie, { type Table } from 'dexie';
+import { invoke } from '@tauri-apps/api/core';
+import Dexie, { type Table as DexieTable } from 'dexie';
 import type {
   ActivityItem,
   Collection,
   DeviceSession,
   Note,
+  NoteXExport,
   SyncItem,
   SyncState,
   Tag,
@@ -27,15 +29,15 @@ const removedDefaultCollectionIds = ['collection-studies', 'collection-projects'
 const keptDefaultTagIds = ['tag-grammar', 'tag-doubt'];
 
 class NoteXDatabase extends Dexie {
-  notes!: Table<Note, string>;
-  tags!: Table<Tag, string>;
-  collections!: Table<Collection, string>;
-  users!: Table<User, string>;
-  activities!: Table<ActivityItem, string>;
-  userSettings!: Table<UserSettings, string>;
-  syncState!: Table<SyncState, string>;
-  syncItems!: Table<SyncItem, string>;
-  deviceSessions!: Table<DeviceSession, string>;
+  notes!: DexieTable<Note, string>;
+  tags!: DexieTable<Tag, string>;
+  collections!: DexieTable<Collection, string>;
+  users!: DexieTable<User, string>;
+  activities!: DexieTable<ActivityItem, string>;
+  userSettings!: DexieTable<UserSettings, string>;
+  syncState!: DexieTable<SyncState, string>;
+  syncItems!: DexieTable<SyncItem, string>;
+  deviceSessions!: DexieTable<DeviceSession, string>;
 
   constructor() {
     super('notex-local-db');
@@ -191,7 +193,319 @@ class NoteXDatabase extends Dexie {
   }
 }
 
-export const db = new NoteXDatabase();
+type TableName =
+  | 'notes'
+  | 'tags'
+  | 'collections'
+  | 'users'
+  | 'activities'
+  | 'userSettings'
+  | 'syncState'
+  | 'syncItems'
+  | 'deviceSessions';
+
+type WhereQuery<T> = {
+  delete: () => Promise<unknown>;
+  count: () => Promise<number>;
+  toArray: () => Promise<T[]>;
+};
+
+type WhereClause<T> = {
+  equals: (value: unknown) => WhereQuery<T>;
+  anyOf: (values: unknown[]) => WhereQuery<T>;
+};
+
+export type StorageTable<T> = {
+  get: (key: string) => Promise<T | undefined>;
+  put: (value: T) => Promise<unknown>;
+  bulkPut: (values: T[]) => Promise<unknown>;
+  delete: (key: string) => Promise<unknown>;
+  bulkDelete: (keys: string[]) => Promise<unknown>;
+  clear: () => Promise<unknown>;
+  toArray: () => Promise<T[]>;
+  count: () => Promise<number>;
+  where: (index: string) => WhereClause<T>;
+};
+
+type NoteXStorageDatabase = {
+  notes: StorageTable<Note>;
+  tags: StorageTable<Tag>;
+  collections: StorageTable<Collection>;
+  users: StorageTable<User>;
+  activities: StorageTable<ActivityItem>;
+  userSettings: StorageTable<UserSettings>;
+  syncState: StorageTable<SyncState>;
+  syncItems: StorageTable<SyncItem>;
+  deviceSessions: StorageTable<DeviceSession>;
+  transaction: <T>(mode: string, tables: unknown[], scope: () => Promise<T>) => Promise<T>;
+};
+
+type SqliteOperation =
+  | { table: TableName; kind: 'put'; value: unknown }
+  | { table: TableName; kind: 'bulkPut'; values: unknown[] }
+  | { table: TableName; kind: 'delete'; key: string }
+  | { table: TableName; kind: 'bulkDelete'; keys: string[] }
+  | { table: TableName; kind: 'clear' }
+  | { table: TableName; kind: 'whereDelete'; index: string; values: unknown[] };
+
+type SqliteTransactionContext = {
+  operations: SqliteOperation[];
+};
+
+const indexedDb = new NoteXDatabase();
+let sqliteTransactionContext: SqliteTransactionContext | null = null;
+
+class DexieStorageAdapter implements NoteXStorageDatabase {
+  notes = indexedDb.notes as unknown as StorageTable<Note>;
+  tags = indexedDb.tags as unknown as StorageTable<Tag>;
+  collections = indexedDb.collections as unknown as StorageTable<Collection>;
+  users = indexedDb.users as unknown as StorageTable<User>;
+  activities = indexedDb.activities as unknown as StorageTable<ActivityItem>;
+  userSettings = indexedDb.userSettings as unknown as StorageTable<UserSettings>;
+  syncState = indexedDb.syncState as unknown as StorageTable<SyncState>;
+  syncItems = indexedDb.syncItems as unknown as StorageTable<SyncItem>;
+  deviceSessions = indexedDb.deviceSessions as unknown as StorageTable<DeviceSession>;
+
+  transaction<T>(mode: string, tables: unknown[], scope: () => Promise<T>) {
+    return indexedDb.transaction(mode as Parameters<NoteXDatabase['transaction']>[0], tables as DexieTable<unknown, string>[], scope);
+  }
+}
+
+class SqliteStorageAdapter implements NoteXStorageDatabase {
+  notes = new SqliteTable<Note>('notes');
+  tags = new SqliteTable<Tag>('tags');
+  collections = new SqliteTable<Collection>('collections');
+  users = new SqliteTable<User>('users');
+  activities = new SqliteTable<ActivityItem>('activities');
+  userSettings = new SqliteTable<UserSettings>('userSettings');
+  syncState = new SqliteTable<SyncState>('syncState');
+  syncItems = new SqliteTable<SyncItem>('syncItems');
+  deviceSessions = new SqliteTable<DeviceSession>('deviceSessions');
+
+  async transaction<T>(_mode: string, _tables: unknown[], scope: () => Promise<T>) {
+    if (sqliteTransactionContext) {
+      return scope();
+    }
+
+    const context: SqliteTransactionContext = { operations: [] };
+    sqliteTransactionContext = context;
+    try {
+      const result = await scope();
+      if (context.operations.length) {
+        await invoke('notex_sqlite_transaction', { operations: context.operations });
+      }
+      return result;
+    } finally {
+      sqliteTransactionContext = null;
+    }
+  }
+}
+
+class SqliteTable<T> implements StorageTable<T> {
+  constructor(private readonly table: TableName) {}
+
+  async get(key: string) {
+    return (await invoke<T | null>('notex_sqlite_get', { table: this.table, key })) ?? undefined;
+  }
+
+  async put(value: T) {
+    await this.write({ table: this.table, kind: 'put', value });
+  }
+
+  async bulkPut(values: T[]) {
+    if (!values.length) {
+      return;
+    }
+
+    await this.write({ table: this.table, kind: 'bulkPut', values });
+  }
+
+  async delete(key: string) {
+    await this.write({ table: this.table, kind: 'delete', key });
+  }
+
+  async bulkDelete(keys: string[]) {
+    if (!keys.length) {
+      return;
+    }
+
+    await this.write({ table: this.table, kind: 'bulkDelete', keys });
+  }
+
+  async clear() {
+    await this.write({ table: this.table, kind: 'clear' });
+  }
+
+  async toArray() {
+    return invoke<T[]>('notex_sqlite_read_table', { table: this.table });
+  }
+
+  async count() {
+    return invoke<number>('notex_sqlite_count', { table: this.table });
+  }
+
+  where(index: string): WhereClause<T> {
+    return new SqliteWhereClause<T>(this.table, index);
+  }
+
+  private async write(operation: SqliteOperation) {
+    if (sqliteTransactionContext) {
+      sqliteTransactionContext.operations.push(operation);
+      return;
+    }
+
+    await invoke('notex_sqlite_transaction', { operations: [operation] });
+  }
+}
+
+class SqliteWhereClause<T> implements WhereClause<T> {
+  constructor(
+    private readonly table: TableName,
+    private readonly index: string,
+  ) {}
+
+  equals(value: unknown): WhereQuery<T> {
+    return new SqliteWhereQuery<T>(this.table, this.index, [value]);
+  }
+
+  anyOf(values: unknown[]): WhereQuery<T> {
+    return new SqliteWhereQuery<T>(this.table, this.index, values);
+  }
+}
+
+class SqliteWhereQuery<T> implements WhereQuery<T> {
+  constructor(
+    private readonly table: TableName,
+    private readonly index: string,
+    private readonly values: unknown[],
+  ) {}
+
+  async delete() {
+    if (!this.values.length) {
+      return;
+    }
+
+    const operation: SqliteOperation = {
+      table: this.table,
+      kind: 'whereDelete',
+      index: this.index,
+      values: this.values,
+    };
+
+    if (sqliteTransactionContext) {
+      sqliteTransactionContext.operations.push(operation);
+      return;
+    }
+
+    await invoke('notex_sqlite_transaction', { operations: [operation] });
+  }
+
+  async count() {
+    if (!this.values.length) {
+      return 0;
+    }
+
+    return invoke<number>('notex_sqlite_where_count', {
+      table: this.table,
+      index: this.index,
+      values: this.values,
+    });
+  }
+
+  async toArray() {
+    if (!this.values.length) {
+      return [];
+    }
+
+    return invoke<T[]>('notex_sqlite_where_read', {
+      table: this.table,
+      index: this.index,
+      values: this.values,
+    });
+  }
+}
+
+let activeStorage: NoteXStorageDatabase = new DexieStorageAdapter();
+
+export function useIndexedDbStorage() {
+  activeStorage = new DexieStorageAdapter();
+}
+
+export function useSqliteStorage() {
+  activeStorage = new SqliteStorageAdapter();
+}
+
+export const db: NoteXStorageDatabase = {
+  get notes() {
+    return activeStorage.notes;
+  },
+  get tags() {
+    return activeStorage.tags;
+  },
+  get collections() {
+    return activeStorage.collections;
+  },
+  get users() {
+    return activeStorage.users;
+  },
+  get activities() {
+    return activeStorage.activities;
+  },
+  get userSettings() {
+    return activeStorage.userSettings;
+  },
+  get syncState() {
+    return activeStorage.syncState;
+  },
+  get syncItems() {
+    return activeStorage.syncItems;
+  },
+  get deviceSessions() {
+    return activeStorage.deviceSessions;
+  },
+  transaction(mode, tables, scope) {
+    return activeStorage.transaction(mode, tables, scope);
+  },
+};
+
+export type IndexedDbMigrationSnapshot = {
+  exportPayload: NoteXExport;
+  users: User[];
+  activities: ActivityItem[];
+  syncState: SyncState | null;
+  syncItems: SyncItem[];
+  deviceSessions: DeviceSession[];
+};
+
+export async function readIndexedDbMigrationSnapshot(settingsFallback: UserSettings): Promise<IndexedDbMigrationSnapshot> {
+  const [notes, tags, collections, users, activities, storedSettings, syncState, syncItems, deviceSessions] = await Promise.all([
+    indexedDb.notes.toArray(),
+    indexedDb.tags.toArray(),
+    indexedDb.collections.toArray(),
+    indexedDb.users.toArray(),
+    indexedDb.activities.toArray(),
+    indexedDb.userSettings.get(settingsFallback.id),
+    indexedDb.syncState.get('google-drive'),
+    indexedDb.syncItems.toArray(),
+    indexedDb.deviceSessions.toArray(),
+  ]);
+
+  return {
+    exportPayload: {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      notes,
+      tags,
+      collections,
+      userSettings: storedSettings ?? settingsFallback,
+    },
+    users,
+    activities,
+    syncState: syncState ?? null,
+    syncItems,
+    deviceSessions,
+  };
+}
 
 export async function seedDatabaseIfEmpty(bundle: MockDataBundle, settings: UserSettings) {
   const notesCount = await db.notes.count();

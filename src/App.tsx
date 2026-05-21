@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { CloudDataChoiceModal } from './components/sync/CloudDataChoiceModal';
@@ -6,6 +6,7 @@ import { SyncConflictReviewModal } from './components/sync/SyncConflictReviewMod
 import { AppUpdatePrompt } from './components/ui/AppUpdatePrompt';
 import { ToastViewport } from './components/ui/ToastViewport';
 import { cloudSyncEnabled } from './config/appSettings';
+import { initializeStorage } from './core/services/storageBootstrap';
 import { useSyncBootstrap } from './core/services/useSyncBootstrap';
 import { I18nProvider } from './i18n/I18nProvider';
 import { DashboardPage } from './pages/DashboardPage';
@@ -16,18 +17,44 @@ import { ProfilePage } from './pages/ProfilePage';
 import { TagsPage } from './pages/TagsPage';
 import { useAppStore } from './store/useAppStore';
 import { useKnowledgeStore } from './store/useKnowledgeStore';
+import { useToastStore } from './store/useToastStore';
 
 export function App() {
+  const [isStorageReady, setIsStorageReady] = useState(false);
   const settings = useAppStore((state) => state.settings);
   const isHydrated = useAppStore((state) => state.isHydrated);
   const hydrateSettings = useAppStore((state) => state.hydrateSettings);
   const initialize = useKnowledgeStore((state) => state.initialize);
   const isReady = useKnowledgeStore((state) => state.isReady);
-  useSyncBootstrap(cloudSyncEnabled && isHydrated && isReady);
+  const pushToast = useToastStore((state) => state.pushToast);
+  useSyncBootstrap(cloudSyncEnabled && isStorageReady && isHydrated && isReady);
 
   useEffect(() => {
-    void hydrateSettings();
-  }, [hydrateSettings]);
+    let cancelled = false;
+
+    void initializeStorage().then((result) => {
+      if (cancelled) {
+        return;
+      }
+
+      if (result.error) {
+        pushToast('SQLite migration failed. NoteX is still using local IndexedDB data.', 'warning');
+        console.warn(result.error);
+      }
+
+      setIsStorageReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pushToast]);
+
+  useEffect(() => {
+    if (isStorageReady) {
+      void hydrateSettings();
+    }
+  }, [hydrateSettings, isStorageReady]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
@@ -35,10 +62,10 @@ export function App() {
   }, [settings.language, settings.theme]);
 
   useEffect(() => {
-    if (isHydrated && !isReady) {
+    if (isStorageReady && isHydrated && !isReady) {
       void initialize(settings.language, settings);
     }
-  }, [initialize, isHydrated, isReady, settings]);
+  }, [initialize, isHydrated, isReady, isStorageReady, settings]);
 
   return (
     <I18nProvider locale={settings.language}>
@@ -65,7 +92,7 @@ export function App() {
             <SyncConflictReviewModal />
           </>
         ) : null}
-        <AppUpdatePrompt enabled={isHydrated && isReady} />
+        <AppUpdatePrompt enabled={isStorageReady && isHydrated && isReady} />
         <ToastViewport />
       </BrowserRouter>
     </I18nProvider>

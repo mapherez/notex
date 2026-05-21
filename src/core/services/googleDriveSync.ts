@@ -7,7 +7,7 @@ import {
   type DriveFileMetadata,
 } from './googleDrive';
 import { ensureSyncState, getDeviceName, noteKey, readLocalDeviceId, workspaceKey } from './syncQueue';
-import { db, readAllKnowledge, readDeviceSessions, readSyncItems, readUserSettings, writeSyncState } from '../db/notexDb';
+import { db, readAllKnowledge, readDeviceSessions, readSyncItems, readUserSettings, writeSyncState } from '../storage/notexRepository';
 import { defaultUserSettings } from '../../config/appSettings';
 import { hashStableJson } from '../utils/stableJson';
 import type {
