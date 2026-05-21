@@ -12,11 +12,9 @@ import { useSyncStore } from '../../store/useSyncStore';
 import { useToastStore } from '../../store/useToastStore';
 
 export function TopBar({
-  heading,
   showSearch,
   onMenuClick,
 }: {
-  heading?: { title: string; subtitle: string };
   showSearch: boolean;
   onMenuClick: () => void;
 }) {
@@ -44,11 +42,6 @@ export function TopBar({
       {showSearch ? (
         <div className="topbar-search-area">
           <SearchBox />
-        </div>
-      ) : heading ? (
-        <div className="topbar-heading">
-          <h1>{heading.title}</h1>
-          <p>{heading.subtitle}</p>
         </div>
       ) : (
         <span />

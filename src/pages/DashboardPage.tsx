@@ -5,8 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { IconBadge } from '../components/ui/IconBadge';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { NoteRow } from '../components/ui/NoteRow';
-import { Panel } from '../components/ui/Panel';
-import { SearchBox } from '../components/ui/SearchBox';
+import { Panel } from "../components/ui/Panel";
 import { filterNotes } from '../core/utils/noteFilters';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useI18n } from '../i18n/I18nProvider';
@@ -133,8 +132,6 @@ export function DashboardPage() {
     <div className="page-content">
       <div className="dashboard-layout">
         <section className="dashboard-main">
-          <SearchBox className="dashboard-search-box" />
-
           <div className="stats-grid">
             {stats.map((stat) => (
               <Link className="stat-card" key={stat.label} to={stat.to}>
@@ -150,15 +147,20 @@ export function DashboardPage() {
 
           <section className="dashboard-quick-pins" ref={quickPinPickerRef}>
             <div className="panel-header">
-              <h2 className="panel-title">{t('dashboard.quickPins.title')}</h2>
+              <h2 className="panel-title">{t("dashboard.quickPins.title")}</h2>
             </div>
             <div className="quick-pin-row">
               {quickPinSlots.map((note, index) => (
-                <div className="quick-pin-slot" key={note?.id ?? `quick-pin-empty-${index}`}>
+                <div
+                  className="quick-pin-slot"
+                  key={note?.id ?? `quick-pin-empty-${index}`}
+                >
                   <button
-                    className={note ? 'quick-pin-card' : 'quick-pin-card empty'}
+                    className={note ? "quick-pin-card" : "quick-pin-card empty"}
                     type="button"
-                    aria-label={note ? note.title : t('dashboard.quickPins.add')}
+                    aria-label={
+                      note ? note.title : t("dashboard.quickPins.add")
+                    }
                     title={note?.title}
                     onClick={() => {
                       if (note) {
@@ -174,7 +176,10 @@ export function DashboardPage() {
                         <NoteThumbnail thumbnail={note.thumbnail} />
                         <span className="quick-pin-copy">
                           <strong>{note.title}</strong>
-                          <span>{note.content.intro || t('dashboard.quickPins.noteFallback')}</span>
+                          <span>
+                            {note.content.intro ||
+                              t("dashboard.quickPins.noteFallback")}
+                          </span>
                         </span>
                       </>
                     ) : (
@@ -185,8 +190,8 @@ export function DashboardPage() {
                     <button
                       className="quick-pin-edit"
                       type="button"
-                      aria-label={t('dashboard.quickPins.change')}
-                      title={t('dashboard.quickPins.change')}
+                      aria-label={t("dashboard.quickPins.change")}
+                      title={t("dashboard.quickPins.change")}
                       onClick={(event) => {
                         event.stopPropagation();
                         openQuickPinPicker(index);
@@ -202,29 +207,48 @@ export function DashboardPage() {
                         <input
                           ref={quickPinInputRef}
                           value={quickPinQuery}
-                          onChange={(event) => setQuickPinQuery(event.target.value)}
-                          placeholder={t('dashboard.quickPins.searchPlaceholder')}
+                          onChange={(event) =>
+                            setQuickPinQuery(event.target.value)
+                          }
+                          placeholder={t(
+                            "dashboard.quickPins.searchPlaceholder",
+                          )}
                         />
                       </label>
                       <div className="quick-pin-options">
                         {quickPinOptions.length ? (
                           quickPinOptions.map((option) => (
-                            <button key={option.id} type="button" onClick={() => void selectQuickPin(index, option.id)}>
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() =>
+                                void selectQuickPin(index, option.id)
+                              }
+                            >
                               <NoteThumbnail thumbnail={option.thumbnail} />
                               <span>
                                 <strong>{option.title}</strong>
-                                <span>{option.content.intro || t('dashboard.quickPins.noteFallback')}</span>
+                                <span>
+                                  {option.content.intro ||
+                                    t("dashboard.quickPins.noteFallback")}
+                                </span>
                               </span>
                             </button>
                           ))
                         ) : (
-                          <span className="inline-help">{t('dashboard.quickPins.noMatches')}</span>
+                          <span className="inline-help">
+                            {t("dashboard.quickPins.noMatches")}
+                          </span>
                         )}
                       </div>
                       {note ? (
-                        <button className="quick-pin-clear" type="button" onClick={() => void selectQuickPin(index, null)}>
+                        <button
+                          className="quick-pin-clear"
+                          type="button"
+                          onClick={() => void selectQuickPin(index, null)}
+                        >
                           <X size={15} />
-                          {t('dashboard.quickPins.clear')}
+                          {t("dashboard.quickPins.clear")}
                         </button>
                       ) : null}
                     </div>
@@ -236,9 +260,9 @@ export function DashboardPage() {
 
           <section>
             <div className="panel-header">
-              <h2 className="panel-title">{t('dashboard.recentNotes')}</h2>
+              <h2 className="panel-title">{t("dashboard.recentNotes")}</h2>
               <Link className="link-accent" to="/notes">
-                {t('common.viewAll')}
+                {t("common.viewAll")}
               </Link>
             </div>
             <div className="note-list">
@@ -256,22 +280,32 @@ export function DashboardPage() {
         </section>
 
         <aside className="dashboard-side">
-          <Panel title={t('dashboard.quickCapture.title')}>
+          <Panel title={t("dashboard.quickCapture.title")}>
             <form
               className="quick-capture"
               onSubmit={handleSubmit(async ({ capture }) => {
-                const note = await createQuickNote(capture, t('dashboard.quickCapture.title'));
+                const note = await createQuickNote(
+                  capture,
+                  t("dashboard.quickCapture.title"),
+                );
                 if (note) {
-                  pushToast(t('notes.draftCreated'), 'success');
+                  pushToast(t("notes.draftCreated"), "success");
                   navigate(`/notes/${note.id}`);
                 }
                 reset();
               })}
             >
               <div className="capture-box">
-                <textarea {...register('capture')} placeholder={t('dashboard.quickCapture.placeholder')} />
+                <textarea
+                  {...register("capture")}
+                  placeholder={t("dashboard.quickCapture.placeholder")}
+                />
                 <div className="capture-actions">
-                  <button className="submit-button" type="submit" aria-label={t('dashboard.quickCapture.submit')}>
+                  <button
+                    className="submit-button"
+                    type="submit"
+                    aria-label={t("dashboard.quickCapture.submit")}
+                  >
                     <ArrowRight size={18} />
                   </button>
                 </div>
@@ -280,10 +314,10 @@ export function DashboardPage() {
           </Panel>
 
           <Panel
-            title={t('dashboard.popularTags')}
+            title={t("dashboard.popularTags")}
             action={
               <Link className="link-accent" to="/tags">
-                {t('common.viewAllTags')}
+                {t("common.viewAll")}
               </Link>
             }
           >
@@ -295,20 +329,30 @@ export function DashboardPage() {
           </Panel>
 
           <Panel
-            title={t('dashboard.recentActivity')}
+            title={t("dashboard.recentActivity")}
             action={
               <Link className="link-accent" to="/recent">
-                {t('common.viewAllActivity')}
+                {t("common.viewAll")}
               </Link>
             }
           >
             <div className="activity-list">
               {recentActivityNotes.map((note) => (
-                <Link className="activity-row" key={note.id} to={`/notes/${note.id}`}>
+                <Link
+                  className="activity-row"
+                  key={note.id}
+                  to={`/notes/${note.id}`}
+                >
                   <Timer size={15} />
                   <span className="activity-copy">
                     <span>{note.title}</span>
-                    <span>{formatRecentTimestamp(getRecentTimestamp(note), locale, t)}</span>
+                    <span>
+                      {formatRecentTimestamp(
+                        getRecentTimestamp(note),
+                        locale,
+                        t,
+                      )}
+                    </span>
                   </span>
                 </Link>
               ))}
