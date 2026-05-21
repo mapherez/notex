@@ -1,0 +1,84 @@
+name: Release Tauri App
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag. Leave empty to use v<tauri.conf.json version>.
+        required: false
+        default: ""
+      release_notes:
+        description: Notes stored in latest.json and the GitHub release body.
+        required: false
+        default: ""
+      draft:
+        description: Create the GitHub release as a draft.
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: Mark the GitHub release as a prerelease.
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tauri-release
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    name: Build and publish Windows app
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    env:
+      CI: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Verify Tauri updater signing secret
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if (-not $env:TAURI_SIGNING_PRIVATE_KEY) {
+            throw "Missing TAURI_SIGNING_PRIVATE_KEY secret. Generate it with 'npx tauri signer generate' and add the private key to repository secrets."
+          }
+
+      - name: Build Tauri app
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri:build
+
+      - name: Publish Tauri release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          TAURI_RELEASE_NOTES: ${{ inputs.release_notes }}
+          RELEASE_DRAFT: ${{ inputs.draft }}
+          RELEASE_PRERELEASE: ${{ inputs.prerelease }}
+        run: npm run release:tauri
