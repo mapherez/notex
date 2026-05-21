@@ -48,6 +48,7 @@
     --color-text-soft: #777f91;
     --color-input: #0e131d;
     --color-chip: rgba(255, 255, 255, 0.06);
+    --color-chip-solid: #1c2028;
     --color-hover: rgba(255, 255, 255, 0.06);
     color-scheme: dark;
   }
@@ -66,6 +67,7 @@
     --color-text-soft: #8b93a5;
     --color-input: #f6f6f8;
     --color-chip: rgba(17, 24, 39, 0.05);
+    --color-chip-solid: #f3f3f4;
     --color-hover: rgba(17, 24, 39, 0.05);
     color-scheme: light;
   }
@@ -1049,42 +1051,50 @@
   }
 
   .icon-badge.purple,
-  .tag-chip.purple {
+  .tag-chip.purple,
+  .collection-chip.purple {
     color: var(--color-accent-strong);
   }
 
   .icon-badge.blue,
-  .tag-chip.blue {
+  .tag-chip.blue,
+  .collection-chip.blue {
     color: var(--color-blue);
   }
 
   .icon-badge.green,
-  .tag-chip.green {
+  .tag-chip.green,
+  .collection-chip.green {
     color: var(--color-success);
   }
 
   .icon-badge.amber,
-  .tag-chip.amber {
+  .tag-chip.amber,
+  .collection-chip.amber {
     color: var(--color-warning);
   }
 
   .icon-badge.orange,
-  .tag-chip.orange {
+  .tag-chip.orange,
+  .collection-chip.orange {
     color: var(--color-orange);
   }
 
   .icon-badge.pink,
-  .tag-chip.pink {
+  .tag-chip.pink,
+  .collection-chip.pink {
     color: var(--color-pink);
   }
 
   .icon-badge.yellow,
-  .tag-chip.yellow {
+  .tag-chip.yellow,
+  .collection-chip.yellow {
     color: var(--color-yellow);
   }
 
   .icon-badge.neutral,
-  .tag-chip.neutral {
+  .tag-chip.neutral,
+  .collection-chip.neutral {
     color: var(--color-text-muted);
   }
 
@@ -1458,16 +1468,123 @@
   }
 
   .tag-chip {
+    position: relative;
     display: inline-flex;
     min-height: 1.85rem;
     align-items: center;
     gap: var(--space-2);
     border-radius: 0.62rem;
-    background: color-mix(in srgb, currentColor 12%, var(--color-chip));
+    background: color-mix(in srgb, currentColor 12%, var(--color-chip-solid));
     padding: 0.2rem 0.65rem;
     font-size: 0.86rem;
     font-weight: 650;
     white-space: nowrap;
+    z-index: 1;
+    transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  }
+
+  .tag-chip:hover,
+  .tag-chip:focus-visible,
+  .collection-chip:hover,
+  .collection-chip:focus-visible {
+    z-index: 50;
+  }
+
+  .tag-chip:focus-visible,
+  .collection-chip:focus-visible,
+  .tag-chip-link:focus-visible {
+    outline-offset: 3px;
+  }
+
+  .tag-chip-link {
+    color: inherit;
+    outline: none;
+  }
+
+  .note-meta-badges {
+    position: relative;
+    display: flex;
+    max-width: clamp(14rem, 32vw, 34rem);
+    min-width: 0;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .note-meta-badges:hover,
+  .note-meta-badges:focus-within {
+    overflow: visible;
+    z-index: 20;
+  }
+
+  .collection-chip {
+    position: relative;
+    display: inline-flex;
+    min-height: 1.85rem;
+    max-width: 11rem;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.38rem;
+    border-radius: 0.62rem;
+    background: color-mix(in srgb, currentColor 12%, var(--color-chip-solid));
+    padding: 0.2rem 0.65rem;
+    font-size: 0.86rem;
+    font-weight: 650;
+    white-space: nowrap;
+    z-index: 1;
+    transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  }
+
+  .collection-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tag-chain {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    overflow: hidden;
+    padding-left: 0.28rem;
+    padding-right: 0.16rem;
+  }
+
+  .tag-chain:hover,
+  .tag-chain:focus-within {
+    overflow: visible;
+  }
+
+  .collection-chip + .tag-chain {
+    margin-left: 0.48rem;
+  }
+
+  .tag-chain-item {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+  }
+
+  .tag-chain-item + .tag-chain-item {
+    margin-left: -2rem;
+  }
+
+  .tag-chain-item:first-of-type + .tag-chain-item {
+    margin-left: -4rem;
+  }
+
+  .tag-chain-item:hover,
+  .tag-chain-item:focus-within {
+    z-index: 60 !important;
+  }
+
+  .tag-chain-item .tag-chip {
+    max-width: 9rem;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  }
+
+  .tag-chain-item .tag-chip > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .tag-remove {
@@ -2839,7 +2956,7 @@
 
   .label-tag-link:hover .tag-chip,
   .label-tag-link:focus-visible .tag-chip {
-    background: color-mix(in srgb, currentColor 20%, var(--color-chip));
+    background: color-mix(in srgb, currentColor 20%, var(--color-chip-solid));
   }
 
   .label-tag-link:focus-visible {
@@ -3372,6 +3489,7 @@
     min-height: 4.8rem;
   }
 
+  .note-row .note-meta-badges,
   .note-row .tag-chip,
   .note-row .icon-button {
     display: none;

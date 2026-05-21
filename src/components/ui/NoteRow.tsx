@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useRef, useState } from 'react';
-import { ArchiveRestore, Copy, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
+import { ArchiveRestore, Copy, Folder, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { Collection, Note, Tag } from '../../core/models/models';
 import { sortTagsByName } from '../../core/utils/tagSorting';
@@ -36,7 +36,7 @@ export function NoteRow({
   const restoreNote = useKnowledgeStore((state) => state.restoreNote);
   const duplicateNote = useKnowledgeStore((state) => state.duplicateNote);
   const pushToast = useToastStore((state) => state.pushToast);
-  const primaryTag = sortTagsByName(tags).find((tag) => note.tagIds.includes(tag.id));
+  const noteTags = sortTagsByName(tags.filter((tag) => note.tagIds.includes(tag.id)));
   const collection = collections.find((item) => item.id === note.collectionId);
 
   useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
@@ -83,7 +83,25 @@ export function NoteRow({
         </div>
         <p className="note-intro">{note.content.intro}</p>
       </Link>
-      {primaryTag ? <TagChip tag={primaryTag} color={primaryTag.color} /> : collection ? <TagChip tag={collection} /> : null}
+      {collection || noteTags.length ? (
+        <div className="note-meta-badges">
+          {collection ? (
+            <Link className={`collection-chip ${collection.color ?? 'neutral'}`} to={`/notes?collection=${collection.id}`}>
+              <Folder size={14} strokeWidth={1.9} />
+              <span>{collection.name}</span>
+            </Link>
+          ) : null}
+          {noteTags.length ? (
+            <span className="tag-chain">
+              {noteTags.map((tag, index) => (
+                <span className="tag-chain-item" key={tag.id} style={{ zIndex: noteTags.length - index }}>
+                  <TagChip tag={tag} color={tag.color} href={`/notes?tag=${tag.id}`} />
+                </span>
+              ))}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
       <span className="note-time">{formatDisplayTime(timeValue ?? note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
       <div className="note-row-actions" ref={menuRef}>
         <button

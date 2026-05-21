@@ -295,6 +295,7 @@ export function ProfilePage() {
                     <TagChip
                       key={tag.id}
                       tag={tag}
+                      href={`/notes?tag=${tag.id}`}
                       removable
                       onRemove={() => {
                         void toggleFavoriteTag(tag.id).then(() =>

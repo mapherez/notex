@@ -429,7 +429,7 @@ export function NoteDetailPage() {
               {noteTags.length ? (
                 <div className="tag-row document-title-tags">
                   {noteTags.map((tag) => (
-                    <TagChip key={tag.id} tag={tag} />
+                    <TagChip key={tag.id} tag={tag} href={`/notes?tag=${tag.id}`} />
                   ))}
                 </div>
               ) : null}
@@ -568,7 +568,7 @@ export function NoteDetailPage() {
             <Panel title={t('noteDetail.tags')}>
               <div className="tag-row">
                 {noteTags.map((tag) => (
-                  <TagChip key={tag.id} tag={tag} removable onRemove={() => void removeTag(tag.id)} />
+                  <TagChip key={tag.id} tag={tag} href={`/notes?tag=${tag.id}`} removable onRemove={() => void removeTag(tag.id)} />
                 ))}
               </div>
               <button className="nav-item mt-4" type="button" onClick={() => setTagPickerOpen((value) => !value)}>
@@ -889,7 +889,7 @@ function CollectionBreadcrumb({ collection, emptyText }: { collection?: Collecti
   }
 
   return (
-    <Link className="breadcrumb" to="/collections">
+    <Link className="breadcrumb" to={`/notes?collection=${collection.id}`}>
       <Folder size={20} />
       {collection.name}
     </Link>
