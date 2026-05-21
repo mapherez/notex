@@ -244,8 +244,8 @@ h3 {
 
 .hero-preview {
   position: absolute;
-  right: max(-7rem, calc((100vw - 92rem) / 2));
-  bottom: 2.3rem;
+  right: max(-7rem, calc((100vw - 110rem) / 2));
+  bottom: 12.3rem;
   z-index: 1;
   width: min(54rem, 58vw);
   min-width: 42rem;
@@ -254,7 +254,7 @@ h3 {
   background: #0b0f18;
   box-shadow: var(--shadow);
   opacity: 0.78;
-  transform: rotate(-2deg);
+  transform: rotate(7deg);
 }
 
 .window-bar {
