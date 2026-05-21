@@ -18,6 +18,9 @@ export function NoteRow({
   actionLabel,
   onAction,
   timeValue,
+  selectable = false,
+  selected = false,
+  onSelectionChange,
 }: {
   note: Note;
   tags: Tag[];
@@ -26,6 +29,9 @@ export function NoteRow({
   actionLabel?: string;
   onAction?: (noteId: string) => void;
   timeValue?: string | null;
+  selectable?: boolean;
+  selected?: boolean;
+  onSelectionChange?: (noteId: string, selected: boolean) => void;
 }) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -72,7 +78,17 @@ export function NoteRow({
   }
 
   return (
-    <article className="note-row">
+    <article className={selectable ? 'note-row selectable' : 'note-row'}>
+      {selectable ? (
+        <label className="note-select-control">
+          <input
+            type="checkbox"
+            checked={selected}
+            aria-label={t('notes.bulk.selectNote', { title: note.title })}
+            onChange={(event) => onSelectionChange?.(note.id, event.currentTarget.checked)}
+          />
+        </label>
+      ) : null}
       <Link to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${note.title}`}>
         <NoteThumbnail thumbnail={note.thumbnail} />
       </Link>

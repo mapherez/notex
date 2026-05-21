@@ -67,6 +67,8 @@ type KnowledgeStore = {
   restoreNote: (noteId: string) => Promise<void>;
   clearTrash: () => Promise<void>;
   updateNoteTags: (noteId: string, tagIds: string[]) => Promise<void>;
+  bulkUpdateNoteCollection: (noteIds: string[], collectionId: string | null) => Promise<void>;
+  bulkUpdateNoteTag: (noteIds: string[], tagId: string, assigned: boolean) => Promise<void>;
   createCollection: (name: string, color?: TagColor) => Promise<Collection | null>;
   updateCollection: (collectionId: string, input: { name: string; color?: TagColor }) => Promise<void>;
   deleteCollection: (collectionId: string) => Promise<void>;
@@ -503,6 +505,59 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     set((state) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
+  },
+  bulkUpdateNoteCollection: async (noteIds, collectionId) => {
+    const noteIdSet = new Set(uniqueIds(noteIds));
+    const noteUpdates = get().notes
+      .filter((note) => noteIdSet.has(note.id) && note.collectionId !== collectionId)
+      .map((note) => finalizeNoteUpdate({ ...note, collectionId }));
+
+    if (!noteUpdates.length) {
+      return;
+    }
+
+    await runLocalMutation(() => db.transaction('rw', [db.notes, db.syncItems], async () => {
+      await db.notes.bulkPut(noteUpdates);
+      for (const note of noteUpdates) {
+        await queueNoteSync(note.id);
+      }
+    }));
+    notifySyncQueued();
+
+    set((state) => {
+      const updateMap = new Map(noteUpdates.map((note) => [note.id, note]));
+      return {
+        notes: sortNotes(state.notes.map((note) => updateMap.get(note.id) ?? note)),
+      };
+    });
+  },
+  bulkUpdateNoteTag: async (noteIds, tagId, assigned) => {
+    const noteIdSet = new Set(uniqueIds(noteIds));
+    const noteUpdates = get().notes
+      .filter((note) => noteIdSet.has(note.id) && note.tagIds.includes(tagId) !== assigned)
+      .map((note) => {
+        const nextTagIds = assigned ? [...note.tagIds, tagId] : note.tagIds.filter((id) => id !== tagId);
+        return finalizeNoteUpdate({ ...note, tagIds: uniqueIds(nextTagIds) });
+      });
+
+    if (!noteUpdates.length) {
+      return;
+    }
+
+    await runLocalMutation(() => db.transaction('rw', [db.notes, db.syncItems], async () => {
+      await db.notes.bulkPut(noteUpdates);
+      for (const note of noteUpdates) {
+        await queueNoteSync(note.id);
+      }
+    }));
+    notifySyncQueued();
+
+    set((state) => {
+      const updateMap = new Map(noteUpdates.map((note) => [note.id, note]));
+      return {
+        notes: sortNotes(state.notes.map((note) => updateMap.get(note.id) ?? note)),
+      };
+    });
   },
   createCollection: async (name, color = 'neutral') => {
     const trimmed = name.trim();

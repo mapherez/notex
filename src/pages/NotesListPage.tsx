@@ -1,12 +1,15 @@
-import { Check, Edit3, Folder, Plus, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { Check, ChevronDown, Edit3, Folder, Plus, Tag as TagIcon, Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { EmptyState } from '../components/ui/EmptyState';
 import { IconBadge } from '../components/ui/IconBadge';
+import { NotesFilterRow } from '../components/ui/NotesFilterRow';
 import { NoteRow } from '../components/ui/NoteRow';
-import type { Collection, TagColor } from '../core/models/models';
-import { filterNotes } from '../core/utils/noteFilters';
+import type { Collection, Note, Tag as TagModel, TagColor } from '../core/models/models';
+import { defaultNotesSortOrder, filterNotes, normalizeNotesSortOrder, type NotesSortOrder } from '../core/utils/noteFilters';
 import { tagColorOptions } from '../core/utils/tagColors';
+import { sortTagsByName } from '../core/utils/tagSorting';
+import { useClickOutside } from '../core/utils/useClickOutside';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
@@ -25,12 +28,19 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const clearTrash = useKnowledgeStore((state) => state.clearTrash);
+  const bulkUpdateNoteCollection = useKnowledgeStore((state) => state.bulkUpdateNoteCollection);
+  const bulkUpdateNoteTag = useKnowledgeStore((state) => state.bulkUpdateNoteTag);
   const preferredLayout = useAppStore((state) => state.settings.preferredLayout);
   const pushToast = useToastStore((state) => state.pushToast);
-  const tagId = searchParams.get('tag');
-  const collectionId = searchParams.get('collection');
-  const activeTag = tags.find((tag) => tag.id === tagId);
-  const activeCollection = collections.find((collection) => collection.id === collectionId);
+  const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
+  const tagParam = searchParams.get('tag');
+  const collectionParam = searchParams.get('collection');
+  const defaultSortOrder: NotesSortOrder = mode === 'recent' ? 'updatedDesc' : defaultNotesSortOrder;
+  const sortOrder = mode === 'recent' ? defaultSortOrder : normalizeNotesSortOrder(searchParams.get('sort'));
+  const activeTag = tags.find((tag) => tag.id === tagParam);
+  const activeCollection = collections.find((collection) => collection.id === collectionParam);
+  const tagId = activeTag?.id ?? null;
+  const collectionId = activeCollection?.id ?? null;
 
   const copy = {
     all: { title: t('notes.title'), subtitle: t('notes.subtitle') },
@@ -39,13 +49,37 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
     trash: { title: t('notes.trashTitle'), subtitle: t('notes.trashSubtitle') },
   }[mode];
 
-  const filtered = filterNotes(notes, {
-    mode,
-    tagId,
-    collectionId,
-  });
-  const hasFilters = Boolean(tagId || collectionId);
+  const filtered = useMemo(
+    () =>
+      filterNotes(notes, {
+        mode,
+        tagId,
+        collectionId,
+        sortOrder,
+      }),
+    [collectionId, mode, notes, sortOrder, tagId],
+  );
+  const selectionEnabled = mode === 'all';
+  const visibleNoteIdsKey = filtered.map((note) => note.id).join('|');
+  const selectedNoteIdSet = useMemo(() => new Set(selectedNoteIds), [selectedNoteIds]);
+  const selectedNotes = useMemo(
+    () => filtered.filter((note) => selectedNoteIdSet.has(note.id)),
+    [filtered, selectedNoteIdSet],
+  );
   const trashCount = notes.filter((note) => note.isTrashed).length;
+
+  useEffect(() => {
+    if (!selectionEnabled) {
+      setSelectedNoteIds([]);
+      return;
+    }
+
+    const visibleNoteIds = new Set(filtered.map((note) => note.id));
+    setSelectedNoteIds((current) => {
+      const next = current.filter((noteId) => visibleNoteIds.has(noteId));
+      return next.length === current.length ? current : next;
+    });
+  }, [selectionEnabled, visibleNoteIdsKey]);
 
   async function handleClearTrash() {
     if (!trashCount || !window.confirm(t('notes.clearTrashConfirm'))) {
@@ -54,6 +88,54 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
 
     await clearTrash();
     pushToast(t('notes.trashCleared'), 'warning');
+  }
+
+  function updateFilterParam(name: 'collection' | 'sort' | 'tag', value: string | null) {
+    const nextParams = new URLSearchParams(searchParams);
+
+    if (value && !(name === 'sort' && value === defaultSortOrder)) {
+      nextParams.set(name, value);
+    } else {
+      nextParams.delete(name);
+    }
+
+    setSearchParams(nextParams);
+  }
+
+  function clearFilters() {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('collection');
+    nextParams.delete('sort');
+    nextParams.delete('tag');
+    setSearchParams(nextParams);
+  }
+
+  function updateNoteSelection(noteId: string, checked: boolean) {
+    setSelectedNoteIds((current) => {
+      if (checked) {
+        return current.includes(noteId) ? current : [...current, noteId];
+      }
+
+      return current.filter((id) => id !== noteId);
+    });
+  }
+
+  async function moveSelectedNotes(collectionId: string) {
+    if (!selectedNoteIds.length) {
+      return;
+    }
+
+    await bulkUpdateNoteCollection(selectedNoteIds, collectionId);
+    pushToast(t('notes.bulk.collectionUpdated'), 'success');
+  }
+
+  async function updateSelectedTag(tagId: string, assigned: boolean) {
+    if (!selectedNoteIds.length) {
+      return;
+    }
+
+    await bulkUpdateNoteTag(selectedNoteIds, tagId, assigned);
+    pushToast(t(assigned ? 'notes.bulk.tagsAssigned' : 'notes.bulk.tagsRemoved'), 'success');
   }
 
   return (
@@ -71,15 +153,33 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
         ) : null}
       </header>
 
-      {hasFilters ? (
-        <div className="filter-bar">
-          <span>{t('notes.filteredBy')}</span>
-          {activeTag ? <strong># {activeTag.name}</strong> : null}
-          {activeCollection ? <strong>{activeCollection.name}</strong> : null}
-          <button type="button" onClick={() => setSearchParams({})}>
-            {t('notes.clearFilters')}
-          </button>
-        </div>
+      <NotesFilterRow
+        collections={collections}
+        defaultSortOrder={defaultSortOrder}
+        onClear={clearFilters}
+        onCollectionChange={(nextCollectionId) => updateFilterParam('collection', nextCollectionId)}
+        onSortChange={(nextSortOrder: NotesSortOrder) => updateFilterParam('sort', nextSortOrder)}
+        onTagChange={(nextTagId) => updateFilterParam('tag', nextTagId)}
+        selectedCollectionId={collectionId}
+        selectedTagId={tagId}
+        sortLocked={mode === 'recent'}
+        sortOrder={sortOrder}
+        tags={tags}
+      />
+
+      {selectionEnabled && selectedNotes.length ? (
+        <BulkNoteActionsRow
+          allSelected={selectedNotes.length === filtered.length}
+          collections={collections}
+          onSelectAll={(checked) => setSelectedNoteIds(checked ? filtered.map((note) => note.id) : [])}
+          onClearSelection={() => setSelectedNoteIds([])}
+          onMoveCollection={(nextCollectionId) => void moveSelectedNotes(nextCollectionId)}
+          onToggleTag={(tagId, assigned) => void updateSelectedTag(tagId, assigned)}
+          selectedCount={selectedNotes.length}
+          selectedNotes={selectedNotes}
+          tags={tags}
+          totalCount={filtered.length}
+        />
       ) : null}
 
       {filtered.length ? (
@@ -91,6 +191,9 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
               tags={tags}
               collections={collections}
               timeValue={mode === 'recent' ? note.lastOpenedAt ?? note.updatedAt : undefined}
+              selectable={selectionEnabled}
+              selected={selectedNoteIdSet.has(note.id)}
+              onSelectionChange={updateNoteSelection}
             />
           ))}
         </div>
@@ -98,6 +201,139 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
         <EmptyState />
       )}
     </div>
+  );
+}
+
+function BulkNoteActionsRow({
+  allSelected,
+  collections,
+  onSelectAll,
+  onClearSelection,
+  onMoveCollection,
+  onToggleTag,
+  selectedCount,
+  selectedNotes,
+  tags,
+  totalCount,
+}: {
+  allSelected: boolean;
+  collections: Collection[];
+  onSelectAll: (checked: boolean) => void;
+  onClearSelection: () => void;
+  onMoveCollection: (collectionId: string) => void;
+  onToggleTag: (tagId: string, assigned: boolean) => void;
+  selectedCount: number;
+  selectedNotes: Note[];
+  tags: TagModel[];
+  totalCount: number;
+}) {
+  const { t } = useI18n();
+  const [moveCollectionId, setMoveCollectionId] = useState('');
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const selectAllRef = useRef<HTMLInputElement>(null);
+  const tagsMenuRef = useRef<HTMLDivElement>(null);
+  const sortedTags = useMemo(() => sortTagsByName(tags), [tags]);
+  const partiallySelected = selectedCount > 0 && selectedCount < totalCount;
+
+  useClickOutside(tagsMenuRef, tagsOpen, () => setTagsOpen(false));
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = partiallySelected;
+    }
+  }, [partiallySelected]);
+
+  function handleMoveCollection(collectionId: string) {
+    setMoveCollectionId(collectionId);
+    if (collectionId) {
+      onMoveCollection(collectionId);
+      setMoveCollectionId('');
+    }
+  }
+
+  return (
+    <div className="bulk-note-actions-row">
+      <label className="bulk-selection-summary">
+        <input
+          ref={selectAllRef}
+          type="checkbox"
+          checked={allSelected}
+          aria-label={t('notes.bulk.selectAll')}
+          onChange={(event) => onSelectAll(event.currentTarget.checked)}
+        />
+        <span className="bulk-selection-count">{t('notes.bulk.selected', { count: selectedCount })}</span>
+      </label>
+      <label className="bulk-field">
+        <span>{t('notes.bulk.moveCollection')}</span>
+        <select className="select-control" value={moveCollectionId} onChange={(event) => handleMoveCollection(event.currentTarget.value)}>
+          <option value="">{t('notes.bulk.movePlaceholder')}</option>
+          {collections.map((collection) => (
+            <option key={collection.id} value={collection.id}>
+              {collection.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="bulk-field bulk-tags-field" ref={tagsMenuRef}>
+        <span>{t('notes.bulk.assignTags')}</span>
+        <button className="bulk-tags-trigger" type="button" aria-expanded={tagsOpen} onClick={() => setTagsOpen((value) => !value)}>
+          <TagIcon size={16} />
+          <span>{t('notes.bulk.chooseTags')}</span>
+          <ChevronDown size={16} />
+        </button>
+        {tagsOpen ? (
+          <div className="bulk-tags-menu">
+            {sortedTags.length ? (
+              sortedTags.map((tag) => (
+                <BulkTagCheckbox key={tag.id} tag={tag} selectedNotes={selectedNotes} onToggle={onToggleTag} />
+              ))
+            ) : (
+              <span className="notes-filter-empty">{t('notes.bulk.noTags')}</span>
+            )}
+          </div>
+        ) : null}
+      </div>
+
+      <button className="bulk-clear-button" type="button" onClick={onClearSelection}>
+        <X size={15} />
+        {t('notes.bulk.clearSelection')}
+      </button>
+    </div>
+  );
+}
+
+function BulkTagCheckbox({
+  onToggle,
+  selectedNotes,
+  tag,
+}: {
+  onToggle: (tagId: string, assigned: boolean) => void;
+  selectedNotes: Note[];
+  tag: TagModel;
+}) {
+  const checkboxRef = useRef<HTMLInputElement>(null);
+  const assignedCount = selectedNotes.filter((note) => note.tagIds.includes(tag.id)).length;
+  const checked = selectedNotes.length > 0 && assignedCount === selectedNotes.length;
+  const indeterminate = assignedCount > 0 && !checked;
+
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = indeterminate;
+    }
+  }, [indeterminate]);
+
+  return (
+    <label className="bulk-tag-option">
+      <input
+        ref={checkboxRef}
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onToggle(tag.id, event.currentTarget.checked)}
+      />
+      <span className={`notes-filter-dot ${tag.color ?? 'neutral'}`} />
+      <span># {tag.name}</span>
+    </label>
   );
 }
 

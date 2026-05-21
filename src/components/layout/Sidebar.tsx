@@ -131,15 +131,16 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
         <div className="sidebar-section">
           <div className="sidebar-section-title">
-            <span>{t("navigation.collections")}</span>
-            <button
-              className="inline-icon-button"
-              type="button"
-              onClick={() => navigate("/collections")}
-              aria-label={t("common.add")}
+            <NavLink
+              className={({ isActive }) =>
+                clsx("sidebar-section-title-link", isActive && "active")
+              }
+              to="/collections"
+              onClick={onClose}
             >
+              <span>{t("navigation.collections")}</span>
               <Plus size={16} />
-            </button>
+            </NavLink>
           </div>
           {collections.map((collection) => (
             <Link
