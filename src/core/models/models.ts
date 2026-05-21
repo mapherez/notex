@@ -237,15 +237,6 @@ export type CloudManifestFile = {
   notes: CloudManifestNote[];
 };
 
-export type NoteXExport = {
-  version: 1;
-  exportedAt: string;
-  notes: Note[];
-  tags: Tag[];
-  collections: Collection[];
-  userSettings: UserSettings;
-};
-
 export type NewNoteInput = {
   type?: NoteType;
   title: string;

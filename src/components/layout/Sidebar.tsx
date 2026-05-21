@@ -1,4 +1,6 @@
-import { useRef, useState } from 'react';
+import { getVersion } from '@tauri-apps/api/app';
+import { isTauri } from '@tauri-apps/api/core';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Cloud,
@@ -35,6 +37,7 @@ const navItems = [
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
   const [newNoteOpen, setNewNoteOpen] = useState(false);
+  const [appVersion, setAppVersion] = useState('');
   const newNoteRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -54,6 +57,16 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
   const activeCollectionId = searchParams.get('collection');
 
   useClickOutside(newNoteRef, newNoteOpen, () => setNewNoteOpen(false));
+
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    void getVersion()
+      .then((version) => setAppVersion(version))
+      .catch(() => setAppVersion(''));
+  }, []);
 
   function createNote(type: NoteType = 'standard') {
     setNewNoteOpen(false);
@@ -182,6 +195,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             {t('legal.termsLink')}
           </NavLink>
         </nav>
+        {appVersion ? <div className="sidebar-version">v{appVersion}</div> : null}
       </aside>
     </>
   );

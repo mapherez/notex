@@ -25,7 +25,9 @@
     "duplicate": "Duplicar",
     "copyLink": "Copiar ligação",
     "clear": "Limpar",
-    "done": "Concluído"
+    "done": "Concluído",
+    "yes": "Sim",
+    "no": "Não"
   },
   "navigation": {
     "home": "Início",
@@ -318,6 +320,38 @@
       "importData": "Importar dados",
       "logout": "Terminar sessão",
       "deviceCount": "{{count}} dispositivos"
+    },
+    "dataManagement": {
+      "title": "Gestão de dados",
+      "databasePath": "Base de dados atual",
+      "databasePathLoading": "A carregar caminho da base de dados...",
+      "databasePathError": "Não foi possível ler o caminho da base de dados",
+      "openDatabaseFolder": "Abrir pasta da base de dados",
+      "openFolderFailed": "Não foi possível abrir a pasta da base de dados",
+      "exportData": "Exportar base de dados",
+      "exportDescription": "Cria uma cópia SQLite portátil dos dados atuais do NoteX",
+      "importData": "Importar base de dados",
+      "importDescription": "Substitui a base de dados atual por outro ficheiro SQLite do NoteX",
+      "exportModalTitle": "Exportar a base de dados atual?",
+      "exportModalDescription": "O NoteX vai criar uma exportação SQLite da base de dados atual na pasta temporária da aplicação.",
+      "exporting": "A criar exportação SQLite...",
+      "exportReady": "Exportação da base de dados criada",
+      "exportReadyDescription": "A exportação SQLite foi criada na pasta temporária da aplicação. Escolhe onde queres guardar uma cópia.",
+      "exportToGoogleDrive": "Exportar para Google Drive",
+      "exportToGoogleDrivePlaceholder": "Disponível mais tarde",
+      "downloadExport": "Escolher pasta de destino",
+      "downloadExportDescription": "Guarda o ficheiro SQLite numa pasta à tua escolha",
+      "exportSaved": "Exportação da base de dados guardada",
+      "exportFailed": "Falha ao exportar a base de dados",
+      "importModalTitle": "Substituir a base de dados atual?",
+      "importModalDescription": "Importar uma base de dados SQLite do NoteX substitui toda a base de dados atual. Não junta notas nem duplica dados.",
+      "exportCurrentBeforeImport": "Exportar base de dados atual",
+      "exportCurrentBeforeImportDescription": "Cria uma cópia de segurança antes de substituir os dados atuais",
+      "chooseImportDatabase": "Importar base de dados SQLite",
+      "chooseImportDatabaseDescription": "Seleciona o ficheiro da base de dados NoteX que deve substituir a atual",
+      "importing": "A substituir base de dados...",
+      "importComplete": "Base de dados importada",
+      "importFailed": "Falha ao importar a base de dados"
     },
     "values": {
       "noActivity": "Ainda sem atividade"

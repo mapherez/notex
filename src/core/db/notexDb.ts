@@ -1,11 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
-import Dexie, { type Table as DexieTable } from 'dexie';
 import type {
   ActivityItem,
   Collection,
   DeviceSession,
   Note,
-  NoteXExport,
   SyncItem,
   SyncState,
   Tag,
@@ -13,185 +11,6 @@ import type {
   UserSettings,
 } from '../models/models';
 import type { MockDataBundle } from '../data/createMockData';
-
-const removedDefaultNoteIds = ['note-roadmap', 'note-product-ideas', 'note-terminal', 'note-japan', 'note-atomic-habits'];
-const removedDefaultTagIds = [
-  'tag-productivity',
-  'tag-development',
-  'tag-ideas',
-  'tag-study',
-  'tag-personal',
-  'tag-portuguese',
-  'tag-work',
-  'tag-inspiration',
-];
-const removedDefaultCollectionIds = ['collection-studies', 'collection-projects', 'collection-ideas'];
-const keptDefaultTagIds = ['tag-grammar', 'tag-doubt'];
-
-class NoteXDatabase extends Dexie {
-  notes!: DexieTable<Note, string>;
-  tags!: DexieTable<Tag, string>;
-  collections!: DexieTable<Collection, string>;
-  users!: DexieTable<User, string>;
-  activities!: DexieTable<ActivityItem, string>;
-  userSettings!: DexieTable<UserSettings, string>;
-  syncState!: DexieTable<SyncState, string>;
-  syncItems!: DexieTable<SyncItem, string>;
-  deviceSessions!: DexieTable<DeviceSession, string>;
-
-  constructor() {
-    super('notex-local-db');
-
-    this.version(1).stores({
-      notes: 'id, type, collectionId, isFavorite, isPinned, isArchived, isTrashed, updatedAt, lastOpenedAt',
-      tags: 'id, name',
-      collections: 'id, name',
-      users: 'id, email',
-      activities: 'id, noteId, createdAt',
-      userSettings: 'id, language, theme, updatedAt',
-    });
-
-    this.version(2).stores({
-      notes: 'id, type, collectionId, isFavorite, isPinned, isArchived, isTrashed, updatedAt, lastOpenedAt, syncStatus',
-      tags: 'id, name',
-      collections: 'id, name',
-      users: 'id, email, googleSub',
-      activities: 'id, noteId, createdAt',
-      userSettings: 'id, language, theme, updatedAt',
-      syncState: 'id, provider, connected, email, updatedAt, lastSyncAt',
-      syncItems: 'entityKey, entityType, entityId, status, updatedAt',
-      deviceSessions: 'id, lastSeenAt',
-    });
-
-    this.version(3)
-      .stores({
-        notes: 'id, type, collectionId, isFavorite, isPinned, isArchived, isTrashed, updatedAt, lastOpenedAt, syncStatus',
-        tags: 'id, name',
-        collections: 'id, name',
-        users: 'id, email, googleSub',
-        activities: 'id, noteId, createdAt',
-        userSettings: 'id, language, theme, updatedAt',
-        syncState: 'id, provider, connected, email, updatedAt, lastSyncAt',
-        syncItems: 'entityKey, entityType, entityId, status, updatedAt',
-        deviceSessions: 'id, lastSeenAt',
-      })
-      .upgrade(async (tx) => {
-        const notes = tx.table<Note, string>('notes');
-        const tags = tx.table<Tag, string>('tags');
-        const collections = tx.table<Collection, string>('collections');
-        const activities = tx.table<ActivityItem, string>('activities');
-        const userSettings = tx.table<UserSettings, string>('userSettings');
-
-        await notes.bulkDelete(removedDefaultNoteIds);
-        await tags.bulkDelete(removedDefaultTagIds);
-        await collections.bulkDelete(removedDefaultCollectionIds);
-        await activities.where('noteId').anyOf(removedDefaultNoteIds).delete();
-
-        const linguisticNote = await notes.get('note-linguistic');
-        if (linguisticNote) {
-          await notes.put({
-            ...linguisticNote,
-            collectionId: 'collection-work',
-            tagIds: keptDefaultTagIds,
-            linkedNoteIds: [],
-            isFavorite: true,
-            syncStatus: 'local',
-            version: linguisticNote.version + 1,
-            updatedAt: new Date().toISOString(),
-          });
-        }
-
-        const allNotes = await notes.toArray();
-        const cleanedNotes = allNotes
-          .filter((note) => note.id !== 'note-linguistic')
-          .map((note) => ({
-            ...note,
-            collectionId: removedDefaultCollectionIds.includes(note.collectionId ?? '') ? null : note.collectionId,
-            tagIds: note.tagIds.filter((tagId) => !removedDefaultTagIds.includes(tagId)),
-            linkedNoteIds: note.linkedNoteIds.filter((noteId) => !removedDefaultNoteIds.includes(noteId)),
-          }));
-        if (cleanedNotes.length) {
-          await notes.bulkPut(cleanedNotes);
-        }
-
-        const settings = await userSettings.get('local-user-settings');
-        if (settings) {
-          const quickPinNoteIds = settings.quickPinNoteIds.filter((noteId) => !removedDefaultNoteIds.includes(noteId));
-          const favoriteTagIds = settings.favoriteTagIds.filter((tagId) => keptDefaultTagIds.includes(tagId));
-          await userSettings.put({
-            ...settings,
-            primaryCollectionId: removedDefaultCollectionIds.includes(settings.primaryCollectionId)
-              ? 'collection-work'
-              : settings.primaryCollectionId,
-            favoriteTagIds: favoriteTagIds.length ? favoriteTagIds : keptDefaultTagIds,
-            quickPinNoteIds: quickPinNoteIds.length ? quickPinNoteIds : ['note-linguistic'],
-            updatedAt: new Date().toISOString(),
-          });
-        }
-      });
-
-    this.version(4)
-      .stores({
-        notes: 'id, type, collectionId, isFavorite, isPinned, isArchived, isTrashed, updatedAt, lastOpenedAt, syncStatus',
-        tags: 'id, name',
-        collections: 'id, name',
-        users: 'id, email, googleSub',
-        activities: 'id, noteId, createdAt',
-        userSettings: 'id, language, theme, updatedAt',
-        syncState: 'id, provider, connected, email, updatedAt, lastSyncAt',
-        syncItems: 'entityKey, entityType, entityId, status, updatedAt',
-        deviceSessions: 'id, lastSeenAt',
-      })
-      .upgrade(async (tx) => {
-        const users = tx.table<User, string>('users');
-        const syncState = tx.table<SyncState, string>('syncState');
-        const [user, googleState] = await Promise.all([users.toArray(), syncState.get('google-drive')]);
-        const currentUser = user[0];
-
-        if (!googleState?.connected && currentUser?.provider !== 'google' && !currentUser?.googleSub) {
-          await users.clear();
-          await users.put({
-            id: 'user-local',
-            provider: 'local',
-            name: 'Local user',
-          });
-        }
-      });
-
-    this.version(5)
-      .stores({
-        notes: 'id, type, collectionId, isFavorite, isPinned, isArchived, isTrashed, updatedAt, lastOpenedAt, syncStatus',
-        tags: 'id, name',
-        collections: 'id, name',
-        users: 'id, email, googleSub',
-        activities: 'id, noteId, createdAt',
-        userSettings: 'id, language, theme, updatedAt',
-        syncState: 'id, provider, connected, email, updatedAt, lastSyncAt',
-        syncItems: 'entityKey, entityType, entityId, status, updatedAt',
-        deviceSessions: 'id, lastSeenAt',
-      })
-      .upgrade(async (tx) => {
-        const syncItems = tx.table<SyncItem, string>('syncItems');
-        const items = await syncItems.toArray();
-        const upgraded = items.flatMap((item) => {
-          if (item.baseHash || !item.remoteHash) {
-            return [];
-          }
-
-          return [
-            {
-              ...item,
-              baseHash: item.remoteHash,
-            },
-          ];
-        });
-
-        if (upgraded.length) {
-          await syncItems.bulkPut(upgraded);
-        }
-      });
-  }
-}
 
 type TableName =
   | 'notes'
@@ -252,24 +71,7 @@ type SqliteTransactionContext = {
   operations: SqliteOperation[];
 };
 
-const indexedDb = new NoteXDatabase();
 let sqliteTransactionContext: SqliteTransactionContext | null = null;
-
-class DexieStorageAdapter implements NoteXStorageDatabase {
-  notes = indexedDb.notes as unknown as StorageTable<Note>;
-  tags = indexedDb.tags as unknown as StorageTable<Tag>;
-  collections = indexedDb.collections as unknown as StorageTable<Collection>;
-  users = indexedDb.users as unknown as StorageTable<User>;
-  activities = indexedDb.activities as unknown as StorageTable<ActivityItem>;
-  userSettings = indexedDb.userSettings as unknown as StorageTable<UserSettings>;
-  syncState = indexedDb.syncState as unknown as StorageTable<SyncState>;
-  syncItems = indexedDb.syncItems as unknown as StorageTable<SyncItem>;
-  deviceSessions = indexedDb.deviceSessions as unknown as StorageTable<DeviceSession>;
-
-  transaction<T>(mode: string, tables: unknown[], scope: () => Promise<T>) {
-    return indexedDb.transaction(mode as Parameters<NoteXDatabase['transaction']>[0], tables as DexieTable<unknown, string>[], scope);
-  }
-}
 
 class SqliteStorageAdapter implements NoteXStorageDatabase {
   notes = new SqliteTable<Note>('notes');
@@ -425,87 +227,7 @@ class SqliteWhereQuery<T> implements WhereQuery<T> {
   }
 }
 
-let activeStorage: NoteXStorageDatabase = new DexieStorageAdapter();
-
-export function useIndexedDbStorage() {
-  activeStorage = new DexieStorageAdapter();
-}
-
-export function useSqliteStorage() {
-  activeStorage = new SqliteStorageAdapter();
-}
-
-export const db: NoteXStorageDatabase = {
-  get notes() {
-    return activeStorage.notes;
-  },
-  get tags() {
-    return activeStorage.tags;
-  },
-  get collections() {
-    return activeStorage.collections;
-  },
-  get users() {
-    return activeStorage.users;
-  },
-  get activities() {
-    return activeStorage.activities;
-  },
-  get userSettings() {
-    return activeStorage.userSettings;
-  },
-  get syncState() {
-    return activeStorage.syncState;
-  },
-  get syncItems() {
-    return activeStorage.syncItems;
-  },
-  get deviceSessions() {
-    return activeStorage.deviceSessions;
-  },
-  transaction(mode, tables, scope) {
-    return activeStorage.transaction(mode, tables, scope);
-  },
-};
-
-export type IndexedDbMigrationSnapshot = {
-  exportPayload: NoteXExport;
-  users: User[];
-  activities: ActivityItem[];
-  syncState: SyncState | null;
-  syncItems: SyncItem[];
-  deviceSessions: DeviceSession[];
-};
-
-export async function readIndexedDbMigrationSnapshot(settingsFallback: UserSettings): Promise<IndexedDbMigrationSnapshot> {
-  const [notes, tags, collections, users, activities, storedSettings, syncState, syncItems, deviceSessions] = await Promise.all([
-    indexedDb.notes.toArray(),
-    indexedDb.tags.toArray(),
-    indexedDb.collections.toArray(),
-    indexedDb.users.toArray(),
-    indexedDb.activities.toArray(),
-    indexedDb.userSettings.get(settingsFallback.id),
-    indexedDb.syncState.get('google-drive'),
-    indexedDb.syncItems.toArray(),
-    indexedDb.deviceSessions.toArray(),
-  ]);
-
-  return {
-    exportPayload: {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      notes,
-      tags,
-      collections,
-      userSettings: storedSettings ?? settingsFallback,
-    },
-    users,
-    activities,
-    syncState: syncState ?? null,
-    syncItems,
-    deviceSessions,
-  };
-}
+export const db: NoteXStorageDatabase = new SqliteStorageAdapter();
 
 export async function seedDatabaseIfEmpty(bundle: MockDataBundle, settings: UserSettings) {
   const notesCount = await db.notes.count();

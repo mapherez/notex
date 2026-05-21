@@ -2,7 +2,7 @@
 
 This folder contains the static public website for NoteX.
 
-It is intentionally separate from the Tauri desktop app. Deploying this folder does not build or serve the React app in `src/`, and it does not affect local storage, SQLite, IndexedDB, or cloud sync code.
+It is intentionally separate from the Tauri desktop app. Deploying this folder does not build or serve the React app in `src/`, and it does not affect local SQLite storage or parked cloud sync code.
 
 ## Local Preview
 

@@ -38,7 +38,7 @@ export function App() {
       }
 
       if (result.error) {
-        pushToast('SQLite migration failed. NoteX is still using local IndexedDB data.', 'warning');
+        pushToast('SQLite storage could not be initialized.', 'warning');
         console.warn(result.error);
       }
 

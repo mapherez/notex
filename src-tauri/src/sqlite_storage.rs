@@ -1,43 +1,30 @@
 use rusqlite::types::Value as SqlValue;
-use rusqlite::{params, params_from_iter, Connection, OptionalExtension, Transaction};
+use rusqlite::{params, params_from_iter, Connection, OpenFlags, OptionalExtension, Transaction};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager};
 
 const SCHEMA_VERSION: &str = "1";
-const MIGRATION_COMPLETED_KEY: &str = "indexeddb_to_sqlite_migration_completed";
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SqliteStatus {
     initialized: bool,
-    migration_completed: bool,
     database_path: String,
     backup_directory: String,
+    temp_directory: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct IndexedDbMigrationSnapshot {
-    export_payload: NoteXExportPayload,
-    users: Vec<JsonValue>,
-    activities: Vec<JsonValue>,
-    sync_state: Option<JsonValue>,
-    sync_items: Vec<JsonValue>,
-    device_sessions: Vec<JsonValue>,
-}
-
-#[derive(Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NoteXExportPayload {
-    version: u8,
-    exported_at: String,
-    notes: Vec<JsonValue>,
-    tags: Vec<JsonValue>,
-    collections: Vec<JsonValue>,
-    user_settings: JsonValue,
+pub struct SqliteExportInfo {
+    temp_path: String,
+    file_name: String,
+    created_at: String,
 }
 
 #[derive(Deserialize)]
@@ -62,83 +49,126 @@ struct TableInfo {
 pub fn notex_sqlite_status(app: AppHandle) -> Result<SqliteStatus, String> {
     let database_path = database_path(&app)?;
     let backup_directory = backup_directory(&app)?;
+    let temp_directory = temp_directory(&app)?;
     let existed = database_path.exists();
     let conn = open_connection(&app)?;
     ensure_schema(&conn)?;
-    let migration_completed =
-        read_metadata(&conn, MIGRATION_COMPLETED_KEY)?.as_deref() == Some("true");
+    fs::create_dir_all(&backup_directory).map_err(to_string)?;
+    fs::create_dir_all(&temp_directory).map_err(to_string)?;
 
     Ok(SqliteStatus {
         initialized: existed || read_metadata(&conn, "sqlite_schema_version")?.is_some(),
-        migration_completed,
         database_path: database_path.to_string_lossy().to_string(),
         backup_directory: backup_directory.to_string_lossy().to_string(),
+        temp_directory: temp_directory.to_string_lossy().to_string(),
     })
 }
 
 #[tauri::command]
-pub fn notex_sqlite_migrate_from_indexeddb(
-    app: AppHandle,
-    snapshot: IndexedDbMigrationSnapshot,
-) -> Result<(), String> {
-    if snapshot.export_payload.version != 1 {
-        return Err("Unsupported NoteX export version for SQLite migration".to_string());
-    }
-
-    let mut conn = open_connection(&app)?;
+pub fn notex_sqlite_create_temp_export(app: AppHandle) -> Result<SqliteExportInfo, String> {
+    let conn = open_connection(&app)?;
     ensure_schema(&conn)?;
-    if read_metadata(&conn, MIGRATION_COMPLETED_KEY)?.as_deref() == Some("true") {
-        return Ok(());
+    let created_at = timestamp_for_filename();
+    let file_name = format!("notex-export-{}.sqlite", created_at);
+    let temp_path = temp_directory(&app)?.join(&file_name);
+
+    if temp_path.exists() {
+        fs::remove_file(&temp_path).map_err(to_string)?;
     }
 
-    let backup_path = write_safety_backup(&app, &snapshot.export_payload)?;
-    let tx = conn.transaction().map_err(to_string)?;
+    let temp_path_text = temp_path.to_string_lossy().to_string();
+    conn.execute("VACUUM INTO ?1", params![temp_path_text])
+        .map_err(to_string)?;
+    validate_sqlite_database(&temp_path)?;
 
-    clear_all_data(&tx)?;
-    for note in &snapshot.export_payload.notes {
-        insert_payload(&tx, "notes", note)?;
-    }
-    for tag in &snapshot.export_payload.tags {
-        insert_payload(&tx, "tags", tag)?;
-    }
-    for collection in &snapshot.export_payload.collections {
-        insert_payload(&tx, "collections", collection)?;
-    }
-    insert_payload(&tx, "userSettings", &snapshot.export_payload.user_settings)?;
-    for user in &snapshot.users {
-        insert_payload(&tx, "users", user)?;
-    }
-    for activity in &snapshot.activities {
-        insert_payload(&tx, "activities", activity)?;
-    }
-    if let Some(sync_state) = &snapshot.sync_state {
-        insert_payload(&tx, "syncState", sync_state)?;
-    }
-    for sync_item in &snapshot.sync_items {
-        insert_payload(&tx, "syncItems", sync_item)?;
-    }
-    for session in &snapshot.device_sessions {
-        insert_payload(&tx, "deviceSessions", session)?;
+    Ok(SqliteExportInfo {
+        temp_path: temp_path.to_string_lossy().to_string(),
+        file_name,
+        created_at,
+    })
+}
+
+#[tauri::command]
+pub fn notex_sqlite_copy_export_to(
+    temp_path: String,
+    destination_path: String,
+) -> Result<String, String> {
+    let source = PathBuf::from(temp_path);
+    let destination = PathBuf::from(destination_path);
+    if !source.is_file() {
+        return Err("The temporary export file was not found".to_string());
     }
 
-    validate_count(&tx, "notes", snapshot.export_payload.notes.len())?;
-    validate_count(&tx, "tags", snapshot.export_payload.tags.len())?;
-    validate_count(
-        &tx,
-        "collections",
-        snapshot.export_payload.collections.len(),
-    )?;
-    validate_count(&tx, "user_settings", 1)?;
+    if let Some(parent) = destination.parent() {
+        fs::create_dir_all(parent).map_err(to_string)?;
+    }
 
-    write_metadata_tx(
-        &tx,
-        "last_indexeddb_backup_path",
-        &backup_path.to_string_lossy(),
-    )?;
-    write_metadata_tx(&tx, MIGRATION_COMPLETED_KEY, "true")?;
-    tx.commit().map_err(to_string)?;
+    fs::copy(&source, &destination).map_err(to_string)?;
+    validate_sqlite_database(&destination)?;
+    Ok(destination.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub fn notex_sqlite_replace_database_from_file(
+    app: AppHandle,
+    source_path: String,
+) -> Result<(), String> {
+    let source = PathBuf::from(source_path);
+    if !source.is_file() {
+        return Err("Selected database file was not found".to_string());
+    }
+    validate_sqlite_database(&source)?;
+
+    let database = database_path(&app)?;
+    let temp_dir = temp_directory(&app)?;
+    fs::create_dir_all(&temp_dir).map_err(to_string)?;
+    if let Some(parent) = database.parent() {
+        fs::create_dir_all(parent).map_err(to_string)?;
+    }
+
+    let current_backup = temp_dir.join(format!(
+        "notex-before-import-{}.sqlite",
+        timestamp_for_filename()
+    ));
+    let incoming = temp_dir.join(format!("notex-import-{}.sqlite", timestamp_for_filename()));
+    let had_existing_database = database.exists();
+
+    if had_existing_database {
+        fs::copy(&database, &current_backup).map_err(to_string)?;
+    }
+
+    fs::copy(&source, &incoming).map_err(to_string)?;
+    validate_sqlite_database(&incoming)?;
+
+    let replace_result = replace_file(&incoming, &database);
+    if let Err(error) = replace_result {
+        if had_existing_database && current_backup.exists() {
+            let _ = fs::copy(&current_backup, &database);
+        }
+        return Err(error);
+    }
+
+    let conn = open_connection(&app)?;
+    ensure_schema(&conn)?;
+    write_metadata(&conn, "last_imported_at", &timestamp_for_filename())?;
+    if had_existing_database {
+        write_metadata(
+            &conn,
+            "last_import_backup_path",
+            &current_backup.to_string_lossy(),
+        )?;
+    }
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn notex_sqlite_open_database_folder(app: AppHandle) -> Result<(), String> {
+    let database = database_path(&app)?;
+    let folder = database
+        .parent()
+        .ok_or("Could not resolve the database folder")?;
+    open_folder(folder)
 }
 
 #[tauri::command]
@@ -265,14 +295,8 @@ fn backup_directory(app: &AppHandle) -> Result<PathBuf, String> {
         .join("backups"))
 }
 
-fn write_safety_backup(app: &AppHandle, payload: &NoteXExportPayload) -> Result<PathBuf, String> {
-    let directory = backup_directory(app)?;
-    fs::create_dir_all(&directory).map_err(to_string)?;
-    let exported_at = sanitize_filename(&payload.exported_at);
-    let path = directory.join(format!("indexeddb-migration-v1-{}.json", exported_at));
-    let json = serde_json::to_string_pretty(payload).map_err(to_string)?;
-    fs::write(&path, json).map_err(to_string)?;
-    Ok(path)
+fn temp_directory(app: &AppHandle) -> Result<PathBuf, String> {
+    Ok(app.path().app_data_dir().map_err(to_string)?.join("_temp"))
 }
 
 fn ensure_schema(conn: &Connection) -> Result<(), String> {
@@ -463,35 +487,6 @@ fn write_metadata(conn: &Connection, key: &str, value: &str) -> Result<(), Strin
         params![key, value],
     )
     .map_err(to_string)?;
-    Ok(())
-}
-
-fn write_metadata_tx(tx: &Transaction<'_>, key: &str, value: &str) -> Result<(), String> {
-    tx.execute(
-        "INSERT INTO app_metadata (key, value, updated_at)
-         VALUES (?1, ?2, datetime('now'))
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
-        params![key, value],
-    )
-    .map_err(to_string)?;
-    Ok(())
-}
-
-fn clear_all_data(tx: &Transaction<'_>) -> Result<(), String> {
-    for table in [
-        "notes",
-        "tags",
-        "collections",
-        "users",
-        "activities",
-        "user_settings",
-        "sync_state",
-        "sync_items",
-        "device_sessions",
-    ] {
-        tx.execute(&format!("DELETE FROM {}", table), [])
-            .map_err(to_string)?;
-    }
     Ok(())
 }
 
@@ -924,20 +919,6 @@ fn read_payloads(
     Ok(payloads)
 }
 
-fn validate_count(tx: &Transaction<'_>, table: &str, expected: usize) -> Result<(), String> {
-    let sql = format!("SELECT COUNT(*) FROM {}", table);
-    let actual: i64 = tx
-        .query_row(&sql, [], |row| row.get(0))
-        .map_err(to_string)?;
-    if actual != expected as i64 {
-        return Err(format!(
-            "SQLite migration validation failed for {}: expected {}, found {}",
-            table, expected, actual
-        ));
-    }
-    Ok(())
-}
-
 fn table_info(table: &str) -> Result<TableInfo, String> {
     match table {
         "notes" => Ok(TableInfo {
@@ -1102,21 +1083,86 @@ fn placeholders(count: usize) -> String {
         .join(", ")
 }
 
-fn sanitize_filename(value: &str) -> String {
-    let sanitized = value
-        .chars()
-        .map(|character| {
-            if character.is_ascii_alphanumeric() || character == '-' || character == '_' {
-                character
-            } else {
-                '-'
-            }
-        })
-        .collect::<String>();
-
-    sanitized.trim_matches('-').to_string()
-}
-
 fn to_string(error: impl std::fmt::Display) -> String {
     error.to_string()
+}
+
+fn timestamp_for_filename() -> String {
+    let seconds = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0);
+
+    seconds.to_string()
+}
+
+fn validate_sqlite_database(path: &Path) -> Result<(), String> {
+    let conn =
+        Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).map_err(to_string)?;
+    for table in [
+        "notes",
+        "tags",
+        "collections",
+        "user_settings",
+        "app_metadata",
+    ] {
+        let exists: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?1",
+                params![table],
+                |row| row.get(0),
+            )
+            .map_err(to_string)?;
+        if exists == 0 {
+            return Err(format!(
+                "Selected file is not a valid NoteX SQLite database. Missing table: {}",
+                table
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+fn replace_file(source: &Path, destination: &Path) -> Result<(), String> {
+    if destination.exists() {
+        fs::remove_file(destination).map_err(to_string)?;
+    }
+
+    fs::rename(source, destination)
+        .or_else(|_| -> std::io::Result<()> {
+            fs::copy(source, destination)?;
+            fs::remove_file(source)?;
+            Ok(())
+        })
+        .map_err(to_string)
+}
+
+fn open_folder(folder: &Path) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer")
+            .arg(folder)
+            .spawn()
+            .map_err(to_string)?;
+        return Ok(());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(folder)
+            .spawn()
+            .map_err(to_string)?;
+        return Ok(());
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        Command::new("xdg-open")
+            .arg(folder)
+            .spawn()
+            .map_err(to_string)?;
+        return Ok(());
+    }
 }

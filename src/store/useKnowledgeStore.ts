@@ -16,7 +16,6 @@ import type {
   NoteThumbnail,
   NoteStats,
   NoteType,
-  NoteXExport,
   RichTextBlock,
   Tag,
   TagColor,
@@ -88,8 +87,6 @@ type KnowledgeStore = {
   deleteLinkedNote: (noteId: string, linkedNoteId: string) => Promise<void>;
   duplicateNote: (noteId: string, title: string) => Promise<Note | null>;
   resetDemoData: (locale: Locale, settings: UserSettings) => Promise<void>;
-  exportPayload: (settings: UserSettings) => NoteXExport;
-  importPayload: (payload: NoteXExport) => Promise<UserSettings>;
 };
 
 function sortNotes(notes: Note[]) {
@@ -1017,38 +1014,6 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       isReady: true,
     });
     notifySyncQueued();
-  },
-  exportPayload: (settings) => ({
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    notes: get().notes,
-    tags: get().tags,
-    collections: get().collections,
-    userSettings: settings,
-  }),
-  importPayload: async (payload) => {
-    await runLocalMutation(() => db.transaction('rw', [db.notes, db.tags, db.collections, db.userSettings, db.syncItems], async () => {
-      await db.notes.clear();
-      await db.tags.clear();
-      await db.collections.clear();
-      await db.userSettings.clear();
-      await db.syncItems.clear();
-      await db.notes.bulkPut(payload.notes);
-      await db.tags.bulkPut(payload.tags);
-      await db.collections.bulkPut(payload.collections);
-      await db.userSettings.put(payload.userSettings);
-      for (const note of payload.notes) {
-        await queueNoteSync(note.id);
-      }
-      await queueWorkspaceSync();
-    }));
-    set({
-      notes: sortNotes(payload.notes),
-      tags: sortTags(payload.tags),
-      collections: sortCollections(payload.collections),
-    });
-    notifySyncQueued();
-    return payload.userSettings;
   },
 }));
 

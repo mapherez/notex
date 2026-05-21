@@ -10,11 +10,11 @@ The app currently runs in local-only mode. Google Drive sync and the Node auth b
 - TypeScript
 - Vite
 - Zustand
-- Dexie / IndexedDB
+- Tauri SQLite via `rusqlite`
 - React Router
 - Tailwind CSS
 - Node.js auth broker, parked for future sync work
-- SQLite via `better-sqlite3`, parked for future sync work
+- SQLite via `better-sqlite3`, used only by the parked Node auth broker
 - Google Drive `appDataFolder` sync, parked for future sync work
 
 ## Requirements
@@ -206,6 +206,6 @@ The token needs permission to read packages.
 - `Documentation/` - original design and architecture reference docs.
 - `dist/` - generated frontend build output.
 
-## Notes For Future Desktop App
+## Notes For Future Sync Work
 
-The sync engine still accepts short-lived Google access tokens. The current web app gets them from the Node broker. A future desktop app can provide tokens through a native OAuth/keychain adapter without rewriting the note editor, local Dexie storage, Drive file format, or sync queue.
+The sync engine still accepts short-lived Google access tokens. The current desktop app keeps cloud sync disabled, but a future native OAuth/keychain adapter can provide tokens without rewriting the note editor, SQLite storage layer, Drive file format, or sync queue.

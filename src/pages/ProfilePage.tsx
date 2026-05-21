@@ -3,12 +3,16 @@ import {
   ChevronRight,
   Cloud,
   Computer,
+  Database,
   Download,
   Edit3,
   FileText,
   Folder,
+  FolderOpen,
   Globe2,
   Grid2X2,
+  HardDrive,
+  Loader2,
   Mail,
   Plus,
   RefreshCw,
@@ -19,12 +23,21 @@ import {
   UserRound,
   type LucideIcon,
 } from "lucide-react";
-import { useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IconBadge } from '../components/ui/IconBadge';
 import { Panel } from '../components/ui/Panel';
 import { TagChip } from '../components/ui/TagChip';
 import { cloudSyncEnabled } from '../config/appSettings';
-import { createExportFile, readImportFile } from '../core/services/exportImport';
+import {
+  chooseSqliteExportDestination,
+  chooseSqliteImportFile,
+  createSqliteTempExport,
+  openSqliteDatabaseFolder,
+  readSqliteDatabaseInfo,
+  replaceSqliteDatabaseFromFile,
+  type SqliteDatabaseInfo,
+  type SqliteExportInfo,
+} from '../core/services/sqliteDataManagement';
 import { filterNotes } from '../core/utils/noteFilters';
 import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
 import { useI18n } from '../i18n/I18nProvider';
@@ -40,26 +53,34 @@ import type {
   ThemePreference,
 } from "../core/models/models";
 
+type ExportModalState =
+  | null
+  | { phase: 'confirm' }
+  | { phase: 'exporting' }
+  | { phase: 'ready'; exportInfo: SqliteExportInfo };
+
 export function ProfilePage() {
   const { locale, t } = useI18n();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [syncDevicesOpen, setSyncDevicesOpen] = useState(false);
   const [clearCloudConfirmOpen, setClearCloudConfirmOpen] = useState(false);
+  const [databaseInfo, setDatabaseInfo] = useState<SqliteDatabaseInfo | null>(null);
+  const [exportModal, setExportModal] = useState<ExportModalState>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [isImportingDatabase, setIsImportingDatabase] = useState(false);
   const settings = useAppStore((state) => state.settings);
+  const hydrateSettings = useAppStore((state) => state.hydrateSettings);
   const setTheme = useAppStore((state) => state.setTheme);
   const setLanguage = useAppStore((state) => state.setLanguage);
   const setPreferredLayout = useAppStore((state) => state.setPreferredLayout);
   const setStartupPage = useAppStore((state) => state.setStartupPage);
   const setPrimaryCollection = useAppStore((state) => state.setPrimaryCollection);
   const toggleFavoriteTag = useAppStore((state) => state.toggleFavoriteTag);
-  const replaceSettings = useAppStore((state) => state.replaceSettings);
   const notes = useKnowledgeStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const user = useKnowledgeStore((state) => state.user);
-  const exportPayload = useKnowledgeStore((state) => state.exportPayload);
-  const importPayload = useKnowledgeStore((state) => state.importPayload);
+  const refreshKnowledge = useKnowledgeStore((state) => state.refreshKnowledge);
   const syncState = useSyncStore((state) => state.syncState);
   const sessions = useSyncStore((state) => state.sessions);
   const pendingCount = useSyncStore((state) => state.pendingCount);
@@ -106,6 +127,26 @@ export function ProfilePage() {
     t,
   });
 
+  useEffect(() => {
+    let cancelled = false;
+
+    void readSqliteDatabaseInfo()
+      .then((info) => {
+        if (!cancelled) {
+          setDatabaseInfo(info);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          pushToast(error instanceof Error ? error.message : t('profile.dataManagement.databasePathError'), 'warning');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pushToast, t]);
+
   async function handleConnectGoogle() {
     try {
       await connectGoogle();
@@ -125,6 +166,58 @@ export function ProfilePage() {
         error instanceof Error ? error.message : t("sync.failed"),
         "warning",
       );
+    }
+  }
+
+  async function handleCreateDatabaseExport() {
+    setExportModal({ phase: 'exporting' });
+    try {
+      const exportInfo = await createSqliteTempExport();
+      setExportModal({ phase: 'ready', exportInfo });
+      pushToast(t('profile.dataManagement.exportReady'), 'success');
+    } catch (error) {
+      setExportModal(null);
+      pushToast(error instanceof Error ? error.message : t('profile.dataManagement.exportFailed'), 'warning');
+    }
+  }
+
+  async function handleSaveDatabaseExport(exportInfo: SqliteExportInfo) {
+    try {
+      const destinationPath = await chooseSqliteExportDestination(exportInfo);
+      if (destinationPath) {
+        setExportModal(null);
+        pushToast(t('profile.dataManagement.exportSaved'), 'success');
+      }
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : t('profile.dataManagement.exportFailed'), 'warning');
+    }
+  }
+
+  async function handleImportDatabase() {
+    setIsImportingDatabase(true);
+    try {
+      const sourcePath = await chooseSqliteImportFile();
+      if (!sourcePath) {
+        setIsImportingDatabase(false);
+        return;
+      }
+
+      await replaceSqliteDatabaseFromFile(sourcePath);
+      await Promise.all([refreshKnowledge(), hydrateSettings(), readSqliteDatabaseInfo().then(setDatabaseInfo)]);
+      setImportModalOpen(false);
+      pushToast(t('profile.dataManagement.importComplete'), 'success');
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : t('profile.dataManagement.importFailed'), 'warning');
+    } finally {
+      setIsImportingDatabase(false);
+    }
+  }
+
+  async function handleOpenDatabaseFolder() {
+    try {
+      await openSqliteDatabaseFolder();
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : t('profile.dataManagement.openFolderFailed'), 'warning');
     }
   }
 
@@ -369,134 +462,62 @@ export function ProfilePage() {
         </section>
 
         <section className="profile-right">
-          <Panel title={t("profile.security.title")}>
-            {cloudSyncEnabled ? (
-              <>
-                <SecurityRow
-                  icon={RefreshCw}
-                  label={isSyncing ? t("sync.syncing") : t("sync.syncStatus")}
-                  detail={syncStatusDetail}
-                />
-                {accountConnected ? (
-                  <SecurityRow
-                    icon={Mail}
-                    label={t("profile.security.email")}
-                    detail={accountEmail}
-                  />
-                ) : null}
-                <SecurityRow
-                  icon={CalendarClock}
-                  label={t("profile.security.lastLogin")}
-                  detail={lastLoginValue}
-                />
-                {accountConnected ? (
-                  <SecurityRow
-                    icon={Computer}
-                    label={t("profile.security.syncDevices")}
-                    detail={sessionCountValue}
-                    onClick={() => setSyncDevicesOpen((value) => !value)}
-                  />
-                ) : null}
-                {accountConnected && syncDevicesOpen ? (
-                  <SyncDevicesPanel
-                    currentDeviceId={currentDeviceId}
-                    locale={locale}
-                    onRemove={(deviceId) => {
-                      void removeDeviceSession(deviceId).then(() =>
-                        pushToast(t("sync.deviceRemoved"), "warning"),
-                      );
-                    }}
-                    sessions={sessions}
-                    t={t}
-                  />
-                ) : null}
-                {accountConnected ? null : (
-                  <SecurityRow
-                    icon={Cloud}
-                    label={isConnecting ? t("sync.connecting") : t("sync.connect")}
-                    detail={t("sync.connectDescription")}
-                    onClick={handleConnectGoogle}
-                  />
-                )}
-              </>
-            ) : null}
+          <Panel title={t("profile.dataManagement.title")}>
+            <DatabasePathRow
+              databasePath={databaseInfo?.databasePath ?? t("profile.dataManagement.databasePathLoading")}
+              label={t("profile.dataManagement.databasePath")}
+              onOpen={handleOpenDatabaseFolder}
+              openLabel={t("profile.dataManagement.openDatabaseFolder")}
+            />
             <button
               className="security-row"
               type="button"
-              onClick={() => createExportFile(exportPayload(settings))}
+              onClick={() => setExportModal({ phase: 'confirm' })}
             >
               <Download size={20} color="var(--color-success)" />
               <span>
-                <span>{t("profile.security.exportData")}</span>
-                <span className="security-sub">{t("common.export")}</span>
+                <span>{t("profile.dataManagement.exportData")}</span>
+                <span className="security-sub">{t("profile.dataManagement.exportDescription")}</span>
               </span>
               <ChevronRight size={18} />
             </button>
             <button
               className="security-row"
               type="button"
-              onClick={() => inputRef.current?.click()}
+              onClick={() => setImportModalOpen(true)}
             >
               <Upload size={20} color="var(--color-blue)" />
               <span>
-                <span>{t("profile.security.importData")}</span>
-                <span className="security-sub">{t("common.import")}</span>
+                <span>{t("profile.dataManagement.importData")}</span>
+                <span className="security-sub">{t("profile.dataManagement.importDescription")}</span>
               </span>
               <ChevronRight size={18} />
             </button>
-            <input
-              ref={inputRef}
-              hidden
-              type="file"
-              accept="application/json"
-              onChange={(event) => {
-                const file = event.currentTarget.files?.[0];
-                if (!file) {
-                  return;
-                }
-                void readImportFile(file).then(async (payload) => {
-                  const importedSettings = await importPayload(payload);
-                  await replaceSettings(importedSettings);
-                });
-              }}
-            />
-            {cloudSyncEnabled && accountConnected ? (
-              <>
-                <button
-                  className="security-row danger"
-                  type="button"
-                  onClick={() => setClearCloudConfirmOpen(true)}
-                >
-                  <Trash2 size={20} />
-                  <span>
-                    <span>{t("sync.clearCloudData")}</span>
-                    <span className="security-sub">
-                      {t("sync.clearCloudDataDescription")}
-                    </span>
-                  </span>
-                  <ChevronRight size={18} />
-                </button>
-                {clearCloudConfirmOpen ? (
-                  <div className="confirm-box">
-                    <span>{t("sync.clearCloudDataConfirm")}</span>
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => setClearCloudConfirmOpen(false)}
-                      >
-                        {t("common.cancel")}
-                      </button>
-                      <button type="button" onClick={handleClearCloudData}>
-                        {t("common.clear")}
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-              </>
-            ) : null}
           </Panel>
         </section>
       </div>
+      <ExportDatabaseModal
+        modal={exportModal}
+        onCancel={() => setExportModal(null)}
+        onConfirm={handleCreateDatabaseExport}
+        onSave={handleSaveDatabaseExport}
+        t={t}
+      />
+      <ImportDatabaseModal
+        isImporting={isImportingDatabase}
+        open={importModalOpen}
+        onCancel={() => {
+          if (!isImportingDatabase) {
+            setImportModalOpen(false);
+          }
+        }}
+        onExportCurrent={() => {
+          setImportModalOpen(false);
+          void handleCreateDatabaseExport();
+        }}
+        onImport={handleImportDatabase}
+        t={t}
+      />
     </div>
   );
 }
@@ -552,6 +573,160 @@ function PreferenceSelect({
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function DatabasePathRow({
+  databasePath,
+  label,
+  onOpen,
+  openLabel,
+}: {
+  databasePath: string;
+  label: string;
+  onOpen: () => void;
+  openLabel: string;
+}) {
+  return (
+    <div className="database-path-row">
+      <Database size={20} color="var(--color-accent-strong)" />
+      <span>
+        <span className="settings-label">{label}</span>
+        <span className="database-path-value" title={databasePath}>
+          {databasePath}
+        </span>
+      </span>
+      <button className="icon-button" type="button" aria-label={openLabel} onClick={onOpen}>
+        <FolderOpen size={18} />
+      </button>
+    </div>
+  );
+}
+
+function ExportDatabaseModal({
+  modal,
+  onCancel,
+  onConfirm,
+  onSave,
+  t,
+}: {
+  modal: ExportModalState;
+  onCancel: () => void;
+  onConfirm: () => void;
+  onSave: (exportInfo: SqliteExportInfo) => void;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  if (!modal) {
+    return null;
+  }
+
+  return (
+    <div className="modal-backdrop">
+      <section className="choice-modal" role="dialog" aria-modal="true" aria-labelledby="export-db-title">
+        <h2 id="export-db-title">{t("profile.dataManagement.exportModalTitle")}</h2>
+        {modal.phase === 'confirm' ? (
+          <>
+            <p>{t("profile.dataManagement.exportModalDescription")}</p>
+            <div className="choice-modal-actions two-column-actions">
+              <button type="button" onClick={onCancel}>
+                <span>{t("common.no")}</span>
+              </button>
+              <button type="button" onClick={onConfirm}>
+                <Download size={18} />
+                <span>{t("common.yes")}</span>
+              </button>
+            </div>
+          </>
+        ) : null}
+        {modal.phase === 'exporting' ? (
+          <div className="choice-modal-status">
+            <Loader2 size={18} />
+            <span>{t("profile.dataManagement.exporting")}</span>
+          </div>
+        ) : null}
+        {modal.phase === 'ready' ? (
+          <>
+            <p>{t("profile.dataManagement.exportReadyDescription")}</p>
+            <div className="choice-modal-path" title={modal.exportInfo.tempPath}>
+              {modal.exportInfo.tempPath}
+            </div>
+            <div className="choice-modal-actions">
+              <button type="button" disabled>
+                <Cloud size={18} />
+                <span>
+                  <span>{t("profile.dataManagement.exportToGoogleDrive")}</span>
+                  <span>{t("profile.dataManagement.exportToGoogleDrivePlaceholder")}</span>
+                </span>
+              </button>
+              <button type="button" onClick={() => onSave(modal.exportInfo)}>
+                <FolderOpen size={18} />
+                <span>
+                  <span>{t("profile.dataManagement.downloadExport")}</span>
+                  <span>{t("profile.dataManagement.downloadExportDescription")}</span>
+                </span>
+              </button>
+              <button type="button" onClick={onCancel}>
+                <span>{t("common.close")}</span>
+              </button>
+            </div>
+          </>
+        ) : null}
+      </section>
+    </div>
+  );
+}
+
+function ImportDatabaseModal({
+  isImporting,
+  open,
+  onCancel,
+  onExportCurrent,
+  onImport,
+  t,
+}: {
+  isImporting: boolean;
+  open: boolean;
+  onCancel: () => void;
+  onExportCurrent: () => void;
+  onImport: () => void;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="modal-backdrop">
+      <section className="choice-modal" role="dialog" aria-modal="true" aria-labelledby="import-db-title">
+        <h2 id="import-db-title">{t("profile.dataManagement.importModalTitle")}</h2>
+        <p>{t("profile.dataManagement.importModalDescription")}</p>
+        {isImporting ? (
+          <div className="choice-modal-status">
+            <Loader2 size={18} />
+            <span>{t("profile.dataManagement.importing")}</span>
+          </div>
+        ) : null}
+        <div className="choice-modal-actions">
+          <button type="button" disabled={isImporting} onClick={onExportCurrent}>
+            <Download size={18} />
+            <span>
+              <span>{t("profile.dataManagement.exportCurrentBeforeImport")}</span>
+              <span>{t("profile.dataManagement.exportCurrentBeforeImportDescription")}</span>
+            </span>
+          </button>
+          <button type="button" disabled={isImporting} onClick={onImport}>
+            <Upload size={18} />
+            <span>
+              <span>{t("profile.dataManagement.chooseImportDatabase")}</span>
+              <span>{t("profile.dataManagement.chooseImportDatabaseDescription")}</span>
+            </span>
+          </button>
+          <button type="button" disabled={isImporting} onClick={onCancel}>
+            <span>{t("common.cancel")}</span>
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

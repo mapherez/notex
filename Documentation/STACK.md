@@ -11,14 +11,14 @@
 ## State And Data
 
 - Zustand
-- IndexedDB
-- Dexie.js
+- Tauri SQLite
+- rusqlite
 
 ## Backend
 
 - Node.js
-- SQLite through better-sqlite3
-- Google OAuth authorization code flow
+- SQLite through better-sqlite3 for the parked auth broker
+- Google OAuth authorization code flow, parked while cloud sync is disabled
 
 ## Utilities
 
@@ -28,5 +28,5 @@
 
 ## App Type
 
-- Offline-first PWA
-- Single Docker image for production
+- Offline-first Tauri desktop app
+- Static marketing site for public web deployment

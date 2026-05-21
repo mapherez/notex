@@ -25,7 +25,9 @@
     "duplicate": "Duplicate",
     "copyLink": "Copy link",
     "clear": "Clear",
-    "done": "Done"
+    "done": "Done",
+    "yes": "Yes",
+    "no": "No"
   },
   "navigation": {
     "home": "Home",
@@ -318,6 +320,38 @@
       "importData": "Import data",
       "logout": "Log out",
       "deviceCount": "{{count}} sync devices"
+    },
+    "dataManagement": {
+      "title": "Data Management",
+      "databasePath": "Current database",
+      "databasePathLoading": "Loading database path...",
+      "databasePathError": "Could not read the database path",
+      "openDatabaseFolder": "Open database folder",
+      "openFolderFailed": "Could not open the database folder",
+      "exportData": "Export database",
+      "exportDescription": "Create a portable SQLite copy of your current NoteX data",
+      "importData": "Import database",
+      "importDescription": "Replace the current database with another NoteX SQLite file",
+      "exportModalTitle": "Export current database?",
+      "exportModalDescription": "NoteX will create a SQLite export of the current database in the temporary app folder.",
+      "exporting": "Creating SQLite export...",
+      "exportReady": "Database export created",
+      "exportReadyDescription": "The SQLite export was created in the temporary app folder. Choose where you want to save a copy.",
+      "exportToGoogleDrive": "Export to Google Drive",
+      "exportToGoogleDrivePlaceholder": "Coming later",
+      "downloadExport": "Choose download folder",
+      "downloadExportDescription": "Save the SQLite file to a folder of your choosing",
+      "exportSaved": "Database export saved",
+      "exportFailed": "Database export failed",
+      "importModalTitle": "Replace current database?",
+      "importModalDescription": "Importing a NoteX SQLite database replaces the entire current database. This does not merge notes or duplicate data.",
+      "exportCurrentBeforeImport": "Export current database",
+      "exportCurrentBeforeImportDescription": "Create a backup before replacing your current data",
+      "chooseImportDatabase": "Import SQLite database",
+      "chooseImportDatabaseDescription": "Select the NoteX database file that should replace the current one",
+      "importing": "Replacing database...",
+      "importComplete": "Database imported",
+      "importFailed": "Database import failed"
     },
     "values": {
       "noActivity": "No activity yet"
