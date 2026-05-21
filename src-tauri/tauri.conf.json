@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "notex",
+  "productName": "NoteX",
   "version": "0.1.0",
   "identifier": "com.mapherez.notex",
   "build": {
@@ -13,10 +13,11 @@
     "windows": [
       {
         "title": "NoteX",
-        "width": 800,
-        "height": 600,
+        "width": 1200,
+        "height": 800,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "maximized": true
       }
     ],
     "security": {
