@@ -94,7 +94,13 @@ export function NoteRow({
           {noteTags.length ? (
             <span className="tag-chain">
               {noteTags.map((tag, index) => (
-                <span className="tag-chain-item" key={tag.id} style={{ zIndex: noteTags.length - index }}>
+                <span
+                  className="tag-chain-item"
+                  key={tag.id}
+                  style={{
+                    zIndex: noteTags.length - index,
+                  }}
+                >
                   <TagChip tag={tag} color={tag.color} href={`/notes?tag=${tag.id}`} />
                 </span>
               ))}

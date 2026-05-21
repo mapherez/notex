@@ -484,8 +484,10 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
+    width: min(100%, var(--content-max));
     min-height: var(--topbar-height);
-    padding: calc(var(--page-gutter)/2) var(--page-gutter);
+    margin: auto;
+    padding: calc(var(--page-gutter) / 2) var(--space-8);
     z-index: 90;
   }
 
@@ -497,7 +499,7 @@
   .topbar-search-area {
     width: min(100%, var(--content-max));
     margin: 0 auto;
-    padding-inline: 8rem;
+    padding-inline-end: 8rem;
   }
 
   .topbar.with-search .search-box-shell,
