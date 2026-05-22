@@ -266,6 +266,7 @@
 .note-row__tag-chain-item:hover,
 .note-row__tag-chain-item:focus-within {
   z-index: 60;
+  padding-block-end: var(--nx-space-3);
 }
 
 .note-row__tag-chain-item .tag-chip {

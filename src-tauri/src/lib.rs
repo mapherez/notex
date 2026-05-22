@@ -1,4 +1,5 @@
 mod sqlite_storage;
+mod update_cleanup;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -18,6 +19,7 @@ pub fn run() {
             sqlite_storage::notex_sqlite_where_read,
             sqlite_storage::notex_sqlite_where_count,
             sqlite_storage::notex_sqlite_transaction,
+            update_cleanup::notex_prepare_update_relaunch_with_local_data_reset,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

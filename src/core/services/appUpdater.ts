@@ -1,6 +1,6 @@
 import { getVersion } from '@tauri-apps/api/app';
-import { isTauri } from '@tauri-apps/api/core';
-import { relaunch } from '@tauri-apps/plugin-process';
+import { invoke, isTauri } from '@tauri-apps/api/core';
+import { exit } from '@tauri-apps/plugin-process';
 import { check, type DownloadEvent, type Update } from '@tauri-apps/plugin-updater';
 
 export type AppUpdateInfo = {
@@ -62,7 +62,7 @@ export async function installAppUpdate(
     });
   });
 
-  await relaunch();
+  await relaunchWithLocalDataReset();
 }
 
 export async function closeAppUpdate(update: Update) {
@@ -75,4 +75,9 @@ async function getCurrentAppVersion() {
   } catch {
     return '';
   }
+}
+
+async function relaunchWithLocalDataReset() {
+  await invoke('notex_prepare_update_relaunch_with_local_data_reset');
+  await exit(0);
 }
