@@ -14,12 +14,6 @@
 - Tauri SQLite
 - rusqlite
 
-## Backend
-
-- Node.js
-- SQLite through better-sqlite3 for the parked auth broker
-- Google OAuth authorization code flow, parked while cloud sync is disabled
-
 ## Utilities
 
 - lucide-react

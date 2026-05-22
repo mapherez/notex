@@ -10,7 +10,7 @@ Contains:
 - New note action
 - Primary navigation
 - Collections
-- Google Drive sync action and pending-change count
+- Local app version and legal links
 - Privacy and terms links
 
 ## Top Bar

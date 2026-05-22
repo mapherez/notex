@@ -37,11 +37,11 @@ Includes collection creation, renaming, color updates, deletion, and note filter
 
 Includes:
 
-- Local or Google account identity
+- Local account identity
 - Basic statistics
 - Preferences
 - Favorite tags and primary collection
-- Sync status, sync devices, import/export, logout, and clear cloud data
+- SQLite database path, import/export, and local data management
 
 ## Legal
 
