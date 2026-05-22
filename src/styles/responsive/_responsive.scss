@@ -79,7 +79,7 @@
     grid-template-columns: 1fr;
   }
 
-  .profile-organization-section--collection,
+  .profile-organization-section--tags,
   .profile-stat-grid .settings-row + .settings-row {
     border-left: 0;
   }
@@ -87,6 +87,9 @@
   .profile-organization-section--collection {
     width: auto;
     max-width: none;
+  }
+
+  .profile-organization-section--tags {
     border-top: 1px solid var(--nx-color-border);
     padding-left: 0;
     padding-top: var(--nx-space-5);

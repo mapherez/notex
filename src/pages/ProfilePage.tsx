@@ -59,7 +59,7 @@ type ExportModalState =
   | { phase: 'exporting' }
   | { phase: 'ready'; exportInfo: SqliteExportInfo };
 
-const MAX_FAVORITE_TAGS = 4;
+const MAX_FAVORITE_TAGS = 5;
 
 export function ProfilePage() {
   const { locale, t } = useI18n();
@@ -346,6 +346,40 @@ export function ProfilePage() {
           <section className="settings-card profile-wide-section">
             <h2 className="settings-title">{t("profile.organization.title")}</h2>
             <div className="profile-organization-grid">
+              <div className="profile-organization-section profile-organization-section--collection">
+                <div className="profile-organization-header">
+                  <IconBadge icon={Folder} color="green" />
+                  <div>
+                    <div className="settings-label">
+                      {t("profile.organization.primaryCollection")}
+                    </div>
+                    <div className="settings-description">
+                      {t("profile.organization.primaryCollectionDescription")}
+                    </div>
+                  </div>
+                </div>
+                <CustomSelect
+                  ariaLabel={t("profile.organization.primaryCollection")}
+                  className="profile-organization-select"
+                  emptyText={t("notes.filters.noCollections")}
+                  onChange={(collectionId) => {
+                    void setPrimaryCollection(collectionId).then(() =>
+                      pushToast(
+                        t("profile.actions.primaryCollectionUpdated"),
+                        "success",
+                      ),
+                    );
+                  }}
+                  options={collections.map((collection) => ({
+                    color: collection.color,
+                    label: collection.name,
+                    value: collection.id,
+                  }))}
+                  placeholder={t("notes.filters.allCollections")}
+                  value={settings.primaryCollectionId}
+                />
+              </div>
+
               <div className="profile-organization-section profile-organization-section--tags">
                 <div className="profile-organization-header">
                   <IconBadge icon={Star} color="purple" />
@@ -416,40 +450,6 @@ export function ProfilePage() {
                     ))}
                   </div>
                 ) : null}
-              </div>
-
-              <div className="profile-organization-section profile-organization-section--collection">
-                <div className="profile-organization-header">
-                  <IconBadge icon={Folder} color="green" />
-                  <div>
-                    <div className="settings-label">
-                      {t("profile.organization.primaryCollection")}
-                    </div>
-                    <div className="settings-description">
-                      {t("profile.organization.primaryCollectionDescription")}
-                    </div>
-                  </div>
-                </div>
-                <CustomSelect
-                  ariaLabel={t("profile.organization.primaryCollection")}
-                  className="profile-organization-select"
-                  emptyText={t("notes.filters.noCollections")}
-                  onChange={(collectionId) => {
-                    void setPrimaryCollection(collectionId).then(() =>
-                      pushToast(
-                        t("profile.actions.primaryCollectionUpdated"),
-                        "success",
-                      ),
-                    );
-                  }}
-                  options={collections.map((collection) => ({
-                    color: collection.color,
-                    label: collection.name,
-                    value: collection.id,
-                  }))}
-                  placeholder={t("notes.filters.allCollections")}
-                  value={settings.primaryCollectionId}
-                />
               </div>
             </div>
           </section>
@@ -946,4 +946,3 @@ function getSyncStatusDetail({
 
   return t('sync.connected');
 }
-

@@ -144,7 +144,8 @@
 
 .profile-organization-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: start;
   gap: var(--nx-space-4);
 }
 
@@ -152,6 +153,7 @@
   display: grid;
   min-width: 0;
   align-content: start;
+  justify-items: start;
   gap: var(--nx-space-3);
   padding-block: var(--nx-space-2);
 }
@@ -159,6 +161,10 @@
 .profile-organization-section--collection {
   width: max-content;
   max-width: 18rem;
+}
+
+.profile-organization-section--tags {
+  width: 100%;
   border-left: 1px solid var(--nx-color-border);
   padding-left: var(--nx-space-5);
 }
