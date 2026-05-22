@@ -42,11 +42,22 @@
 }
 
 .back-button {
+  appearance: none;
   display: inline-flex;
   align-items: center;
   gap: var(--nx-space-2);
+  border: 0;
+  background: transparent;
+  padding: 0;
   color: var(--nx-color-text);
   font-weight: 650;
+  transition: color 160ms ease;
+}
+
+.back-button:hover,
+.back-button:focus-visible {
+  color: color-mix(in srgb, var(--nx-color-accent) 78%, var(--nx-color-text));
+  outline: none;
 }
 
 .document-main {
@@ -507,12 +518,15 @@
 .side-list {
   display: grid;
   gap: var(--nx-space-3);
+  margin: 0;
+  padding: 0;
   color: var(--nx-color-text-muted);
   font-size: 0.92rem;
+  list-style: none;
 }
 
 .side-list li {
-  padding-left: var(--nx-space-1);
+  padding-left: 0;
 }
 
 .side-edit-row,

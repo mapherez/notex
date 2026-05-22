@@ -74,12 +74,14 @@
   .quick-pin-row,
   .profile-left,
   .profile-top-row,
+  .database-management-grid,
   .profile-organization-grid,
   .collection-grid {
     grid-template-columns: 1fr;
   }
 
   .profile-organization-section--tags,
+  .database-management-grid .database-path-row + .database-path-row,
   .profile-stat-grid .settings-row + .settings-row {
     border-left: 0;
   }
@@ -93,6 +95,18 @@
     border-top: 1px solid var(--nx-color-border);
     padding-left: 0;
     padding-top: var(--nx-space-5);
+  }
+
+  .database-management-grid .database-path-row {
+    padding: var(--nx-space-4) 0;
+  }
+
+  .database-management-grid .database-path-row:first-child {
+    padding-top: 0;
+  }
+
+  .database-management-grid .database-path-row + .database-path-row {
+    border-top: 1px solid var(--nx-color-border);
   }
 
   .profile-stat-grid .settings-row {
@@ -166,11 +180,24 @@
 
   .notes-filter-control,
   .notes-filter-order,
+  .notes-filter-view,
   .notes-filter-clear,
   .bulk-field,
   .bulk-clear-button,
   .bulk-selection-summary {
     width: 100%;
+  }
+
+  .notes-filter-view {
+    margin-left: 0;
+  }
+
+  .notes-filter-toggle {
+    width: 100%;
+  }
+
+  .notes-filter-view-button {
+    flex: 1;
   }
 
   .notes-filter-menu,

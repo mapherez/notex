@@ -160,15 +160,19 @@
 }
 
 .nav-item {
+  appearance: none;
   display: flex;
   min-height: 2.95rem;
   align-items: center;
   gap: var(--nx-space-3);
+  border: 0;
   border-radius: 0.65rem;
+  background: transparent;
   padding: 0 var(--nx-space-3);
   color: var(--nx-color-text-muted);
   font-size: 0.98rem;
   font-weight: 560;
+  text-align: left;
   transition: background 160ms ease, color 160ms ease;
 }
 
@@ -194,6 +198,14 @@
   color: var(--nx-color-success);
 }
 
+.nav-item.collection-red svg {
+  color: var(--nx-color-red);
+}
+
+.nav-item.collection-amber svg {
+  color: var(--nx-color-warning);
+}
+
 .nav-item.collection-orange svg {
   color: var(--nx-color-orange);
 }
@@ -204,6 +216,10 @@
 
 .nav-item.collection-yellow svg {
   color: var(--nx-color-yellow);
+}
+
+.nav-item.collection-neutral svg {
+  color: var(--nx-color-text-muted);
 }
 
 .sidebar-spacer {

@@ -7,7 +7,7 @@ import { IconBadge } from '../components/ui/IconBadge';
 import { NotesFilterRow } from '../components/ui/NotesFilterRow';
 import { NoteRow } from '../components/ui/NoteRow';
 import { defaultNewCollectionColor } from '../config/appSettings';
-import type { Collection, Note, Tag as TagModel, TagColor } from '../core/models/models';
+import type { Collection, Note, PreferredLayout, Tag as TagModel, TagColor } from '../core/models/models';
 import { defaultNotesSortOrder, filterNotes, normalizeNotesSortOrder, recentNotesSortOrder, type NotesSortOrder } from '../core/utils/noteFilters';
 import { tagColorOptions } from '../core/utils/tagColors';
 import { sortTagsByName } from '../core/utils/tagSorting';
@@ -33,6 +33,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
   const bulkUpdateNoteCollection = useKnowledgeStore((state) => state.bulkUpdateNoteCollection);
   const bulkUpdateNoteTag = useKnowledgeStore((state) => state.bulkUpdateNoteTag);
   const preferredLayout = useAppStore((state) => state.settings.preferredLayout);
+  const setPreferredLayout = useAppStore((state) => state.setPreferredLayout);
   const pushToast = useToastStore((state) => state.pushToast);
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
   const tagParam = searchParams.get('tag');
@@ -160,8 +161,10 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
         defaultSortOrder={defaultSortOrder}
         onClear={clearFilters}
         onCollectionChange={(nextCollectionId) => updateFilterParam('collection', nextCollectionId)}
+        onLayoutChange={(nextLayout: PreferredLayout) => void setPreferredLayout(nextLayout)}
         onSortChange={(nextSortOrder: NotesSortOrder) => updateFilterParam('sort', nextSortOrder)}
         onTagChange={(nextTagId) => updateFilterParam('tag', nextTagId)}
+        preferredLayout={preferredLayout}
         selectedCollectionId={collectionId}
         selectedTagId={tagId}
         sortLocked={mode === 'recent'}
@@ -196,6 +199,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
               selectable={selectionEnabled}
               selected={selectedNoteIdSet.has(note.id)}
               onSelectionChange={updateNoteSelection}
+              tagDisplayLimit={preferredLayout === 'grid' ? 2 : undefined}
             />
           ))}
         </div>

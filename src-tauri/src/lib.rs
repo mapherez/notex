@@ -13,6 +13,7 @@ pub fn run() {
             sqlite_storage::notex_sqlite_copy_export_to,
             sqlite_storage::notex_sqlite_replace_database_from_file,
             sqlite_storage::notex_sqlite_open_database_folder,
+            sqlite_storage::notex_sqlite_open_local_data_folder,
             sqlite_storage::notex_sqlite_get,
             sqlite_storage::notex_sqlite_read_table,
             sqlite_storage::notex_sqlite_count,

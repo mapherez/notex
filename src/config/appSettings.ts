@@ -3,7 +3,6 @@ import type {
   NewNoteInput,
   NoteThumbnail,
   NoteType,
-  PreferredLayout,
   StartupPage,
   TagColor,
   UserSettings,
@@ -25,7 +24,6 @@ export const updaterSettings = settings.updater;
 
 export const tagColorOptions = settings.options.tagColors as TagColor[];
 export const noteTypeOptions = settings.options.noteTypes as NoteType[];
-export const layoutOptions = settings.options.layouts as PreferredLayout[];
 export const thumbnailOptions = settings.options.thumbnailVariants as Array<{
   asset: string;
   id: NoteThumbnail['variant'];

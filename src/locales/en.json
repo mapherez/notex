@@ -108,6 +108,9 @@
       "nameDesc": "Name Z-A",
       "updatedAsc": "Last edited oldest",
       "updatedDesc": "Last edited newest",
+      "view": "View",
+      "listView": "List",
+      "gridView": "Grid",
       "tag": "Tag",
       "allTags": "All tags",
       "searchTags": "Search tags...",
@@ -132,6 +135,7 @@
       "tagsRemoved": "Tag removed from selected notes"
     },
     "openMenu": "Open note actions",
+    "moreTags": "{{count}} more tags",
     "draftCreated": "Local note created",
     "pinChanged": "Pinned state updated",
     "favoriteChanged": "Favorite updated",
@@ -323,7 +327,7 @@
       "deviceCount": "{{count}} sync devices"
     },
     "dataManagement": {
-      "title": "Data Management",
+      "title": "Export / Import",
       "databasePath": "Current database",
       "databasePathLoading": "Loading database path...",
       "databasePathError": "Could not read the database path",
@@ -353,6 +357,13 @@
       "importing": "Replacing database...",
       "importComplete": "Database imported",
       "importFailed": "Database import failed"
+    },
+    "databaseManagement": {
+      "title": "Database Management",
+      "currentDatabase": "Current database",
+      "localDataPath": "Local app data",
+      "localDataPathLoading": "Loading local app data path...",
+      "openLocalDataFolder": "Open local app data folder"
     },
     "values": {
       "noActivity": "No activity yet"

@@ -4,6 +4,7 @@ import { open, save } from '@tauri-apps/plugin-dialog';
 export type SqliteDatabaseInfo = {
   initialized: boolean;
   databasePath: string;
+  localDataDirectory: string;
   backupDirectory: string;
   tempDirectory: string;
 };
@@ -60,4 +61,8 @@ export function replaceSqliteDatabaseFromFile(sourcePath: string) {
 
 export function openSqliteDatabaseFolder() {
   return invoke<void>('notex_sqlite_open_database_folder');
+}
+
+export function openSqliteLocalDataFolder() {
+  return invoke<void>('notex_sqlite_open_local_data_folder');
 }

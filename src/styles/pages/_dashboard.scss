@@ -197,6 +197,7 @@
   background: var(--nx-color-surface-elevated);
   color: var(--nx-color-text-muted);
   opacity: 0.9;
+  padding: 0;
   transition: opacity 160ms ease, color 160ms ease, border-color 160ms ease, background 160ms ease;
 }
 

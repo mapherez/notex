@@ -9,7 +9,6 @@ import {
   Folder,
   FolderOpen,
   Globe2,
-  Grid2X2,
   HardDrive,
   Loader2,
   Mail,
@@ -26,12 +25,13 @@ import { CustomSelect } from '../components/ui/CustomSelect';
 import { IconBadge } from '../components/ui/IconBadge';
 import { Panel } from '../components/ui/Panel';
 import { TagChip } from '../components/ui/TagChip';
-import { appLimits, cloudSyncEnabled, layoutOptions } from '../config/appSettings';
+import { appLimits, cloudSyncEnabled } from '../config/appSettings';
 import {
   chooseSqliteExportDestination,
   chooseSqliteImportFile,
   createSqliteTempExport,
   openSqliteDatabaseFolder,
+  openSqliteLocalDataFolder,
   readSqliteDatabaseInfo,
   replaceSqliteDatabaseFromFile,
   type SqliteDatabaseInfo,
@@ -49,7 +49,6 @@ import type {
   DeviceSession,
   Locale,
   Note,
-  PreferredLayout,
   ThemePreference,
 } from "../core/models/models";
 
@@ -72,7 +71,6 @@ export function ProfilePage() {
   const hydrateSettings = useAppStore((state) => state.hydrateSettings);
   const setTheme = useAppStore((state) => state.setTheme);
   const setLanguage = useAppStore((state) => state.setLanguage);
-  const setPreferredLayout = useAppStore((state) => state.setPreferredLayout);
   const setPrimaryCollection = useAppStore((state) => state.setPrimaryCollection);
   const toggleFavoriteTag = useAppStore((state) => state.toggleFavoriteTag);
   const notes = useKnowledgeStore((state) => state.notes);
@@ -221,6 +219,14 @@ export function ProfilePage() {
     }
   }
 
+  async function handleOpenLocalDataFolder() {
+    try {
+      await openSqliteLocalDataFolder();
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : t('profile.dataManagement.openFolderFailed'), 'warning');
+    }
+  }
+
   return (
     <div className="page-content list-page-grid">
       <header>
@@ -261,87 +267,84 @@ export function ProfilePage() {
 
         <section className="profile-main">
           <div className="profile-top-row">
-          <section className="settings-card">
-            <h2 className="settings-title">{t("profile.preferences.title")}</h2>
-            <PreferenceSelect
-              icon={<IconBadge icon={CalendarClock} color="red" />}
-              label={t("profile.preferences.theme")}
-              description={t("profile.preferences.themeDescription")}
-              value={settings.theme}
-              onChange={(value) =>
-                void setTheme(value as ThemePreference).then(() =>
-                  pushToast(t("common.done"), "success"),
-                )
-              }
-              options={themeRegistry.map((theme) => ({ value: theme.id, label: t(theme.labelKey) }))}
-            />
-            <PreferenceSelect
-              icon={<IconBadge icon={Globe2} color="green" />}
-              label={t("profile.preferences.language")}
-              description={t("profile.preferences.languageDescription")}
-              value={settings.language}
-              onChange={(value) =>
-                void setLanguage(value as Locale).then(() =>
-                  pushToast(t("common.done"), "success"),
-                )
-              }
-              options={[
-                { value: "pt", label: t("profile.preferences.portuguese") },
-                { value: "en", label: t("profile.preferences.english") },
-              ]}
-            />
-            <PreferenceSelect
-              icon={<IconBadge icon={Grid2X2} color="amber" />}
-              label={t("profile.preferences.layout")}
-              description={t("profile.preferences.layoutDescription")}
-              value={settings.preferredLayout}
-              onChange={(value) =>
-                void setPreferredLayout(value as PreferredLayout).then(() =>
-                  pushToast(t("common.done"), "success"),
-                )
-              }
-              options={[
-                ...layoutOptions.map((layout) => ({
-                  value: layout,
-                  label: t(`profile.preferences.${layout}`),
-                })),
-              ]}
-            />
-          </section>
+            <section className="settings-card profile-top-card">
+              <h2 className="settings-title">{t("profile.preferences.title")}</h2>
+              <PreferenceSelect
+                icon={<IconBadge icon={CalendarClock} color="red" />}
+                label={t("profile.preferences.theme")}
+                description={t("profile.preferences.themeDescription")}
+                value={settings.theme}
+                onChange={(value) =>
+                  void setTheme(value as ThemePreference).then(() =>
+                    pushToast(t("common.done"), "success"),
+                  )
+                }
+                options={themeRegistry.map((theme) => ({ value: theme.id, label: t(theme.labelKey) }))}
+              />
+              <PreferenceSelect
+                icon={<IconBadge icon={Globe2} color="green" />}
+                label={t("profile.preferences.language")}
+                description={t("profile.preferences.languageDescription")}
+                value={settings.language}
+                onChange={(value) =>
+                  void setLanguage(value as Locale).then(() =>
+                    pushToast(t("common.done"), "success"),
+                  )
+                }
+                options={[
+                  { value: "pt", label: t("profile.preferences.portuguese") },
+                  { value: "en", label: t("profile.preferences.english") },
+                ]}
+              />
+            </section>
 
-          <Panel title={t("profile.dataManagement.title")}>
-            <DatabasePathRow
-              databasePath={databaseInfo?.databasePath ?? t("profile.dataManagement.databasePathLoading")}
-              label={t("profile.dataManagement.databasePath")}
-              onOpen={handleOpenDatabaseFolder}
-              openLabel={t("profile.dataManagement.openDatabaseFolder")}
-            />
-            <button
-              className="security-row"
-              type="button"
-              onClick={() => setExportModal({ phase: 'confirm' })}
-            >
-              <Download className="security-row__icon security-row__icon--success" />
-              <span>
-                <span>{t("profile.dataManagement.exportData")}</span>
-                <span className="security-sub">{t("profile.dataManagement.exportDescription")}</span>
-              </span>
-              <ChevronRight />
-            </button>
-            <button
-              className="security-row"
-              type="button"
-              onClick={() => setImportModalOpen(true)}
-            >
-              <Upload className="security-row__icon security-row__icon--blue" />
-              <span>
-                <span>{t("profile.dataManagement.importData")}</span>
-                <span className="security-sub">{t("profile.dataManagement.importDescription")}</span>
-              </span>
-              <ChevronRight />
-            </button>
-          </Panel>
+            <Panel title={t("profile.dataManagement.title")}>
+              <button
+                className="security-row"
+                type="button"
+                onClick={() => setExportModal({ phase: 'confirm' })}
+              >
+                <Download className="security-row__icon security-row__icon--success" />
+                <span>
+                  <span>{t("profile.dataManagement.exportData")}</span>
+                  <span className="security-sub">{t("profile.dataManagement.exportDescription")}</span>
+                </span>
+                <ChevronRight />
+              </button>
+              <button
+                className="security-row"
+                type="button"
+                onClick={() => setImportModalOpen(true)}
+              >
+                <Upload className="security-row__icon security-row__icon--blue" />
+                <span>
+                  <span>{t("profile.dataManagement.importData")}</span>
+                  <span className="security-sub">{t("profile.dataManagement.importDescription")}</span>
+                </span>
+                <ChevronRight />
+              </button>
+            </Panel>
           </div>
+
+          <section className="settings-card profile-wide-section database-management-card">
+            <h2 className="settings-title">{t("profile.databaseManagement.title")}</h2>
+            <div className="database-management-grid">
+              <DatabasePathRow
+                databasePath={databaseInfo?.databasePath ?? t("profile.dataManagement.databasePathLoading")}
+                icon={Database}
+                label={t("profile.databaseManagement.currentDatabase")}
+                onOpen={handleOpenDatabaseFolder}
+                openLabel={t("profile.dataManagement.openDatabaseFolder")}
+              />
+              <DatabasePathRow
+                databasePath={databaseInfo?.localDataDirectory ?? t("profile.databaseManagement.localDataPathLoading")}
+                icon={HardDrive}
+                label={t("profile.databaseManagement.localDataPath")}
+                onOpen={handleOpenLocalDataFolder}
+                openLabel={t("profile.databaseManagement.openLocalDataFolder")}
+              />
+            </div>
+          </section>
 
           <section className="settings-card profile-wide-section">
             <h2 className="settings-title">{t("profile.organization.title")}</h2>
@@ -561,18 +564,20 @@ function PreferenceSelect({
 
 function DatabasePathRow({
   databasePath,
+  icon: Icon,
   label,
   onOpen,
   openLabel,
 }: {
   databasePath: string;
+  icon: LucideIcon;
   label: string;
   onOpen: () => void;
   openLabel: string;
 }) {
   return (
     <div className="database-path-row">
-      <Database className="database-path-row__icon" />
+      <Icon className="database-path-row__icon" />
       <span>
         <span className="settings-label">{label}</span>
         <span className="database-path-value" title={databasePath}>

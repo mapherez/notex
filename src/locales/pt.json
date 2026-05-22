@@ -108,6 +108,9 @@
       "nameDesc": "Nome Z-A",
       "updatedAsc": "Última edição mais antiga",
       "updatedDesc": "Última edição mais recente",
+      "view": "Vista",
+      "listView": "Lista",
+      "gridView": "Grelha",
       "tag": "Tag",
       "allTags": "Todas as tags",
       "searchTags": "Pesquisar tags...",
@@ -132,6 +135,7 @@
       "tagsRemoved": "Tag removida das notas selecionadas"
     },
     "openMenu": "Abrir ações da nota",
+    "moreTags": "Mais {{count}} tags",
     "draftCreated": "Nota local criada",
     "pinChanged": "Estado de fixação atualizado",
     "favoriteChanged": "Favorito atualizado",
@@ -323,7 +327,7 @@
       "deviceCount": "{{count}} dispositivos"
     },
     "dataManagement": {
-      "title": "Gestão de dados",
+      "title": "Exportar / Importar",
       "databasePath": "Base de dados atual",
       "databasePathLoading": "A carregar caminho da base de dados...",
       "databasePathError": "Não foi possível ler o caminho da base de dados",
@@ -353,6 +357,13 @@
       "importing": "A substituir base de dados...",
       "importComplete": "Base de dados importada",
       "importFailed": "Falha ao importar a base de dados"
+    },
+    "databaseManagement": {
+      "title": "Gestão da base de dados",
+      "currentDatabase": "Base de dados atual",
+      "localDataPath": "Dados locais da aplicação",
+      "localDataPathLoading": "A carregar caminho dos dados locais...",
+      "openLocalDataFolder": "Abrir pasta dos dados locais"
     },
     "values": {
       "noActivity": "Ainda sem atividade"

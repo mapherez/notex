@@ -15,6 +15,7 @@ const SCHEMA_VERSION: &str = "1";
 pub struct SqliteStatus {
     initialized: bool,
     database_path: String,
+    local_data_directory: String,
     backup_directory: String,
     temp_directory: String,
 }
@@ -59,6 +60,7 @@ pub fn notex_sqlite_status(app: AppHandle) -> Result<SqliteStatus, String> {
     Ok(SqliteStatus {
         initialized: existed || read_metadata(&conn, "sqlite_schema_version")?.is_some(),
         database_path: database_path.to_string_lossy().to_string(),
+        local_data_directory: local_data_directory(&app)?.to_string_lossy().to_string(),
         backup_directory: backup_directory.to_string_lossy().to_string(),
         temp_directory: temp_directory.to_string_lossy().to_string(),
     })
@@ -169,6 +171,13 @@ pub fn notex_sqlite_open_database_folder(app: AppHandle) -> Result<(), String> {
         .parent()
         .ok_or("Could not resolve the database folder")?;
     open_folder(folder)
+}
+
+#[tauri::command]
+pub fn notex_sqlite_open_local_data_folder(app: AppHandle) -> Result<(), String> {
+    let folder = local_data_directory(&app)?;
+    fs::create_dir_all(&folder).map_err(to_string)?;
+    open_folder(&folder)
 }
 
 #[tauri::command]
@@ -285,6 +294,10 @@ fn database_path(app: &AppHandle) -> Result<PathBuf, String> {
         .app_data_dir()
         .map_err(to_string)?
         .join("notex.sqlite"))
+}
+
+fn local_data_directory(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path().app_local_data_dir().map_err(to_string)
 }
 
 fn backup_directory(app: &AppHandle) -> Result<PathBuf, String> {
