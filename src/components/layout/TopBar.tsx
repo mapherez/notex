@@ -63,6 +63,7 @@ export function TopBar({
           className="avatar-button"
           type="button"
           aria-label={t('topbar.account')}
+          aria-expanded={accountOpen}
           onClick={() => {
             setAccountOpen((value) => !value);
           }}

@@ -30,7 +30,7 @@
   outline: none;
 }
 
-.label-create-row button {
+.label-create-row > button {
   display: inline-flex;
   min-height: 2.65rem;
   align-items: center;
@@ -82,7 +82,7 @@
   color: var(--nx-color-danger);
 }
 
-.inline-form button,
+.inline-form > button,
 .confirm-box button {
   min-height: 2.35rem;
   border: 0;

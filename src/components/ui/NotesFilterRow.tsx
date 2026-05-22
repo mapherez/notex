@@ -5,6 +5,7 @@ import { defaultNotesSortOrder, type NotesSortOrder } from '../../core/utils/not
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
+import { CustomSelect } from './CustomSelect';
 
 type FilterOption = {
   color?: TagColor;
@@ -61,26 +62,28 @@ export function NotesFilterRow({
     [collections],
   );
   const hasActiveFilter = sortOrder !== defaultSortOrder || Boolean(selectedTagId || selectedCollectionId);
+  const sortOptions = [
+    { value: 'nameAsc', label: t('notes.filters.nameAsc') },
+    { value: 'nameDesc', label: t('notes.filters.nameDesc') },
+    { value: 'updatedAsc', label: t('notes.filters.updatedAsc') },
+    { value: 'updatedDesc', label: t('notes.filters.updatedDesc') },
+  ];
 
   return (
     <div className="notes-filter-row" aria-label={t('notes.filters.label')}>
-      <label className="notes-filter-control notes-filter-order">
+      <div className="notes-filter-control notes-filter-order">
         <span className="notes-filter-label">
           <SlidersHorizontal />
           {t('notes.filters.orderBy')}
         </span>
-        <select
-          className="select-control"
+        <CustomSelect
+          ariaLabel={t('notes.filters.orderBy')}
           disabled={sortLocked}
+          onChange={(nextValue) => onSortChange(nextValue as NotesSortOrder)}
+          options={sortOptions}
           value={sortOrder}
-          onChange={(event) => onSortChange(event.target.value as NotesSortOrder)}
-        >
-          <option value="nameAsc">{t('notes.filters.nameAsc')}</option>
-          <option value="nameDesc">{t('notes.filters.nameDesc')}</option>
-          <option value="updatedAsc">{t('notes.filters.updatedAsc')}</option>
-          <option value="updatedDesc">{t('notes.filters.updatedDesc')}</option>
-        </select>
-      </label>
+        />
+      </div>
 
       <SearchableFilterField
         allLabel={t('notes.filters.allTags')}

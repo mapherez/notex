@@ -1,0 +1,109 @@
+.custom-select {
+  position: relative;
+  min-width: 9.5rem;
+}
+
+.custom-select__trigger {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: 100%;
+  height: 2.75rem;
+  align-items: center;
+  gap: var(--nx-space-2);
+  border: 1px solid var(--nx-color-border);
+  border-radius: 0.55rem;
+  background: var(--nx-color-input);
+  color: var(--nx-color-text);
+  padding: 0 var(--nx-space-4) 0 var(--nx-space-3);
+  text-align: left;
+}
+
+.custom-select__trigger:hover,
+.custom-select__trigger:focus-visible,
+.custom-select__trigger[aria-expanded="true"] {
+  border-color: var(--nx-color-border-strong);
+  background: var(--nx-color-surface-elevated);
+  outline: none;
+}
+
+.custom-select__value,
+.custom-select__option {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--nx-space-2);
+}
+
+.custom-select__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select__marker {
+  color: var(--nx-color-text-muted);
+  font-weight: 800;
+}
+
+.custom-select__chevron {
+  margin-left: var(--nx-space-1);
+  color: var(--nx-color-text-muted);
+  transition: transform 160ms ease;
+}
+
+.custom-select__trigger[aria-expanded="true"] .custom-select__chevron {
+  transform: rotate(180deg);
+}
+
+.custom-select__menu {
+  position: absolute;
+  top: calc(100% + var(--nx-space-2));
+  left: 0;
+  z-index: 80;
+  display: grid;
+  width: max(100%, 13rem);
+  max-height: 17rem;
+  overflow: auto;
+  gap: 0.15rem;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-md);
+  background: var(--nx-color-surface-elevated);
+  padding: var(--nx-space-2);
+  box-shadow: var(--nx-shadow-soft);
+}
+
+.custom-select__option {
+  min-height: 2.4rem;
+  border: 0;
+  border-radius: var(--nx-radius-sm);
+  background: transparent;
+  color: var(--nx-color-text);
+  padding: 0 var(--nx-space-3);
+  text-align: left;
+}
+
+.custom-select__option:hover,
+.custom-select__option:focus-visible,
+.custom-select__option--selected {
+  background: var(--nx-color-hover);
+  outline: none;
+}
+
+.custom-select__option--selected {
+  color: color-mix(in srgb, var(--nx-color-accent) 72%, var(--nx-color-text));
+  font-weight: 740;
+}
+
+.custom-select__empty {
+  padding: var(--nx-space-3);
+  color: var(--nx-color-text-muted);
+  font-size: 0.86rem;
+}
+
+.custom-select--disabled {
+  opacity: 0.72;
+}
+
+.custom-select--disabled .custom-select__trigger {
+  cursor: not-allowed;
+}

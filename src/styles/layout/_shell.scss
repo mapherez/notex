@@ -385,7 +385,13 @@
 }
 
 .topbar__account-chevron {
+  margin-left: var(--nx-space-1);
   color: var(--nx-color-text-muted);
+  transition: transform 160ms ease;
+  }
+  
+  .avatar-button[aria-expanded="true"] .topbar__account-chevron {
+    transform: rotate(180deg);
 }
 
 .user-meta {
@@ -440,7 +446,7 @@
 .topbar__search-area {
   width: min(100%, var(--nx-content-max));
   margin: 0 auto;
-  padding-inline-end: 8rem;
+  padding-inline-end: 10rem;
 }
 
 .topbar--with-search .search-box-shell,
@@ -544,4 +550,3 @@
   color: var(--nx-color-text-muted);
   font-size: 0.9rem;
 }
-

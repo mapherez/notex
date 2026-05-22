@@ -28,6 +28,25 @@ button {
   color: inherit;
 }
 
+button,
+a[href],
+select,
+summary,
+input[type="checkbox"],
+input[type="radio"],
+[role="button"],
+[role="menuitem"] {
+  cursor: pointer;
+}
+
+button:disabled,
+select:disabled,
+input:disabled,
+textarea:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 a {
   color: inherit;
   text-decoration: none;

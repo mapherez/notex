@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import type { Tag, TagColor } from '../../core/models/models';
 import { tagColorOptions } from '../../core/utils/tagColors';
 import { useI18n } from '../../i18n/I18nProvider';
+import { CustomSelect } from './CustomSelect';
 import { TagChip } from './TagChip';
 
 type TagDraft = {
@@ -68,13 +69,16 @@ export function LabelManager({
         }}
       >
         <input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder={t('profile.labels.newPlaceholder')} />
-        <select className="select-control" value={newColor} onChange={(event) => setNewColor(event.target.value as TagColor)}>
-          {tagColorOptions.map((color) => (
-            <option key={color} value={color}>
-              {t(`tags.colors.${color}`)}
-            </option>
-          ))}
-        </select>
+        <CustomSelect
+          ariaLabel={t('profile.labels.color')}
+          onChange={(color) => setNewColor(color as TagColor)}
+          options={tagColorOptions.map((color) => ({
+            color,
+            label: t(`tags.colors.${color}`),
+            value: color,
+          }))}
+          value={newColor}
+        />
         <button type="submit">
           <Plus />
           {t('common.create')}
@@ -102,13 +106,16 @@ export function LabelManager({
                 value={draft.name}
                 onChange={(event) => updateDraft(tag.id, { name: event.target.value })}
               />
-              <select aria-label={t('profile.labels.color')} className="select-control" value={draft.color} onChange={(event) => updateDraft(tag.id, { color: event.target.value as TagColor })}>
-                {tagColorOptions.map((color) => (
-                  <option key={color} value={color}>
-                    {t(`tags.colors.${color}`)}
-                  </option>
-                ))}
-              </select>
+              <CustomSelect
+                ariaLabel={t('profile.labels.color')}
+                onChange={(color) => updateDraft(tag.id, { color: color as TagColor })}
+                options={tagColorOptions.map((color) => ({
+                  color,
+                  label: t(`tags.colors.${color}`),
+                  value: color,
+                }))}
+                value={draft.color}
+              />
               <button
                 className="icon-button"
                 disabled={!changed || !draft.name.trim()}

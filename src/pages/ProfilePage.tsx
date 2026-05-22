@@ -22,6 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from 'react';
+import { CustomSelect } from '../components/ui/CustomSelect';
 import { IconBadge } from '../components/ui/IconBadge';
 import { Panel } from '../components/ui/Panel';
 import { TagChip } from '../components/ui/TagChip';
@@ -429,24 +430,26 @@ export function ProfilePage() {
                     </div>
                   </div>
                 </div>
-                <select
-                  className="select-control profile-organization-select"
-                  value={settings.primaryCollectionId}
-                  onChange={(event) => {
-                    void setPrimaryCollection(event.target.value).then(() =>
+                <CustomSelect
+                  ariaLabel={t("profile.organization.primaryCollection")}
+                  className="profile-organization-select"
+                  emptyText={t("notes.filters.noCollections")}
+                  onChange={(collectionId) => {
+                    void setPrimaryCollection(collectionId).then(() =>
                       pushToast(
                         t("profile.actions.primaryCollectionUpdated"),
                         "success",
                       ),
                     );
                   }}
-                >
-                  {collections.map((collection) => (
-                    <option key={collection.id} value={collection.id}>
-                      {collection.name}
-                    </option>
-                  ))}
-                </select>
+                  options={collections.map((collection) => ({
+                    color: collection.color,
+                    label: collection.name,
+                    value: collection.id,
+                  }))}
+                  placeholder={t("notes.filters.allCollections")}
+                  value={settings.primaryCollectionId}
+                />
               </div>
             </div>
           </section>
@@ -551,13 +554,7 @@ function PreferenceSelect({
         <span className="settings-label">{label}</span>
         <span className="settings-description">{description}</span>
       </span>
-      <select className="select-control" value={value} onChange={(event) => onChange(event.target.value)}>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <CustomSelect ariaLabel={label} onChange={onChange} options={options} value={value} />
     </div>
   );
 }

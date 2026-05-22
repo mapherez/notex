@@ -131,16 +131,6 @@
   min-width: 0;
 }
 
-.select-control {
-  min-width: 9.5rem;
-  height: 2.75rem;
-  border: 1px solid var(--nx-color-border);
-  border-radius: 0.55rem;
-  background: var(--nx-color-input);
-  color: var(--nx-color-text);
-  padding: 0 var(--nx-space-3);
-}
-
 .chip-stack,
 .quick-pins {
   display: flex;
@@ -487,7 +477,7 @@ button.security-row:hover {
   outline: none;
 }
 
-.collection-create-row button {
+.collection-create-row > button {
   display: inline-flex;
   min-height: 2.65rem;
   align-items: center;

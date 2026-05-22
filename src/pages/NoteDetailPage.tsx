@@ -20,6 +20,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { EditableUsageExamplesTable } from '../components/editing/EditableUsageExamplesTable';
 import { MarkdownEditor } from '../components/editing/MarkdownEditor';
 import { MarkdownPreview } from '../components/editing/MarkdownPreview';
+import { CustomSelect } from '../components/ui/CustomSelect';
 import { EmptyState } from '../components/ui/EmptyState';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
@@ -597,13 +598,16 @@ export function NoteDetailPage() {
                     }}
                   >
                     <input value={newTagName} onChange={(event) => setNewTagName(event.target.value)} placeholder={t('noteDetail.newTagPlaceholder')} />
-                    <select className="select-control" value={newTagColor} onChange={(event) => setNewTagColor(event.target.value as TagColor)}>
-                      {tagColorOptions.map((color) => (
-                        <option key={color} value={color}>
-                          {t(`tags.colors.${color}`)}
-                        </option>
-                      ))}
-                    </select>
+                    <CustomSelect
+                      ariaLabel={t('profile.labels.color')}
+                      onChange={(color) => setNewTagColor(color as TagColor)}
+                      options={tagColorOptions.map((color) => ({
+                        color,
+                        label: t(`tags.colors.${color}`),
+                        value: color,
+                      }))}
+                      value={newTagColor}
+                    />
                     <button type="submit">{t('noteDetail.createAndAddTag')}</button>
                   </form>
                 </div>
@@ -911,14 +915,23 @@ function CollectionSelect({
   return (
     <div className="editable-collection-field editing">
       <Folder />
-      <select className="select-control" value={value ?? ''} onChange={(event) => onChange(event.target.value || null)}>
-        <option value="">{t('noteDetail.noCollection')}</option>
-        {collections.map((item) => (
-          <option key={item.id} value={item.id}>
-            {item.name}
-          </option>
-        ))}
-      </select>
+      <CustomSelect
+        ariaLabel={t('noteDetail.collectionLabel')}
+        emptyText={t('notes.filters.noCollections')}
+        onChange={(collectionId) => onChange(collectionId || null)}
+        options={[
+          {
+            label: t('noteDetail.noCollection'),
+            value: '',
+          },
+          ...collections.map((item) => ({
+            color: item.color,
+            label: item.name,
+            value: item.id,
+          })),
+        ]}
+        value={value ?? ''}
+      />
     </div>
   );
 }

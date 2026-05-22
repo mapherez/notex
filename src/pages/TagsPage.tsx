@@ -1,6 +1,7 @@
 import { Edit3, Plus, Save, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CustomSelect } from '../components/ui/CustomSelect';
 import { TagChip } from '../components/ui/TagChip';
 import type { Tag, TagColor } from '../core/models/models';
 import { tagColorOptions } from '../core/utils/tagColors';
@@ -190,13 +191,16 @@ export function TagsPage() {
             }}
           >
             <input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder={t('profile.labels.newPlaceholder')} />
-            <select className="select-control" value={newColor} onChange={(event) => setNewColor(event.target.value as TagColor)}>
-              {tagColorOptions.map((color) => (
-                <option key={color} value={color}>
-                  {t(`tags.colors.${color}`)}
-                </option>
-              ))}
-            </select>
+            <CustomSelect
+              ariaLabel={t('profile.labels.color')}
+              onChange={(color) => setNewColor(color as TagColor)}
+              options={tagColorOptions.map((color) => ({
+                color,
+                label: t(`tags.colors.${color}`),
+                value: color,
+              }))}
+              value={newColor}
+            />
             <button disabled={!newName.trim()} type="submit">
               <Plus />
               {t('common.create')}
@@ -219,18 +223,16 @@ export function TagsPage() {
                     value={draft.name}
                     onChange={(event) => updateDraft(tag.id, { name: event.target.value })}
                   />
-                  <select
-                    aria-label={t('profile.labels.color')}
-                    className="select-control"
+                  <CustomSelect
+                    ariaLabel={t('profile.labels.color')}
+                    onChange={(color) => updateDraft(tag.id, { color: color as TagColor })}
+                    options={tagColorOptions.map((color) => ({
+                      color,
+                      label: t(`tags.colors.${color}`),
+                      value: color,
+                    }))}
                     value={draft.color}
-                    onChange={(event) => updateDraft(tag.id, { color: event.target.value as TagColor })}
-                  >
-                    {tagColorOptions.map((color) => (
-                      <option key={color} value={color}>
-                        {t(`tags.colors.${color}`)}
-                      </option>
-                    ))}
-                  </select>
+                  />
                   <button className="icon-button danger" type="button" aria-label={t('common.remove')} onClick={() => markDeleted(tag.id)}>
                     <Trash2 />
                   </button>

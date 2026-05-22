@@ -2,6 +2,7 @@ import { Check, ChevronDown, Edit3, Folder, Plus, Tag as TagIcon, Trash2, X } fr
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { EmptyState } from '../components/ui/EmptyState';
+import { CustomSelect } from '../components/ui/CustomSelect';
 import { IconBadge } from '../components/ui/IconBadge';
 import { NotesFilterRow } from '../components/ui/NotesFilterRow';
 import { NoteRow } from '../components/ui/NoteRow';
@@ -263,17 +264,21 @@ function BulkNoteActionsRow({
         />
         <span className="bulk-selection-count">{t('notes.bulk.selected', { count: selectedCount })}</span>
       </label>
-      <label className="bulk-field">
+      <div className="bulk-field">
         <span>{t('notes.bulk.moveCollection')}</span>
-        <select className="select-control" value={moveCollectionId} onChange={(event) => handleMoveCollection(event.currentTarget.value)}>
-          <option value="">{t('notes.bulk.movePlaceholder')}</option>
-          {collections.map((collection) => (
-            <option key={collection.id} value={collection.id}>
-              {collection.name}
-            </option>
-          ))}
-        </select>
-      </label>
+        <CustomSelect
+          ariaLabel={t('notes.bulk.moveCollection')}
+          emptyText={t('notes.filters.noCollections')}
+          onChange={handleMoveCollection}
+          options={collections.map((collection) => ({
+            color: collection.color,
+            label: collection.name,
+            value: collection.id,
+          }))}
+          placeholder={t('notes.bulk.movePlaceholder')}
+          value={moveCollectionId}
+        />
+      </div>
 
       <div className="bulk-field bulk-tags-field" ref={tagsMenuRef}>
         <span>{t('notes.bulk.assignTags')}</span>
@@ -408,17 +413,16 @@ export function CollectionsPage() {
           onChange={(event) => setNewDraft((draft) => ({ ...draft, name: event.target.value }))}
           placeholder={t('collections.newPlaceholder')}
         />
-        <select
-          className="select-control"
+        <CustomSelect
+          ariaLabel={t('collections.color')}
+          onChange={(color) => setNewDraft((draft) => ({ ...draft, color: color as TagColor }))}
+          options={tagColorOptions.map((color) => ({
+            color,
+            label: t(`tags.colors.${color}`),
+            value: color,
+          }))}
           value={newDraft.color}
-          onChange={(event) => setNewDraft((draft) => ({ ...draft, color: event.target.value as TagColor }))}
-        >
-          {tagColorOptions.map((color) => (
-            <option key={color} value={color}>
-              {t(`tags.colors.${color}`)}
-            </option>
-          ))}
-        </select>
+        />
         <button type="submit">
           <Plus />
           {t('collections.create')}
@@ -445,18 +449,16 @@ export function CollectionsPage() {
                     value={editingDraft.name}
                     onChange={(event) => setEditingDraft((draft) => ({ ...draft, name: event.target.value }))}
                   />
-                  <select
-                    aria-label={t('collections.color')}
-                    className="select-control"
+                  <CustomSelect
+                    ariaLabel={t('collections.color')}
+                    onChange={(color) => setEditingDraft((draft) => ({ ...draft, color: color as TagColor }))}
+                    options={tagColorOptions.map((color) => ({
+                      color,
+                      label: t(`tags.colors.${color}`),
+                      value: color,
+                    }))}
                     value={editingDraft.color}
-                    onChange={(event) => setEditingDraft((draft) => ({ ...draft, color: event.target.value as TagColor }))}
-                  >
-                    {tagColorOptions.map((color) => (
-                      <option key={color} value={color}>
-                        {t(`tags.colors.${color}`)}
-                      </option>
-                    ))}
-                  </select>
+                  />
                   <div className="collection-card-actions">
                     <button className="collection-action-button" disabled={!editingDraft.name.trim()} type="submit">
                       <Check />

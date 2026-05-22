@@ -85,7 +85,7 @@
 }
 
 .tags-action-button:disabled,
-.tags-create-row button:disabled {
+.tags-create-row > button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }

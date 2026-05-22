@@ -74,6 +74,16 @@
   height: 1.0625rem;
 }
 
+.markdown-tool-button[aria-expanded] > svg:last-child {
+  margin-left: var(--nx-space-1);
+  color: var(--nx-color-text-muted);
+  transition: transform 160ms ease;
+}
+
+.markdown-tool-button[aria-expanded="true"] > svg:last-child {
+  transform: rotate(180deg);
+}
+
 .markdown-tool-button:hover,
 .markdown-tool-button:focus-visible {
   background: var(--nx-color-hover);
