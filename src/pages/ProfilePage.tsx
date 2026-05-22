@@ -5,7 +5,6 @@ import {
   Computer,
   Database,
   Download,
-  Edit3,
   FileText,
   Folder,
   FolderOpen,
@@ -16,7 +15,6 @@ import {
   Mail,
   Plus,
   RefreshCw,
-  Settings2,
   Star,
   Trash2,
   Upload,
@@ -60,6 +58,8 @@ type ExportModalState =
   | { phase: 'exporting' }
   | { phase: 'ready'; exportInfo: SqliteExportInfo };
 
+const MAX_FAVORITE_TAGS = 4;
+
 export function ProfilePage() {
   const { locale, t } = useI18n();
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
@@ -74,7 +74,6 @@ export function ProfilePage() {
   const setTheme = useAppStore((state) => state.setTheme);
   const setLanguage = useAppStore((state) => state.setLanguage);
   const setPreferredLayout = useAppStore((state) => state.setPreferredLayout);
-  const setStartupPage = useAppStore((state) => state.setStartupPage);
   const setPrimaryCollection = useAppStore((state) => state.setPrimaryCollection);
   const toggleFavoriteTag = useAppStore((state) => state.toggleFavoriteTag);
   const notes = useKnowledgeStore((state) => state.notes);
@@ -100,6 +99,7 @@ export function ProfilePage() {
     tags.filter((tag) => settings.favoriteTagIds.includes(tag.id)),
     settings.favoriteTagIds,
   );
+  const canAddFavoriteTag = favoriteTags.length < MAX_FAVORITE_TAGS;
   const remainingTags = sortTagsByName(tags.filter((tag) => !settings.favoriteTagIds.includes(tag.id)));
   const mostRecentNote = filterNotes(notes, { mode: 'recent' })[0];
   const lastActivityValue = mostRecentNote
@@ -244,16 +244,6 @@ export function ProfilePage() {
               ) : (
                 <UserRound strokeWidth={1.6} />
               )}
-              <button
-                className="icon-button profile-edit"
-                type="button"
-                aria-label={t("common.more")}
-                onClick={() =>
-                  pushToast(t("profile.actions.avatarUpdated"), "info")
-                }
-              >
-                <Edit3 />
-              </button>
             </div>
             <h2 className="panel-title">{accountConnected ? user?.name : t("profile.localUser")}</h2>
             {accountConnected && user?.handle ? <div className="handle">{user.handle}</div> : null}
@@ -268,43 +258,12 @@ export function ProfilePage() {
               )}
             </div>
           </article>
-
-          <Panel title={t("profile.statistics")}>
-            <div className="meta-list">
-              <Metric
-                icon={CalendarClock}
-                color="blue"
-                label={t("profile.stats.lastActivity")}
-                value={lastActivityValue}
-              />
-              <Metric
-                icon={FileText}
-                color="purple"
-                label={t("profile.stats.notes")}
-                value={String(activeNotes.length)}
-              />
-              <Metric
-                icon={Star}
-                color="amber"
-                label={t("profile.stats.favorites")}
-                value={String(favoriteNotes.length)}
-              />
-              <Metric
-                icon={Folder}
-                color="green"
-                label={t("profile.stats.collections")}
-                value={String(collections.length)}
-              />
-            </div>
-          </Panel>
         </section>
 
-        <section className="profile-center">
+        <section className="profile-main">
+          <div className="profile-top-row">
           <section className="settings-card">
-            <h2 className="settings-title">
-              <Settings2 className="settings-title__icon" />
-              {t("profile.preferences.title")}
-            </h2>
+            <h2 className="settings-title">{t("profile.preferences.title")}</h2>
             <PreferenceSelect
               icon={<IconBadge icon={CalendarClock} color="purple" />}
               label={t("profile.preferences.theme")}
@@ -347,119 +306,8 @@ export function ProfilePage() {
                 { value: "grid", label: t("profile.preferences.grid") },
               ]}
             />
-            <PreferenceSelect
-              icon={<IconBadge icon={FileText} color="blue" />}
-              label={t("profile.preferences.startup")}
-              description={t("profile.preferences.startupDescription")}
-              value={settings.startupPage}
-              onChange={(value) =>
-                void setStartupPage(value).then(() =>
-                  pushToast(t("common.done"), "success"),
-                )
-              }
-              options={[
-                { value: "/", label: t("navigation.home") },
-                {
-                  value: "/notes",
-                  label: t("profile.preferences.latestNotes"),
-                },
-              ]}
-            />
           </section>
 
-          <section className="settings-card">
-            <h2 className="settings-title">
-              <Folder className="settings-title__icon settings-title__icon--blue" />
-              {t("profile.organization.title")}
-            </h2>
-            <div className="settings-row">
-              <IconBadge icon={Star} color="purple" />
-              <div>
-                <div className="settings-label">
-                  {t("profile.organization.favoriteTags")}
-                </div>
-                <div className="settings-description">
-                  {t("profile.organization.favoriteTagsDescription")}
-                </div>
-                <div className="chip-stack chip-stack--spaced">
-                  {favoriteTags.map((tag) => (
-                    <TagChip
-                      key={tag.id}
-                      tag={tag}
-                      href={`/notes?tag=${tag.id}`}
-                      removable
-                      onRemove={() => {
-                        void toggleFavoriteTag(tag.id).then(() =>
-                          pushToast(t("profile.actions.tagUpdated"), "success"),
-                        );
-                      }}
-                    />
-                  ))}
-                  <button
-                    className="icon-button"
-                    type="button"
-                    aria-label={t("common.add")}
-                    onClick={() => setTagPickerOpen((value) => !value)}
-                  >
-                    <Plus />
-                  </button>
-                </div>
-                {tagPickerOpen ? (
-                  <div className="inline-picker">
-                    {remainingTags.map((tag) => (
-                      <button
-                        key={tag.id}
-                        type="button"
-                        onClick={() => {
-                          void toggleFavoriteTag(tag.id).then(() =>
-                            pushToast(
-                              t("profile.actions.tagUpdated"),
-                              "success",
-                            ),
-                          );
-                          setTagPickerOpen(false);
-                        }}
-                      >
-                        <TagChip tag={tag} />
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-            <div className="settings-row">
-              <IconBadge icon={Folder} color="green" />
-              <div>
-                <div className="settings-label">
-                  {t("profile.organization.primaryCollection")}
-                </div>
-                <div className="settings-description">
-                  {t("profile.organization.primaryCollectionDescription")}
-                </div>
-              </div>
-              <select
-                className="select-control"
-                value={settings.primaryCollectionId}
-                onChange={(event) => {
-                  void setPrimaryCollection(event.target.value).then(() =>
-                    pushToast(
-                      t("profile.actions.primaryCollectionUpdated"),
-                      "success",
-                    ),
-                  );
-                }}
-              >
-                {collections.map((collection) => (
-                  <option key={collection.id} value={collection.id}>
-                    {collection.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </section>
-        </section>
-
-        <section className="profile-right">
           <Panel title={t("profile.dataManagement.title")}>
             <DatabasePathRow
               databasePath={databaseInfo?.databasePath ?? t("profile.dataManagement.databasePathLoading")}
@@ -491,6 +339,145 @@ export function ProfilePage() {
               </span>
               <ChevronRight />
             </button>
+          </Panel>
+          </div>
+
+          <section className="settings-card profile-wide-section">
+            <h2 className="settings-title">{t("profile.organization.title")}</h2>
+            <div className="profile-organization-grid">
+              <div className="profile-organization-section profile-organization-section--tags">
+                <div className="profile-organization-header">
+                  <IconBadge icon={Star} color="purple" />
+                  <div>
+                    <div className="settings-label">
+                      {t("profile.organization.favoriteTags")}
+                    </div>
+                    <div className="settings-description">
+                      {t("profile.organization.favoriteTagsDescription")}
+                    </div>
+                  </div>
+                </div>
+                <div className="chip-stack chip-stack--spaced">
+                  {favoriteTags.map((tag) => (
+                    <TagChip
+                      key={tag.id}
+                      tag={tag}
+                      href={`/notes?tag=${tag.id}`}
+                      removable
+                      onRemove={() => {
+                        void toggleFavoriteTag(tag.id).then(() =>
+                          pushToast(t("profile.actions.tagUpdated"), "success"),
+                        );
+                      }}
+                    />
+                  ))}
+                  <button
+                    className="icon-button"
+                    type="button"
+                    aria-label={t("common.add")}
+                    aria-disabled={!canAddFavoriteTag}
+                    onClick={() => {
+                      if (!canAddFavoriteTag) {
+                        pushToast(t("profile.organization.favoriteTagsLimit"), "warning");
+                        return;
+                      }
+
+                      setTagPickerOpen((value) => !value);
+                    }}
+                  >
+                    <Plus />
+                  </button>
+                </div>
+                {tagPickerOpen ? (
+                  <div className="inline-picker">
+                    {remainingTags.map((tag) => (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() => {
+                          if (!canAddFavoriteTag) {
+                            pushToast(t("profile.organization.favoriteTagsLimit"), "warning");
+                            setTagPickerOpen(false);
+                            return;
+                          }
+
+                          void toggleFavoriteTag(tag.id).then(() =>
+                            pushToast(
+                              t("profile.actions.tagUpdated"),
+                              "success",
+                            ),
+                          );
+                          setTagPickerOpen(false);
+                        }}
+                      >
+                        <TagChip tag={tag} />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="profile-organization-section profile-organization-section--collection">
+                <div className="profile-organization-header">
+                  <IconBadge icon={Folder} color="green" />
+                  <div>
+                    <div className="settings-label">
+                      {t("profile.organization.primaryCollection")}
+                    </div>
+                    <div className="settings-description">
+                      {t("profile.organization.primaryCollectionDescription")}
+                    </div>
+                  </div>
+                </div>
+                <select
+                  className="select-control profile-organization-select"
+                  value={settings.primaryCollectionId}
+                  onChange={(event) => {
+                    void setPrimaryCollection(event.target.value).then(() =>
+                      pushToast(
+                        t("profile.actions.primaryCollectionUpdated"),
+                        "success",
+                      ),
+                    );
+                  }}
+                >
+                  {collections.map((collection) => (
+                    <option key={collection.id} value={collection.id}>
+                      {collection.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <Panel title={t("profile.statistics")}>
+            <div className="meta-list profile-stat-grid">
+              <Metric
+                icon={CalendarClock}
+                color="blue"
+                label={t("profile.stats.lastActivity")}
+                value={lastActivityValue}
+              />
+              <Metric
+                icon={FileText}
+                color="purple"
+                label={t("profile.stats.notes")}
+                value={String(activeNotes.length)}
+              />
+              <Metric
+                icon={Star}
+                color="amber"
+                label={t("profile.stats.favorites")}
+                value={String(favoriteNotes.length)}
+              />
+              <Metric
+                icon={Folder}
+                color="green"
+                label={t("profile.stats.collections")}
+                value={String(collections.length)}
+              />
+            </div>
           </Panel>
         </section>
       </div>

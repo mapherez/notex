@@ -7,7 +7,7 @@
 
   .dashboard-side,
   .document-aside,
-  .profile-right {
+  .profile-top-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -69,12 +69,37 @@
   }
 
   .stats-grid,
+  .profile-stat-grid,
   .dashboard-side,
   .quick-pin-row,
   .profile-left,
-  .profile-right,
+  .profile-top-row,
+  .profile-organization-grid,
   .collection-grid {
     grid-template-columns: 1fr;
+  }
+
+  .profile-organization-section--collection,
+  .profile-stat-grid .settings-row + .settings-row {
+    border-left: 0;
+  }
+
+  .profile-organization-section--collection {
+    width: auto;
+    max-width: none;
+    border-top: 1px solid var(--nx-color-border);
+    padding-left: 0;
+    padding-top: var(--nx-space-5);
+  }
+
+  .profile-stat-grid .settings-row {
+    border-top: 1px solid var(--nx-color-border);
+    padding: var(--nx-space-4) 0;
+  }
+
+  .profile-stat-grid .settings-row:first-child {
+    border-top: 0;
+    padding-top: 0;
   }
 
   .notes-filter-control,

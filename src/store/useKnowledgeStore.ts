@@ -216,9 +216,14 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       return null;
     }
 
-    return get().createDraftNote({
+    return get().createNoteFromDraft({
       title,
-      intro: trimmed,
+      intro: '',
+      summaryMarkdown: trimmed,
+      explanationMarkdown: '',
+      usageExamples: [],
+      tipTitle: '',
+      tipBody: '',
       collectionId: defaultUserSettings.primaryCollectionId,
       tagIds: [],
     });
