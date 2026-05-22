@@ -7,6 +7,7 @@ import {
   type AppUpdateInfo,
   type UpdateInstallProgress,
 } from '../../core/services/appUpdater';
+import { updaterSettings } from '../../config/appSettings';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useToastStore } from '../../store/useToastStore';
 
@@ -19,7 +20,7 @@ export function AppUpdatePrompt({ enabled }: { enabled: boolean }) {
   const [progress, setProgress] = useState<UpdateInstallProgress | null>(null);
 
   useEffect(() => {
-    if (!enabled || checkStartedRef.current) {
+    if (!enabled || !updaterSettings.checkOnStartup || checkStartedRef.current) {
       return;
     }
 

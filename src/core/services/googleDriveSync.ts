@@ -8,7 +8,7 @@ import {
 } from './googleDrive';
 import { ensureSyncState, getDeviceName, noteKey, readLocalDeviceId, workspaceKey } from './syncQueue';
 import { db, readAllKnowledge, readDeviceSessions, readSyncItems, readUserSettings, writeSyncState } from '../storage/notexRepository';
-import { defaultUserSettings } from '../../config/appSettings';
+import { defaultUserSettings, editorSettings } from '../../config/appSettings';
 import { hashStableJson } from '../utils/stableJson';
 import type {
   CloudManifestFile,
@@ -1400,7 +1400,7 @@ function calculateNoteStats(note: Note): NoteStats {
   return {
     wordCount,
     characterCount: text.length,
-    readingTimeMinutes: Math.max(1, Math.ceil(wordCount / 180)),
+    readingTimeMinutes: Math.max(1, Math.ceil(wordCount / editorSettings.readingWordsPerMinute)),
   };
 }
 

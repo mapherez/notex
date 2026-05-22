@@ -6,6 +6,7 @@ import { IconBadge } from '../components/ui/IconBadge';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { NoteRow } from '../components/ui/NoteRow';
 import { Panel } from "../components/ui/Panel";
+import { appLimits, demoSettings } from '../config/appSettings';
 import { filterNotes } from '../core/utils/noteFilters';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useI18n } from '../i18n/I18nProvider';
@@ -17,8 +18,6 @@ import type { Collection, Note, Tag as TagModel, TagColor } from '../core/models
 type CaptureForm = {
   capture: string;
 };
-
-const quickPinLimit = 5;
 
 export function DashboardPage() {
   const { locale, t } = useI18n();
@@ -38,20 +37,20 @@ export function DashboardPage() {
 
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const quickPinNotes = settings.quickPinNoteIds
-    .slice(0, quickPinLimit)
+    .slice(0, appLimits.quickPins)
     .flatMap((noteId) => activeNotes.find((note) => note.id === noteId) ?? []);
-  const quickPinSlots = Array.from({ length: quickPinLimit }, (_, index) => quickPinNotes[index] ?? null);
+  const quickPinSlots = Array.from({ length: appLimits.quickPins }, (_, index) => quickPinNotes[index] ?? null);
   const pinnedNoteIds = new Set(quickPinNotes.map((note) => note.id));
   const activeQuickPinNote = activeQuickPinIndex === null ? null : quickPinSlots[activeQuickPinIndex];
   const quickPinOptions = activeNotes
     .filter((note) => note.id === activeQuickPinNote?.id || !pinnedNoteIds.has(note.id))
     .filter((note) => !quickPinQuery.trim() || normalizeSearchValue(note.title).includes(normalizeSearchValue(quickPinQuery)))
     .sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' }))
-    .slice(0, 8);
+    .slice(0, appLimits.quickPinSuggestions);
   const trashedNotes = notes.filter((note) => note.isTrashed);
   const recentNoteFeed = filterNotes(notes, { mode: 'recent' });
-  const recentNotes = recentNoteFeed.filter((note) => note.id !== 'note-linguistic').slice(0, 5);
-  const recentActivityNotes = recentNoteFeed.slice(0, 3);
+  const recentNotes = recentNoteFeed.filter((note) => !demoSettings.demoNoteIds.includes(note.id)).slice(0, appLimits.dashboardRecentNotes);
+  const recentActivityNotes = recentNoteFeed.slice(0, appLimits.dashboardRecentActivity);
   const favoriteCount = activeNotes.filter((note) => note.isFavorite).length;
   const activeNotesThisWeek = activeNotes.filter((note) => isThisWeek(note.createdAt) || isThisWeek(note.updatedAt));
   const tagCounts = countTags(activeNotes);
@@ -59,7 +58,7 @@ export function DashboardPage() {
     .map((tag) => ({ ...tag, count: tagCounts.get(tag.id) ?? 0 }))
     .filter((tag) => tag.count > 0)
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
-    .slice(0, 5);
+    .slice(0, appLimits.popularTags);
 
   const stats = [
     {

@@ -16,7 +16,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import clsx from 'clsx';
-import { appSettings, cloudSyncEnabled } from '../../config/appSettings';
+import { appSettings, cloudSyncEnabled, defaultNewNoteType, navigationSettings } from '../../config/appSettings';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
@@ -25,14 +25,14 @@ import { useSyncStore } from '../../store/useSyncStore';
 import { useToastStore } from '../../store/useToastStore';
 import type { NoteType } from '../../core/models/models';
 
-const navItems = [
-  { to: '/', labelKey: 'navigation.home', icon: Home },
-  { to: '/notes', labelKey: 'navigation.notes', icon: FileText },
-  { to: '/favorites', labelKey: 'navigation.favorites', icon: Star },
-  { to: '/recent', labelKey: 'navigation.recent', icon: Clock3 },
-  { to: '/tags', labelKey: 'navigation.tags', icon: Tag },
-  { to: '/trash', labelKey: 'navigation.trash', icon: Trash },
-] as const;
+const navIcons = {
+  clock: Clock3,
+  fileText: FileText,
+  home: Home,
+  star: Star,
+  tag: Tag,
+  trash: Trash,
+} as const;
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
@@ -68,7 +68,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       .catch(() => setAppVersion(''));
   }, []);
 
-  function createNote(type: NoteType = 'standard') {
+  function createNote(type: NoteType = defaultNewNoteType) {
     setNewNoteOpen(false);
     onClose();
     navigate(`/notes/new?type=${type}&collection=${settings.primaryCollectionId}`);
@@ -122,8 +122,8 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         </div>
 
         <nav className="sidebar-section" aria-label={t("navigation.notes")}>
-          {navItems.map(({ to, labelKey, icon }) => {
-            const Icon = to === "/trash" && hasTrashedNotes ? Trash2 : icon;
+          {navigationSettings.sidebarItems.map(({ to, labelKey, icon }) => {
+            const Icon = to === "/trash" && hasTrashedNotes ? Trash2 : navIcons[icon as keyof typeof navIcons] ?? FileText;
 
             return (
               <NavLink
@@ -188,12 +188,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           </button>
         ) : null}
         <nav className="sidebar-legal-links" aria-label={t('legal.navigationLabel')}>
-          <NavLink className="sidebar-legal-link" to="/privacy" onClick={onClose}>
-            {t('legal.privacyLink')}
-          </NavLink>
-          <NavLink className="sidebar-legal-link" to="/terms" onClick={onClose}>
-            {t('legal.termsLink')}
-          </NavLink>
+          {navigationSettings.legalLinks.map((link) => (
+            <NavLink className="sidebar-legal-link" key={link.to} to={link.to} onClick={onClose}>
+              {t(link.labelKey)}
+            </NavLink>
+          ))}
         </nav>
         {appVersion ? <div className="sidebar-version">v{appVersion}</div> : null}
       </aside>

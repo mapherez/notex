@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { defaultUserSettings } from '../config/appSettings';
+import { appLimits, defaultUserSettings } from '../config/appSettings';
 import { notifySyncQueued, queueWorkspaceSync, runLocalMutation } from '../core/services/syncQueue';
 import { db } from '../core/storage/notexRepository';
 import type { Locale, PreferredLayout, ThemePreference, UserSettings } from '../core/models/models';
@@ -18,8 +18,6 @@ type AppStore = {
   toggleQuickPin: (noteId: string) => Promise<void>;
   replaceSettings: (settings: UserSettings) => Promise<void>;
 };
-
-const maxQuickPins = 5;
 
 async function persist(settings: UserSettings) {
   await runLocalMutation(() => db.transaction('rw', [db.userSettings, db.syncItems], async () => {
@@ -92,18 +90,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await updateSettings(set, settings);
   },
   setQuickPinAt: async (index, noteId) => {
-    const nextSlots = [...get().settings.quickPinNoteIds.slice(0, maxQuickPins)];
-    const normalizedIndex = Math.max(0, Math.min(maxQuickPins - 1, index));
+    const nextSlots = [...get().settings.quickPinNoteIds.slice(0, appLimits.quickPins)];
+    const normalizedIndex = Math.max(0, Math.min(appLimits.quickPins - 1, index));
     const dedupedSlots = noteId ? nextSlots.map((id) => (id === noteId ? '' : id)) : nextSlots;
 
     dedupedSlots[normalizedIndex] = noteId ?? '';
-    const quickPinNoteIds = dedupedSlots.filter(Boolean).slice(0, maxQuickPins);
+    const quickPinNoteIds = dedupedSlots.filter(Boolean).slice(0, appLimits.quickPins);
     const settings = { ...get().settings, quickPinNoteIds };
     await updateSettings(set, settings);
   },
   toggleQuickPin: async (noteId) => {
     const current = get().settings.quickPinNoteIds;
-    const quickPinNoteIds = current.includes(noteId) ? current.filter((id) => id !== noteId) : [...current, noteId].slice(-maxQuickPins);
+    const quickPinNoteIds = current.includes(noteId) ? current.filter((id) => id !== noteId) : [...current, noteId].slice(-appLimits.quickPins);
     const settings = { ...get().settings, quickPinNoteIds };
     await updateSettings(set, settings);
   },

@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SearchBox } from '../ui/SearchBox';
 import { cloudSyncEnabled } from '../../config/appSettings';
-import { getNextTheme } from '../../core/theme/themeRegistry';
+import { getNextTheme, getThemeIcon } from '../../core/theme/themeRegistry';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
@@ -30,6 +30,7 @@ export function TopBar({
   const disconnectGoogle = useSyncStore((state) => state.disconnectGoogle);
   const pushToast = useToastStore((state) => state.pushToast);
   const accountConnected = cloudSyncEnabled && Boolean(syncState?.connected);
+  const ThemeIcon = getThemeIcon(theme) === 'sun' ? Sun : Moon;
 
   useClickOutside(actionsRef, accountOpen, () => {
     setAccountOpen(false);
@@ -57,7 +58,7 @@ export function TopBar({
             void setTheme(getNextTheme(theme));
           }}
         >
-          {theme === 'dark' ? <Sun /> : <Moon />}
+          <ThemeIcon />
         </button>
         <button
           className="avatar-button"

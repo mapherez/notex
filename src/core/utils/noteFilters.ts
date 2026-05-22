@@ -1,3 +1,4 @@
+import { noteSettings } from '../../config/appSettings';
 import type { Note } from '../models/models';
 
 export type NotesSortOrder = 'nameAsc' | 'nameDesc' | 'updatedAsc' | 'updatedDesc';
@@ -10,7 +11,8 @@ export type NotesFilter = {
   sortOrder?: NotesSortOrder | null;
 };
 
-export const defaultNotesSortOrder: NotesSortOrder = 'nameAsc';
+export const defaultNotesSortOrder = noteSettings.defaultSortOrder as NotesSortOrder;
+export const recentNotesSortOrder = noteSettings.recentSortOrder as NotesSortOrder;
 
 export function normalizeNotesSortOrder(value?: string | null): NotesSortOrder {
   if (value === 'nameAsc' || value === 'nameDesc' || value === 'updatedAsc' || value === 'updatedDesc') {

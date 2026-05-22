@@ -3,18 +3,146 @@
   "features": {
     "cloudSync": false
   },
-  "defaultSettings": {
-    "theme": "dark",
-    "language": "pt",
-    "username": "Local user",
-    "startupPage": "/",
-    "preferredLayout": "list",
-    "primaryCollectionId": "collection-work",
-    "favoriteTagIds": ["tag-grammar", "tag-doubt"],
-    "quickPinNoteIds": ["note-linguistic"]
+  "themes": {
+    "default": "dark",
+    "available": [
+      {
+        "id": "dark",
+        "labelKey": "profile.preferences.dark",
+        "icon": "sun"
+      },
+      {
+        "id": "light",
+        "labelKey": "profile.preferences.light",
+        "icon": "moon"
+      }
+    ]
   },
-  "storage": {
-    "quotaGb": 10,
-    "usedGb": 6.8
+  "defaults": {
+    "newTagColor": "purple",
+    "newCollectionColor": "blue",
+    "noteThumbnailVariant": "text",
+    "userSettings": {
+      "theme": "dark",
+      "language": "pt",
+      "username": "Local user",
+      "startupPage": "/",
+      "preferredLayout": "list",
+      "primaryCollectionId": "collection-work",
+      "favoriteTagIds": ["tag-grammar", "tag-doubt"],
+      "quickPinNoteIds": ["note-linguistic"]
+    }
+  },
+  "limits": {
+    "favoriteTags": 5,
+    "quickPins": 5,
+    "quickPinSuggestions": 8,
+    "dashboardRecentNotes": 5,
+    "dashboardRecentActivity": 3,
+    "popularTags": 5,
+    "searchResults": 8,
+    "linkedNoteSuggestions": 6
+  },
+  "options": {
+    "tagColors": ["blue", "green", "amber", "purple", "pink", "orange", "yellow", "neutral"],
+    "noteTypes": ["standard", "linguistic_doubt", "reference", "snippet"],
+    "thumbnailVariants": [
+      {
+        "id": "purple",
+        "asset": "/assets/thumb-roadmap.svg"
+      },
+      {
+        "id": "paper",
+        "asset": "/assets/thumb-product.svg"
+      },
+      {
+        "id": "terminal",
+        "asset": "/assets/thumb-terminal.svg"
+      },
+      {
+        "id": "landscape",
+        "asset": "/assets/thumb-japan.svg"
+      },
+      {
+        "id": "book",
+        "asset": "/assets/thumb-book.svg"
+      },
+      {
+        "id": "text",
+        "asset": "/assets/thumb-text.svg"
+      }
+    ],
+    "layouts": ["list", "grid"]
+  },
+  "navigation": {
+    "sidebarItems": [
+      {
+        "to": "/",
+        "labelKey": "navigation.home",
+        "icon": "home"
+      },
+      {
+        "to": "/notes",
+        "labelKey": "navigation.notes",
+        "icon": "fileText"
+      },
+      {
+        "to": "/favorites",
+        "labelKey": "navigation.favorites",
+        "icon": "star"
+      },
+      {
+        "to": "/recent",
+        "labelKey": "navigation.recent",
+        "icon": "clock"
+      },
+      {
+        "to": "/tags",
+        "labelKey": "navigation.tags",
+        "icon": "tag"
+      },
+      {
+        "to": "/trash",
+        "labelKey": "navigation.trash",
+        "icon": "trash"
+      }
+    ],
+    "searchEnabledRoutes": ["/", "/notes", "/favorites", "/recent", "/trash", "/collections", "/tags", "/profile"],
+    "legalLinks": [
+      {
+        "to": "/privacy",
+        "labelKey": "legal.privacyLink"
+      },
+      {
+        "to": "/terms",
+        "labelKey": "legal.termsLink"
+      }
+    ]
+  },
+  "notes": {
+    "defaultSortOrder": "nameAsc",
+    "recentSortOrder": "updatedDesc",
+    "defaultNewNoteType": "standard"
+  },
+  "editor": {
+    "defaultTable": {
+      "columns": ["Column 1", "Column 2"],
+      "rows": 1
+    },
+    "readingWordsPerMinute": 180
+  },
+  "demo": {
+    "enabled": true,
+    "demoNoteIds": ["note-linguistic"],
+    "defaultTagIds": ["tag-grammar", "tag-doubt"],
+    "defaultCollectionIds": ["collection-work", "collection-personal"],
+    "collectionOrder": ["collection-work", "collection-personal"]
+  },
+  "ui": {
+    "toastMaxVisible": 4,
+    "toastDurationMs": 3200
+  },
+  "updater": {
+    "checkOnStartup": true
   }
 }

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { defaultUserSettings } from '../config/appSettings';
+import { defaultNewNoteType, defaultNoteThumbnailVariant, defaultUserSettings, demoSettings, editorSettings } from '../config/appSettings';
 import { createMockData } from '../core/data/createMockData';
 import {
   db,
@@ -93,7 +93,7 @@ function sortNotes(notes: Note[]) {
   return [...notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-const collectionOrder = ['collection-work', 'collection-personal'];
+const collectionOrder = demoSettings.collectionOrder;
 
 function sortCollections(collections: Collection[]) {
   return [...collections].sort((a, b) => {
@@ -1135,7 +1135,7 @@ function calculateNoteStats(note: Note): NoteStats {
   return {
     wordCount,
     characterCount: text.length,
-    readingTimeMinutes: Math.max(1, Math.ceil(wordCount / 180)),
+    readingTimeMinutes: Math.max(1, Math.ceil(wordCount / editorSettings.readingWordsPerMinute)),
   };
 }
 
@@ -1158,10 +1158,10 @@ function buildLocalNote({ input, authorId }: { input: NewNoteInput; authorId: st
 
   return {
     id: createId(),
-    type: input.type ?? 'standard',
+    type: input.type ?? defaultNewNoteType,
     title,
-    collectionId: input.collectionId ?? 'collection-ideas',
-    tagIds: input.tagIds ?? ['tag-ideas'],
+    collectionId: input.collectionId ?? defaultUserSettings.primaryCollectionId,
+    tagIds: input.tagIds ?? [],
     linkedNoteIds: [],
     isFavorite: false,
     isPinned: false,
@@ -1183,10 +1183,10 @@ function buildLocalNote({ input, authorId }: { input: NewNoteInput; authorId: st
     stats: {
       wordCount,
       characterCount: intro.length,
-      readingTimeMinutes: Math.max(1, Math.ceil(wordCount / 180)),
+      readingTimeMinutes: Math.max(1, Math.ceil(wordCount / editorSettings.readingWordsPerMinute)),
     },
     relatedLinks: [],
-    thumbnail: { variant: 'text' },
+    thumbnail: { variant: defaultNoteThumbnailVariant },
     version: 1,
     syncStatus: 'local',
   };
@@ -1196,10 +1196,10 @@ function buildLocalNoteFromDraft({ draft, authorId }: { draft: NoteEditDraft; au
   const now = new Date().toISOString();
   const note: Note = {
     id: createId(),
-    type: draft.type ?? 'standard',
+    type: draft.type ?? defaultNewNoteType,
     title: draft.title,
-    collectionId: draft.collectionId ?? 'collection-ideas',
-    tagIds: draft.tagIds ?? ['tag-ideas'],
+    collectionId: draft.collectionId ?? defaultUserSettings.primaryCollectionId,
+    tagIds: draft.tagIds ?? [],
     linkedNoteIds: [],
     isFavorite: false,
     isPinned: false,
@@ -1230,7 +1230,7 @@ function buildLocalNoteFromDraft({ draft, authorId }: { draft: NoteEditDraft; au
       readingTimeMinutes: 1,
     },
     relatedLinks: [],
-    thumbnail: { variant: 'text' },
+    thumbnail: { variant: defaultNoteThumbnailVariant },
     version: 1,
     syncStatus: 'local',
   };

@@ -1,4 +1,5 @@
 import { getLocaleValue } from '../../i18n/dictionaries';
+import { defaultNoteThumbnailVariant, demoSettings, editorSettings } from '../../config/appSettings';
 import type {
   ActivityItem,
   Collection,
@@ -72,7 +73,7 @@ function statsFrom(copy: LocalizedNoteCopy) {
   return {
     wordCount,
     characterCount: text.length,
-    readingTimeMinutes: Math.max(1, Math.ceil(wordCount / 180)),
+    readingTimeMinutes: Math.max(1, Math.ceil(wordCount / editorSettings.readingWordsPerMinute)),
   };
 }
 
@@ -86,7 +87,7 @@ export function createMockData(locale: Locale): MockDataBundle {
     name: getLocaleValue<string>(locale, 'profile.localUser'),
   };
 
-  const notes: Note[] = [
+  const notes: Note[] = demoSettings.enabled ? [
     {
       id: 'note-linguistic',
       type: 'linguistic_doubt',
@@ -125,21 +126,21 @@ export function createMockData(locale: Locale): MockDataBundle {
         title,
         href: '/notes?tag=tag-grammar',
       })),
-      thumbnail: { variant: 'text' },
+      thumbnail: { variant: defaultNoteThumbnailVariant },
       version: 1,
       syncStatus: 'local',
     },
-  ];
+  ] : [];
 
   return {
     user,
-    tags: mock.tags.filter((tag) => ['tag-grammar', 'tag-doubt'].includes(tag.id)),
-    collections: mock.collections.filter((collection) => ['collection-work', 'collection-personal'].includes(collection.id)),
+    tags: demoSettings.enabled ? mock.tags.filter((tag) => demoSettings.defaultTagIds.includes(tag.id)) : [],
+    collections: demoSettings.enabled ? mock.collections.filter((collection) => demoSettings.defaultCollectionIds.includes(collection.id)) : [],
     notes,
-    activities: mock.activities.slice(0, 1).map((activity, index) => ({
+    activities: demoSettings.enabled ? mock.activities.slice(0, 1).map((activity, index) => ({
       id: `activity-${index + 1}`,
       createdAt: date.updatedPrimary,
       ...activity,
-    })),
+    })) : [],
   };
 }

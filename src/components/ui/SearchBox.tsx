@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { appLimits } from '../../config/appSettings';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -159,7 +160,7 @@ function buildSearchResults({
       ];
     })
     .sort((a, b) => searchResultScore(a) - searchResultScore(b) || b.note.updatedAt.localeCompare(a.note.updatedAt))
-    .slice(0, 8);
+    .slice(0, appLimits.searchResults);
 }
 
 function searchResultScore(result: SearchResult) {

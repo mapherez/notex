@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { TagChip } from '../components/ui/TagChip';
+import { appLimits, defaultNewTagColor } from '../config/appSettings';
 import type { Tag, TagColor } from '../core/models/models';
 import { tagColorOptions } from '../core/utils/tagColors';
 import { sortTagsByName } from '../core/utils/tagSorting';
@@ -26,7 +27,7 @@ export function TagsPage() {
   const [drafts, setDrafts] = useState<Record<string, TagDraft>>({});
   const [deletedTagIds, setDeletedTagIds] = useState<Set<string>>(new Set());
   const [newName, setNewName] = useState('');
-  const [newColor, setNewColor] = useState<TagColor>('purple');
+  const [newColor, setNewColor] = useState<TagColor>(defaultNewTagColor);
   const tags = useKnowledgeStore((state) => state.tags);
   const notes = useKnowledgeStore((state) => state.notes);
   const createTag = useKnowledgeStore((state) => state.createTag);
@@ -47,7 +48,7 @@ export function TagsPage() {
       [...tagsWithCounts]
         .filter((tag) => tag.count > 0)
         .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }))
-        .slice(0, 5),
+        .slice(0, appLimits.popularTags),
     [tagsWithCounts],
   );
   const visibleEditTags = tagsWithCounts.filter((tag) => !deletedTagIds.has(tag.id));
@@ -106,7 +107,7 @@ export function TagsPage() {
     }
 
     setNewName('');
-    setNewColor('purple');
+    setNewColor(defaultNewTagColor);
     pushToast(t('profile.labels.created'), 'success');
   }
 

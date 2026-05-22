@@ -26,7 +26,7 @@ import { CustomSelect } from '../components/ui/CustomSelect';
 import { IconBadge } from '../components/ui/IconBadge';
 import { Panel } from '../components/ui/Panel';
 import { TagChip } from '../components/ui/TagChip';
-import { cloudSyncEnabled } from '../config/appSettings';
+import { appLimits, cloudSyncEnabled, layoutOptions } from '../config/appSettings';
 import {
   chooseSqliteExportDestination,
   chooseSqliteImportFile,
@@ -58,8 +58,6 @@ type ExportModalState =
   | { phase: 'confirm' }
   | { phase: 'exporting' }
   | { phase: 'ready'; exportInfo: SqliteExportInfo };
-
-const MAX_FAVORITE_TAGS = 5;
 
 export function ProfilePage() {
   const { locale, t } = useI18n();
@@ -100,7 +98,7 @@ export function ProfilePage() {
     tags.filter((tag) => settings.favoriteTagIds.includes(tag.id)),
     settings.favoriteTagIds,
   );
-  const canAddFavoriteTag = favoriteTags.length < MAX_FAVORITE_TAGS;
+  const canAddFavoriteTag = favoriteTags.length < appLimits.favoriteTags;
   const remainingTags = sortTagsByName(tags.filter((tag) => !settings.favoriteTagIds.includes(tag.id)));
   const mostRecentNote = filterNotes(notes, { mode: 'recent' })[0];
   const lastActivityValue = mostRecentNote
@@ -303,8 +301,10 @@ export function ProfilePage() {
                 )
               }
               options={[
-                { value: "list", label: t("profile.preferences.list") },
-                { value: "grid", label: t("profile.preferences.grid") },
+                ...layoutOptions.map((layout) => ({
+                  value: layout,
+                  label: t(`profile.preferences.${layout}`),
+                })),
               ]}
             />
           </section>
@@ -413,7 +413,7 @@ export function ProfilePage() {
                     aria-disabled={!canAddFavoriteTag}
                     onClick={() => {
                       if (!canAddFavoriteTag) {
-                        pushToast(t("profile.organization.favoriteTagsLimit"), "warning");
+                        pushToast(t("profile.organization.favoriteTagsLimit", { count: appLimits.favoriteTags }), "warning");
                         return;
                       }
 
@@ -431,7 +431,7 @@ export function ProfilePage() {
                         type="button"
                         onClick={() => {
                           if (!canAddFavoriteTag) {
-                            pushToast(t("profile.organization.favoriteTagsLimit"), "warning");
+                            pushToast(t("profile.organization.favoriteTagsLimit", { count: appLimits.favoriteTags }), "warning");
                             setTagPickerOpen(false);
                             return;
                           }

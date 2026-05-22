@@ -1,3 +1,5 @@
+import { editorSettings } from '../../config/appSettings';
+
 export type MarkdownTableAction = 'column-left' | 'column-right' | 'insert-table' | 'row-above' | 'row-below';
 
 export type MarkdownTextEdit = {
@@ -18,7 +20,13 @@ type TableRange = {
   startLine: number;
 };
 
-const defaultTable = ['| Column 1 | Column 2 |', '| --- | --- |', '|  |  |'].join('\n');
+const defaultTableColumns = editorSettings.defaultTable.columns.length ? editorSettings.defaultTable.columns : ['Column 1', 'Column 2'];
+const defaultTableRows = Math.max(1, editorSettings.defaultTable.rows);
+const defaultTable = [
+  `| ${defaultTableColumns.join(' | ')} |`,
+  `| ${defaultTableColumns.map(() => '---').join(' | ')} |`,
+  ...Array.from({ length: defaultTableRows }, () => `| ${defaultTableColumns.map(() => '').join(' | ')} |`),
+].join('\n');
 
 export function hasMarkdownTableAtCursor(text: string, cursor: number) {
   const lines = getLines(text);

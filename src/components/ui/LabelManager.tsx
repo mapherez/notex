@@ -1,6 +1,7 @@
 import { Check, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { defaultNewTagColor } from '../../config/appSettings';
 import type { Tag, TagColor } from '../../core/models/models';
 import { tagColorOptions } from '../../core/utils/tagColors';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -28,7 +29,7 @@ export function LabelManager({
   const { t } = useI18n();
   const [drafts, setDrafts] = useState<Record<string, TagDraft>>({});
   const [newName, setNewName] = useState('');
-  const [newColor, setNewColor] = useState<TagColor>('purple');
+  const [newColor, setNewColor] = useState<TagColor>(defaultNewTagColor);
 
   useEffect(() => {
     setDrafts(
@@ -56,7 +57,7 @@ export function LabelManager({
   async function createLabel() {
     await onCreate(newName, newColor);
     setNewName('');
-    setNewColor('purple');
+    setNewColor(defaultNewTagColor);
   }
 
   return (

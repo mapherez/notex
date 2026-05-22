@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { uiSettings } from '../config/appSettings';
 
 export type ToastTone = 'info' | 'success' | 'warning';
 
@@ -18,10 +19,10 @@ export const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
   pushToast: (message, tone = 'info') => {
     const id = crypto.randomUUID();
-    set((state) => ({ toasts: [...state.toasts, { id, message, tone }].slice(-4) }));
+    set((state) => ({ toasts: [...state.toasts, { id, message, tone }].slice(-uiSettings.toastMaxVisible) }));
     window.setTimeout(() => {
       set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) }));
-    }, 3200);
+    }, uiSettings.toastDurationMs);
     return id;
   },
   dismissToast: (id) => {

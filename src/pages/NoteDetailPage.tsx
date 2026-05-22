@@ -25,7 +25,15 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
 import { TagChip } from '../components/ui/TagChip';
-import { cloudSyncEnabled } from '../config/appSettings';
+import {
+  appLimits,
+  cloudSyncEnabled,
+  defaultNewNoteType,
+  defaultNewTagColor,
+  defaultNoteThumbnailVariant,
+  noteTypeOptions,
+  thumbnailOptions,
+} from '../config/appSettings';
 import type { Collection, Note, NoteThumbnail as NoteThumbnailModel, NoteType, RichTextBlock, TagColor } from '../core/models/models';
 import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
 import { tagColorOptions } from '../core/utils/tagColors';
@@ -36,9 +44,6 @@ import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore, type NoteEditDraft } from '../store/useKnowledgeStore';
 import { useSyncStore } from '../store/useSyncStore';
 import { useToastStore } from '../store/useToastStore';
-
-const noteTypes: NoteType[] = ['standard', 'linguistic_doubt', 'reference', 'snippet'];
-const thumbnailVariants: NoteThumbnailModel['variant'][] = ['purple', 'paper', 'terminal', 'landscape', 'book', 'text'];
 
 export function NoteDetailPage() {
   const { id } = useParams();
@@ -59,7 +64,7 @@ export function NoteDetailPage() {
   const [exampleText, setExampleText] = useState('');
   const [linkInput, setLinkInput] = useState('');
   const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState<TagColor>('purple');
+  const [newTagColor, setNewTagColor] = useState<TagColor>(defaultNewTagColor);
   const [editingExampleIndex, setEditingExampleIndex] = useState<number | null>(null);
   const [editingExampleText, setEditingExampleText] = useState('');
   const [selectedLinkedNoteId, setSelectedLinkedNoteId] = useState<string | null>(null);
@@ -149,7 +154,7 @@ export function NoteDetailPage() {
   const linkableNotes = notes
     .filter((item) => item.id !== note?.id && !item.isTrashed && !note?.linkedNoteIds.includes(item.id))
     .filter((item) => !linkSearchQuery || item.title.toLowerCase().includes(linkSearchQuery))
-    .slice(0, 6);
+    .slice(0, appLimits.linkedNoteSuggestions);
   const saveStatusLabel = getSaveStatusLabel({ isEditing, isNewNote, note, saving: savingPage, t });
 
   function updateDraft(input: Partial<NoteEditDraft>) {
@@ -252,7 +257,7 @@ export function NoteDetailPage() {
 
     await updateNoteTags(note.id, [...note.tagIds, created.id]);
     setNewTagName('');
-    setNewTagColor('purple');
+    setNewTagColor(defaultNewTagColor);
     setTagPickerOpen(false);
     pushToast(t('noteDetail.tagCreated'), 'success');
   }
@@ -770,7 +775,7 @@ function ThumbnailPicker({
   pickerRef: RefObject<HTMLDivElement>;
   t: (key: string) => string;
 }) {
-  const currentThumbnail = current ?? { variant: 'text' as const };
+  const currentThumbnail = current ?? { variant: defaultNoteThumbnailVariant };
 
   return (
     <div className="thumbnail-picker" ref={pickerRef}>
@@ -790,7 +795,7 @@ function ThumbnailPicker({
       </button>
       {open ? (
         <div className="thumbnail-picker-menu" role="menu" aria-label={t('noteDetail.thumbnail')}>
-          {thumbnailVariants.map((variant) => (
+          {thumbnailOptions.map(({ id: variant }) => (
             <button
               className={variant === currentThumbnail.variant ? 'thumbnail-option active' : 'thumbnail-option'}
               key={variant}
@@ -1048,7 +1053,7 @@ function RelatedLinkRow({ href, onRemove, title }: { href: string; onRemove?: ()
 }
 
 function parseNoteType(value: string | null): NoteType {
-  return noteTypes.includes(value as NoteType) ? (value as NoteType) : 'standard';
+  return noteTypeOptions.includes(value as NoteType) ? (value as NoteType) : defaultNewNoteType;
 }
 
 function formatDate(value: string, locale: string) {

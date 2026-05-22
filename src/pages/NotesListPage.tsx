@@ -6,8 +6,9 @@ import { CustomSelect } from '../components/ui/CustomSelect';
 import { IconBadge } from '../components/ui/IconBadge';
 import { NotesFilterRow } from '../components/ui/NotesFilterRow';
 import { NoteRow } from '../components/ui/NoteRow';
+import { defaultNewCollectionColor } from '../config/appSettings';
 import type { Collection, Note, Tag as TagModel, TagColor } from '../core/models/models';
-import { defaultNotesSortOrder, filterNotes, normalizeNotesSortOrder, type NotesSortOrder } from '../core/utils/noteFilters';
+import { defaultNotesSortOrder, filterNotes, normalizeNotesSortOrder, recentNotesSortOrder, type NotesSortOrder } from '../core/utils/noteFilters';
 import { tagColorOptions } from '../core/utils/tagColors';
 import { sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
@@ -36,7 +37,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
   const tagParam = searchParams.get('tag');
   const collectionParam = searchParams.get('collection');
-  const defaultSortOrder: NotesSortOrder = mode === 'recent' ? 'updatedDesc' : defaultNotesSortOrder;
+  const defaultSortOrder: NotesSortOrder = mode === 'recent' ? recentNotesSortOrder : defaultNotesSortOrder;
   const sortOrder = mode === 'recent' ? defaultSortOrder : normalizeNotesSortOrder(searchParams.get('sort'));
   const activeTag = tags.find((tag) => tag.id === tagParam);
   const activeCollection = collections.find((collection) => collection.id === collectionParam);
@@ -344,9 +345,9 @@ function BulkTagCheckbox({
 
 export function CollectionsPage() {
   const { t } = useI18n();
-  const [newDraft, setNewDraft] = useState<CollectionDraft>({ name: '', color: 'blue' });
+  const [newDraft, setNewDraft] = useState<CollectionDraft>({ name: '', color: defaultNewCollectionColor });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingDraft, setEditingDraft] = useState<CollectionDraft>({ name: '', color: 'blue' });
+  const [editingDraft, setEditingDraft] = useState<CollectionDraft>({ name: '', color: defaultNewCollectionColor });
   const collections = useKnowledgeStore((state) => state.collections);
   const notes = useKnowledgeStore((state) => state.notes);
   const createCollection = useKnowledgeStore((state) => state.createCollection);
@@ -362,7 +363,7 @@ export function CollectionsPage() {
       return;
     }
 
-    setNewDraft({ name: '', color: 'blue' });
+    setNewDraft({ name: '', color: defaultNewCollectionColor });
     pushToast(t('collections.created'), 'success');
   }
 

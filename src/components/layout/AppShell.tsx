@@ -1,9 +1,10 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { useState } from 'react';
+import { navigationSettings } from '../../config/appSettings';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 
-const searchRoutes = new Set(['/', '/notes', '/favorites', '/recent', '/trash', '/collections', '/tags', '/profile']);
+const searchRoutes = new Set(navigationSettings.searchEnabledRoutes);
 
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
