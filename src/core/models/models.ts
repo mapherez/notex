@@ -104,7 +104,7 @@ export type TagColor =
   | 'blue'
   | 'green'
   | 'amber'
-  | 'purple'
+  | 'red'
   | 'pink'
   | 'orange'
   | 'yellow'

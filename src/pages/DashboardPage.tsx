@@ -90,7 +90,7 @@ export function DashboardPage() {
       value: tags.length,
       delta: formatWeekDelta(countTouchedTags(activeNotesThisWeek, tags), t),
       icon: Tag,
-      color: 'purple',
+      color: 'red',
       to: '/tags',
     },
     {

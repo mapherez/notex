@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import type { TagColor } from '../../core/models/models';
 
 export function IconBadge({
-  color = 'purple',
+  color = 'red',
   icon: Icon,
 }: {
   color?: TagColor;

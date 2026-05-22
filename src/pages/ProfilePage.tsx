@@ -264,7 +264,7 @@ export function ProfilePage() {
           <section className="settings-card">
             <h2 className="settings-title">{t("profile.preferences.title")}</h2>
             <PreferenceSelect
-              icon={<IconBadge icon={CalendarClock} color="purple" />}
+              icon={<IconBadge icon={CalendarClock} color="red" />}
               label={t("profile.preferences.theme")}
               description={t("profile.preferences.themeDescription")}
               value={settings.theme}
@@ -382,7 +382,7 @@ export function ProfilePage() {
 
               <div className="profile-organization-section profile-organization-section--tags">
                 <div className="profile-organization-header">
-                  <IconBadge icon={Star} color="purple" />
+                  <IconBadge icon={Star} color="red" />
                   <div>
                     <div className="settings-label">
                       {t("profile.organization.favoriteTags")}
@@ -464,7 +464,7 @@ export function ProfilePage() {
               />
               <Metric
                 icon={FileText}
-                color="purple"
+                color="red"
                 label={t("profile.stats.notes")}
                 value={String(activeNotes.length)}
               />

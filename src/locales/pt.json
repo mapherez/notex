@@ -146,7 +146,7 @@
       "neutral": "Neutro",
       "orange": "Laranja",
       "pink": "Rosa",
-      "purple": "Roxo",
+      "red": "Vermelho",
       "yellow": "Amarelo"
     }
   },
@@ -450,7 +450,7 @@
   },
   "mock": {
     "tags": [
-      { "id": "tag-grammar", "name": "gramática", "color": "purple" },
+      { "id": "tag-grammar", "name": "gramática", "color": "red" },
       { "id": "tag-doubt", "name": "duvida", "color": "neutral" }
     ],
     "collections": [

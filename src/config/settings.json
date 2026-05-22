@@ -19,7 +19,7 @@
     ]
   },
   "defaults": {
-    "newTagColor": "purple",
+    "newTagColor": "red",
     "newCollectionColor": "blue",
     "noteThumbnailVariant": "text",
     "userSettings": {
@@ -44,7 +44,7 @@
     "linkedNoteSuggestions": 6
   },
   "options": {
-    "tagColors": ["blue", "green", "amber", "purple", "pink", "orange", "yellow", "neutral"],
+    "tagColors": ["blue", "green", "amber", "red", "pink", "orange", "yellow", "neutral"],
     "noteTypes": ["standard", "linguistic_doubt", "reference", "snippet"],
     "thumbnailVariants": [
       {
