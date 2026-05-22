@@ -70,7 +70,7 @@ export function AppUpdatePrompt({ enabled }: { enabled: boolean }) {
   return (
     <aside className="app-update-banner" role="status" aria-live="polite">
       <div className="app-update-icon">
-        <RefreshCw size={18} className={installing ? 'spinning' : undefined} />
+        <RefreshCw className={installing ? 'spinning' : undefined} />
       </div>
       <div className="app-update-copy">
         <strong>{t('updater.title')}</strong>
@@ -87,9 +87,12 @@ export function AppUpdatePrompt({ enabled }: { enabled: boolean }) {
                 ? t('updater.installingProgress', { percent: progress.percent })
                 : t('updater.installing')}
             </span>
-            <span className={progress?.percent === null || progress?.percent === undefined ? 'app-update-progress-bar indeterminate' : 'app-update-progress-bar'}>
-              <span style={{ width: `${progress?.percent ?? 35}%` }} />
-            </span>
+            <progress
+              className={progress?.percent === null || progress?.percent === undefined ? 'app-update-progress-bar indeterminate' : 'app-update-progress-bar'}
+              max={100}
+              value={progress?.percent ?? undefined}
+              aria-label={t('updater.installing')}
+            />
           </>
         ) : null}
       </div>
@@ -104,3 +107,4 @@ export function AppUpdatePrompt({ enabled }: { enabled: boolean }) {
     </aside>
   );
 }
+

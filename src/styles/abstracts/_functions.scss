@@ -1,0 +1,15 @@
+@function token($name) {
+  @return var(--nx-#{$name});
+}
+
+@function color-token($name) {
+  @return token("color-#{$name}");
+}
+
+@function space($step) {
+  @return token("space-#{$step}");
+}
+
+@function radius($name) {
+  @return token("radius-#{$name}");
+}

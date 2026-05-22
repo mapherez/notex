@@ -183,7 +183,7 @@ export function DashboardPage() {
                         </span>
                       </>
                     ) : (
-                      <Plus size={24} />
+                      <Plus />
                     )}
                   </button>
                   {note ? (
@@ -197,13 +197,13 @@ export function DashboardPage() {
                         openQuickPinPicker(index);
                       }}
                     >
-                      <Edit3 size={15} />
+                      <Edit3 />
                     </button>
                   ) : null}
                   {activeQuickPinIndex === index ? (
                     <div className="quick-pin-picker">
                       <label className="quick-pin-search">
-                        <Search size={17} />
+                        <Search />
                         <input
                           ref={quickPinInputRef}
                           value={quickPinQuery}
@@ -247,7 +247,7 @@ export function DashboardPage() {
                           type="button"
                           onClick={() => void selectQuickPin(index, null)}
                         >
-                          <X size={15} />
+                          <X />
                           {t("dashboard.quickPins.clear")}
                         </button>
                       ) : null}
@@ -306,7 +306,7 @@ export function DashboardPage() {
                     type="submit"
                     aria-label={t("dashboard.quickCapture.submit")}
                   >
-                    <ArrowRight size={18} />
+                    <ArrowRight />
                   </button>
                 </div>
               </div>
@@ -343,7 +343,7 @@ export function DashboardPage() {
                   key={note.id}
                   to={`/notes/${note.id}`}
                 >
-                  <Timer size={15} />
+                  <Timer />
                   <span className="activity-copy">
                     <span>{note.title}</span>
                     <span>
@@ -459,3 +459,4 @@ function normalizeSearchValue(value: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 }
+

@@ -1,6 +1,8 @@
+import type { ThemePreference } from '../theme/themeRegistry';
+
 export type Locale = 'pt' | 'en';
 
-export type ThemePreference = 'dark' | 'light';
+export type { ThemePreference } from '../theme/themeRegistry';
 
 export type PreferredLayout = 'list' | 'grid';
 

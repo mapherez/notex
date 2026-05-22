@@ -66,7 +66,7 @@ export function NotesFilterRow({
     <div className="notes-filter-row" aria-label={t('notes.filters.label')}>
       <label className="notes-filter-control notes-filter-order">
         <span className="notes-filter-label">
-          <SlidersHorizontal size={16} />
+          <SlidersHorizontal />
           {t('notes.filters.orderBy')}
         </span>
         <select
@@ -106,7 +106,7 @@ export function NotesFilterRow({
 
       {hasActiveFilter ? (
         <button className="notes-filter-clear" type="button" onClick={onClear}>
-          <X size={15} />
+          <X />
           {t('notes.clearFilters')}
         </button>
       ) : null}
@@ -161,7 +161,7 @@ function SearchableFilterField({
   return (
     <div className="notes-filter-control notes-filter-combobox" ref={wrapperRef}>
       <span className="notes-filter-label">
-        <Icon size={16} />
+        <Icon />
         {label}
       </span>
       <button
@@ -174,12 +174,12 @@ function SearchableFilterField({
       >
         <span className={selectedOption?.color ? `notes-filter-dot ${selectedOption.color}` : 'notes-filter-dot neutral'} />
         <span>{selectedOption ? formatOptionLabel(selectedOption) : allLabel}</span>
-        <ChevronDown size={16} />
+        <ChevronDown />
       </button>
       {open ? (
         <div className="notes-filter-menu">
           <label className="notes-filter-search">
-            <Search size={15} />
+            <Search />
             <input ref={inputRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchPlaceholder} />
           </label>
           <div className="notes-filter-options" role="listbox">
@@ -221,3 +221,4 @@ function normalizeSearchValue(value: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 }
+

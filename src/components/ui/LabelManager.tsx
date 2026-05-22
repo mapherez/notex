@@ -76,7 +76,7 @@ export function LabelManager({
           ))}
         </select>
         <button type="submit">
-          <Plus size={17} />
+          <Plus />
           {t('common.create')}
         </button>
       </form>
@@ -116,10 +116,10 @@ export function LabelManager({
                 aria-label={t('common.save')}
                 onClick={() => void onUpdate(tag.id, draft)}
               >
-                <Check size={17} />
+                <Check />
               </button>
               <button className="icon-button danger" type="button" aria-label={t('common.remove')} onClick={() => void onDelete(tag.id)}>
-                <Trash2 size={17} />
+                <Trash2 />
               </button>
             </div>
           );
@@ -128,3 +128,4 @@ export function LabelManager({
     </div>
   );
 }
+

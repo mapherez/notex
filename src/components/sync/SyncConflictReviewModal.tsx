@@ -70,13 +70,13 @@ export function SyncConflictReviewModal() {
         <header className="sync-conflict-header">
           <div>
             <span className="sync-conflict-kicker">
-              <AlertTriangle size={16} />
+              <AlertTriangle />
               {t('sync.conflictReview')}
             </span>
             <h2 id="sync-conflict-title">{t('sync.conflictReviewTitle')}</h2>
           </div>
           <button className="icon-button" type="button" aria-label={t('common.close')} onClick={close}>
-            <X size={18} />
+            <X />
           </button>
         </header>
 
@@ -107,19 +107,19 @@ export function SyncConflictReviewModal() {
 
                 <div className="sync-conflict-actions">
                   <button type="button" onClick={() => resolve('local')} disabled={!localNote}>
-                    <HardDrive size={18} />
+                    <HardDrive />
                     {t('sync.keepLocal')}
                   </button>
                   <button type="button" onClick={() => resolve('remote')} disabled={!remoteNote}>
-                    <Cloud size={18} />
+                    <Cloud />
                     {t('sync.useRemote')}
                   </button>
                   <button type="button" onClick={() => resolve('duplicate')} disabled={!localNote || !remoteNote}>
-                    <Copy size={18} />
+                    <Copy />
                     {t('sync.duplicateBoth')}
                   </button>
                   <button type="button" onClick={() => setManualMode((value) => !value)} disabled={!baseNote}>
-                    <GitMerge size={18} />
+                    <GitMerge />
                     {t('sync.manualMerge')}
                   </button>
                 </div>
@@ -151,11 +151,11 @@ function WorkspaceConflictActions({ onResolve }: { onResolve: (action: 'local' |
       <p>{t('sync.workspaceConflictDescription')}</p>
       <div className="sync-conflict-actions">
         <button type="button" onClick={() => onResolve('local')}>
-          <HardDrive size={18} />
+          <HardDrive />
           {t('sync.keepLocal')}
         </button>
         <button type="button" onClick={() => onResolve('remote')}>
-          <Cloud size={18} />
+          <Cloud />
           {t('sync.useRemote')}
         </button>
       </div>
@@ -179,7 +179,7 @@ function ConflictSnapshot({
   return (
     <article className="sync-conflict-snapshot">
       <h3>
-        <Icon size={17} />
+        <Icon />
         {title}
       </h3>
       {note ? (
@@ -277,7 +277,7 @@ function ManualMergeEditor({
       </MergeField>
       <div className="manual-merge-actions">
         <button type="button" onClick={onResolve}>
-          <Check size={18} />
+          <Check />
           {t('sync.saveMerged')}
         </button>
       </div>
@@ -410,3 +410,4 @@ function tipToText(note?: Note | null) {
 
   return [note.content.tip.title, note.content.tip.body].filter(Boolean).join('\n');
 }
+

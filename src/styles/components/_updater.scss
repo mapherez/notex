@@ -1,0 +1,137 @@
+.app-update-banner {
+  position: fixed;
+  left: var(--nx-space-6);
+  bottom: var(--nx-space-6);
+  z-index: 95;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  width: min(34rem, calc(100vw - 2rem));
+  align-items: center;
+  gap: var(--nx-space-4);
+  border: 1px solid color-mix(in srgb, var(--nx-color-accent) 35%, var(--nx-color-border));
+  border-radius: var(--nx-radius-md);
+  background: var(--nx-color-surface-elevated);
+  padding: var(--nx-space-4);
+  box-shadow: var(--nx-shadow-soft);
+}
+
+.app-update-icon {
+  display: grid;
+  width: 2.45rem;
+  height: 2.45rem;
+  place-items: center;
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-accent-soft);
+  color: var(--nx-color-accent-strong);
+}
+
+.app-update-icon .spinning {
+  animation: spin 900ms linear infinite;
+}
+
+.app-update-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--nx-space-1);
+}
+
+.app-update-copy strong {
+  color: var(--nx-color-text);
+  font-size: 1rem;
+}
+
+.app-update-copy span {
+  color: var(--nx-color-text-muted);
+  font-size: 0.88rem;
+}
+
+.app-update-progress {
+  color: var(--nx-color-accent-strong);
+  font-weight: 720;
+}
+
+.app-update-progress-bar {
+  display: block;
+  width: 100%;
+  height: 0.36rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: var(--nx-color-surface-subtle);
+  appearance: none;
+}
+
+.app-update-progress-bar::-webkit-progress-bar {
+  border-radius: inherit;
+  background: var(--nx-color-surface-subtle);
+}
+
+.app-update-progress-bar::-webkit-progress-value {
+  border-radius: inherit;
+  background: var(--nx-color-accent);
+  transition: width 160ms ease;
+}
+
+.app-update-progress-bar::-moz-progress-bar {
+  border-radius: inherit;
+  background: var(--nx-color-accent);
+  transition: width 160ms ease;
+}
+
+.app-update-progress-bar.indeterminate {
+  position: relative;
+}
+
+.app-update-progress-bar.indeterminate::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 35%;
+  border-radius: inherit;
+  background: var(--nx-color-accent);
+  animation: indeterminate-progress 1100ms ease-in-out infinite;
+  content: "";
+}
+
+.app-update-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+}
+
+.app-update-actions button {
+  min-height: 2.45rem;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-input);
+  color: var(--nx-color-text);
+  padding: 0 var(--nx-space-3);
+  font-weight: 740;
+}
+
+.app-update-actions button:first-child {
+  border-color: transparent;
+  background: var(--nx-color-accent);
+  color: #fff;
+}
+
+.app-update-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes indeterminate-progress {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  100% {
+    transform: translateX(290%);
+  }
+}
+

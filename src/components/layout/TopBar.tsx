@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SearchBox } from '../ui/SearchBox';
 import { cloudSyncEnabled } from '../../config/appSettings';
+import { getNextTheme } from '../../core/theme/themeRegistry';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
@@ -35,28 +36,28 @@ export function TopBar({
   });
 
   return (
-    <header className={clsx('topbar', showSearch && 'with-search')}>
+    <header className={clsx('topbar', showSearch && 'topbar--with-search')}>
       <button className="icon-button mobile-menu-button" type="button" aria-label={t('navigation.expand')} onClick={onMenuClick}>
-        <Menu size={20} />
+        <Menu />
       </button>
       {showSearch ? (
-        <div className="topbar-search-area">
+        <div className="topbar__search-area">
           <SearchBox />
         </div>
       ) : (
         <span />
       )}
-      <div className="topbar-actions" ref={actionsRef}>
+      <div className="topbar__actions" ref={actionsRef}>
         <button
           className="icon-button"
           type="button"
           aria-label={t('topbar.theme')}
           onClick={() => {
             setAccountOpen(false);
-            void setTheme(theme === 'dark' ? 'light' : 'dark');
+            void setTheme(getNextTheme(theme));
           }}
         >
-          {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
+          {theme === 'dark' ? <Sun /> : <Moon />}
         </button>
         <button
           className="avatar-button"
@@ -70,10 +71,10 @@ export function TopBar({
             {accountConnected && user?.avatarUrl ? (
               <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
             ) : (
-              <UserRound size={20} strokeWidth={1.8} />
+              <UserRound strokeWidth={1.8} />
             )}
           </span>
-          <ChevronDown size={18} color="var(--color-text-muted)" />
+          <ChevronDown className="topbar__account-chevron" />
         </button>
         {accountOpen ? (
           <div className="floating-menu topbar-menu account-menu">
@@ -102,7 +103,7 @@ export function TopBar({
                   setAccountOpen(false);
                 }}
               >
-                <LogOut size={16} />
+                <LogOut />
                 {t('profile.security.logout')}
               </button>
             ) : null}
@@ -112,3 +113,4 @@ export function TopBar({
     </header>
   );
 }
+

@@ -114,7 +114,7 @@ export function EditableUsageExamplesTable({
                 </td>
                 <td className="usage-actions-cell">
                   <button className="icon-button danger" type="button" aria-label={t('common.remove')} onClick={() => deleteDraftRow(row.id)}>
-                    <Trash2 size={17} />
+                    <Trash2 />
                   </button>
                 </td>
               </tr>
@@ -142,18 +142,18 @@ export function EditableUsageExamplesTable({
       {isEditing ? (
         <div className="usage-editor-actions">
           <button className="usage-add-row-button" type="button" onClick={addDraftRow}>
-            <Plus size={18} />
+            <Plus />
             {t('noteDetail.addUsageRow')}
           </button>
           {!controlledEditing ? (
             <>
               <span className="usage-editor-spacer" />
               <button className="editor-accept-button" disabled={saving} type="button" onClick={() => void save()}>
-                <Check size={17} />
+                <Check />
                 {t('editor.accept')}
               </button>
               <button className="editor-cancel-button" disabled={saving} type="button" onClick={cancel}>
-                <X size={17} />
+                <X />
                 {t('common.cancel')}
               </button>
             </>
@@ -161,10 +161,11 @@ export function EditableUsageExamplesTable({
         </div>
       ) : readOnly ? null : (
         <button className="usage-add-row-button" type="button" onClick={beginEdit}>
-          <Pencil size={18} />
+          <Pencil />
           {t('noteDetail.editUsageTable')}
         </button>
       )}
     </div>
   );
 }
+

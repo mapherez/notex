@@ -27,20 +27,20 @@ export function CloudDataChoiceModal() {
         <p>{t('sync.cloudChoiceDescription', { email: cloudChoice.email })}</p>
         {isResolvingCloudChoice ? (
           <div className="choice-modal-status" role="status" aria-live="polite">
-            <Loader2 size={18} />
+            <Loader2 />
             <span>{t('sync.resolvingCloudChoice')}</span>
           </div>
         ) : null}
         <div className="choice-modal-actions">
           <button type="button" onClick={() => chooseData('local')} disabled={isResolvingCloudChoice}>
-            <HardDrive size={20} />
+            <HardDrive />
             <span>
               <span>{t('sync.useLocalData')}</span>
               <span>{t('sync.useLocalDataDescription')}</span>
             </span>
           </button>
           <button type="button" onClick={() => chooseData('cloud')} disabled={isResolvingCloudChoice}>
-            <Cloud size={20} />
+            <Cloud />
             <span>
               <span>{t('sync.useCloudData')}</span>
               <span>{t('sync.useCloudDataDescription')}</span>
@@ -51,3 +51,4 @@ export function CloudDataChoiceModal() {
     </div>
   );
 }
+

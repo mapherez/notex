@@ -1,0 +1,23 @@
+@mixin emit-css-vars($tokens) {
+  @each $name, $value in $tokens {
+    --nx-#{$name}: #{$value};
+  }
+}
+
+@mixin focus-ring($color: var(--nx-color-accent)) {
+  outline: 2px solid color-mix(in srgb, #{$color} 55%, transparent);
+  outline-offset: 3px;
+}
+
+@mixin icon-size($size) {
+  svg {
+    width: $size;
+    height: $size;
+  }
+}
+
+@mixin media-down($width) {
+  @media (max-width: $width) {
+    @content;
+  }
+}

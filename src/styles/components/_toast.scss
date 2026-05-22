@@ -1,0 +1,38 @@
+.toast-viewport {
+  position: fixed;
+  right: var(--nx-space-6);
+  bottom: var(--nx-space-6);
+  display: grid;
+  gap: var(--nx-space-3);
+  z-index: 100;
+}
+
+.toast {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-width: min(22rem, calc(100vw - 2rem));
+  align-items: center;
+  gap: var(--nx-space-3);
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-md);
+  background: var(--nx-color-surface-elevated);
+  padding: var(--nx-space-3);
+  box-shadow: var(--nx-shadow-soft);
+}
+
+.toast.success svg {
+  color: var(--nx-color-success);
+}
+
+.toast.warning svg {
+  color: var(--nx-color-warning);
+}
+
+.mobile-menu-button {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+

@@ -12,7 +12,8 @@ export function IconBadge({
 }) {
   return (
     <span className={clsx('icon-badge', color)} aria-hidden="true">
-      <Icon size={22} strokeWidth={1.8} />
+      <Icon strokeWidth={1.8} />
     </span>
   );
 }
+

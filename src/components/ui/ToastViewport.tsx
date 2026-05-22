@@ -20,10 +20,10 @@ export function ToastViewport() {
         const Icon = icons[toast.tone];
         return (
           <div className={clsx('toast', toast.tone)} key={toast.id}>
-            <Icon size={18} />
+            <Icon />
             <span>{toast.message}</span>
             <button className="icon-button" type="button" aria-label={t('common.dismiss')} onClick={() => dismissToast(toast.id)}>
-              <X size={16} />
+              <X />
             </button>
           </div>
         );
@@ -31,3 +31,4 @@ export function ToastViewport() {
     </div>
   );
 }
+

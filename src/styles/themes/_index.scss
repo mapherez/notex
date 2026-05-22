@@ -1,0 +1,20 @@
+@use "../abstracts/mixins" as *;
+@use "../abstracts/variables" as *;
+@use "dark";
+@use "light";
+
+:root {
+  @include emit-css-vars($base-tokens);
+}
+
+[data-theme="dark"] {
+  @include emit-css-vars(dark.$theme);
+
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  @include emit-css-vars(light.$theme);
+
+  color-scheme: light;
+}

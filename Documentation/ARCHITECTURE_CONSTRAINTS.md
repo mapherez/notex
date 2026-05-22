@@ -4,9 +4,9 @@
 
 Create a centralized theme and styling architecture.
 Do not scatter visual decisions across components.
-Use CSS variables and reusable abstractions for theme values such as colors, surfaces, borders, radii, shadows, spacing, and text roles.
+Use SCSS maps as the source of truth for theme values such as colors, surfaces, borders, radii, shadows, spacing, and text roles. Emit runtime CSS variables with the `--nx-` prefix for theme switching.
 Prefer semantic theme tokens over hardcoded values.
-If SCSS/SASS is used, use variables, mixins, and partials where they improve maintainability.
+Use SCSS variables, mixins, functions, and grouped partials for app styling. Avoid inline visual styling in React components.
 The styling system must make it easy to update the app theme from a small number of files.
 
 ## Localization

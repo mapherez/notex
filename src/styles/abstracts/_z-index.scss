@@ -1,0 +1,6 @@
+@use "sass:map";
+@use "variables" as *;
+
+@function z($name) {
+  @return map.get($z-index, $name);
+}

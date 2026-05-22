@@ -128,7 +128,7 @@ export function NoteDetailPage() {
     return (
       <div className="page-content list-page-grid">
         <button className="back-button" type="button" onClick={() => navigate(-1)}>
-          <ChevronLeft size={20} />
+          <ChevronLeft />
           {t('common.back')}
         </button>
         <EmptyState />
@@ -323,30 +323,31 @@ export function NoteDetailPage() {
     <>
       <header className="document-top">
         <button className="back-button" type="button" onClick={() => navigate(-1)}>
-          <ChevronLeft size={20} />
+          <ChevronLeft />
           {t('common.back')}
         </button>
         <div className="document-actions" ref={documentActionsRef}>
           {note ? (
             <button
-              className="icon-button"
+              className={note.isFavorite ? 'icon-button document-actions__favorite is-active' : 'icon-button document-actions__favorite'}
               type="button"
               aria-label={note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
+              aria-pressed={note.isFavorite}
               onClick={() => {
                 void toggleFavorite(note.id).then(() => pushToast(t('notes.favoriteChanged'), 'success'));
               }}
             >
-              <Star size={20} fill={note.isFavorite ? 'var(--color-warning)' : 'transparent'} color="var(--color-warning)" />
+              <Star />
             </button>
           ) : null}
           <span className="inline-actions">
-            <FileText size={17} color="var(--color-text-muted)" />
+            <FileText />
             {saveStatusLabel}
           </span>
           {note ? (
             <>
               <button className="icon-button" type="button" aria-label={t('common.more')} onClick={() => setMoreOpen((value) => !value)}>
-                <MoreVertical size={20} />
+                <MoreVertical />
               </button>
               {moreOpen ? (
                 <div className="floating-menu document-menu">
@@ -357,7 +358,7 @@ export function NoteDetailPage() {
                       setMoreOpen(false);
                     }}
                   >
-                    <Pin size={16} />
+                    <Pin />
                     {note.isPinned ? t('common.unpin') : t('common.pin')}
                   </button>
                   <button
@@ -372,7 +373,7 @@ export function NoteDetailPage() {
                       setMoreOpen(false);
                     }}
                   >
-                    <Copy size={16} />
+                    <Copy />
                     {t('common.duplicate')}
                   </button>
                   <button
@@ -382,7 +383,7 @@ export function NoteDetailPage() {
                       setMoreOpen(false);
                     }}
                   >
-                    <LinkIcon size={16} />
+                    <LinkIcon />
                     {t('common.copyLink')}
                   </button>
                   <button
@@ -394,7 +395,7 @@ export function NoteDetailPage() {
                       });
                     }}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 />
                     {t('notes.moveToTrash')}
                   </button>
                 </div>
@@ -439,17 +440,17 @@ export function NoteDetailPage() {
                 {isEditing ? (
                   <>
                     <button className="editor-accept-button" disabled={savingPage} type="button" onClick={() => void savePageEdit()}>
-                      <Check size={17} />
+                      <Check />
                       {t('common.save')}
                     </button>
                     <button className="editor-cancel-button" disabled={savingPage} type="button" onClick={cancelPageEdit}>
-                      <X size={17} />
+                      <X />
                       {t('common.cancel')}
                     </button>
                   </>
                 ) : (
                   <button className="editor-cancel-button" type="button" onClick={beginPageEdit}>
-                    <Pencil size={17} />
+                    <Pencil />
                     {t('editor.edit')}
                   </button>
                 )}
@@ -571,8 +572,8 @@ export function NoteDetailPage() {
                   <TagChip key={tag.id} tag={tag} href={`/notes?tag=${tag.id}`} removable onRemove={() => void removeTag(tag.id)} />
                 ))}
               </div>
-              <button className="nav-item mt-4" type="button" onClick={() => setTagPickerOpen((value) => !value)}>
-                <Plus size={18} />
+              <button className="nav-item nav-item--spaced" type="button" onClick={() => setTagPickerOpen((value) => !value)}>
+                <Plus />
                 {t('noteDetail.addTag')}
               </button>
               {tagPickerOpen ? (
@@ -618,10 +619,10 @@ export function NoteDetailPage() {
                         <textarea value={editingExampleText} onChange={(event) => setEditingExampleText(event.target.value)} />
                         <span className="side-row-actions">
                           <button className="icon-button" type="button" aria-label={t('editor.accept')} onClick={() => void saveExampleEdit(index)}>
-                            <Check size={16} />
+                            <Check />
                           </button>
                           <button className="icon-button" type="button" aria-label={t('common.cancel')} onClick={cancelExampleEdit}>
-                            <X size={16} />
+                            <X />
                           </button>
                         </span>
                       </span>
@@ -630,7 +631,7 @@ export function NoteDetailPage() {
                         <span>{example}</span>
                         <span className="side-row-actions">
                           <button className="icon-button" type="button" aria-label={t('editor.edit')} onClick={() => startExampleEdit(index, example)}>
-                            <Pencil size={16} />
+                            <Pencil />
                           </button>
                           <button
                             className="icon-button danger"
@@ -640,7 +641,7 @@ export function NoteDetailPage() {
                               void deleteAdditionalExample(note.id, index).then(() => pushToast(t('noteDetail.exampleDeleted'), 'warning'));
                             }}
                           >
-                            <Trash2 size={16} />
+                            <Trash2 />
                           </button>
                         </span>
                       </>
@@ -648,8 +649,8 @@ export function NoteDetailPage() {
                   </li>
                 ))}
               </ul>
-              <button className="nav-item mt-4" type="button" onClick={() => setExampleOpen((value) => !value)}>
-                <Plus size={18} />
+              <button className="nav-item nav-item--spaced" type="button" onClick={() => setExampleOpen((value) => !value)}>
+                <Plus />
                 {t('noteDetail.addExample')}
               </button>
               {exampleOpen ? (
@@ -693,8 +694,8 @@ export function NoteDetailPage() {
                   />
                 ))}
               </div>
-              <button className="nav-item mt-4" type="button" onClick={() => setLinkOpen((value) => !value)}>
-                <Plus size={18} />
+              <button className="nav-item nav-item--spaced" type="button" onClick={() => setLinkOpen((value) => !value)}>
+                <Plus />
                 {t('noteDetail.addLink')}
               </button>
               {linkOpen ? (
@@ -720,7 +721,7 @@ export function NoteDetailPage() {
                       {linkableNotes.length ? (
                         linkableNotes.map((linkableNote) => (
                           <button key={linkableNote.id} type="button" onClick={() => selectLinkedNote(linkableNote.id)}>
-                            <FileText size={16} />
+                            <FileText />
                             {linkableNote.title}
                           </button>
                         ))
@@ -780,7 +781,7 @@ function ThumbnailPicker({
       >
         <NoteThumbnail thumbnail={currentThumbnail} />
         <span className="thumbnail-picker-edit" aria-hidden="true">
-          <Pencil size={13} />
+          <Pencil />
         </span>
       </button>
       {open ? (
@@ -882,7 +883,7 @@ function CollectionBreadcrumb({ collection, emptyText }: { collection?: Collecti
   if (!collection) {
     return (
       <span className="breadcrumb">
-        <Folder size={20} />
+        <Folder />
         {emptyText}
       </span>
     );
@@ -890,7 +891,7 @@ function CollectionBreadcrumb({ collection, emptyText }: { collection?: Collecti
 
   return (
     <Link className="breadcrumb" to={`/notes?collection=${collection.id}`}>
-      <Folder size={20} />
+      <Folder />
       {collection.name}
     </Link>
   );
@@ -909,7 +910,7 @@ function CollectionSelect({
 
   return (
     <div className="editable-collection-field editing">
-      <Folder size={20} />
+      <Folder />
       <select className="select-control" value={value ?? ''} onChange={(event) => onChange(event.target.value || null)}>
         <option value="">{t('noteDetail.noCollection')}</option>
         {collections.map((item) => (
@@ -936,7 +937,7 @@ function EditableDraftTip({
   return (
     <section className="content-section">
       <div className="tip-box editable-tip-box">
-        <Lightbulb size={22} color="var(--color-accent-strong)" />
+        <Lightbulb />
         <div>
           <h2 className="section-title">{title}</h2>
           <MarkdownEditor
@@ -960,7 +961,7 @@ function TipPreview({ body, title }: { body: string; title: string }) {
   return (
     <section className="content-section">
       <div className="tip-box">
-        <Lightbulb size={22} color="var(--color-accent-strong)" />
+        <Lightbulb />
         <div>
           <h2 className="section-title">{title}</h2>
           <MarkdownPreview emptyText={t('noteDetail.emptyTip')} value={body} />
@@ -979,14 +980,14 @@ function LinkedNoteRow({ noteId, onRemove, title }: { noteId: string; onRemove?:
     <span className="linked-row-shell">
       <Link className="linked-row" to={`/notes/${noteId}`}>
         <span className="inline-actions">
-          <FileText size={17} />
+          <FileText />
           {title}
         </span>
-        <ExternalLink size={15} />
+        <ExternalLink />
       </Link>
       {onRemove ? (
         <button className="icon-button danger" type="button" aria-label={title} onClick={onRemove}>
-          <Trash2 size={16} />
+          <Trash2 />
         </button>
       ) : null}
     </span>
@@ -997,10 +998,10 @@ function RelatedLinkRow({ href, onRemove, title }: { href: string; onRemove?: ()
   const content = (
     <>
       <span className="inline-actions">
-        <FileText size={17} />
+        <FileText />
         {title}
       </span>
-      <ExternalLink size={15} />
+      <ExternalLink />
     </>
   );
 
@@ -1012,7 +1013,7 @@ function RelatedLinkRow({ href, onRemove, title }: { href: string; onRemove?: ()
         </Link>
         {onRemove ? (
           <button className="icon-button danger" type="button" aria-label={title} onClick={onRemove}>
-            <Trash2 size={16} />
+            <Trash2 />
           </button>
         ) : null}
       </span>
@@ -1026,7 +1027,7 @@ function RelatedLinkRow({ href, onRemove, title }: { href: string; onRemove?: ()
       </a>
       {onRemove ? (
         <button className="icon-button danger" type="button" aria-label={title} onClick={onRemove}>
-          <Trash2 size={16} />
+          <Trash2 />
         </button>
       ) : null}
     </span>
@@ -1046,3 +1047,4 @@ function formatDate(value: string, locale: string) {
     minute: '2-digit',
   }).format(new Date(value));
 }
+

@@ -1,0 +1,60 @@
+.document-menu {
+  right: 0;
+  top: calc(100% + var(--nx-space-2));
+}
+
+.inline-picker,
+.inline-form {
+  display: grid;
+  gap: var(--nx-space-2);
+  margin-top: var(--nx-space-3);
+}
+
+.inline-picker {
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+}
+
+.inline-picker button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+}
+
+.tag-picker-panel {
+  display: grid;
+  gap: var(--nx-space-4);
+  margin-top: var(--nx-space-3);
+}
+
+.inline-help {
+  margin: 0;
+  color: var(--nx-color-text-muted);
+  font-size: 0.88rem;
+}
+
+.tag-create-form {
+  border-top: 1px solid var(--nx-color-border);
+  padding-top: var(--nx-space-3);
+}
+
+.tag-create-form .select-control {
+  width: 100%;
+}
+
+.inline-form input,
+.inline-form textarea {
+  width: 100%;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-input);
+  color: var(--nx-color-text);
+  padding: var(--nx-space-3);
+  outline: none;
+}
+
+.inline-form textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+

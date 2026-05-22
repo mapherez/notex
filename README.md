@@ -12,7 +12,7 @@ The app currently runs in local-only mode. Google Drive sync and the Node auth b
 - Zustand
 - Tauri SQLite via `rusqlite`
 - React Router
-- Tailwind CSS
+- SCSS with Sass maps, theme tokens, and Stylelint guardrails
 - Node.js auth broker, parked for future sync work
 - SQLite via `better-sqlite3`, used only by the parked Node auth broker
 - Google Drive `appDataFolder` sync, parked for future sync work

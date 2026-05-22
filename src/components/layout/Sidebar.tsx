@@ -116,7 +116,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             type="button"
             onClick={() => createNote("standard")}
           >
-            <Plus size={20} />
+            <Plus />
             {t("navigation.newNote")}
           </button>
         </div>
@@ -135,7 +135,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                 }
                 onClick={onClose}
               >
-                <Icon size={21} strokeWidth={1.8} />
+                <Icon strokeWidth={1.8} />
                 <span>{t(labelKey)}</span>
               </NavLink>
             );
@@ -152,7 +152,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               onClick={onClose}
             >
               <span>{t("navigation.collections")}</span>
-              <Plus size={16} />
+              <Plus />
             </NavLink>
           </div>
           {collections.map((collection) => (
@@ -168,7 +168,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               )}
               onClick={onClose}
             >
-              <Folder size={21} strokeWidth={1.8} />
+              <Folder strokeWidth={1.8} />
               <span>{collection.name}</span>
             </Link>
           ))}
@@ -178,7 +178,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         {cloudSyncEnabled ? (
           <button className="sidebar-sync-button" type="button" onClick={handleSyncClick}>
             <span className="sidebar-sync-icon">
-              {conflictCount ? <AlertTriangle size={20} /> : <Cloud size={20} />}
+              {conflictCount ? <AlertTriangle /> : <Cloud />}
               {pendingCount || conflictCount ? <span className="sidebar-sync-badge">{conflictCount || pendingCount}</span> : null}
             </span>
             <span>
@@ -200,3 +200,4 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
     </>
   );
 }
+

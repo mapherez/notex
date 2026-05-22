@@ -63,7 +63,7 @@ export function SearchBox({ className }: { className?: string }) {
   return (
     <div className={className ? `search-box-shell ${className}` : 'search-box-shell'} ref={searchRef}>
       <label className="search-box">
-        <Search size={19} />
+        <Search />
         <input
           ref={inputRef}
           type="search"
@@ -179,3 +179,4 @@ function normalizeSearchValue(value: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 }
+

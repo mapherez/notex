@@ -225,39 +225,39 @@ export function MarkdownEditor({
         <>
           <div className="markdown-toolbar" aria-label={t('editor.toolbar')}>
             <ToolbarButton label={t('editor.bold')} onClick={() => replaceSelection({ fallback: t('editor.boldText'), prefix: '**' })}>
-              <Bold size={17} />
+              <Bold />
             </ToolbarButton>
             <ToolbarButton label={t('editor.italic')} onClick={() => replaceSelection({ fallback: t('editor.italicText'), prefix: '*' })}>
-              <Italic size={17} />
+              <Italic />
             </ToolbarButton>
             <ToolbarButton label={t('editor.heading')} onClick={() => prefixLines((line) => `## ${line.replace(/^#{1,6}\s+/, '')}`)}>
-              <Heading1 size={17} />
+              <Heading1 />
             </ToolbarButton>
             <span className="toolbar-divider" />
             <ToolbarButton label={t('editor.bulletList')} onClick={() => prefixLines((line) => `- ${line.replace(/^[-*+]\s+/, '')}`)}>
-              <List size={17} />
+              <List />
             </ToolbarButton>
             <ToolbarButton
               label={t('editor.numberedList')}
               onClick={() => prefixLines((line, index) => `${index + 1}. ${line.replace(/^\d+[.)]\s+/, '')}`)}
             >
-              <ListOrdered size={17} />
+              <ListOrdered />
             </ToolbarButton>
             <ToolbarButton label={t('editor.checkList')} onClick={() => prefixLines((line) => `- [ ] ${line.replace(/^[-*+]\s+(?:\[[ xX]\]\s+)?/, '')}`)}>
-              <ListChecks size={17} />
+              <ListChecks />
             </ToolbarButton>
             <ToolbarButton label={t('editor.quote')} onClick={() => prefixLines((line) => `> ${line.replace(/^>\s?/, '')}`)}>
-              <Quote size={17} />
+              <Quote />
             </ToolbarButton>
             <span className="toolbar-divider" />
             <ToolbarButton label={t('editor.inlineCode')} onClick={() => replaceSelection({ fallback: t('editor.codeText'), prefix: '`' })}>
-              <Code size={17} />
+              <Code />
             </ToolbarButton>
             <ToolbarButton label={t('editor.codeBlock')} onClick={insertCodeBlock}>
-              <Code size={17} />
+              <Code />
             </ToolbarButton>
             <ToolbarButton label={t('editor.link')} onClick={insertLink}>
-              <Link2 size={17} />
+              <Link2 />
             </ToolbarButton>
             <span className="toolbar-divider" />
             <div className="table-tool" ref={tableToolRef}>
@@ -268,25 +268,25 @@ export function MarkdownEditor({
                 aria-label={t('editor.tableMenu')}
                 onClick={() => setTableMenuOpen((open) => !open)}
               >
-                <Table2 size={17} />
-                <ChevronDown size={14} />
+                <Table2 />
+                <ChevronDown />
               </button>
               {tableMenuOpen ? (
                 <div className="markdown-table-menu">
                   <ToolbarButton label={t('editor.insertTable')} onClick={() => applyTableAction('insert-table')}>
-                    <Table2 size={16} />
+                    <Table2 />
                   </ToolbarButton>
                   <ToolbarButton disabled={!canEditCurrentTable} label={t('editor.addRowAbove')} onClick={() => applyTableAction('row-above')}>
-                    <ArrowUp size={16} />
+                    <ArrowUp />
                   </ToolbarButton>
                   <ToolbarButton disabled={!canEditCurrentTable} label={t('editor.addRowBelow')} onClick={() => applyTableAction('row-below')}>
-                    <ArrowDown size={16} />
+                    <ArrowDown />
                   </ToolbarButton>
                   <ToolbarButton disabled={!canEditCurrentTable} label={t('editor.addColumnLeft')} onClick={() => applyTableAction('column-left')}>
-                    <ArrowLeft size={16} />
+                    <ArrowLeft />
                   </ToolbarButton>
                   <ToolbarButton disabled={!canEditCurrentTable} label={t('editor.addColumnRight')} onClick={() => applyTableAction('column-right')}>
-                    <ArrowRight size={16} />
+                    <ArrowRight />
                   </ToolbarButton>
                 </div>
               ) : null}
@@ -314,11 +314,11 @@ export function MarkdownEditor({
       {showActions ? (
         <div className="markdown-editor-actions">
           <button className="editor-accept-button" disabled={saving} type="button" onClick={() => void accept()}>
-            <Check size={17} />
+            <Check />
             {t('editor.accept')}
           </button>
           <button className="editor-cancel-button" disabled={saving} type="button" onClick={cancel}>
-            <X size={17} />
+            <X />
             {t('common.cancel')}
           </button>
         </div>
@@ -344,3 +344,4 @@ function ToolbarButton({
     </button>
   );
 }
+

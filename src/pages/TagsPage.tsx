@@ -159,22 +159,22 @@ export function TagsPage() {
                 type="button"
                 onClick={() => void saveEdits()}
               >
-                <Save size={17} />
+                <Save />
                 {t('common.save')}
               </button>
               <button className="tags-action-button" type="button" onClick={cancelEdit}>
-                <X size={17} />
+                <X />
                 {t('common.cancel')}
               </button>
             </div>
           ) : (
             <>
               <button className="tags-action-button primary" type="button" onClick={() => setCreateOpen((value) => !value)}>
-                <Plus size={17} />
+                <Plus />
                 {t('tagsPage.newTag')}
               </button>
               <button className="tags-action-button" type="button" onClick={beginEdit}>
-                <Edit3 size={17} />
+                <Edit3 />
                 {t('tagsPage.edit')}
               </button>
             </>
@@ -198,7 +198,7 @@ export function TagsPage() {
               ))}
             </select>
             <button disabled={!newName.trim()} type="submit">
-              <Plus size={17} />
+              <Plus />
               {t('common.create')}
             </button>
           </form>
@@ -232,7 +232,7 @@ export function TagsPage() {
                     ))}
                   </select>
                   <button className="icon-button danger" type="button" aria-label={t('common.remove')} onClick={() => markDeleted(tag.id)}>
-                    <Trash2 size={17} />
+                    <Trash2 />
                   </button>
                 </div>
               );
@@ -292,3 +292,4 @@ function getDraftForTag(tag: TagWithCount | undefined, drafts: Record<string, Ta
 function formatTagCount(count: number, t: ReturnType<typeof useI18n>['t']) {
   return t(count === 1 ? 'tagsPage.noteCountSingular' : 'tagsPage.noteCount', { count });
 }
+

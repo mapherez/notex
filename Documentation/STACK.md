@@ -5,7 +5,7 @@
 - React
 - TypeScript
 - Vite
-- TailwindCSS
+- SCSS with Sass maps, theme tokens, and Stylelint guardrails
 - React Router
 
 ## State And Data

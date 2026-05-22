@@ -1,0 +1,324 @@
+.markdown-editor {
+  display: grid;
+  gap: var(--nx-space-3);
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-md);
+  background: var(--nx-color-surface);
+  padding: var(--nx-space-3);
+}
+
+.markdown-editor.compact {
+  padding: var(--nx-space-2);
+}
+
+.markdown-editor-top,
+.markdown-editor-actions,
+.markdown-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+}
+
+.markdown-editor-top {
+  justify-content: space-between;
+}
+
+.editor-tabs {
+  display: inline-flex;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-input);
+  padding: 0.15rem;
+}
+
+.editor-tabs button {
+  min-height: 2rem;
+  border: 0;
+  border-radius: 0.38rem;
+  background: transparent;
+  color: var(--nx-color-text-muted);
+  padding: 0 var(--nx-space-3);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.editor-tabs button.active {
+  background: var(--nx-color-surface-elevated);
+  color: var(--nx-color-text);
+}
+
+.markdown-toolbar {
+  position: relative;
+  flex-wrap: wrap;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-input);
+  padding: var(--nx-space-2);
+}
+
+.markdown-tool-button {
+  display: inline-flex;
+  min-width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  border: 0;
+  border-radius: 0.42rem;
+  background: transparent;
+  color: var(--nx-color-text-muted);
+}
+
+.markdown-tool-button svg {
+  width: 1.0625rem;
+  height: 1.0625rem;
+}
+
+.markdown-tool-button:hover,
+.markdown-tool-button:focus-visible {
+  background: var(--nx-color-hover);
+  color: var(--nx-color-text);
+  outline: none;
+}
+
+.markdown-tool-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 1.45rem;
+  background: var(--nx-color-border);
+}
+
+.table-tool {
+  position: relative;
+}
+
+.markdown-table-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + var(--nx-space-2));
+  display: flex;
+  gap: var(--nx-space-1);
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-md);
+  background: var(--nx-color-surface-elevated);
+  padding: var(--nx-space-2);
+  box-shadow: var(--nx-shadow-soft);
+  z-index: 65;
+}
+
+.markdown-textarea {
+  width: 100%;
+  min-height: 12rem;
+  resize: vertical;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-input);
+  color: var(--nx-color-text);
+  padding: var(--nx-space-4);
+  line-height: 1.7;
+  outline: none;
+}
+
+.markdown-editor.compact .markdown-textarea {
+  min-height: 7rem;
+}
+
+.markdown-textarea:focus {
+  border-color: color-mix(in srgb, var(--nx-color-accent) 48%, var(--nx-color-border));
+}
+
+.markdown-preview-panel {
+  min-height: 12rem;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-input);
+  padding: var(--nx-space-4);
+}
+
+.markdown-editor-actions {
+  justify-content: flex-end;
+}
+
+.editor-accept-button,
+.editor-cancel-button {
+  display: inline-flex;
+  min-height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nx-space-2);
+  border: 0;
+  border-radius: var(--nx-radius-sm);
+  padding: 0 var(--nx-space-4);
+  font-weight: 750;
+}
+
+.editor-accept-button {
+  background: var(--nx-color-accent);
+  color: #fff;
+}
+
+.editor-cancel-button {
+  background: var(--nx-color-surface-subtle);
+  color: var(--nx-color-text-muted);
+}
+
+.markdown-preview {
+  display: grid;
+  gap: var(--nx-space-3);
+  color: var(--nx-color-text-muted);
+  line-height: 1.75;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+  margin: var(--nx-space-2) 0 0;
+  color: var(--nx-color-text);
+  font-weight: 780;
+  line-height: 1.25;
+}
+
+.markdown-preview h1 {
+  font-size: 1.6rem;
+}
+
+.markdown-preview h2 {
+  font-size: 1.3rem;
+}
+
+.markdown-preview h3 {
+  font-size: 1.12rem;
+}
+
+.markdown-preview p {
+  margin: 0;
+}
+
+.markdown-preview strong {
+  color: var(--nx-color-text);
+}
+
+.markdown-preview a {
+  color: color-mix(in srgb, var(--nx-color-accent) 82%, var(--nx-color-text));
+  font-weight: 700;
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+  display: grid;
+  gap: var(--nx-space-2);
+  margin: 0;
+  padding-left: var(--nx-space-6);
+}
+
+.markdown-preview blockquote {
+  margin: 0;
+  border-left: 3px solid var(--nx-color-accent);
+  padding: var(--nx-space-2) 0 var(--nx-space-2) var(--nx-space-4);
+  color: var(--nx-color-text);
+}
+
+.markdown-preview code {
+  border: 1px solid var(--nx-color-border);
+  border-radius: 0.35rem;
+  background: var(--nx-color-surface-subtle);
+  color: var(--nx-color-text);
+  padding: 0.12rem 0.36rem;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.9em;
+}
+
+.markdown-preview pre {
+  overflow: auto;
+  margin: 0;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-surface-subtle);
+  padding: var(--nx-space-4);
+}
+
+.markdown-preview pre code {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.markdown-task {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+}
+
+.markdown-task input {
+  accent-color: var(--nx-color-accent);
+}
+
+.markdown-table-wrap {
+  overflow-x: auto;
+}
+
+.markdown-table {
+  width: 100%;
+  min-width: 28rem;
+  overflow: hidden;
+  border: 1px solid var(--nx-color-border-strong);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 0.65rem;
+}
+
+.markdown-table th,
+.markdown-table td {
+  border-right: 1px solid var(--nx-color-border);
+  border-bottom: 1px solid var(--nx-color-border);
+  padding: var(--nx-space-4);
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-table th:last-child,
+.markdown-table td:last-child {
+  border-right: 0;
+}
+
+.markdown-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.markdown-table th {
+  color: var(--nx-color-text);
+  font-size: 0.92rem;
+  font-weight: 760;
+}
+
+.markdown-table td {
+  color: var(--nx-color-text-muted);
+}
+
+.markdown-empty {
+  margin: 0;
+  color: var(--nx-color-text-soft);
+}
+
+.confirm-box {
+  display: grid;
+  gap: var(--nx-space-3);
+  border: 1px solid color-mix(in srgb, var(--nx-color-danger) 35%, var(--nx-color-border));
+  border-radius: var(--nx-radius-md);
+  background: color-mix(in srgb, var(--nx-color-danger) 8%, var(--nx-color-surface));
+  padding: var(--nx-space-4);
+  color: var(--nx-color-text-muted);
+}
+
+.confirm-box div {
+  display: flex;
+  gap: var(--nx-space-2);
+}
+

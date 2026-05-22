@@ -1,0 +1,40 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--nx-color-canvas);
+  font-family: var(--nx-font-sans);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--nx-color-canvas);
+  color: var(--nx-color-text);
+  font-family: var(--nx-font-sans);
+  text-rendering: geometricPrecision;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+}

@@ -38,6 +38,7 @@ import {
   type SqliteDatabaseInfo,
   type SqliteExportInfo,
 } from '../core/services/sqliteDataManagement';
+import { themeRegistry } from '../core/theme/themeRegistry';
 import { filterNotes } from '../core/utils/noteFilters';
 import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
 import { useI18n } from '../i18n/I18nProvider';
@@ -235,13 +236,13 @@ export function ProfilePage() {
               className={
                 accountConnected && user?.avatarUrl
                   ? "profile-avatar"
-                  : "profile-avatar profile-avatar-placeholder"
+                  : "profile-avatar profile-card__avatar--placeholder"
               }
             >
               {accountConnected && user?.avatarUrl ? (
                 <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
               ) : (
-                <UserRound size={56} strokeWidth={1.6} />
+                <UserRound strokeWidth={1.6} />
               )}
               <button
                 className="icon-button profile-edit"
@@ -251,7 +252,7 @@ export function ProfilePage() {
                   pushToast(t("profile.actions.avatarUpdated"), "info")
                 }
               >
-                <Edit3 size={16} />
+                <Edit3 />
               </button>
             </div>
             <h2 className="panel-title">{accountConnected ? user?.name : t("profile.localUser")}</h2>
@@ -259,7 +260,7 @@ export function ProfilePage() {
             <div className="connected">
               {accountConnected ? (
                 <>
-                  <span className="logo-mark h-5 w-5 text-xs">G</span>
+                  <span className="logo-mark logo-mark--google">G</span>
                   {t("profile.connectedWith")}
                 </>
               ) : (
@@ -301,7 +302,7 @@ export function ProfilePage() {
         <section className="profile-center">
           <section className="settings-card">
             <h2 className="settings-title">
-              <Settings2 size={20} color="var(--color-accent-strong)" />
+              <Settings2 className="settings-title__icon" />
               {t("profile.preferences.title")}
             </h2>
             <PreferenceSelect
@@ -314,10 +315,7 @@ export function ProfilePage() {
                   pushToast(t("common.done"), "success"),
                 )
               }
-              options={[
-                { value: "dark", label: t("profile.preferences.dark") },
-                { value: "light", label: t("profile.preferences.light") },
-              ]}
+              options={themeRegistry.map((theme) => ({ value: theme.id, label: t(theme.labelKey) }))}
             />
             <PreferenceSelect
               icon={<IconBadge icon={Globe2} color="green" />}
@@ -371,7 +369,7 @@ export function ProfilePage() {
 
           <section className="settings-card">
             <h2 className="settings-title">
-              <Folder size={20} color="var(--color-blue)" />
+              <Folder className="settings-title__icon settings-title__icon--blue" />
               {t("profile.organization.title")}
             </h2>
             <div className="settings-row">
@@ -383,7 +381,7 @@ export function ProfilePage() {
                 <div className="settings-description">
                   {t("profile.organization.favoriteTagsDescription")}
                 </div>
-                <div className="chip-stack mt-3">
+                <div className="chip-stack chip-stack--spaced">
                   {favoriteTags.map((tag) => (
                     <TagChip
                       key={tag.id}
@@ -403,7 +401,7 @@ export function ProfilePage() {
                     aria-label={t("common.add")}
                     onClick={() => setTagPickerOpen((value) => !value)}
                   >
-                    <Plus size={18} />
+                    <Plus />
                   </button>
                 </div>
                 {tagPickerOpen ? (
@@ -474,24 +472,24 @@ export function ProfilePage() {
               type="button"
               onClick={() => setExportModal({ phase: 'confirm' })}
             >
-              <Download size={20} color="var(--color-success)" />
+              <Download className="security-row__icon security-row__icon--success" />
               <span>
                 <span>{t("profile.dataManagement.exportData")}</span>
                 <span className="security-sub">{t("profile.dataManagement.exportDescription")}</span>
               </span>
-              <ChevronRight size={18} />
+              <ChevronRight />
             </button>
             <button
               className="security-row"
               type="button"
               onClick={() => setImportModalOpen(true)}
             >
-              <Upload size={20} color="var(--color-blue)" />
+              <Upload className="security-row__icon security-row__icon--blue" />
               <span>
                 <span>{t("profile.dataManagement.importData")}</span>
                 <span className="security-sub">{t("profile.dataManagement.importDescription")}</span>
               </span>
-              <ChevronRight size={18} />
+              <ChevronRight />
             </button>
           </Panel>
         </section>
@@ -590,7 +588,7 @@ function DatabasePathRow({
 }) {
   return (
     <div className="database-path-row">
-      <Database size={20} color="var(--color-accent-strong)" />
+      <Database className="database-path-row__icon" />
       <span>
         <span className="settings-label">{label}</span>
         <span className="database-path-value" title={databasePath}>
@@ -598,7 +596,7 @@ function DatabasePathRow({
         </span>
       </span>
       <button className="icon-button" type="button" aria-label={openLabel} onClick={onOpen}>
-        <FolderOpen size={18} />
+        <FolderOpen />
       </button>
     </div>
   );
@@ -633,7 +631,7 @@ function ExportDatabaseModal({
                 <span>{t("common.no")}</span>
               </button>
               <button type="button" onClick={onConfirm}>
-                <Download size={18} />
+                <Download />
                 <span>{t("common.yes")}</span>
               </button>
             </div>
@@ -641,7 +639,7 @@ function ExportDatabaseModal({
         ) : null}
         {modal.phase === 'exporting' ? (
           <div className="choice-modal-status">
-            <Loader2 size={18} />
+            <Loader2 />
             <span>{t("profile.dataManagement.exporting")}</span>
           </div>
         ) : null}
@@ -653,14 +651,14 @@ function ExportDatabaseModal({
             </div>
             <div className="choice-modal-actions">
               <button type="button" disabled>
-                <Cloud size={18} />
+                <Cloud />
                 <span>
                   <span>{t("profile.dataManagement.exportToGoogleDrive")}</span>
                   <span>{t("profile.dataManagement.exportToGoogleDrivePlaceholder")}</span>
                 </span>
               </button>
               <button type="button" onClick={() => onSave(modal.exportInfo)}>
-                <FolderOpen size={18} />
+                <FolderOpen />
                 <span>
                   <span>{t("profile.dataManagement.downloadExport")}</span>
                   <span>{t("profile.dataManagement.downloadExportDescription")}</span>
@@ -703,20 +701,20 @@ function ImportDatabaseModal({
         <p>{t("profile.dataManagement.importModalDescription")}</p>
         {isImporting ? (
           <div className="choice-modal-status">
-            <Loader2 size={18} />
+            <Loader2 />
             <span>{t("profile.dataManagement.importing")}</span>
           </div>
         ) : null}
         <div className="choice-modal-actions">
           <button type="button" disabled={isImporting} onClick={onExportCurrent}>
-            <Download size={18} />
+            <Download />
             <span>
               <span>{t("profile.dataManagement.exportCurrentBeforeImport")}</span>
               <span>{t("profile.dataManagement.exportCurrentBeforeImportDescription")}</span>
             </span>
           </button>
           <button type="button" disabled={isImporting} onClick={onImport}>
-            <Upload size={18} />
+            <Upload />
             <span>
               <span>{t("profile.dataManagement.chooseImportDatabase")}</span>
               <span>{t("profile.dataManagement.chooseImportDatabaseDescription")}</span>
@@ -746,12 +744,12 @@ function SecurityRow({
 }) {
   const content = (
     <>
-      <Icon size={20} />
+      <Icon />
       <span>
         <span>{label}</span>
         <span className="security-sub">{detail}</span>
       </span>
-      {onClick ? <ChevronRight size={18} /> : null}
+      {onClick ? <ChevronRight /> : null}
     </>
   );
 
@@ -800,7 +798,7 @@ function SyncDevicesPanel({
             const isCurrent = session.id === currentDeviceId;
             return (
               <div className="sync-device-row" key={session.id}>
-                <Computer size={18} />
+                <Computer />
                 <span>
                   <span className="settings-label">
                     {session.name}
@@ -832,7 +830,7 @@ function SyncDevicesPanel({
                     aria-label={t("sync.removeDevice")}
                     onClick={() => onRemove(session.id)}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 />
                   </button>
                 ) : null}
               </div>
@@ -964,3 +962,4 @@ function getSyncStatusDetail({
 
   return t('sync.connected');
 }
+

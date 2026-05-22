@@ -92,31 +92,25 @@ export function NoteRow({
       <Link to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${note.title}`}>
         <NoteThumbnail thumbnail={note.thumbnail} />
       </Link>
-      <Link to={`/notes/${note.id}`} className="min-w-0">
-        <div className="note-title-line">
-          <span className="note-title">{note.title}</span>
-          {note.isFavorite ? <Star size={14} fill="currentColor" color="var(--color-warning)" /> : null}
+      <Link to={`/notes/${note.id}`} className="note-row__content-link">
+        <div className="note-row__title-line">
+          <span className="note-row__title">{note.title}</span>
+          {note.isFavorite ? <Star className="note-row__favorite-icon" /> : null}
         </div>
-        <p className="note-intro">{note.content.intro}</p>
+        <p className="note-row__intro">{note.content.intro}</p>
       </Link>
       {collection || noteTags.length ? (
-        <div className="note-meta-badges">
+        <div className="note-row__badges">
           {collection ? (
             <Link className={`collection-chip ${collection.color ?? 'neutral'}`} to={`/notes?collection=${collection.id}`}>
-              <Folder size={14} strokeWidth={1.9} />
+              <Folder strokeWidth={1.9} />
               <span>{collection.name}</span>
             </Link>
           ) : null}
           {noteTags.length ? (
-            <span className="tag-chain">
+            <span className="note-row__tag-chain">
               {noteTags.map((tag, index) => (
-                <span
-                  className="tag-chain-item"
-                  key={tag.id}
-                  style={{
-                    zIndex: noteTags.length - index,
-                  }}
-                >
+                <span className="note-row__tag-chain-item" key={tag.id}>
                   <TagChip tag={tag} color={tag.color} href={`/notes?tag=${tag.id}`} />
                 </span>
               ))}
@@ -124,7 +118,7 @@ export function NoteRow({
           ) : null}
         </div>
       ) : null}
-      <span className="note-time">{formatDisplayTime(timeValue ?? note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
+      <span className="note-row__time">{formatDisplayTime(timeValue ?? note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
       <div className="note-row-actions" ref={menuRef}>
         <button
           className="icon-button"
@@ -135,25 +129,25 @@ export function NoteRow({
             setMenuOpen((value) => !value);
           }}
         >
-          <MoreVertical size={18} />
+          <MoreVertical />
         </button>
         {menuOpen ? (
           <div className="floating-menu note-row-menu">
             <Link to={`/notes/${note.id}`}>{t('common.open')}</Link>
             <button type="button" onClick={() => void handleFavorite()}>
-              <Star size={16} />
+              <Star />
               {note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
             </button>
             <button type="button" onClick={() => void handlePin()}>
-              <Pin size={16} />
+              <Pin />
               {note.isPinned ? t('common.unpin') : t('common.pin')}
             </button>
             <button type="button" onClick={() => void handleDuplicate()}>
-              <Copy size={16} />
+              <Copy />
               {t('common.duplicate')}
             </button>
             <button type="button" onClick={() => void handleTrash()}>
-              {note.isTrashed ? <ArchiveRestore size={16} /> : <Trash2 size={16} />}
+              {note.isTrashed ? <ArchiveRestore /> : <Trash2 />}
               {note.isTrashed ? t('notes.restore') : t('notes.moveToTrash')}
             </button>
           </div>
@@ -184,3 +178,4 @@ function formatDisplayTime(value: string, today: string, yesterday: string) {
 
   return date.toLocaleDateString([], { day: '2-digit', month: 'short' });
 }
+

@@ -147,7 +147,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
         </span>
         {mode === 'trash' && trashCount ? (
           <button className="danger-action-button" type="button" onClick={() => void handleClearTrash()}>
-            <Trash2 size={18} />
+            <Trash2 />
             {t('notes.clearTrash')}
           </button>
         ) : null}
@@ -278,9 +278,9 @@ function BulkNoteActionsRow({
       <div className="bulk-field bulk-tags-field" ref={tagsMenuRef}>
         <span>{t('notes.bulk.assignTags')}</span>
         <button className="bulk-tags-trigger" type="button" aria-expanded={tagsOpen} onClick={() => setTagsOpen((value) => !value)}>
-          <TagIcon size={16} />
+          <TagIcon />
           <span>{t('notes.bulk.chooseTags')}</span>
-          <ChevronDown size={16} />
+          <ChevronDown />
         </button>
         {tagsOpen ? (
           <div className="bulk-tags-menu">
@@ -296,7 +296,7 @@ function BulkNoteActionsRow({
       </div>
 
       <button className="bulk-clear-button" type="button" onClick={onClearSelection}>
-        <X size={15} />
+        <X />
         {t('notes.bulk.clearSelection')}
       </button>
     </div>
@@ -420,7 +420,7 @@ export function CollectionsPage() {
           ))}
         </select>
         <button type="submit">
-          <Plus size={17} />
+          <Plus />
           {t('collections.create')}
         </button>
       </form>
@@ -459,11 +459,11 @@ export function CollectionsPage() {
                   </select>
                   <div className="collection-card-actions">
                     <button className="collection-action-button" disabled={!editingDraft.name.trim()} type="submit">
-                      <Check size={16} />
+                      <Check />
                       {t('common.save')}
                     </button>
                     <button className="collection-action-button" type="button" onClick={() => setEditingId(null)}>
-                      <X size={16} />
+                      <X />
                       {t('common.cancel')}
                     </button>
                   </div>
@@ -482,7 +482,7 @@ export function CollectionsPage() {
                     </Link>
                     <div className="collection-card-actions">
                       <button className="collection-action-button" type="button" aria-label={t('collections.edit')} onClick={() => beginEdit(collection)}>
-                        <Edit3 size={16} />
+                        <Edit3 />
                       </button>
                       <button
                         className="collection-action-button danger"
@@ -490,7 +490,7 @@ export function CollectionsPage() {
                         aria-label={t('collections.delete')}
                         onClick={() => void removeCollection(collection.id)}
                       >
-                        <Trash2 size={16} />
+                        <Trash2 />
                       </button>
                     </div>
                   </div>
@@ -503,3 +503,4 @@ export function CollectionsPage() {
     </div>
   );
 }
+
