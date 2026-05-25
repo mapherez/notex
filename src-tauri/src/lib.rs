@@ -1,3 +1,4 @@
+mod external_links;
 mod sqlite_storage;
 mod update_cleanup;
 
@@ -8,6 +9,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
+            external_links::notex_open_external_url,
             sqlite_storage::notex_sqlite_status,
             sqlite_storage::notex_sqlite_create_temp_export,
             sqlite_storage::notex_sqlite_copy_export_to,

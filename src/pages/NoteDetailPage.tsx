@@ -35,6 +35,7 @@ import {
   thumbnailOptions,
 } from '../config/appSettings';
 import type { Collection, Note, NoteThumbnail as NoteThumbnailModel, NoteType, RichTextBlock, TagColor } from '../core/models/models';
+import { openExternalUrl } from '../core/services/externalLinks';
 import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
 import { tagColorOptions } from '../core/utils/tagColors';
 import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
@@ -1040,7 +1041,14 @@ function RelatedLinkRow({ href, onRemove, title }: { href: string; onRemove?: ()
 
   return (
     <span className="linked-row-shell">
-      <a className="linked-row" href={href}>
+      <a
+        className="linked-row"
+        href={href}
+        onClick={(event) => {
+          event.preventDefault();
+          void openExternalUrl(href);
+        }}
+      >
         {content}
       </a>
       {onRemove ? (

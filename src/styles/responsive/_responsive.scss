@@ -75,30 +75,26 @@
   .profile-left,
   .profile-top-row,
   .database-management-grid,
-  .profile-organization-grid,
+  .collection-preference-card,
   .collection-grid {
     grid-template-columns: 1fr;
   }
 
-  .profile-organization-section--tags,
   .database-management-grid .database-path-row + .database-path-row,
   .profile-stat-grid .settings-row + .settings-row {
     border-left: 0;
   }
 
-  .profile-organization-section--collection {
-    width: auto;
-    max-width: none;
-  }
-
-  .profile-organization-section--tags {
-    border-top: 1px solid var(--nx-color-border);
-    padding-left: 0;
-    padding-top: var(--nx-space-5);
-  }
-
   .database-management-grid .database-path-row {
     padding: var(--nx-space-4) 0;
+  }
+
+  .collection-preference-card,
+  .collection-create-row {
+    width: 100%;
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: stretch;
   }
 
   .database-management-grid .database-path-row:first-child {

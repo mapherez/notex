@@ -10,6 +10,31 @@
   font-weight: 780;
 }
 
+.tags-section-description {
+  display: block;
+  margin-top: var(--nx-space-1);
+  color: var(--nx-color-text-muted);
+  font-size: 0.88rem;
+}
+
+.tags-favorites-card {
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-card);
+  background: var(--nx-color-surface);
+  padding: var(--nx-space-5);
+}
+
+.tags-favorites-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--nx-space-4);
+}
+
+.tags-favorites-picker {
+  margin-top: var(--nx-space-2);
+}
+
 .tags-chip-grid {
   display: flex;
   flex-wrap: wrap;
@@ -85,6 +110,7 @@
 }
 
 .tags-action-button:disabled,
+.tags-action-button[aria-disabled="true"],
 .tags-create-row > button:disabled {
   cursor: not-allowed;
   opacity: 0.55;

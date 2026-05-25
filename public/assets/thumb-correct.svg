@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Correct note thumbnail">
+  <defs>
+    <linearGradient id="correct-bg" x1="30" y1="18" x2="220" y2="238" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f8f58"/>
+      <stop offset="1" stop-color="#0d3527"/>
+    </linearGradient>
+    <linearGradient id="correct-mark" x1="62" y1="136" x2="191" y2="93" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d8ffe7"/>
+      <stop offset="1" stop-color="#67f29a"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="38" fill="url(#correct-bg)"/>
+  <circle cx="202" cy="52" r="30" fill="#4dd17b" opacity=".24"/>
+  <circle cx="46" cy="204" r="42" fill="#051711" opacity=".32"/>
+  <path d="M69 132.5 111.5 175 190 82" fill="none" stroke="url(#correct-mark)" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

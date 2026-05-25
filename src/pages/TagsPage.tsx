@@ -1,4 +1,4 @@
-import { Edit3, Plus, Save, Trash2, X } from 'lucide-react';
+import { Edit3, Plus, Save, Star, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CustomSelect } from '../components/ui/CustomSelect';
@@ -6,8 +6,9 @@ import { TagChip } from '../components/ui/TagChip';
 import { appLimits, defaultNewTagColor } from '../config/appSettings';
 import type { Tag, TagColor } from '../core/models/models';
 import { tagColorOptions } from '../core/utils/tagColors';
-import { sortTagsByName } from '../core/utils/tagSorting';
+import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
 import { useI18n } from '../i18n/I18nProvider';
+import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
 
@@ -24,6 +25,7 @@ export function TagsPage() {
   const { t } = useI18n();
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [favoritePickerOpen, setFavoritePickerOpen] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, TagDraft>>({});
   const [deletedTagIds, setDeletedTagIds] = useState<Set<string>>(new Set());
   const [newName, setNewName] = useState('');
@@ -33,6 +35,8 @@ export function TagsPage() {
   const createTag = useKnowledgeStore((state) => state.createTag);
   const updateTag = useKnowledgeStore((state) => state.updateTag);
   const deleteTag = useKnowledgeStore((state) => state.deleteTag);
+  const settings = useAppStore((state) => state.settings);
+  const toggleFavoriteTag = useAppStore((state) => state.toggleFavoriteTag);
   const pushToast = useToastStore((state) => state.pushToast);
   const activeNotes = useMemo(() => notes.filter((note) => !note.isTrashed), [notes]);
   const tagsWithCounts = useMemo(
@@ -51,6 +55,15 @@ export function TagsPage() {
         .slice(0, appLimits.popularTags),
     [tagsWithCounts],
   );
+  const favoriteTags = useMemo(
+    () => sortTagsByFavoriteOrder(tags.filter((tag) => settings.favoriteTagIds.includes(tag.id)), settings.favoriteTagIds),
+    [settings.favoriteTagIds, tags],
+  );
+  const remainingFavoriteOptions = useMemo(
+    () => sortTagsByName(tags.filter((tag) => !settings.favoriteTagIds.includes(tag.id))),
+    [settings.favoriteTagIds, tags],
+  );
+  const canAddFavoriteTag = favoriteTags.length < appLimits.favoriteTags;
   const visibleEditTags = tagsWithCounts.filter((tag) => !deletedTagIds.has(tag.id));
   const hasInvalidDraft = visibleEditTags.some((tag) => !getDraftForTag(tag, drafts).name.trim());
   const hasDraftChanges =
@@ -71,6 +84,7 @@ export function TagsPage() {
 
   function beginEdit() {
     setCreateOpen(false);
+    setFavoritePickerOpen(false);
     setDrafts(buildDrafts(tagsWithCounts));
     setDeletedTagIds(new Set());
     setEditing(true);
@@ -149,6 +163,75 @@ export function TagsPage() {
       <section className="tags-page-section">
         <h2 className="tags-section-title">{t('tagsPage.popular')}</h2>
         <TagSummaryGrid emptyText={t('tagsPage.emptyPopular')} tags={popularTags} t={t} />
+      </section>
+
+      <section className="tags-page-section tags-favorites-card">
+        <div className="tags-favorites-header">
+          <span>
+            <h2 className="tags-section-title">{t('tagsPage.favoriteTags')}</h2>
+            <span className="tags-section-description">{t('tagsPage.favoriteTagsDescription', { count: appLimits.favoriteTags })}</span>
+          </span>
+          <button
+            className="tags-action-button"
+            type="button"
+            aria-disabled={!canAddFavoriteTag}
+            onClick={() => {
+              if (!canAddFavoriteTag) {
+                pushToast(t('tagsPage.favoriteTagsLimit', { count: appLimits.favoriteTags }), 'warning');
+                return;
+              }
+
+              setFavoritePickerOpen((value) => !value);
+            }}
+          >
+            <Plus />
+            {t('common.add')}
+          </button>
+        </div>
+        <div className="chip-stack chip-stack--spaced">
+          {favoriteTags.length ? (
+            favoriteTags.map((tag) => (
+              <TagChip
+                key={tag.id}
+                tag={tag}
+                href={`/notes?tag=${tag.id}`}
+                removable
+                onRemove={() => {
+                  void toggleFavoriteTag(tag.id).then(() => pushToast(t('tagsPage.favoriteTagsUpdated'), 'success'));
+                }}
+              />
+            ))
+          ) : (
+            <span className="tags-empty">{t('tagsPage.emptyFavorites')}</span>
+          )}
+        </div>
+        {favoritePickerOpen ? (
+          <div className="inline-picker tags-favorites-picker">
+            {remainingFavoriteOptions.length ? (
+              remainingFavoriteOptions.map((tag) => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => {
+                    if (!canAddFavoriteTag) {
+                      pushToast(t('tagsPage.favoriteTagsLimit', { count: appLimits.favoriteTags }), 'warning');
+                      setFavoritePickerOpen(false);
+                      return;
+                    }
+
+                    void toggleFavoriteTag(tag.id).then(() => pushToast(t('tagsPage.favoriteTagsUpdated'), 'success'));
+                    setFavoritePickerOpen(false);
+                  }}
+                >
+                  <Star />
+                  <TagChip tag={tag} />
+                </button>
+              ))
+            ) : (
+              <span className="notes-filter-empty">{t('notes.bulk.noTags')}</span>
+            )}
+          </div>
+        ) : null}
       </section>
 
       <section className="tags-page-section">

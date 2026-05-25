@@ -63,7 +63,9 @@ type KnowledgeStore = {
   updateMarkdownSection: (noteId: string, section: MarkdownContentSection, markdown: string) => Promise<void>;
   updateNoteTip: (noteId: string, title: string, body: string) => Promise<void>;
   moveToTrash: (noteId: string) => Promise<void>;
+  bulkMoveToTrash: (noteIds: string[]) => Promise<void>;
   restoreNote: (noteId: string) => Promise<void>;
+  deleteNotesPermanently: (noteIds: string[]) => Promise<void>;
   clearTrash: () => Promise<void>;
   updateNoteTags: (noteId: string, tagIds: string[]) => Promise<void>;
   bulkUpdateNoteCollection: (noteIds: string[], collectionId: string | null) => Promise<void>;
@@ -440,6 +442,29 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
   },
+  bulkMoveToTrash: async (noteIds) => {
+    const noteIdSet = new Set(uniqueIds(noteIds));
+    const noteUpdates = get().notes
+      .filter((note) => noteIdSet.has(note.id) && !note.isTrashed)
+      .map((note) => ({ ...note, isTrashed: true, updatedAt: new Date().toISOString() }));
+
+    if (!noteUpdates.length) {
+      return;
+    }
+
+    await runLocalMutation(() => db.transaction('rw', [db.notes, db.syncItems], async () => {
+      await db.notes.bulkPut(noteUpdates);
+      for (const note of noteUpdates) {
+        await queueNoteSync(note.id);
+      }
+    }));
+    notifySyncQueued();
+
+    const updateMap = new Map(noteUpdates.map((note) => [note.id, note]));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((note) => updateMap.get(note.id) ?? note)),
+    }));
+  },
   restoreNote: async (noteId) => {
     const note = get().notes.find((item) => item.id === noteId);
     if (!note) {
@@ -452,29 +477,29 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
     }));
   },
-  clearTrash: async () => {
-    const trashedIds = get().notes.filter((note) => note.isTrashed).map((note) => note.id);
-    if (!trashedIds.length) {
+  deleteNotesPermanently: async (noteIds) => {
+    const deletedIds = uniqueIds(noteIds).filter((noteId) => get().notes.some((note) => note.id === noteId && note.isTrashed));
+    if (!deletedIds.length) {
       return;
     }
 
-    const trashedIdSet = new Set(trashedIds);
+    const deletedIdSet = new Set(deletedIds);
     const linkedNoteUpdates = get().notes
-      .filter((note) => !trashedIdSet.has(note.id) && note.linkedNoteIds.some((linkedId) => trashedIdSet.has(linkedId)))
+      .filter((note) => !deletedIdSet.has(note.id) && note.linkedNoteIds.some((linkedId) => deletedIdSet.has(linkedId)))
       .map((note) =>
         finalizeNoteUpdate({
           ...note,
-          linkedNoteIds: note.linkedNoteIds.filter((linkedId) => !trashedIdSet.has(linkedId)),
+          linkedNoteIds: note.linkedNoteIds.filter((linkedId) => !deletedIdSet.has(linkedId)),
         }),
       );
 
     await runLocalMutation(() => db.transaction('rw', [db.notes, db.activities, db.syncItems], async () => {
-      await db.notes.bulkDelete(trashedIds);
+      await db.notes.bulkDelete(deletedIds);
       if (linkedNoteUpdates.length) {
         await db.notes.bulkPut(linkedNoteUpdates);
       }
-      await db.activities.where('noteId').anyOf(trashedIds).delete();
-      for (const noteId of trashedIds) {
+      await db.activities.where('noteId').anyOf(deletedIds).delete();
+      for (const noteId of deletedIds) {
         await queueDeletedNoteSync(noteId);
       }
       for (const note of linkedNoteUpdates) {
@@ -487,14 +512,17 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     set((state) => {
       const linkedUpdateMap = new Map(linkedNoteUpdates.map((note) => [note.id, note]));
       const remainingNotes = state.notes
-        .filter((note) => !trashedIdSet.has(note.id))
+        .filter((note) => !deletedIdSet.has(note.id))
         .map((note) => linkedUpdateMap.get(note.id) ?? note);
 
       return {
         notes: sortNotes(remainingNotes),
-        activities: state.activities.filter((activity) => !trashedIdSet.has(activity.noteId)),
+        activities: state.activities.filter((activity) => !deletedIdSet.has(activity.noteId)),
       };
     });
+  },
+  clearTrash: async () => {
+    await get().deleteNotesPermanently(get().notes.filter((note) => note.isTrashed).map((note) => note.id));
   },
   updateNoteTags: async (noteId, tagIds) => {
     const note = get().notes.find((item) => item.id === noteId);

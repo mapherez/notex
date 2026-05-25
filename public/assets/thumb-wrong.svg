@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Wrong note thumbnail">
+  <defs>
+    <linearGradient id="wrong-bg" x1="38" y1="20" x2="218" y2="238" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#cc3f3f"/>
+      <stop offset="1" stop-color="#3b1116"/>
+    </linearGradient>
+    <linearGradient id="wrong-mark" x1="78" y1="78" x2="178" y2="178" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe2e2"/>
+      <stop offset="1" stop-color="#ff8f8f"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="38" fill="url(#wrong-bg)"/>
+  <circle cx="51" cy="54" r="31" fill="#ffb0a8" opacity=".2"/>
+  <circle cx="209" cy="207" r="41" fill="#18070a" opacity=".34"/>
+  <path d="M82 82 174 174M174 82 82 174" fill="none" stroke="url(#wrong-mark)" stroke-width="24" stroke-linecap="round"/>
+</svg>

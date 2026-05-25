@@ -1,4 +1,5 @@
 import { Fragment, useMemo, type ReactNode } from 'react';
+import { openExternalUrl } from '../../core/services/externalLinks';
 import { isSafeMarkdownHref, parseMarkdown, type MarkdownListItem } from '../../core/utils/markdown';
 
 export function MarkdownPreview({
@@ -145,10 +146,22 @@ function renderInlineToken(token: string, key: number) {
   if (link) {
     const href = link[2].trim();
     const safeHref = isSafeMarkdownHref(href) ? href : '#';
-    const isExternal = safeHref.startsWith('http://') || safeHref.startsWith('https://');
+    const isExternal = safeHref.startsWith('http://') || safeHref.startsWith('https://') || safeHref.startsWith('mailto:');
 
     return (
-      <a href={safeHref} key={key} rel={isExternal ? 'noreferrer' : undefined} target={isExternal ? '_blank' : undefined}>
+      <a
+        href={safeHref}
+        key={key}
+        rel={isExternal ? 'noreferrer' : undefined}
+        onClick={
+          isExternal
+            ? (event) => {
+                event.preventDefault();
+                void openExternalUrl(safeHref);
+              }
+            : undefined
+        }
+      >
         {link[1]}
       </a>
     );

@@ -22,6 +22,10 @@ type CollectionDraft = {
   color: TagColor;
   name: string;
 };
+type TrashConfirmState =
+  | null
+  | { kind: 'clear' }
+  | { kind: 'delete'; noteIds: string[]; title?: string };
 
 export function NotesListPage({ mode }: { mode: ListMode }) {
   const { t } = useI18n();
@@ -30,12 +34,15 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const clearTrash = useKnowledgeStore((state) => state.clearTrash);
+  const bulkMoveToTrash = useKnowledgeStore((state) => state.bulkMoveToTrash);
+  const deleteNotesPermanently = useKnowledgeStore((state) => state.deleteNotesPermanently);
   const bulkUpdateNoteCollection = useKnowledgeStore((state) => state.bulkUpdateNoteCollection);
   const bulkUpdateNoteTag = useKnowledgeStore((state) => state.bulkUpdateNoteTag);
   const preferredLayout = useAppStore((state) => state.settings.preferredLayout);
   const setPreferredLayout = useAppStore((state) => state.setPreferredLayout);
   const pushToast = useToastStore((state) => state.pushToast);
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
+  const [trashConfirm, setTrashConfirm] = useState<TrashConfirmState>(null);
   const tagParam = searchParams.get('tag');
   const collectionParam = searchParams.get('collection');
   const defaultSortOrder: NotesSortOrder = mode === 'recent' ? recentNotesSortOrder : defaultNotesSortOrder;
@@ -85,12 +92,27 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
   }, [selectionEnabled, visibleNoteIdsKey]);
 
   async function handleClearTrash() {
-    if (!trashCount || !window.confirm(t('notes.clearTrashConfirm'))) {
+    if (!trashCount) {
       return;
     }
 
-    await clearTrash();
-    pushToast(t('notes.trashCleared'), 'warning');
+    setTrashConfirm({ kind: 'clear' });
+  }
+
+  async function confirmTrashAction() {
+    if (!trashConfirm) {
+      return;
+    }
+
+    if (trashConfirm.kind === 'clear') {
+      await clearTrash();
+      pushToast(t('notes.trashCleared'), 'warning');
+    } else {
+      await deleteNotesPermanently(trashConfirm.noteIds);
+      pushToast(t('notes.deletedForever'), 'warning');
+    }
+
+    setTrashConfirm(null);
   }
 
   function updateFilterParam(name: 'collection' | 'sort' | 'tag', value: string | null) {
@@ -141,6 +163,16 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
     pushToast(t(assigned ? 'notes.bulk.tagsAssigned' : 'notes.bulk.tagsRemoved'), 'success');
   }
 
+  async function deleteSelectedNotes() {
+    if (!selectedNoteIds.length) {
+      return;
+    }
+
+    await bulkMoveToTrash(selectedNoteIds);
+    setSelectedNoteIds([]);
+    pushToast(t('notes.bulk.deleted'), 'warning');
+  }
+
   return (
     <div className="page-content list-page-grid">
       <header className="page-header-actions">
@@ -179,6 +211,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
           onSelectAll={(checked) => setSelectedNoteIds(checked ? filtered.map((note) => note.id) : [])}
           onClearSelection={() => setSelectedNoteIds([])}
           onMoveCollection={(nextCollectionId) => void moveSelectedNotes(nextCollectionId)}
+          onDeleteSelected={() => void deleteSelectedNotes()}
           onToggleTag={(tagId, assigned) => void updateSelectedTag(tagId, assigned)}
           selectedCount={selectedNotes.length}
           selectedNotes={selectedNotes}
@@ -199,6 +232,14 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
               selectable={selectionEnabled}
               selected={selectedNoteIdSet.has(note.id)}
               onSelectionChange={updateNoteSelection}
+              onPermanentDelete={
+                mode === 'trash'
+                  ? (noteId) => {
+                      const trashedNote = notes.find((item) => item.id === noteId);
+                      setTrashConfirm({ kind: 'delete', noteIds: [noteId], title: trashedNote?.title });
+                    }
+                  : undefined
+              }
               tagDisplayLimit={preferredLayout === 'grid' ? 2 : undefined}
             />
           ))}
@@ -206,6 +247,12 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
       ) : (
         <EmptyState />
       )}
+      <TrashConfirmModal
+        confirmState={trashConfirm}
+        onCancel={() => setTrashConfirm(null)}
+        onConfirm={() => void confirmTrashAction()}
+        t={t}
+      />
     </div>
   );
 }
@@ -215,6 +262,7 @@ function BulkNoteActionsRow({
   collections,
   onSelectAll,
   onClearSelection,
+  onDeleteSelected,
   onMoveCollection,
   onToggleTag,
   selectedCount,
@@ -226,6 +274,7 @@ function BulkNoteActionsRow({
   collections: Collection[];
   onSelectAll: (checked: boolean) => void;
   onClearSelection: () => void;
+  onDeleteSelected: () => void;
   onMoveCollection: (collectionId: string) => void;
   onToggleTag: (tagId: string, assigned: boolean) => void;
   selectedCount: number;
@@ -309,6 +358,51 @@ function BulkNoteActionsRow({
         <X />
         {t('notes.bulk.clearSelection')}
       </button>
+      <button className="bulk-clear-button danger" type="button" onClick={onDeleteSelected}>
+        <Trash2 />
+        {t('notes.bulk.deleteSelected')}
+      </button>
+    </div>
+  );
+}
+
+function TrashConfirmModal({
+  confirmState,
+  onCancel,
+  onConfirm,
+  t,
+}: {
+  confirmState: TrashConfirmState;
+  onCancel: () => void;
+  onConfirm: () => void;
+  t: ReturnType<typeof useI18n>['t'];
+}) {
+  if (!confirmState) {
+    return null;
+  }
+
+  const title = confirmState.kind === 'clear' ? t('notes.clearTrash') : t('notes.deleteForever');
+  const description =
+    confirmState.kind === 'clear'
+      ? t('notes.clearTrashConfirm')
+      : t('notes.deleteForeverConfirm', { title: confirmState.title ?? t('notes.title') });
+
+  return (
+    <div className="modal-backdrop">
+      <section className="choice-modal" role="dialog" aria-modal="true" aria-labelledby="trash-confirm-title">
+        <h2 id="trash-confirm-title">{title}</h2>
+        <p>{description}</p>
+        <div className="choice-modal-actions two-column-actions">
+          <button type="button" onClick={onCancel}>
+            <X />
+            <span>{t('common.cancel')}</span>
+          </button>
+          <button type="button" onClick={onConfirm}>
+            <Trash2 />
+            <span>{t('common.delete')}</span>
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
@@ -405,6 +499,27 @@ export function CollectionsPage() {
         <h1 className="page-title">{t('notes.collectionsTitle')}</h1>
         <p className="page-subtitle">{t('notes.collectionsSubtitle')}</p>
       </header>
+
+      <section className="settings-card collection-preference-card">
+        <div>
+          <h2 className="settings-title">{t('collections.primaryCollection')}</h2>
+          <p className="settings-description">{t('collections.primaryCollectionDescription')}</p>
+        </div>
+        <CustomSelect
+          ariaLabel={t('collections.primaryCollection')}
+          emptyText={t('notes.filters.noCollections')}
+          onChange={(collectionId) => {
+            void setPrimaryCollection(collectionId).then(() => pushToast(t('collections.primaryCollectionUpdated'), 'success'));
+          }}
+          options={collections.map((collection) => ({
+            color: collection.color,
+            label: collection.name,
+            value: collection.id,
+          }))}
+          placeholder={t('notes.filters.allCollections')}
+          value={settings.primaryCollectionId}
+        />
+      </section>
 
       <form
         className="collection-create-row"

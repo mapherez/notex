@@ -29,10 +29,11 @@
   min-width: 0;
 }
 
-.profile-top-row>.panel,
+.profile-top-row > .panel,
 .profile-top-card {
   height: 100%;
 }
+
 .profile-card {
   padding: var(--nx-space-6);
   text-align: center;
@@ -146,53 +147,6 @@
   margin-top: var(--nx-space-3);
 }
 
-.profile-organization-grid {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  align-items: start;
-  gap: var(--nx-space-4);
-}
-
-.profile-organization-section {
-  display: grid;
-  min-width: 0;
-  align-content: start;
-  justify-items: start;
-  gap: var(--nx-space-3);
-  padding-block: var(--nx-space-2);
-}
-
-.profile-organization-section--collection {
-  width: max-content;
-  max-width: 18rem;
-}
-
-.profile-organization-section--tags {
-  width: 100%;
-  border-left: 1px solid var(--nx-color-border);
-  padding-left: var(--nx-space-5);
-}
-
-.profile-organization-header {
-  display: grid;
-  grid-template-columns: auto minmax(0, max-content);
-  align-items: center;
-  gap: var(--nx-space-3);
-}
-
-.profile-organization-section--tags .profile-organization-header {
-  grid-template-columns: auto minmax(0, 1fr);
-}
-
-.profile-organization-select {
-  width: 100%;
-  min-width: 11rem;
-}
-
-.profile-organization-section .icon-button[aria-disabled="true"] {
-  opacity: 0.55;
-}
-
 .profile-stat-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
@@ -227,11 +181,12 @@
   padding: 0 var(--nx-space-5) 0 0;
 }
 
-.database-management-grid .database-path-row+.database-path-row {
+.database-management-grid .database-path-row + .database-path-row {
   border-left: 1px solid var(--nx-color-border);
   padding-right: 0;
   padding-left: var(--nx-space-5);
 }
+
 .mini-note-shell {
   position: relative;
   display: inline-block;
@@ -446,6 +401,21 @@ button.security-row:hover {
   gap: var(--nx-space-4);
 }
 
+.collection-preference-card {
+  display: grid;
+  width: calc((100% - var(--nx-space-4)) / 2);
+  grid-column: 1;
+  grid-row: 2;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
+  align-items: center;
+  gap: var(--nx-space-5);
+  justify-self: start;
+}
+
+.collection-preference-card .custom-select {
+  width: 100%;
+}
+
 .collection-card {
   display: grid;
   min-height: 5.5rem;
@@ -483,11 +453,15 @@ button.security-row:hover {
 }
 
 .collection-create-row {
+  width: calc((100% - var(--nx-space-4)) / 2);
+  grid-column: 1;
+  grid-row: 2;
   grid-template-columns: minmax(0, 1fr) 10rem auto;
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-md);
   background: var(--nx-color-surface);
   padding: var(--nx-space-3);
+  justify-self: end;
 }
 
 .collection-create-row input,

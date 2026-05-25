@@ -70,6 +70,14 @@
       {
         "id": "text",
         "asset": "/assets/thumb-text.svg"
+      },
+      {
+        "id": "correct",
+        "asset": "/assets/thumb-correct.svg"
+      },
+      {
+        "id": "wrong",
+        "asset": "/assets/thumb-wrong.svg"
       }
     ],
     "layouts": ["list", "grid"]

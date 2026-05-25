@@ -66,7 +66,7 @@ export type NoteStats = {
 };
 
 export type NoteThumbnail = {
-  variant: 'purple' | 'paper' | 'terminal' | 'landscape' | 'book' | 'text';
+  variant: 'purple' | 'paper' | 'terminal' | 'landscape' | 'book' | 'text' | 'correct' | 'wrong';
 };
 
 export type Note = {

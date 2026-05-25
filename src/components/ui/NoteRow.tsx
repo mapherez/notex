@@ -17,6 +17,7 @@ export function NoteRow({
   onToggleFavorite,
   actionLabel,
   onAction,
+  onPermanentDelete,
   timeValue,
   selectable = false,
   selected = false,
@@ -29,6 +30,7 @@ export function NoteRow({
   onToggleFavorite?: (noteId: string) => void;
   actionLabel?: string;
   onAction?: (noteId: string) => void;
+  onPermanentDelete?: (noteId: string) => void;
   timeValue?: string | null;
   selectable?: boolean;
   selected?: boolean;
@@ -70,6 +72,11 @@ export function NoteRow({
       await moveToTrash(note.id);
     }
     pushToast(t('notes.trashChanged'), 'warning');
+    setMenuOpen(false);
+  }
+
+  function handlePermanentDelete() {
+    onPermanentDelete?.(note.id);
     setMenuOpen(false);
   }
 
@@ -185,6 +192,12 @@ export function NoteRow({
               {note.isTrashed ? <ArchiveRestore /> : <Trash2 />}
               {note.isTrashed ? t('notes.restore') : t('notes.moveToTrash')}
             </button>
+            {note.isTrashed && onPermanentDelete ? (
+              <button type="button" onClick={handlePermanentDelete}>
+                <Trash2 />
+                {t('notes.deleteForever')}
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
