@@ -56,6 +56,102 @@
   padding: var(--nx-space-2);
 }
 
+$rich-text-colors: (
+  "blue": var(--nx-color-blue),
+  "green": var(--nx-color-success),
+  "amber": var(--nx-color-warning),
+  "red": var(--nx-color-red),
+  "orange": var(--nx-color-orange),
+  "yellow": var(--nx-color-yellow),
+  "pink": var(--nx-color-pink),
+  "neutral": var(--nx-color-text-muted)
+);
+
+.styled-text-field {
+  display: grid;
+  gap: var(--nx-space-2);
+}
+
+.styled-text-field .text-style-toolbar {
+  justify-self: start;
+}
+
+.text-style-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nx-space-1);
+}
+
+.text-style-toolbar--compact {
+  gap: 0;
+}
+
+.text-style-picker {
+  position: relative;
+}
+
+.text-style-picker__menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + var(--nx-space-2));
+  z-index: 65;
+  display: grid;
+  grid-template-columns: repeat(4, 1.75rem);
+  gap: var(--nx-space-1);
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-md);
+  background: var(--nx-color-surface-elevated);
+  padding: var(--nx-space-2);
+  box-shadow: var(--nx-shadow-soft);
+}
+
+.text-style-picker__swatch {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border: 1px solid var(--nx-color-border);
+  border-radius: 999px;
+  background: var(--nx-color-surface);
+  padding: 0;
+}
+
+.text-style-picker__swatch:hover,
+.text-style-picker__swatch:focus-visible {
+  border-color: var(--nx-color-border-strong);
+  background: var(--nx-color-hover);
+  outline: none;
+}
+
+.text-style-picker__swatch span {
+  display: block;
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 999px;
+}
+
+@each $name, $value in $rich-text-colors {
+  .text-style-picker__swatch--color-#{$name} span {
+    background: #{$value};
+  }
+
+  .text-style-picker__swatch--bg-#{$name} span {
+    background: color-mix(in srgb, #{$value} 34%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, #{$value} 64%, transparent);
+  }
+
+  .rich-text-color--#{$name} {
+    color: #{$value};
+  }
+
+  .rich-text-bg--#{$name} {
+    border-radius: 0.22rem;
+    background: color-mix(in srgb, #{$value} 28%, transparent);
+    color: var(--nx-color-text);
+    padding: 0 0.14em;
+  }
+}
+
 .markdown-tool-button {
   display: inline-flex;
   min-width: 2rem;

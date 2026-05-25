@@ -1,5 +1,6 @@
 import { noteSettings } from '../../config/appSettings';
 import type { Note } from '../models/models';
+import { stripInlineFormatting } from './inlineFormatting';
 
 export type NotesSortOrder = 'nameAsc' | 'nameDesc' | 'updatedAsc' | 'updatedDesc';
 
@@ -47,8 +48,7 @@ export function filterNotes(notes: Note[], filter: NotesFilter) {
         return true;
       }
 
-      return [note.title, note.content.intro, ...(note.content.summary?.map((block) => block.text) ?? [])]
-        .join(' ')
+      return stripInlineFormatting([note.title, note.content.intro, ...(note.content.summary?.map((block) => block.text) ?? [])].join(' '))
         .toLowerCase()
         .includes(query);
     })
@@ -74,5 +74,5 @@ function compareNotes(a: Note, b: Note, mode: NotesFilter['mode'], sortOrder: No
 }
 
 function compareNoteTitles(a: Pick<Note, 'title'>, b: Pick<Note, 'title'>) {
-  return a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' });
+  return stripInlineFormatting(a.title).localeCompare(stripInlineFormatting(b.title), undefined, { numeric: true, sensitivity: 'base' });
 }

@@ -2,6 +2,8 @@ import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { UsageExample } from '../../core/models/models';
 import { useI18n } from '../../i18n/I18nProvider';
+import { InlineFormattedText } from './InlineFormattedText';
+import { StyledTextField } from './TextStyleToolbar';
 
 const emptyRow = (): UsageExample => ({
   id: `usage-${crypto.randomUUID()}`,
@@ -100,17 +102,34 @@ export function EditableUsageExamplesTable({
             editableRows.map((row) => (
               <tr className="usage-edit-row" key={row.id}>
                 <td>
-                  <textarea
+                  <StyledTextField
+                    className="usage-styled-field"
+                    controlClassName="usage-styled-field__control"
+                    multiline
                     value={row.expression}
-                    onChange={(event) => updateDraftRow(row.id, { expression: event.target.value })}
+                    onChange={(expression) => updateDraftRow(row.id, { expression })}
                     placeholder={t('noteDetail.table.expressionPlaceholder')}
                   />
                 </td>
                 <td>
-                  <textarea value={row.meaning} onChange={(event) => updateDraftRow(row.id, { meaning: event.target.value })} placeholder={t('noteDetail.table.meaningPlaceholder')} />
+                  <StyledTextField
+                    className="usage-styled-field"
+                    controlClassName="usage-styled-field__control"
+                    multiline
+                    value={row.meaning}
+                    onChange={(meaning) => updateDraftRow(row.id, { meaning })}
+                    placeholder={t('noteDetail.table.meaningPlaceholder')}
+                  />
                 </td>
                 <td>
-                  <textarea value={row.example} onChange={(event) => updateDraftRow(row.id, { example: event.target.value })} placeholder={t('noteDetail.table.examplePlaceholder')} />
+                  <StyledTextField
+                    className="usage-styled-field"
+                    controlClassName="usage-styled-field__control"
+                    multiline
+                    value={row.example}
+                    onChange={(example) => updateDraftRow(row.id, { example })}
+                    placeholder={t('noteDetail.table.examplePlaceholder')}
+                  />
                 </td>
                 <td className="usage-actions-cell">
                   <button className="icon-button danger" type="button" aria-label={t('common.remove')} onClick={() => deleteDraftRow(row.id)}>
@@ -122,11 +141,17 @@ export function EditableUsageExamplesTable({
           ) : rows.length ? (
             rows.map((row) => (
               <tr key={row.id}>
-                <td>{row.expression}</td>
-                <td>{row.meaning}</td>
                 <td>
-                  {row.example.split('\n').map((line) => (
-                    <p key={line}>{line}</p>
+                  <InlineFormattedText value={row.expression} />
+                </td>
+                <td>
+                  <InlineFormattedText value={row.meaning} />
+                </td>
+                <td>
+                  {row.example.split('\n').map((line, lineIndex) => (
+                    <p key={`${row.id}-${lineIndex}`}>
+                      <InlineFormattedText value={line} />
+                    </p>
                   ))}
                 </td>
               </tr>

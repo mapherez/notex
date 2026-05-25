@@ -18,8 +18,10 @@ import {
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { EditableUsageExamplesTable } from '../components/editing/EditableUsageExamplesTable';
+import { InlineFormattedText } from '../components/editing/InlineFormattedText';
 import { MarkdownEditor } from '../components/editing/MarkdownEditor';
 import { MarkdownPreview } from '../components/editing/MarkdownPreview';
+import { StyledTextField } from '../components/editing/TextStyleToolbar';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { EmptyState } from '../components/ui/EmptyState';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
@@ -37,6 +39,7 @@ import {
 import type { Collection, Note, NoteThumbnail as NoteThumbnailModel, NoteType, RichTextBlock, TagColor } from '../core/models/models';
 import { openExternalUrl } from '../core/services/externalLinks';
 import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
+import { stripInlineFormatting } from '../core/utils/inlineFormatting';
 import { tagColorOptions } from '../core/utils/tagColors';
 import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
@@ -300,7 +303,7 @@ export function NoteDetailPage() {
     }
 
     setSelectedLinkedNoteId(selected.id);
-    setLinkInput(selected.title);
+    setLinkInput(stripInlineFormatting(selected.title));
   }
 
   async function saveRelatedLink() {
@@ -371,7 +374,7 @@ export function NoteDetailPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      void duplicateNote(note.id, `${note.title} (${t('common.copy')})`).then((created) => {
+                      void duplicateNote(note.id, `${stripInlineFormatting(note.title)} (${t('common.copy')})`).then((created) => {
                         pushToast(t('notes.duplicated'), 'success');
                         if (created) {
                           navigate(`/notes/${created.id}`);
@@ -423,15 +426,18 @@ export function NoteDetailPage() {
               )}
 
               {isEditing ? (
-                <input
-                  className="editable-control document-title-input"
+                <StyledTextField
+                  className="document-title-styled-field"
+                  controlClassName="editable-control document-title-input"
                   disabled={savingPage}
-                  onChange={(event) => updateDraft({ title: event.target.value })}
+                  onChange={(title) => updateDraft({ title })}
                   placeholder={t('noteDetail.titlePlaceholder')}
                   value={draft.title}
                 />
               ) : (
-                <h1 className="document-title">{note?.title}</h1>
+                <h1 className="document-title">
+                  <InlineFormattedText value={note?.title} />
+                </h1>
               )}
 
               {noteTags.length ? (
@@ -476,15 +482,19 @@ export function NoteDetailPage() {
           </div>
 
           {isEditing ? (
-            <textarea
-              className="editable-control document-intro-input"
+            <StyledTextField
+              className="document-intro-styled-field"
+              controlClassName="editable-control document-intro-input"
               disabled={savingPage}
-              onChange={(event) => updateDraft({ intro: event.target.value })}
+              multiline
+              onChange={(intro) => updateDraft({ intro })}
               placeholder={t('noteDetail.introPlaceholder')}
               value={draft.intro}
             />
           ) : (
-            <p className="document-intro">{note?.content.intro}</p>
+            <p className="document-intro">
+              <InlineFormattedText value={note?.content.intro} />
+            </p>
           )}
 
           <section className="content-section">
@@ -626,7 +636,13 @@ export function NoteDetailPage() {
                   <li className="side-edit-row" key={`${example}-${index}`}>
                     {editingExampleIndex === index ? (
                       <span className="side-edit-form">
-                        <textarea value={editingExampleText} onChange={(event) => setEditingExampleText(event.target.value)} />
+                        <StyledTextField
+                          className="side-styled-field"
+                          controlClassName="side-styled-field__control"
+                          multiline
+                          value={editingExampleText}
+                          onChange={setEditingExampleText}
+                        />
                         <span className="side-row-actions">
                           <button className="icon-button" type="button" aria-label={t('editor.accept')} onClick={() => void saveExampleEdit(index)}>
                             <Check />
@@ -638,7 +654,9 @@ export function NoteDetailPage() {
                       </span>
                     ) : (
                       <>
-                        <span>{example}</span>
+                        <span>
+                          <InlineFormattedText value={example} />
+                        </span>
                         <span className="side-row-actions">
                           <button className="icon-button" type="button" aria-label={t('editor.edit')} onClick={() => startExampleEdit(index, example)}>
                             <Pencil />
@@ -675,7 +693,14 @@ export function NoteDetailPage() {
                     });
                   }}
                 >
-                  <textarea value={exampleText} onChange={(event) => setExampleText(event.target.value)} placeholder={t('noteDetail.examplePlaceholder')} />
+                  <StyledTextField
+                    className="side-styled-field"
+                    controlClassName="side-styled-field__control"
+                    multiline
+                    value={exampleText}
+                    onChange={setExampleText}
+                    placeholder={t('noteDetail.examplePlaceholder')}
+                  />
                   <button type="submit">{t('common.save')}</button>
                 </form>
               ) : null}
@@ -732,7 +757,7 @@ export function NoteDetailPage() {
                         linkableNotes.map((linkableNote) => (
                           <button key={linkableNote.id} type="button" onClick={() => selectLinkedNote(linkableNote.id)}>
                             <FileText />
-                            {linkableNote.title}
+                            <InlineFormattedText value={linkableNote.title} />
                           </button>
                         ))
                       ) : (
@@ -958,7 +983,9 @@ function EditableDraftTip({
       <div className="tip-box editable-tip-box">
         <Lightbulb />
         <div>
-          <h2 className="section-title">{title}</h2>
+          <h2 className="section-title">
+            <InlineFormattedText value={title} />
+          </h2>
           <MarkdownEditor
             compact
             label={t('noteDetail.tip')}
@@ -982,7 +1009,9 @@ function TipPreview({ body, title }: { body: string; title: string }) {
       <div className="tip-box">
         <Lightbulb />
         <div>
-          <h2 className="section-title">{title}</h2>
+          <h2 className="section-title">
+            <InlineFormattedText value={title} />
+          </h2>
           <MarkdownPreview emptyText={t('noteDetail.emptyTip')} value={body} />
         </div>
       </div>
@@ -995,17 +1024,19 @@ function blocksToMarkdown(blocks?: RichTextBlock[]) {
 }
 
 function LinkedNoteRow({ noteId, onRemove, title }: { noteId: string; onRemove?: () => void; title: string }) {
+  const plainTitle = stripInlineFormatting(title);
+
   return (
     <span className="linked-row-shell">
       <Link className="linked-row" to={`/notes/${noteId}`}>
         <span className="inline-actions">
           <FileText />
-          {title}
+          <InlineFormattedText value={title} />
         </span>
         <ExternalLink />
       </Link>
       {onRemove ? (
-        <button className="icon-button danger" type="button" aria-label={title} onClick={onRemove}>
+        <button className="icon-button danger" type="button" aria-label={plainTitle} onClick={onRemove}>
           <Trash2 />
         </button>
       ) : null}

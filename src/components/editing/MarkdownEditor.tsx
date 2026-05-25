@@ -21,6 +21,11 @@ import clsx from 'clsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
+  applyInlineStyleToken,
+  type InlineStyleColor,
+  type InlineStyleKind,
+} from '../../core/utils/inlineFormatting';
+import {
   applyMarkdownTableAction,
   hasMarkdownTableAtCursor,
   type MarkdownTableAction,
@@ -29,6 +34,7 @@ import {
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { MarkdownPreview } from './MarkdownPreview';
+import { TextStyleToolbar } from './TextStyleToolbar';
 
 type MarkdownEditorTab = 'preview' | 'text';
 
@@ -181,6 +187,19 @@ export function MarkdownEditor({
     setTableMenuOpen(false);
   }
 
+  function applyInlineStyle(kind: InlineStyleKind, color: InlineStyleColor) {
+    applyTextEdit(
+      applyInlineStyleToken({
+        color,
+        fallback: kind === 'color' ? t('editor.coloredText') : t('editor.highlightedText'),
+        kind,
+        selectionEnd,
+        selectionStart,
+        text: draft,
+      }),
+    );
+  }
+
   async function accept() {
     if (!onAccept) {
       return;
@@ -233,6 +252,7 @@ export function MarkdownEditor({
             <ToolbarButton label={t('editor.heading')} onClick={() => prefixLines((line) => `## ${line.replace(/^#{1,6}\s+/, '')}`)}>
               <Heading1 />
             </ToolbarButton>
+            <TextStyleToolbar compact disabled={saving} onSelect={applyInlineStyle} />
             <span className="toolbar-divider" />
             <ToolbarButton label={t('editor.bulletList')} onClick={() => prefixLines((line) => `- ${line.replace(/^[-*+]\s+/, '')}`)}>
               <List />

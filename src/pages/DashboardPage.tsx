@@ -3,10 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { IconBadge } from '../components/ui/IconBadge';
+import { InlineFormattedText } from '../components/editing/InlineFormattedText';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { NoteRow } from '../components/ui/NoteRow';
 import { Panel } from "../components/ui/Panel";
 import { appLimits, demoSettings } from '../config/appSettings';
+import { stripInlineFormatting } from '../core/utils/inlineFormatting';
 import { filterNotes } from '../core/utils/noteFilters';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useI18n } from '../i18n/I18nProvider';
@@ -45,7 +47,7 @@ export function DashboardPage() {
   const quickPinOptions = activeNotes
     .filter((note) => note.id === activeQuickPinNote?.id || !pinnedNoteIds.has(note.id))
     .filter((note) => !quickPinQuery.trim() || normalizeSearchValue(note.title).includes(normalizeSearchValue(quickPinQuery)))
-    .sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' }))
+    .sort((a, b) => stripInlineFormatting(a.title).localeCompare(stripInlineFormatting(b.title), undefined, { numeric: true, sensitivity: 'base' }))
     .slice(0, appLimits.quickPinSuggestions);
   const trashedNotes = notes.filter((note) => note.isTrashed);
   const recentNoteFeed = filterNotes(notes, { mode: 'recent' });
@@ -158,9 +160,9 @@ export function DashboardPage() {
                     className={note ? "quick-pin-card" : "quick-pin-card empty"}
                     type="button"
                     aria-label={
-                      note ? note.title : t("dashboard.quickPins.add")
+                      note ? stripInlineFormatting(note.title) : t("dashboard.quickPins.add")
                     }
-                    title={note?.title}
+                    title={stripInlineFormatting(note?.title)}
                     onClick={() => {
                       if (note) {
                         navigate(`/notes/${note.id}`);
@@ -174,10 +176,11 @@ export function DashboardPage() {
                       <>
                         <NoteThumbnail thumbnail={note.thumbnail} />
                         <span className="quick-pin-copy">
-                          <strong>{note.title}</strong>
+                          <strong>
+                            <InlineFormattedText value={note.title} />
+                          </strong>
                           <span>
-                            {note.content.intro ||
-                              t("dashboard.quickPins.noteFallback")}
+                            {note.content.intro ? <InlineFormattedText value={note.content.intro} /> : t("dashboard.quickPins.noteFallback")}
                           </span>
                         </span>
                       </>
@@ -226,10 +229,11 @@ export function DashboardPage() {
                             >
                               <NoteThumbnail thumbnail={option.thumbnail} />
                               <span>
-                                <strong>{option.title}</strong>
+                                <strong>
+                                  <InlineFormattedText value={option.title} />
+                                </strong>
                                 <span>
-                                  {option.content.intro ||
-                                    t("dashboard.quickPins.noteFallback")}
+                                  {option.content.intro ? <InlineFormattedText value={option.content.intro} /> : t("dashboard.quickPins.noteFallback")}
                                 </span>
                               </span>
                             </button>
@@ -344,7 +348,9 @@ export function DashboardPage() {
                 >
                   <Timer />
                   <span className="activity-copy">
-                    <span>{note.title}</span>
+                    <span>
+                      <InlineFormattedText value={note.title} />
+                    </span>
                     <span>
                       {formatRecentTimestamp(
                         getRecentTimestamp(note),
@@ -452,7 +458,7 @@ function PopularTagRow({ tag }: { tag: TagModel }) {
 }
 
 function normalizeSearchValue(value: string) {
-  return value
+  return stripInlineFormatting(value)
     .trim()
     .toLowerCase()
     .normalize('NFD')

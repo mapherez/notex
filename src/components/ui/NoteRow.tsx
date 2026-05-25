@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom';
 import { useRef, useState } from 'react';
 import { ArchiveRestore, Copy, Folder, MoreHorizontal, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
+import { InlineFormattedText } from '../editing/InlineFormattedText';
 import type { Collection, Note, Tag } from '../../core/models/models';
+import { stripInlineFormatting } from '../../core/utils/inlineFormatting';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
@@ -53,6 +55,7 @@ export function NoteRow({
   const overflowTags = tagDisplayLimit ? noteTags.slice(tagDisplayLimit) : [];
   const collection = collections.find((item) => item.id === note.collectionId);
   const hiddenTagsLabel = t('notes.moreTags', { count: overflowTags.length });
+  const plainTitle = stripInlineFormatting(note.title);
 
   useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
   useClickOutside(tagMenuRef, tagMenuOpen, () => setTagMenuOpen(false));
@@ -87,7 +90,7 @@ export function NoteRow({
   }
 
   async function handleDuplicate() {
-    await duplicateNote(note.id, `${note.title} (${t('common.copy')})`);
+    await duplicateNote(note.id, `${plainTitle} (${t('common.copy')})`);
     pushToast(t('notes.duplicated'), 'success');
     setMenuOpen(false);
   }
@@ -99,20 +102,24 @@ export function NoteRow({
           <input
             type="checkbox"
             checked={selected}
-            aria-label={t('notes.bulk.selectNote', { title: note.title })}
+            aria-label={t('notes.bulk.selectNote', { title: plainTitle })}
             onChange={(event) => onSelectionChange?.(note.id, event.currentTarget.checked)}
           />
         </label>
       ) : null}
-      <Link to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${note.title}`}>
+      <Link to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${plainTitle}`}>
         <NoteThumbnail thumbnail={note.thumbnail} />
       </Link>
       <Link to={`/notes/${note.id}`} className="note-row__content-link">
         <div className="note-row__title-line">
-          <span className="note-row__title">{note.title}</span>
+          <span className="note-row__title">
+            <InlineFormattedText value={note.title} />
+          </span>
           {note.isFavorite ? <Star className="note-row__favorite-icon" /> : null}
         </div>
-        <p className="note-row__intro">{note.content.intro}</p>
+        <p className="note-row__intro">
+          <InlineFormattedText value={note.content.intro} />
+        </p>
       </Link>
       {collection || noteTags.length ? (
         <div className="note-row__badges">

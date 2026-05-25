@@ -2,10 +2,12 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { appLimits } from '../../config/appSettings';
+import { stripInlineFormatting } from '../../core/utils/inlineFormatting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
+import { InlineFormattedText } from '../editing/InlineFormattedText';
 import { NoteThumbnail } from './NoteThumbnail';
 import type { Collection, Note, Tag } from '../../core/models/models';
 
@@ -96,7 +98,9 @@ export function SearchBox({ className }: { className?: string }) {
               <Link className="search-result-row" key={result.note.id} to={`/notes/${result.note.id}`} onClick={closeSearch}>
                 <NoteThumbnail thumbnail={result.note.thumbnail} />
                 <span className="search-result-copy">
-                  <strong>{result.note.title}</strong>
+                  <strong>
+                    <InlineFormattedText value={result.note.title} />
+                  </strong>
                   <span className="search-result-meta">
                     <span className="search-result-match">{t(`topbar.searchMatch.${result.matchType}`)}</span>
                     {result.collectionName ? <span>{result.collectionName}</span> : null}
@@ -174,7 +178,7 @@ function searchResultScore(result: SearchResult) {
 }
 
 function normalizeSearchValue(value: string) {
-  return value
+  return stripInlineFormatting(value)
     .trim()
     .toLowerCase()
     .normalize('NFD')

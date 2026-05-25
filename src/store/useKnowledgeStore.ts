@@ -7,6 +7,7 @@ import {
   seedDatabaseIfEmpty,
 } from '../core/storage/notexRepository';
 import { notifySyncQueued, queueDeletedNoteSync, queueNoteSync, queueWorkspaceSync, runLocalMutation } from '../core/services/syncQueue';
+import { stripInlineFormatting } from '../core/utils/inlineFormatting';
 import type {
   ActivityItem,
   Collection,
@@ -286,7 +287,8 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       return;
     }
 
-    const nextTitle = title.trim() || note.title;
+    const trimmedTitle = title.trim();
+    const nextTitle = stripInlineFormatting(trimmedTitle).trim() ? trimmedTitle : note.title;
     const updated = finalizeNoteUpdate({
       ...note,
       title: nextTitle,
@@ -1100,7 +1102,7 @@ function normalizeUsageExampleInput(input: Omit<UsageExample, 'id'>) {
 
 function normalizeNoteEditDraft(input: NoteEditDraft): NoteEditDraft | null {
   const title = input.title.trim();
-  if (!title) {
+  if (!stripInlineFormatting(title).trim()) {
     return null;
   }
 
@@ -1157,7 +1159,9 @@ function calculateNoteStats(note: Note): NoteStats {
     note.content.tip?.title ?? '',
     note.content.tip?.body ?? '',
     ...(note.content.additionalExamples ?? []),
-  ].join(' ');
+  ]
+    .map(stripInlineFormatting)
+    .join(' ');
   const wordCount = text.split(/\s+/).filter(Boolean).length;
 
   return {
