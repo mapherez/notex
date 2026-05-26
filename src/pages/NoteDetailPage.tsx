@@ -27,6 +27,7 @@ import { CustomSelect } from '../components/ui/CustomSelect';
 import { EmptyState } from '../components/ui/EmptyState';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
+import { SortableTagList } from '../components/ui/SortableTagList';
 import { TagChip } from '../components/ui/TagChip';
 import {
   appLimits,
@@ -41,7 +42,7 @@ import type { Collection, Note, NoteThumbnail as NoteThumbnailModel, NoteType, R
 import { openExternalUrl } from '../core/services/externalLinks';
 import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
 import { stripInlineFormatting } from '../core/utils/inlineFormatting';
-import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
+import { sortTagsByFavoriteOrder } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { useI18n } from '../i18n/I18nProvider';
@@ -77,6 +78,7 @@ export function NoteDetailPage() {
   const [savingPage, setSavingPage] = useState(false);
   const [draft, setDraft] = useState<NoteEditDraft>(() => buildEmptyDraft(initialType, initialCollectionId, t('noteDetail.tip')));
   const favoriteTagIds = useAppStore((state) => state.settings.favoriteTagIds);
+  const setPinnedNoteState = useAppStore((state) => state.setPinnedNoteState);
   const notes = useKnowledgeStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
@@ -131,7 +133,8 @@ export function NoteDetailPage() {
     }
   }, [linkOpen]);
 
-  const noteTags = note ? sortTagsByName(tags.filter((tag) => note.tagIds.includes(tag.id))) : [];
+  const tagById = new Map(tags.map((tag) => [tag.id, tag]));
+  const noteTags = note ? note.tagIds.flatMap((tagId) => tagById.get(tagId) ?? []) : [];
   const collectionId = isEditing ? draft.collectionId : note?.collectionId ?? null;
   const collection = collections.find((item) => item.id === collectionId);
   const savedCollection = note ? collections.find((item) => item.id === note.collectionId) : undefined;
@@ -261,6 +264,14 @@ export function NoteDetailPage() {
     pushToast(t('noteDetail.tagUpdated'), 'success');
   }
 
+  async function reorderNoteTags(tagIds: string[]) {
+    if (!note) {
+      return;
+    }
+
+    await updateNoteTags(note.id, tagIds);
+  }
+
   async function createAndAddTag() {
     if (!note) {
       return;
@@ -376,7 +387,7 @@ export function NoteDetailPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      void togglePinned(note.id).then(() => pushToast(t('notes.pinChanged'), 'success'));
+                      void togglePinned(note.id).then(() => setPinnedNoteState(note.id, !note.isPinned)).then(() => pushToast(t('notes.pinChanged'), 'success'));
                       setMoreOpen(false);
                     }}
                   >
@@ -596,11 +607,17 @@ export function NoteDetailPage() {
             </Panel>
 
             <Panel title={t('noteDetail.tags')}>
-              <div className="tag-row">
-                {noteTags.map((tag) => (
-                  <TagChip key={tag.id} tag={tag} href={`/notes?tag=${tag.id}`} removable onRemove={() => void removeTag(tag.id)} />
-                ))}
-              </div>
+              {noteTags.length ? (
+                <SortableTagList
+                  ariaLabel={t('noteDetail.reorderTags')}
+                  className="document-tag-sortable-list"
+                  getHref={(tag) => `/notes?tag=${tag.id}`}
+                  onRemove={(tagId) => void removeTag(tagId)}
+                  onReorder={(tagIds) => reorderNoteTags(tagIds)}
+                  removable
+                  tags={noteTags}
+                />
+              ) : null}
               <button className="nav-item nav-item--spaced" type="button" onClick={() => setTagPickerOpen((value) => !value)}>
                 <Plus />
                 {t('noteDetail.addTag')}

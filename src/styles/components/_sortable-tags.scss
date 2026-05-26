@@ -1,0 +1,36 @@
+.sortable-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nx-space-3);
+  width: 100%;
+  min-width: 0;
+}
+
+.sortable-tag-list__item {
+  display: inline-flex;
+  border-radius: 0.72rem;
+  cursor: grab;
+  outline: none;
+  transition: opacity 160ms ease, outline-color 160ms ease, transform 160ms ease;
+  user-select: none;
+}
+
+.sortable-tag-list__item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--nx-color-accent) 64%, transparent);
+  outline-offset: 3px;
+}
+
+.sortable-tag-list__item--active {
+  cursor: grabbing;
+  opacity: 0.55;
+  transform: scale(0.98);
+}
+
+.sortable-tag-list__item .tag-chip {
+  cursor: inherit;
+}
+
+.sortable-tag-list__item .tag-chip-link,
+.sortable-tag-list__item .tag-remove {
+  cursor: pointer;
+}

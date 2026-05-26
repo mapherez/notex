@@ -5,6 +5,15 @@
   background: var(--nx-color-surface);
 }
 
+.note-list-stack {
+  display: grid;
+  gap: 20px;
+}
+
+.pin-list {
+  border-color: color-mix(in srgb, var(--nx-color-accent) 26%, var(--nx-color-border));
+}
+
 .note-row {
   position: relative;
   display: grid;
@@ -18,6 +27,22 @@
 
 .note-row.selectable {
   grid-template-columns: 2rem 3.7rem minmax(0, 1fr) auto auto auto;
+}
+
+.note-row.with-pin-indicator {
+  grid-template-columns: 1.45rem 3.7rem minmax(0, 1fr) auto auto auto;
+}
+
+.note-row.selectable.with-pin-indicator {
+  grid-template-columns: 2rem 1.45rem 3.7rem minmax(0, 1fr) auto auto auto;
+}
+
+.note-row.with-drag-handle.with-pin-indicator {
+  grid-template-columns: 1.45rem 1.45rem 3.7rem minmax(0, 1fr) auto auto auto;
+}
+
+.note-row.selectable.with-drag-handle.with-pin-indicator {
+  grid-template-columns: 1.45rem 2rem 1.45rem 3.7rem minmax(0, 1fr) auto auto auto;
 }
 
 .note-row:last-child {
@@ -37,6 +62,58 @@
   width: 1.05rem;
   height: 1.05rem;
   accent-color: var(--nx-color-accent);
+}
+
+.note-row__drag-handle,
+.note-row__pin-indicator {
+  display: inline-grid;
+  width: 1.45rem;
+  height: 1.45rem;
+  place-items: center;
+  color: var(--nx-color-text-soft);
+}
+
+.note-row__drag-handle {
+  border: 0;
+  border-radius: var(--nx-radius-sm);
+  background: transparent;
+  cursor: grab;
+  padding: 0;
+}
+
+.note-row__drag-handle:hover,
+.note-row__drag-handle:focus-visible {
+  background: var(--nx-color-hover);
+  color: var(--nx-color-text);
+  outline: none;
+}
+
+.note-row.is-dragging {
+  background: var(--nx-color-hover);
+  opacity: 0.72;
+}
+
+.note-row.is-dragging .note-row__drag-handle {
+  cursor: grabbing;
+}
+
+.note-row__drag-handle svg,
+.note-row__pin-indicator svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.note-row__pin-indicator svg {
+  transform: rotate(-32deg);
+}
+
+.note-row__pin-indicator.is-pinned {
+  color: var(--nx-color-accent);
+}
+
+.note-row__pin-indicator.is-pinned svg {
+  transform: rotate(0deg);
+  fill: currentColor;
 }
 
 .note-thumb {

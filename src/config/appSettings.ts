@@ -45,6 +45,7 @@ export const defaultUserSettings: UserSettings = {
   preferredLayout: userSettingsDefaults.preferredLayout as UserSettings['preferredLayout'],
   primaryCollectionId: userSettingsDefaults.primaryCollectionId,
   favoriteTagIds: userSettingsDefaults.favoriteTagIds,
+  pinnedNoteIds: userSettingsDefaults.pinnedNoteIds,
   quickPinNoteIds: userSettingsDefaults.quickPinNoteIds,
   updatedAt: new Date().toISOString(),
 };

@@ -346,6 +346,10 @@
   color: var(--nx-color-danger);
 }
 
+.bulk-delete-button {
+  margin-left: auto;
+}
+
 .bulk-clear-button:hover,
 .bulk-clear-button:focus-visible {
   background: var(--nx-color-hover);
@@ -370,6 +374,22 @@
 
 .notes-grid .note-row.selectable {
   grid-template-columns: 2rem 3.7rem minmax(0, 1fr) auto auto;
+}
+
+.notes-grid .note-row.with-pin-indicator {
+  grid-template-columns: 1.45rem 3.7rem minmax(0, 1fr) auto auto;
+}
+
+.notes-grid .note-row.selectable.with-pin-indicator {
+  grid-template-columns: 2rem 1.45rem 3.7rem minmax(0, 1fr) auto auto;
+}
+
+.notes-grid .note-row.with-drag-handle.with-pin-indicator {
+  grid-template-columns: 1.45rem 1.45rem 3.7rem minmax(0, 1fr) auto auto;
+}
+
+.notes-grid .note-row.selectable.with-drag-handle.with-pin-indicator {
+  grid-template-columns: 1.45rem 2rem 1.45rem 3.7rem minmax(0, 1fr) auto auto;
 }
 
 .notes-grid .note-row__time {

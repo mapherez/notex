@@ -14,6 +14,9 @@ type AppStore = {
   setStartupPage: (startupPage: string) => Promise<void>;
   setPrimaryCollection: (primaryCollectionId: string) => Promise<void>;
   toggleFavoriteTag: (tagId: string) => Promise<void>;
+  reorderFavoriteTags: (tagIds: string[]) => Promise<void>;
+  setPinnedNoteState: (noteId: string, pinned: boolean) => Promise<void>;
+  reorderPinnedNotes: (noteIds: string[]) => Promise<void>;
   setQuickPinAt: (index: number, noteId: string | null) => Promise<void>;
   toggleQuickPin: (noteId: string) => Promise<void>;
   replaceSettings: (settings: UserSettings) => Promise<void>;
@@ -43,6 +46,7 @@ function normalizeSettings(settings?: Partial<UserSettings> | null): UserSetting
     preferredLayout: source.preferredLayout ?? defaultUserSettings.preferredLayout,
     primaryCollectionId: source.primaryCollectionId ?? defaultUserSettings.primaryCollectionId,
     favoriteTagIds: source.favoriteTagIds ?? defaultUserSettings.favoriteTagIds,
+    pinnedNoteIds: source.pinnedNoteIds ?? defaultUserSettings.pinnedNoteIds,
     quickPinNoteIds: source.quickPinNoteIds ?? defaultUserSettings.quickPinNoteIds,
     updatedAt: source.updatedAt ?? defaultUserSettings.updatedAt,
   };
@@ -89,6 +93,30 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const settings = { ...get().settings, favoriteTagIds };
     await updateSettings(set, settings);
   },
+  reorderFavoriteTags: async (tagIds) => {
+    const current = get().settings.favoriteTagIds;
+    const currentSet = new Set(current);
+    const orderedIds = tagIds.filter((tagId) => currentSet.has(tagId));
+    const favoriteTagIds = [...orderedIds, ...current.filter((tagId) => !orderedIds.includes(tagId))];
+    const settings = { ...get().settings, favoriteTagIds };
+    await updateSettings(set, settings);
+  },
+  setPinnedNoteState: async (noteId, pinned) => {
+    const current = get().settings.pinnedNoteIds;
+    const pinnedNoteIds = pinned
+      ? uniqueIds([...current, noteId])
+      : current.filter((id) => id !== noteId);
+    const settings = { ...get().settings, pinnedNoteIds };
+    await updateSettings(set, settings);
+  },
+  reorderPinnedNotes: async (noteIds) => {
+    const current = get().settings.pinnedNoteIds;
+    const currentSet = new Set(current);
+    const orderedIds = noteIds.filter((noteId) => currentSet.has(noteId));
+    const pinnedNoteIds = [...orderedIds, ...current.filter((noteId) => !orderedIds.includes(noteId))];
+    const settings = { ...get().settings, pinnedNoteIds };
+    await updateSettings(set, settings);
+  },
   setQuickPinAt: async (index, noteId) => {
     const nextSlots = [...get().settings.quickPinNoteIds.slice(0, appLimits.quickPins)];
     const normalizedIndex = Math.max(0, Math.min(appLimits.quickPins - 1, index));
@@ -109,3 +137,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await updateSettings(set, normalizeSettings(settings));
   },
 }));
+
+function uniqueIds(ids: string[]) {
+  return [...new Set(ids)];
+}

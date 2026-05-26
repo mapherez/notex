@@ -157,6 +157,7 @@ export type UserSettings = {
   preferredLayout: PreferredLayout;
   primaryCollectionId: string;
   favoriteTagIds: string[];
+  pinnedNoteIds: string[];
   quickPinNoteIds: string[];
   updatedAt: string;
 };

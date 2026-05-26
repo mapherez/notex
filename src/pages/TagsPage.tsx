@@ -1,11 +1,14 @@
-import { Edit3, Plus, Save, Star, Trash2, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Edit3, Plus, Save, Search, Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ColorPicker } from "../components/ui/ColorPicker";
+import { SortableTagList } from '../components/ui/SortableTagList';
 import { TagChip } from '../components/ui/TagChip';
 import { appLimits, defaultNewTagColor } from '../config/appSettings';
 import type { Tag, TagColor } from "../core/models/models";
 import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
+import { useClickOutside } from '../core/utils/useClickOutside';
+import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
@@ -25,10 +28,13 @@ export function TagsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [favoritePickerOpen, setFavoritePickerOpen] = useState(false);
+  const [favoriteQuery, setFavoriteQuery] = useState('');
   const [drafts, setDrafts] = useState<Record<string, TagDraft>>({});
   const [deletedTagIds, setDeletedTagIds] = useState<Set<string>>(new Set());
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState<TagColor>(defaultNewTagColor);
+  const favoritePickerRef = useRef<HTMLDivElement>(null);
+  const favoriteSearchRef = useRef<HTMLInputElement>(null);
   const tags = useKnowledgeStore((state) => state.tags);
   const notes = useKnowledgeStore((state) => state.notes);
   const createTag = useKnowledgeStore((state) => state.createTag);
@@ -36,6 +42,7 @@ export function TagsPage() {
   const deleteTag = useKnowledgeStore((state) => state.deleteTag);
   const settings = useAppStore((state) => state.settings);
   const toggleFavoriteTag = useAppStore((state) => state.toggleFavoriteTag);
+  const reorderFavoriteTags = useAppStore((state) => state.reorderFavoriteTags);
   const pushToast = useToastStore((state) => state.pushToast);
   const activeNotes = useMemo(() => notes.filter((note) => !note.isTrashed), [notes]);
   const tagsWithCounts = useMemo(
@@ -62,7 +69,27 @@ export function TagsPage() {
     () => sortTagsByName(tags.filter((tag) => !settings.favoriteTagIds.includes(tag.id))),
     [settings.favoriteTagIds, tags],
   );
+  const filteredFavoriteOptions = useMemo(
+    () =>
+      favoriteQuery.trim()
+        ? remainingFavoriteOptions.filter((tag) =>
+            normalizeSearchValue(tag.name).includes(normalizeSearchValue(favoriteQuery)),
+          )
+        : remainingFavoriteOptions,
+    [favoriteQuery, remainingFavoriteOptions],
+  );
   const canAddFavoriteTag = favoriteTags.length < appLimits.favoriteTags;
+  const favoritePickerNavigation = useKeyboardListNavigation({
+    enabled: favoritePickerOpen,
+    itemCount: filteredFavoriteOptions.length,
+    onEscape: closeFavoritePicker,
+    onSelect: (index) => {
+      const tag = filteredFavoriteOptions[index];
+      if (tag) {
+        void addFavoriteTag(tag.id);
+      }
+    },
+  });
   const visibleEditTags = tagsWithCounts.filter((tag) => !deletedTagIds.has(tag.id));
   const hasInvalidDraft = visibleEditTags.some((tag) => !getDraftForTag(tag, drafts).name.trim());
   const hasDraftChanges =
@@ -81,9 +108,17 @@ export function TagsPage() {
     setDeletedTagIds(new Set());
   }, [editing, tagsWithCounts]);
 
+  useClickOutside(favoritePickerRef, favoritePickerOpen, closeFavoritePicker);
+
+  useEffect(() => {
+    if (favoritePickerOpen) {
+      requestAnimationFrame(() => favoriteSearchRef.current?.focus());
+    }
+  }, [favoritePickerOpen]);
+
   function beginEdit() {
     setCreateOpen(false);
-    setFavoritePickerOpen(false);
+    closeFavoritePicker();
     setDrafts(buildDrafts(tagsWithCounts));
     setDeletedTagIds(new Set());
     setEditing(true);
@@ -122,6 +157,28 @@ export function TagsPage() {
     setNewName('');
     setNewColor(defaultNewTagColor);
     pushToast(t('profile.labels.created'), 'success');
+  }
+
+  function closeFavoritePicker() {
+    setFavoritePickerOpen(false);
+    setFavoriteQuery('');
+  }
+
+  async function addFavoriteTag(tagId: string) {
+    if (!canAddFavoriteTag) {
+      pushToast(
+        t("tagsPage.favoriteTagsLimit", {
+          count: appLimits.favoriteTags,
+        }),
+        "warning",
+      );
+      closeFavoritePicker();
+      return;
+    }
+
+    await toggleFavoriteTag(tagId);
+    closeFavoritePicker();
+    pushToast(t("tagsPage.favoriteTagsUpdated"), "success");
   }
 
   async function saveEdits() {
@@ -178,82 +235,86 @@ export function TagsPage() {
               })}
             </span>
           </span>
-          <button
-            className="tags-action-button"
-            type="button"
-            aria-disabled={!canAddFavoriteTag}
-            onClick={() => {
-              if (!canAddFavoriteTag) {
-                pushToast(
-                  t("tagsPage.favoriteTagsLimit", {
-                    count: appLimits.favoriteTags,
-                  }),
-                  "warning",
-                );
-                return;
-              }
+          <div className="tags-favorites-add" ref={favoritePickerRef}>
+            <button
+              className="tags-action-button"
+              type="button"
+              aria-disabled={!canAddFavoriteTag}
+              aria-expanded={favoritePickerOpen}
+              aria-haspopup="listbox"
+              onClick={() => {
+                if (!canAddFavoriteTag) {
+                  pushToast(
+                    t("tagsPage.favoriteTagsLimit", {
+                      count: appLimits.favoriteTags,
+                    }),
+                    "warning",
+                  );
+                  return;
+                }
 
-              setFavoritePickerOpen((value) => !value);
-            }}
-          >
-            <Plus />
-            {t("common.add")}
-          </button>
+                setFavoritePickerOpen((value) => !value);
+              }}
+            >
+              <Plus />
+              {t("common.add")}
+            </button>
+            {favoritePickerOpen ? (
+              <div className="tags-favorite-picker-menu">
+                <label className="tags-favorite-picker-search">
+                  <Search />
+                  <input
+                    ref={favoriteSearchRef}
+                    type="search"
+                    value={favoriteQuery}
+                    onChange={(event) => setFavoriteQuery(event.target.value)}
+                    onKeyDown={favoritePickerNavigation.onKeyDown}
+                    placeholder={t("tagsPage.searchFavoriteTags")}
+                  />
+                </label>
+                <div className="tags-favorite-picker-options" role="listbox">
+                  {filteredFavoriteOptions.length ? (
+                    filteredFavoriteOptions.map((tag, index) => (
+                      <button
+                        className={favoritePickerNavigation.activeIndex === index ? "active" : undefined}
+                        key={tag.id}
+                        type="button"
+                        role="option"
+                        aria-selected={favoritePickerNavigation.activeIndex === index}
+                        onClick={() => void addFavoriteTag(tag.id)}
+                        onMouseEnter={() => favoritePickerNavigation.setActiveIndex(index)}
+                      >
+                        <TagChip tag={tag} />
+                      </button>
+                    ))
+                  ) : (
+                    <span className="tags-favorite-picker-empty">
+                      {t("tagsPage.noFavoriteTagOptions")}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
         <div className="chip-stack chip-stack--spaced">
           {favoriteTags.length ? (
-            favoriteTags.map((tag) => (
-              <TagChip
-                key={tag.id}
-                tag={tag}
-                href={`/notes?tag=${tag.id}`}
-                removable
-                onRemove={() => {
-                  void toggleFavoriteTag(tag.id).then(() =>
-                    pushToast(t("tagsPage.favoriteTagsUpdated"), "success"),
-                  );
-                }}
-              />
-            ))
+            <SortableTagList
+              ariaLabel={t("tagsPage.reorderFavoriteTags")}
+              getHref={(tag) => `/notes?tag=${tag.id}`}
+              onRemove={(tagId) => {
+                void toggleFavoriteTag(tagId).then(() =>
+                  pushToast(t("tagsPage.favoriteTagsUpdated"), "success"),
+                );
+              }}
+              onReorder={(tagIds) => reorderFavoriteTags(tagIds)}
+              removable
+              tags={favoriteTags}
+            />
           ) : (
             <span className="tags-empty">{t("tagsPage.emptyFavorites")}</span>
           )}
         </div>
-        {favoritePickerOpen ? (
-          <div className="inline-picker tags-favorites-picker">
-            {remainingFavoriteOptions.length ? (
-              remainingFavoriteOptions.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => {
-                    if (!canAddFavoriteTag) {
-                      pushToast(
-                        t("tagsPage.favoriteTagsLimit", {
-                          count: appLimits.favoriteTags,
-                        }),
-                        "warning",
-                      );
-                      setFavoritePickerOpen(false);
-                      return;
-                    }
-
-                    void toggleFavoriteTag(tag.id).then(() =>
-                      pushToast(t("tagsPage.favoriteTagsUpdated"), "success"),
-                    );
-                    setFavoritePickerOpen(false);
-                  }}
-                >
-                  <TagChip tag={tag} />
-                </button>
-              ))
-            ) : (
-              <span className="notes-filter-empty">
-                {t("notes.bulk.noTags")}
-              </span>
-            )}
-          </div>
-        ) : null}
       </section>
 
       <section className="tags-page-section">
@@ -422,3 +483,10 @@ function formatTagCount(count: number, t: ReturnType<typeof useI18n>['t']) {
   return t(count === 1 ? 'tagsPage.noteCountSingular' : 'tagsPage.noteCount', { count });
 }
 
+function normalizeSearchValue(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}

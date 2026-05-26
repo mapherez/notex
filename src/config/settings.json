@@ -30,6 +30,7 @@
       "preferredLayout": "list",
       "primaryCollectionId": "collection-work",
       "favoriteTagIds": ["tag-grammar", "tag-doubt"],
+      "pinnedNoteIds": ["note-linguistic"],
       "quickPinNoteIds": ["note-linguistic"]
     }
   },

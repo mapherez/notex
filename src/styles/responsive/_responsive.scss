@@ -143,6 +143,19 @@
     min-height: 4.8rem;
   }
 
+  .note-row.with-pin-indicator {
+    grid-template-columns: 1.35rem 3rem minmax(0, 1fr) auto;
+  }
+
+  .note-row.selectable.with-pin-indicator {
+    grid-template-columns: 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
+  }
+
+  .note-row.with-drag-handle.with-pin-indicator,
+  .note-row.selectable.with-drag-handle.with-pin-indicator {
+    grid-template-columns: 1.35rem 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
+  }
+
   .note-row .note-row__badges,
   .note-row .tag-chip,
   .note-row .icon-button {
@@ -188,6 +201,10 @@
     margin-left: 0;
   }
 
+  .bulk-delete-button {
+    margin-left: 0;
+  }
+
   .notes-filter-toggle {
     width: 100%;
   }
@@ -216,6 +233,14 @@
 
   .note-row.selectable {
     grid-template-columns: 1.6rem 3rem minmax(0, 1fr) auto;
+  }
+
+  .note-row.selectable.with-pin-indicator {
+    grid-template-columns: 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
+  }
+
+  .note-row.selectable.with-drag-handle.with-pin-indicator {
+    grid-template-columns: 1.35rem 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
   }
 
   .collection-create-row {

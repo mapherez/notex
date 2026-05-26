@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
-import { useRef, useState } from 'react';
-import { ArchiveRestore, Copy, Folder, MoreHorizontal, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
+import { useRef, useState, type PointerEventHandler } from 'react';
+import { ArchiveRestore, Copy, Folder, GripVertical, MoreHorizontal, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { InlineFormattedText } from '../editing/InlineFormattedText';
 import type { Collection, Note, Tag } from '../../core/models/models';
 import { stripInlineFormatting } from '../../core/utils/inlineFormatting';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
+import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { useToastStore } from '../../store/useToastStore';
 import { NoteThumbnail } from './NoteThumbnail';
@@ -25,6 +26,13 @@ export function NoteRow({
   selected = false,
   onSelectionChange,
   tagDisplayLimit,
+  showPinIndicator = false,
+  showPinnedDragHandle = false,
+  pinnedDragActive = false,
+  onPinnedDragPointerDown,
+  onPinnedDragPointerEnter,
+  onPinnedDragPointerMove,
+  onPinnedDragPointerUp,
 }: {
   note: Note;
   tags: Tag[];
@@ -38,6 +46,13 @@ export function NoteRow({
   selected?: boolean;
   onSelectionChange?: (noteId: string, selected: boolean) => void;
   tagDisplayLimit?: number;
+  showPinIndicator?: boolean;
+  showPinnedDragHandle?: boolean;
+  pinnedDragActive?: boolean;
+  onPinnedDragPointerDown?: PointerEventHandler<HTMLButtonElement>;
+  onPinnedDragPointerEnter?: PointerEventHandler<HTMLElement>;
+  onPinnedDragPointerMove?: PointerEventHandler<HTMLElement>;
+  onPinnedDragPointerUp?: PointerEventHandler<HTMLElement>;
 }) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -46,6 +61,7 @@ export function NoteRow({
   const tagMenuRef = useRef<HTMLSpanElement>(null);
   const toggleFavorite = useKnowledgeStore((state) => state.toggleFavorite);
   const togglePinned = useKnowledgeStore((state) => state.togglePinned);
+  const setPinnedNoteState = useAppStore((state) => state.setPinnedNoteState);
   const moveToTrash = useKnowledgeStore((state) => state.moveToTrash);
   const restoreNote = useKnowledgeStore((state) => state.restoreNote);
   const duplicateNote = useKnowledgeStore((state) => state.duplicateNote);
@@ -85,6 +101,7 @@ export function NoteRow({
 
   async function handlePin() {
     await togglePinned(note.id);
+    await setPinnedNoteState(note.id, !note.isPinned);
     pushToast(t('notes.pinChanged'), 'success');
     setMenuOpen(false);
   }
@@ -96,7 +113,28 @@ export function NoteRow({
   }
 
   return (
-    <article className={selectable ? 'note-row selectable' : 'note-row'}>
+    <article
+      className={getNoteRowClassName({
+        dragActive: pinnedDragActive,
+        dragHandle: showPinnedDragHandle,
+        pinIndicator: showPinIndicator,
+        selectable,
+      })}
+      onPointerEnter={onPinnedDragPointerEnter}
+      onPointerMove={onPinnedDragPointerMove}
+      onPointerUp={onPinnedDragPointerUp}
+    >
+      {showPinnedDragHandle ? (
+        <button
+          className="note-row__drag-handle"
+          type="button"
+          aria-label={t('notes.reorderPinned')}
+          title={t('notes.reorderPinned')}
+          onPointerDown={onPinnedDragPointerDown}
+        >
+          <GripVertical />
+        </button>
+      ) : null}
       {selectable ? (
         <label className="note-select-control">
           <input
@@ -106,6 +144,11 @@ export function NoteRow({
             onChange={(event) => onSelectionChange?.(note.id, event.currentTarget.checked)}
           />
         </label>
+      ) : null}
+      {showPinIndicator ? (
+        <span className={note.isPinned ? 'note-row__pin-indicator is-pinned' : 'note-row__pin-indicator'} title={note.isPinned ? t('common.unpin') : t('common.pin')}>
+          <Pin />
+        </span>
       ) : null}
       <Link to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${plainTitle}`}>
         <NoteThumbnail thumbnail={note.thumbnail} />
@@ -210,6 +253,28 @@ export function NoteRow({
       </div>
     </article>
   );
+}
+
+function getNoteRowClassName({
+  dragActive,
+  dragHandle,
+  pinIndicator,
+  selectable,
+}: {
+  dragActive: boolean;
+  dragHandle: boolean;
+  pinIndicator: boolean;
+  selectable: boolean;
+}) {
+  return [
+    'note-row',
+    selectable ? 'selectable' : '',
+    pinIndicator ? 'with-pin-indicator' : '',
+    dragHandle ? 'with-drag-handle' : '',
+    dragActive ? 'is-dragging' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 function formatDisplayTime(value: string, today: string, yesterday: string) {

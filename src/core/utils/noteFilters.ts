@@ -10,6 +10,7 @@ export type NotesFilter = {
   tagId?: string | null;
   collectionId?: string | null;
   sortOrder?: NotesSortOrder | null;
+  pinnedFirst?: boolean;
 };
 
 export const defaultNotesSortOrder = noteSettings.defaultSortOrder as NotesSortOrder;
@@ -52,10 +53,14 @@ export function filterNotes(notes: Note[], filter: NotesFilter) {
         .toLowerCase()
         .includes(query);
     })
-    .sort((a, b) => compareNotes(a, b, filter.mode, sortOrder));
+    .sort((a, b) => compareNotes(a, b, filter.mode, sortOrder, Boolean(filter.pinnedFirst)));
 }
 
-function compareNotes(a: Note, b: Note, mode: NotesFilter['mode'], sortOrder: NotesSortOrder | null) {
+function compareNotes(a: Note, b: Note, mode: NotesFilter['mode'], sortOrder: NotesSortOrder | null, pinnedFirst: boolean) {
+  if (pinnedFirst && a.isPinned !== b.isPinned) {
+    return a.isPinned ? -1 : 1;
+  }
+
   if (!sortOrder && mode === 'recent') {
     return (b.lastOpenedAt ?? b.updatedAt).localeCompare(a.lastOpenedAt ?? a.updatedAt) || compareNoteTitles(a, b);
   }

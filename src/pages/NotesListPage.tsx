@@ -1,5 +1,5 @@
 import { Check, ChevronDown, Edit3, Folder, Plus, Tag as TagIcon, Trash2, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ColorPicker } from '../components/ui/ColorPicker';
@@ -39,10 +39,18 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
   const bulkUpdateNoteCollection = useKnowledgeStore((state) => state.bulkUpdateNoteCollection);
   const bulkUpdateNoteTag = useKnowledgeStore((state) => state.bulkUpdateNoteTag);
   const preferredLayout = useAppStore((state) => state.settings.preferredLayout);
+  const pinnedNoteIds = useAppStore((state) => state.settings.pinnedNoteIds);
   const setPreferredLayout = useAppStore((state) => state.setPreferredLayout);
+  const reorderPinnedNotes = useAppStore((state) => state.reorderPinnedNotes);
   const pushToast = useToastStore((state) => state.pushToast);
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
   const [trashConfirm, setTrashConfirm] = useState<TrashConfirmState>(null);
+  const [activePinnedDragId, setActivePinnedDragId] = useState<string | null>(null);
+  const [orderedPinnedDragIds, setOrderedPinnedDragIds] = useState<string[]>([]);
+  const activePinnedDragIdRef = useRef<string | null>(null);
+  const orderedPinnedDragIdsRef = useRef<string[]>([]);
+  const pinnedDragStartRef = useRef({ x: 0, y: 0 });
+  const pinnedDragMovedRef = useRef(false);
   const tagParam = searchParams.get('tag');
   const collectionParam = searchParams.get('collection');
   const defaultSortOrder: NotesSortOrder = mode === 'recent' ? recentNotesSortOrder : defaultNotesSortOrder;
@@ -65,6 +73,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
         mode,
         tagId,
         collectionId,
+        pinnedFirst: true,
         sortOrder,
       }),
     [collectionId, mode, notes, sortOrder, tagId],
@@ -76,6 +85,13 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
     () => filtered.filter((note) => selectedNoteIdSet.has(note.id)),
     [filtered, selectedNoteIdSet],
   );
+  const splitPinnedLists = mode !== 'trash' && filtered.some((note) => note.isPinned);
+  const pinnedNotes = useMemo(
+    () => orderPinnedNotes(filtered.filter((note) => note.isPinned), orderedPinnedDragIds.length ? orderedPinnedDragIds : pinnedNoteIds),
+    [filtered, orderedPinnedDragIds, pinnedNoteIds],
+  );
+  const regularNotes = splitPinnedLists ? filtered.filter((note) => !note.isPinned) : filtered;
+  const showBulkActions = selectionEnabled && selectedNotes.length > 0;
   const trashCount = notes.filter((note) => note.isTrashed).length;
 
   useEffect(() => {
@@ -90,6 +106,38 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
       return next.length === current.length ? current : next;
     });
   }, [selectionEnabled, visibleNoteIdsKey]);
+
+  useEffect(() => {
+    if (activePinnedDragId) {
+      return;
+    }
+
+    updateOrderedPinnedDragIds(pinnedNotes.map((note) => note.id));
+  }, [activePinnedDragId, pinnedNotes]);
+
+  useEffect(() => {
+    if (!activePinnedDragId) {
+      return;
+    }
+
+    function handlePointerUp() {
+      finishPinnedNoteReorder();
+    }
+
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === 'Escape') {
+        cancelPinnedNoteReorder();
+      }
+    }
+
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activePinnedDragId, pinnedNotes]);
 
   async function handleClearTrash() {
     if (!trashCount) {
@@ -173,6 +221,103 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
     pushToast(t('notes.bulk.deleted'), 'warning');
   }
 
+  function beginPinnedNoteReorder(event: PointerEvent<HTMLButtonElement>, noteId: string) {
+    if (event.button !== 0) {
+      return;
+    }
+
+    activePinnedDragIdRef.current = noteId;
+    pinnedDragStartRef.current = { x: event.clientX, y: event.clientY };
+    pinnedDragMovedRef.current = false;
+    setActivePinnedDragId(noteId);
+  }
+
+  function trackPinnedNoteReorder(event: PointerEvent<HTMLElement>) {
+    if (!activePinnedDragIdRef.current || pinnedDragMovedRef.current) {
+      return;
+    }
+
+    const deltaX = Math.abs(event.clientX - pinnedDragStartRef.current.x);
+    const deltaY = Math.abs(event.clientY - pinnedDragStartRef.current.y);
+    if (deltaX > 4 || deltaY > 4) {
+      pinnedDragMovedRef.current = true;
+    }
+  }
+
+  function previewPinnedNoteReorder(overId: string) {
+    const draggedId = activePinnedDragIdRef.current;
+    if (!draggedId || draggedId === overId || !pinnedDragMovedRef.current) {
+      return;
+    }
+
+    updateOrderedPinnedDragIds((currentIds) => moveId(currentIds, draggedId, overId));
+  }
+
+  function finishPinnedNoteReorder() {
+    const nextIds = orderedPinnedDragIdsRef.current;
+    const originalIds = pinnedNotes.map((note) => note.id);
+
+    if (activePinnedDragIdRef.current && pinnedDragMovedRef.current && !isSameOrder(originalIds, nextIds)) {
+      void reorderPinnedNotes(nextIds);
+    }
+
+    resetPinnedDragState();
+  }
+
+  function cancelPinnedNoteReorder() {
+    updateOrderedPinnedDragIds(pinnedNotes.map((note) => note.id));
+    resetPinnedDragState();
+  }
+
+  function resetPinnedDragState() {
+    activePinnedDragIdRef.current = null;
+    pinnedDragMovedRef.current = false;
+    setActivePinnedDragId(null);
+  }
+
+  function updateOrderedPinnedDragIds(input: string[] | ((currentIds: string[]) => string[])) {
+    setOrderedPinnedDragIds((currentIds) => {
+      const nextIds = typeof input === 'function' ? input(currentIds) : input;
+      if (isSameOrder(currentIds, nextIds)) {
+        return currentIds;
+      }
+
+      orderedPinnedDragIdsRef.current = nextIds;
+      return nextIds;
+    });
+  }
+
+  function renderNoteRows(noteItems: Note[], pinnedList = false) {
+    return noteItems.map((note) => (
+      <NoteRow
+        key={note.id}
+        note={note}
+        tags={tags}
+        collections={collections}
+        timeValue={mode === 'recent' ? note.lastOpenedAt ?? note.updatedAt : undefined}
+        selectable={selectionEnabled}
+        selected={selectedNoteIdSet.has(note.id)}
+        onSelectionChange={updateNoteSelection}
+        onPermanentDelete={
+          mode === 'trash'
+            ? (noteId) => {
+                const trashedNote = notes.find((item) => item.id === noteId);
+                setTrashConfirm({ kind: 'delete', noteIds: [noteId], title: trashedNote?.title });
+              }
+            : undefined
+        }
+        tagDisplayLimit={preferredLayout === 'grid' ? 2 : undefined}
+        showPinIndicator={mode !== 'trash'}
+        showPinnedDragHandle={pinnedList}
+        pinnedDragActive={activePinnedDragId === note.id}
+        onPinnedDragPointerDown={pinnedList ? (event) => beginPinnedNoteReorder(event, note.id) : undefined}
+        onPinnedDragPointerEnter={pinnedList ? () => previewPinnedNoteReorder(note.id) : undefined}
+        onPinnedDragPointerMove={pinnedList ? trackPinnedNoteReorder : undefined}
+        onPinnedDragPointerUp={pinnedList ? finishPinnedNoteReorder : undefined}
+      />
+    ));
+  }
+
   return (
     <div className="page-content list-page-grid">
       <header className="page-header-actions">
@@ -188,23 +333,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
         ) : null}
       </header>
 
-      <NotesFilterRow
-        collections={collections}
-        defaultSortOrder={defaultSortOrder}
-        onClear={clearFilters}
-        onCollectionChange={(nextCollectionId) => updateFilterParam('collection', nextCollectionId)}
-        onLayoutChange={(nextLayout: PreferredLayout) => void setPreferredLayout(nextLayout)}
-        onSortChange={(nextSortOrder: NotesSortOrder) => updateFilterParam('sort', nextSortOrder)}
-        onTagChange={(nextTagId) => updateFilterParam('tag', nextTagId)}
-        preferredLayout={preferredLayout}
-        selectedCollectionId={collectionId}
-        selectedTagId={tagId}
-        sortLocked={mode === 'recent'}
-        sortOrder={sortOrder}
-        tags={tags}
-      />
-
-      {selectionEnabled && selectedNotes.length ? (
+      {showBulkActions ? (
         <BulkNoteActionsRow
           allSelected={selectedNotes.length === filtered.length}
           collections={collections}
@@ -218,31 +347,36 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
           tags={tags}
           totalCount={filtered.length}
         />
-      ) : null}
+      ) : (
+        <NotesFilterRow
+          collections={collections}
+          defaultSortOrder={defaultSortOrder}
+          onClear={clearFilters}
+          onCollectionChange={(nextCollectionId) => updateFilterParam('collection', nextCollectionId)}
+          onLayoutChange={(nextLayout: PreferredLayout) => void setPreferredLayout(nextLayout)}
+          onSortChange={(nextSortOrder: NotesSortOrder) => updateFilterParam('sort', nextSortOrder)}
+          onTagChange={(nextTagId) => updateFilterParam('tag', nextTagId)}
+          preferredLayout={preferredLayout}
+          selectedCollectionId={collectionId}
+          selectedTagId={tagId}
+          sortLocked={mode === 'recent'}
+          sortOrder={sortOrder}
+          tags={tags}
+        />
+      )}
 
       {filtered.length ? (
-        <div className={preferredLayout === 'grid' ? 'note-list notes-grid' : 'note-list'}>
-          {filtered.map((note) => (
-            <NoteRow
-              key={note.id}
-              note={note}
-              tags={tags}
-              collections={collections}
-              timeValue={mode === 'recent' ? note.lastOpenedAt ?? note.updatedAt : undefined}
-              selectable={selectionEnabled}
-              selected={selectedNoteIdSet.has(note.id)}
-              onSelectionChange={updateNoteSelection}
-              onPermanentDelete={
-                mode === 'trash'
-                  ? (noteId) => {
-                      const trashedNote = notes.find((item) => item.id === noteId);
-                      setTrashConfirm({ kind: 'delete', noteIds: [noteId], title: trashedNote?.title });
-                    }
-                  : undefined
-              }
-              tagDisplayLimit={preferredLayout === 'grid' ? 2 : undefined}
-            />
-          ))}
+        <div className={splitPinnedLists ? 'note-list-stack' : undefined}>
+          {splitPinnedLists ? (
+            <div className={preferredLayout === 'grid' ? 'note-list pin-list notes-grid' : 'note-list pin-list'}>
+              {renderNoteRows(pinnedNotes, true)}
+            </div>
+          ) : null}
+          {regularNotes.length ? (
+            <div className={preferredLayout === 'grid' ? 'note-list notes-grid' : 'note-list'}>
+              {renderNoteRows(regularNotes)}
+            </div>
+          ) : null}
         </div>
       ) : (
         <EmptyState />
@@ -358,7 +492,7 @@ function BulkNoteActionsRow({
         <X />
         {t('notes.bulk.clearSelection')}
       </button>
-      <button className="bulk-clear-button danger" type="button" onClick={onDeleteSelected}>
+      <button className="bulk-clear-button bulk-delete-button danger" type="button" onClick={onDeleteSelected}>
         <Trash2 />
         {t('notes.bulk.deleteSelected')}
       </button>
@@ -439,6 +573,40 @@ function BulkTagCheckbox({
       <span># {tag.name}</span>
     </label>
   );
+}
+
+function orderPinnedNotes(notes: Note[], orderedIds: string[]) {
+  const noteById = new Map(notes.map((note) => [note.id, note]));
+  const usedIds = new Set<string>();
+  const orderedNotes = orderedIds.flatMap((noteId) => {
+    const note = noteById.get(noteId);
+    if (!note) {
+      return [];
+    }
+
+    usedIds.add(note.id);
+    return [note];
+  });
+
+  return [...orderedNotes, ...notes.filter((note) => !usedIds.has(note.id))];
+}
+
+function isSameOrder(left: string[], right: string[]) {
+  return left.length === right.length && left.every((id, index) => id === right[index]);
+}
+
+function moveId(ids: string[], activeId: string, overId: string) {
+  const activeIndex = ids.indexOf(activeId);
+  const overIndex = ids.indexOf(overId);
+
+  if (activeIndex === -1 || overIndex === -1) {
+    return ids;
+  }
+
+  const nextIds = [...ids];
+  const [movedId] = nextIds.splice(activeIndex, 1);
+  nextIds.splice(overIndex, 0, movedId);
+  return nextIds;
 }
 
 export function CollectionsPage() {
