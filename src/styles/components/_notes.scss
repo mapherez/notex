@@ -7,13 +7,22 @@
 
 .note-list-stack {
   display: grid;
-  gap: 20px;
+  gap: 10px;
 }
 
 .pin-list {
   border-color: color-mix(in srgb, var(--nx-color-accent) 26%, var(--nx-color-border));
 }
 
+.note-list-stack:has(> .pin-list):has(> .unpinned-list)>.pin-list {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.note-list-stack:has(> .pin-list):has(> .unpinned-list)>.unpinned-list {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
 .note-row {
   position: relative;
   display: grid;
@@ -71,6 +80,7 @@
   height: 1.45rem;
   place-items: center;
   color: var(--nx-color-text-soft);
+  cursor: pointer;
 }
 
 .note-row__drag-handle {

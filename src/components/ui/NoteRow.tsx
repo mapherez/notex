@@ -128,8 +128,8 @@ export function NoteRow({
         <button
           className="note-row__drag-handle"
           type="button"
-          aria-label={t('notes.reorderPinned')}
-          title={t('notes.reorderPinned')}
+          aria-label={t("notes.reorderPinned")}
+          title={t("notes.reorderPinned")}
           onPointerDown={onPinnedDragPointerDown}
         >
           <GripVertical />
@@ -140,17 +140,30 @@ export function NoteRow({
           <input
             type="checkbox"
             checked={selected}
-            aria-label={t('notes.bulk.selectNote', { title: plainTitle })}
-            onChange={(event) => onSelectionChange?.(note.id, event.currentTarget.checked)}
+            aria-label={t("notes.bulk.selectNote", { title: plainTitle })}
+            onChange={(event) =>
+              onSelectionChange?.(note.id, event.currentTarget.checked)
+            }
           />
         </label>
       ) : null}
       {showPinIndicator ? (
-        <span className={note.isPinned ? 'note-row__pin-indicator is-pinned' : 'note-row__pin-indicator'} title={note.isPinned ? t('common.unpin') : t('common.pin')}>
+        <span
+          className={
+            note.isPinned
+              ? "note-row__pin-indicator is-pinned"
+              : "note-row__pin-indicator"
+          }
+          title={note.isPinned ? t("common.unpin") : t("common.pin")}
+          onClick={() => void handlePin()}
+        >
           <Pin />
         </span>
       ) : null}
-      <Link to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${plainTitle}`}>
+      <Link
+        to={`/notes/${note.id}`}
+        aria-label={`${t("common.open")} ${plainTitle}`}
+      >
         <NoteThumbnail thumbnail={note.thumbnail} />
       </Link>
       <Link to={`/notes/${note.id}`} className="note-row__content-link">
@@ -158,7 +171,9 @@ export function NoteRow({
           <span className="note-row__title">
             <InlineFormattedText value={note.title} />
           </span>
-          {note.isFavorite ? <Star className="note-row__favorite-icon" /> : null}
+          {note.isFavorite ? (
+            <Star className="note-row__favorite-icon" />
+          ) : null}
         </div>
         <p className="note-row__intro">
           <InlineFormattedText value={note.content.intro} />
@@ -167,7 +182,10 @@ export function NoteRow({
       {collection || noteTags.length ? (
         <div className="note-row__badges">
           {collection ? (
-            <Link className={`collection-chip ${collection.color ?? 'neutral'}`} to={`/notes?collection=${collection.id}`}>
+            <Link
+              className={`collection-chip ${collection.color ?? "neutral"}`}
+              to={`/notes?collection=${collection.id}`}
+            >
               <Folder strokeWidth={1.9} />
               <span>{collection.name}</span>
             </Link>
@@ -176,11 +194,18 @@ export function NoteRow({
             <span className="note-row__tag-chain">
               {visibleTags.map((tag) => (
                 <span className="note-row__tag-chain-item" key={tag.id}>
-                  <TagChip tag={tag} color={tag.color} href={`/notes?tag=${tag.id}`} />
+                  <TagChip
+                    tag={tag}
+                    color={tag.color}
+                    href={`/notes?tag=${tag.id}`}
+                  />
                 </span>
               ))}
               {overflowTags.length ? (
-                <span className="note-row__tag-chain-item note-row__tag-overflow" ref={tagMenuRef}>
+                <span
+                  className="note-row__tag-chain-item note-row__tag-overflow"
+                  ref={tagMenuRef}
+                >
                   <button
                     className="note-row__tag-overflow-button"
                     type="button"
@@ -198,7 +223,11 @@ export function NoteRow({
                   {tagMenuOpen ? (
                     <div className="floating-menu note-row-tags-menu">
                       {overflowTags.map((tag) => (
-                        <Link key={tag.id} to={`/notes?tag=${tag.id}`} onClick={() => setTagMenuOpen(false)}>
+                        <Link
+                          key={tag.id}
+                          to={`/notes?tag=${tag.id}`}
+                          onClick={() => setTagMenuOpen(false)}
+                        >
                           <TagChip tag={tag} color={tag.color} />
                         </Link>
                       ))}
@@ -210,12 +239,18 @@ export function NoteRow({
           ) : null}
         </div>
       ) : null}
-      <span className="note-row__time">{formatDisplayTime(timeValue ?? note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
+      <span className="note-row__time">
+        {formatDisplayTime(
+          timeValue ?? note.updatedAt,
+          t("common.today"),
+          t("common.yesterday"),
+        )}
+      </span>
       <div className="note-row-actions" ref={menuRef}>
         <button
           className="icon-button"
           type="button"
-          aria-label={actionLabel ?? t('notes.openMenu')}
+          aria-label={actionLabel ?? t("notes.openMenu")}
           onClick={(event) => {
             event.preventDefault();
             setMenuOpen((value) => !value);
@@ -225,27 +260,27 @@ export function NoteRow({
         </button>
         {menuOpen ? (
           <div className="floating-menu note-row-menu">
-            <Link to={`/notes/${note.id}`}>{t('common.open')}</Link>
+            <Link to={`/notes/${note.id}`}>{t("common.open")}</Link>
             <button type="button" onClick={() => void handleFavorite()}>
               <Star />
-              {note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
+              {note.isFavorite ? t("common.unfavorite") : t("common.favorite")}
             </button>
             <button type="button" onClick={() => void handlePin()}>
               <Pin />
-              {note.isPinned ? t('common.unpin') : t('common.pin')}
+              {note.isPinned ? t("common.unpin") : t("common.pin")}
             </button>
             <button type="button" onClick={() => void handleDuplicate()}>
               <Copy />
-              {t('common.duplicate')}
+              {t("common.duplicate")}
             </button>
             <button type="button" onClick={() => void handleTrash()}>
               {note.isTrashed ? <ArchiveRestore /> : <Trash2 />}
-              {note.isTrashed ? t('notes.restore') : t('notes.moveToTrash')}
+              {note.isTrashed ? t("notes.restore") : t("notes.moveToTrash")}
             </button>
             {note.isTrashed && onPermanentDelete ? (
               <button type="button" onClick={handlePermanentDelete}>
                 <Trash2 />
-                {t('notes.deleteForever')}
+                {t("notes.deleteForever")}
               </button>
             ) : null}
           </div>

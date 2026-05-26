@@ -325,10 +325,14 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
           <h1 className="page-title">{copy.title}</h1>
           <p className="page-subtitle">{copy.subtitle}</p>
         </span>
-        {mode === 'trash' && trashCount ? (
-          <button className="danger-action-button" type="button" onClick={() => void handleClearTrash()}>
+        {mode === "trash" && trashCount ? (
+          <button
+            className="danger-action-button"
+            type="button"
+            onClick={() => void handleClearTrash()}
+          >
             <Trash2 />
-            {t('notes.clearTrash')}
+            {t("notes.clearTrash")}
           </button>
         ) : null}
       </header>
@@ -337,11 +341,17 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
         <BulkNoteActionsRow
           allSelected={selectedNotes.length === filtered.length}
           collections={collections}
-          onSelectAll={(checked) => setSelectedNoteIds(checked ? filtered.map((note) => note.id) : [])}
+          onSelectAll={(checked) =>
+            setSelectedNoteIds(checked ? filtered.map((note) => note.id) : [])
+          }
           onClearSelection={() => setSelectedNoteIds([])}
-          onMoveCollection={(nextCollectionId) => void moveSelectedNotes(nextCollectionId)}
+          onMoveCollection={(nextCollectionId) =>
+            void moveSelectedNotes(nextCollectionId)
+          }
           onDeleteSelected={() => void deleteSelectedNotes()}
-          onToggleTag={(tagId, assigned) => void updateSelectedTag(tagId, assigned)}
+          onToggleTag={(tagId, assigned) =>
+            void updateSelectedTag(tagId, assigned)
+          }
           selectedCount={selectedNotes.length}
           selectedNotes={selectedNotes}
           tags={tags}
@@ -352,31 +362,54 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
           collections={collections}
           defaultSortOrder={defaultSortOrder}
           onClear={clearFilters}
-          onCollectionChange={(nextCollectionId) => updateFilterParam('collection', nextCollectionId)}
-          onLayoutChange={(nextLayout: PreferredLayout) => void setPreferredLayout(nextLayout)}
-          onSortChange={(nextSortOrder: NotesSortOrder) => updateFilterParam('sort', nextSortOrder)}
-          onTagChange={(nextTagId) => updateFilterParam('tag', nextTagId)}
+          onCollectionChange={(nextCollectionId) =>
+            updateFilterParam("collection", nextCollectionId)
+          }
+          onLayoutChange={(nextLayout: PreferredLayout) =>
+            void setPreferredLayout(nextLayout)
+          }
+          onSortChange={(nextSortOrder: NotesSortOrder) =>
+            updateFilterParam("sort", nextSortOrder)
+          }
+          onTagChange={(nextTagId) => updateFilterParam("tag", nextTagId)}
           preferredLayout={preferredLayout}
           selectedCollectionId={collectionId}
           selectedTagId={tagId}
-          sortLocked={mode === 'recent'}
+          sortLocked={mode === "recent"}
           sortOrder={sortOrder}
           tags={tags}
         />
       )}
 
       {filtered.length ? (
-        <div className={splitPinnedLists ? 'note-list-stack' : undefined}>
-          {splitPinnedLists ? (
-            <div className={preferredLayout === 'grid' ? 'note-list pin-list notes-grid' : 'note-list pin-list'}>
+        <div className={splitPinnedLists ? "note-list-stack" : undefined}>
+          {splitPinnedLists && (
+            <div
+              className={[
+                "note-list",
+                "pin-list",
+                preferredLayout === "grid" && "notes-grid",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
               {renderNoteRows(pinnedNotes, true)}
             </div>
-          ) : null}
-          {regularNotes.length ? (
-            <div className={preferredLayout === 'grid' ? 'note-list notes-grid' : 'note-list'}>
+          )}
+
+          {!!regularNotes.length && (
+            <div
+              className={[
+                "note-list",
+                splitPinnedLists && "unpinned-list",
+                preferredLayout === "grid" && "notes-grid",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
               {renderNoteRows(regularNotes)}
             </div>
-          ) : null}
+          )}
         </div>
       ) : (
         <EmptyState />
