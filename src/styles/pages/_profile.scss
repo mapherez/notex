@@ -420,6 +420,7 @@ button.security-row:hover {
   display: grid;
   min-height: 5.5rem;
   align-content: space-between;
+  align-self: start;
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-card);
   background: var(--nx-color-surface);
