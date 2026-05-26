@@ -151,11 +151,23 @@
     "colors": {
       "amber": "Amber",
       "blue": "Blue",
+      "brown": "Brown",
+      "cyan": "Cyan",
+      "fuchsia": "Fuchsia",
       "green": "Green",
+      "indigo": "Indigo",
+      "lime": "Lime",
+      "mint": "Mint",
       "neutral": "Neutral",
       "orange": "Orange",
       "pink": "Pink",
+      "purple": "Purple",
       "red": "Red",
+      "rose": "Rose",
+      "sky": "Sky",
+      "slate": "Slate",
+      "teal": "Teal",
+      "violet": "Violet",
       "yellow": "Yellow"
     }
   },

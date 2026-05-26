@@ -151,11 +151,23 @@
     "colors": {
       "amber": "Âmbar",
       "blue": "Azul",
+      "brown": "Castanho",
+      "cyan": "Ciano",
+      "fuchsia": "Fúcsia",
       "green": "Verde",
+      "indigo": "Índigo",
+      "lime": "Lima",
+      "mint": "Menta",
       "neutral": "Neutro",
       "orange": "Laranja",
       "pink": "Rosa",
+      "purple": "Roxo",
       "red": "Vermelho",
+      "rose": "Rosé",
+      "sky": "Azul céu",
+      "slate": "Ardósia",
+      "teal": "Verde azulado",
+      "violet": "Violeta",
       "yellow": "Amarelo"
     }
   },

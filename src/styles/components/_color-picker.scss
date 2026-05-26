@@ -1,0 +1,131 @@
+@use "../abstracts/variables" as *;
+
+.color-picker {
+  position: relative;
+  min-width: 10rem;
+}
+
+.color-picker__trigger {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  width: 100%;
+  height: 2.75rem;
+  align-items: center;
+  gap: var(--nx-space-2);
+  border: 1px solid var(--nx-color-border);
+  border-radius: 0.55rem;
+  background: var(--nx-color-input);
+  color: var(--nx-color-text);
+  padding: 0 var(--nx-space-4) 0 var(--nx-space-3);
+  text-align: left;
+}
+
+.color-picker__trigger:hover,
+.color-picker__trigger:focus-visible,
+.color-picker__trigger[aria-expanded="true"] {
+  border-color: var(--nx-color-border-strong);
+  background: var(--nx-color-surface-elevated);
+  outline: none;
+}
+
+.color-picker__preview {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid color-mix(in srgb, currentColor 48%, transparent);
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 0.18rem color-mix(in srgb, currentColor 13%, transparent);
+}
+
+.color-picker__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.color-picker__chevron {
+  margin-left: var(--nx-space-1);
+  color: var(--nx-color-text-muted);
+  transition: transform 160ms ease;
+}
+
+.color-picker__trigger[aria-expanded="true"] .color-picker__chevron {
+  transform: rotate(180deg);
+}
+
+.color-picker__menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + var(--nx-space-2));
+  z-index: 80;
+}
+
+.color-picker--disabled {
+  opacity: 0.72;
+}
+
+.color-picker--disabled .color-picker__trigger {
+  cursor: not-allowed;
+}
+
+.color-palette-menu {
+  display: grid;
+  grid-template-columns: repeat(5, 1.85rem);
+  gap: var(--nx-space-2);
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-md);
+  background: var(--nx-color-surface-elevated);
+  padding: var(--nx-space-2);
+  box-shadow: var(--nx-shadow-soft);
+}
+
+.color-palette-menu__swatch {
+  position: relative;
+  display: grid;
+  width: 1.85rem;
+  height: 1.85rem;
+  place-items: center;
+  border: 1px solid var(--nx-color-border);
+  border-radius: 999px;
+  background: var(--nx-color-surface);
+  color: var(--nx-color-text);
+  padding: 0;
+}
+
+.color-palette-menu__swatch:hover,
+.color-palette-menu__swatch:focus-visible,
+.color-palette-menu__swatch.is-selected {
+  border-color: var(--nx-color-border-strong);
+  background: var(--nx-color-hover);
+  outline: none;
+}
+
+.color-palette-menu__swatch span {
+  display: block;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 0.18rem color-mix(in srgb, currentColor 13%, transparent);
+}
+
+.color-palette-menu__swatch svg {
+  position: absolute;
+  right: -0.12rem;
+  bottom: -0.12rem;
+  width: 0.82rem;
+  height: 0.82rem;
+  border-radius: 999px;
+  background: var(--nx-color-surface-elevated);
+  color: var(--nx-color-text);
+  padding: 0.08rem;
+  box-shadow: 0 0 0 1px var(--nx-color-border);
+}
+
+@each $name, $value in $palette-colors {
+  .color-picker__preview--#{$name},
+  .color-palette-menu__swatch--#{$name} {
+    color: #{$value};
+  }
+}

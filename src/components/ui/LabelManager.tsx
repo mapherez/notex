@@ -3,9 +3,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { defaultNewTagColor } from '../../config/appSettings';
 import type { Tag, TagColor } from '../../core/models/models';
-import { tagColorOptions } from '../../core/utils/tagColors';
 import { useI18n } from '../../i18n/I18nProvider';
-import { CustomSelect } from './CustomSelect';
+import { ColorPicker } from './ColorPicker';
 import { TagChip } from './TagChip';
 
 type TagDraft = {
@@ -70,14 +69,9 @@ export function LabelManager({
         }}
       >
         <input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder={t('profile.labels.newPlaceholder')} />
-        <CustomSelect
+        <ColorPicker
           ariaLabel={t('profile.labels.color')}
-          onChange={(color) => setNewColor(color as TagColor)}
-          options={tagColorOptions.map((color) => ({
-            color,
-            label: t(`tags.colors.${color}`),
-            value: color,
-          }))}
+          onChange={setNewColor}
           value={newColor}
         />
         <button type="submit">
@@ -107,14 +101,9 @@ export function LabelManager({
                 value={draft.name}
                 onChange={(event) => updateDraft(tag.id, { name: event.target.value })}
               />
-              <CustomSelect
+              <ColorPicker
                 ariaLabel={t('profile.labels.color')}
-                onChange={(color) => updateDraft(tag.id, { color: color as TagColor })}
-                options={tagColorOptions.map((color) => ({
-                  color,
-                  label: t(`tags.colors.${color}`),
-                  value: color,
-                }))}
+                onChange={(color) => updateDraft(tag.id, { color })}
                 value={draft.color}
               />
               <button

@@ -1,6 +1,9 @@
-export const inlineStyleColors = ['blue', 'green', 'amber', 'red', 'orange', 'yellow', 'pink', 'neutral'] as const;
+import { tagColorOptions } from '../../config/appSettings';
+import type { TagColor } from '../models/models';
 
-export type InlineStyleColor = (typeof inlineStyleColors)[number];
+export const inlineStyleColors = tagColorOptions;
+
+export type InlineStyleColor = TagColor;
 export type InlineStyleKind = 'bg' | 'color';
 
 const inlineStyleColorSet = new Set<string>(inlineStyleColors);

@@ -22,6 +22,7 @@ import { InlineFormattedText } from '../components/editing/InlineFormattedText';
 import { MarkdownEditor } from '../components/editing/MarkdownEditor';
 import { MarkdownPreview } from '../components/editing/MarkdownPreview';
 import { StyledTextField } from '../components/editing/TextStyleToolbar';
+import { ColorPicker } from '../components/ui/ColorPicker';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { EmptyState } from '../components/ui/EmptyState';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
@@ -40,7 +41,6 @@ import type { Collection, Note, NoteThumbnail as NoteThumbnailModel, NoteType, R
 import { openExternalUrl } from '../core/services/externalLinks';
 import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
 import { stripInlineFormatting } from '../core/utils/inlineFormatting';
-import { tagColorOptions } from '../core/utils/tagColors';
 import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useI18n } from '../i18n/I18nProvider';
@@ -614,14 +614,9 @@ export function NoteDetailPage() {
                     }}
                   >
                     <input value={newTagName} onChange={(event) => setNewTagName(event.target.value)} placeholder={t('noteDetail.newTagPlaceholder')} />
-                    <CustomSelect
+                    <ColorPicker
                       ariaLabel={t('profile.labels.color')}
-                      onChange={(color) => setNewTagColor(color as TagColor)}
-                      options={tagColorOptions.map((color) => ({
-                        color,
-                        label: t(`tags.colors.${color}`),
-                        value: color,
-                      }))}
+                      onChange={setNewTagColor}
                       value={newTagColor}
                     />
                     <button type="submit">{t('noteDetail.createAndAddTag')}</button>

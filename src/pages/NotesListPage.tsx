@@ -2,6 +2,7 @@ import { Check, ChevronDown, Edit3, Folder, Plus, Tag as TagIcon, Trash2, X } fr
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { EmptyState } from '../components/ui/EmptyState';
+import { ColorPicker } from '../components/ui/ColorPicker';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { IconBadge } from '../components/ui/IconBadge';
 import { NotesFilterRow } from '../components/ui/NotesFilterRow';
@@ -9,7 +10,6 @@ import { NoteRow } from '../components/ui/NoteRow';
 import { defaultNewCollectionColor } from '../config/appSettings';
 import type { Collection, Note, PreferredLayout, Tag as TagModel, TagColor } from '../core/models/models';
 import { defaultNotesSortOrder, filterNotes, normalizeNotesSortOrder, recentNotesSortOrder, type NotesSortOrder } from '../core/utils/noteFilters';
-import { tagColorOptions } from '../core/utils/tagColors';
 import { sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useI18n } from '../i18n/I18nProvider';
@@ -533,14 +533,9 @@ export function CollectionsPage() {
           onChange={(event) => setNewDraft((draft) => ({ ...draft, name: event.target.value }))}
           placeholder={t('collections.newPlaceholder')}
         />
-        <CustomSelect
+        <ColorPicker
           ariaLabel={t('collections.color')}
-          onChange={(color) => setNewDraft((draft) => ({ ...draft, color: color as TagColor }))}
-          options={tagColorOptions.map((color) => ({
-            color,
-            label: t(`tags.colors.${color}`),
-            value: color,
-          }))}
+          onChange={(color) => setNewDraft((draft) => ({ ...draft, color }))}
           value={newDraft.color}
         />
         <button type="submit">
@@ -569,14 +564,9 @@ export function CollectionsPage() {
                     value={editingDraft.name}
                     onChange={(event) => setEditingDraft((draft) => ({ ...draft, name: event.target.value }))}
                   />
-                  <CustomSelect
+                  <ColorPicker
                     ariaLabel={t('collections.color')}
-                    onChange={(color) => setEditingDraft((draft) => ({ ...draft, color: color as TagColor }))}
-                    options={tagColorOptions.map((color) => ({
-                      color,
-                      label: t(`tags.colors.${color}`),
-                      value: color,
-                    }))}
+                    onChange={(color) => setEditingDraft((draft) => ({ ...draft, color }))}
                     value={editingDraft.color}
                   />
                   <div className="collection-card-actions">

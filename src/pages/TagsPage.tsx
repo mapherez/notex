@@ -1,11 +1,10 @@
 import { Edit3, Plus, Save, Star, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CustomSelect } from '../components/ui/CustomSelect';
+import { ColorPicker } from "../components/ui/ColorPicker";
 import { TagChip } from '../components/ui/TagChip';
 import { appLimits, defaultNewTagColor } from '../config/appSettings';
-import type { Tag, TagColor } from '../core/models/models';
-import { tagColorOptions } from '../core/utils/tagColors';
+import type { Tag, TagColor } from "../core/models/models";
 import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
@@ -156,20 +155,28 @@ export function TagsPage() {
   return (
     <div className="page-content list-page-grid">
       <header>
-        <h1 className="page-title">{t('tagsPage.title')}</h1>
-        <p className="page-subtitle">{t('tagsPage.subtitle')}</p>
+        <h1 className="page-title">{t("tagsPage.title")}</h1>
+        <p className="page-subtitle">{t("tagsPage.subtitle")}</p>
       </header>
 
       <section className="tags-page-section">
-        <h2 className="tags-section-title">{t('tagsPage.popular')}</h2>
-        <TagSummaryGrid emptyText={t('tagsPage.emptyPopular')} tags={popularTags} t={t} />
+        <h2 className="tags-section-title">{t("tagsPage.popular")}</h2>
+        <TagSummaryGrid
+          emptyText={t("tagsPage.emptyPopular")}
+          tags={popularTags}
+          t={t}
+        />
       </section>
 
       <section className="tags-page-section tags-favorites-card">
         <div className="tags-favorites-header">
           <span>
-            <h2 className="tags-section-title">{t('tagsPage.favoriteTags')}</h2>
-            <span className="tags-section-description">{t('tagsPage.favoriteTagsDescription', { count: appLimits.favoriteTags })}</span>
+            <h2 className="tags-section-title">{t("tagsPage.favoriteTags")}</h2>
+            <span className="tags-section-description">
+              {t("tagsPage.favoriteTagsDescription", {
+                count: appLimits.favoriteTags,
+              })}
+            </span>
           </span>
           <button
             className="tags-action-button"
@@ -177,7 +184,12 @@ export function TagsPage() {
             aria-disabled={!canAddFavoriteTag}
             onClick={() => {
               if (!canAddFavoriteTag) {
-                pushToast(t('tagsPage.favoriteTagsLimit', { count: appLimits.favoriteTags }), 'warning');
+                pushToast(
+                  t("tagsPage.favoriteTagsLimit", {
+                    count: appLimits.favoriteTags,
+                  }),
+                  "warning",
+                );
                 return;
               }
 
@@ -185,7 +197,7 @@ export function TagsPage() {
             }}
           >
             <Plus />
-            {t('common.add')}
+            {t("common.add")}
           </button>
         </div>
         <div className="chip-stack chip-stack--spaced">
@@ -197,12 +209,14 @@ export function TagsPage() {
                 href={`/notes?tag=${tag.id}`}
                 removable
                 onRemove={() => {
-                  void toggleFavoriteTag(tag.id).then(() => pushToast(t('tagsPage.favoriteTagsUpdated'), 'success'));
+                  void toggleFavoriteTag(tag.id).then(() =>
+                    pushToast(t("tagsPage.favoriteTagsUpdated"), "success"),
+                  );
                 }}
               />
             ))
           ) : (
-            <span className="tags-empty">{t('tagsPage.emptyFavorites')}</span>
+            <span className="tags-empty">{t("tagsPage.emptyFavorites")}</span>
           )}
         </div>
         {favoritePickerOpen ? (
@@ -214,28 +228,38 @@ export function TagsPage() {
                   type="button"
                   onClick={() => {
                     if (!canAddFavoriteTag) {
-                      pushToast(t('tagsPage.favoriteTagsLimit', { count: appLimits.favoriteTags }), 'warning');
+                      pushToast(
+                        t("tagsPage.favoriteTagsLimit", {
+                          count: appLimits.favoriteTags,
+                        }),
+                        "warning",
+                      );
                       setFavoritePickerOpen(false);
                       return;
                     }
 
-                    void toggleFavoriteTag(tag.id).then(() => pushToast(t('tagsPage.favoriteTagsUpdated'), 'success'));
+                    void toggleFavoriteTag(tag.id).then(() =>
+                      pushToast(t("tagsPage.favoriteTagsUpdated"), "success"),
+                    );
                     setFavoritePickerOpen(false);
                   }}
                 >
-                  <Star />
                   <TagChip tag={tag} />
                 </button>
               ))
             ) : (
-              <span className="notes-filter-empty">{t('notes.bulk.noTags')}</span>
+              <span className="notes-filter-empty">
+                {t("notes.bulk.noTags")}
+              </span>
             )}
           </div>
         ) : null}
       </section>
 
       <section className="tags-page-section">
-        <div className={editing ? 'tags-action-row editing' : 'tags-action-row'}>
+        <div
+          className={editing ? "tags-action-row editing" : "tags-action-row"}
+        >
           {editing ? (
             <div className="tags-edit-actions">
               <button
@@ -245,22 +269,34 @@ export function TagsPage() {
                 onClick={() => void saveEdits()}
               >
                 <Save />
-                {t('common.save')}
+                {t("common.save")}
               </button>
-              <button className="tags-action-button" type="button" onClick={cancelEdit}>
+              <button
+                className="tags-action-button"
+                type="button"
+                onClick={cancelEdit}
+              >
                 <X />
-                {t('common.cancel')}
+                {t("common.cancel")}
               </button>
             </div>
           ) : (
             <>
-              <button className="tags-action-button primary" type="button" onClick={() => setCreateOpen((value) => !value)}>
+              <button
+                className="tags-action-button primary"
+                type="button"
+                onClick={() => setCreateOpen((value) => !value)}
+              >
                 <Plus />
-                {t('tagsPage.newTag')}
+                {t("tagsPage.newTag")}
               </button>
-              <button className="tags-action-button" type="button" onClick={beginEdit}>
+              <button
+                className="tags-action-button"
+                type="button"
+                onClick={beginEdit}
+              >
                 <Edit3 />
-                {t('tagsPage.edit')}
+                {t("tagsPage.edit")}
               </button>
             </>
           )}
@@ -274,50 +310,53 @@ export function TagsPage() {
               void createLabel();
             }}
           >
-            <input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder={t('profile.labels.newPlaceholder')} />
-            <CustomSelect
-              ariaLabel={t('profile.labels.color')}
-              onChange={(color) => setNewColor(color as TagColor)}
-              options={tagColorOptions.map((color) => ({
-                color,
-                label: t(`tags.colors.${color}`),
-                value: color,
-              }))}
+            <input
+              value={newName}
+              onChange={(event) => setNewName(event.target.value)}
+              placeholder={t("profile.labels.newPlaceholder")}
+            />
+            <ColorPicker
+              ariaLabel={t("profile.labels.color")}
+              onChange={setNewColor}
               value={newColor}
             />
             <button disabled={!newName.trim()} type="submit">
               <Plus />
-              {t('common.create')}
+              {t("common.create")}
             </button>
           </form>
         ) : null}
       </section>
 
       <section className="tags-page-section">
-        <h2 className="tags-section-title">{t('tagsPage.allTags')}</h2>
+        <h2 className="tags-section-title">{t("tagsPage.allTags")}</h2>
         {editing ? (
           <div className="tags-edit-list">
             {visibleEditTags.map((tag) => {
               const draft = getDraftForTag(tag, drafts);
               return (
                 <div className="tag-edit-row" key={tag.id}>
-                  <TagChip tag={{ name: draft.name || tag.name, color: draft.color }} />
-                  <input
-                    aria-label={t('profile.labels.name')}
-                    value={draft.name}
-                    onChange={(event) => updateDraft(tag.id, { name: event.target.value })}
+                  <TagChip
+                    tag={{ name: draft.name || tag.name, color: draft.color }}
                   />
-                  <CustomSelect
-                    ariaLabel={t('profile.labels.color')}
-                    onChange={(color) => updateDraft(tag.id, { color: color as TagColor })}
-                    options={tagColorOptions.map((color) => ({
-                      color,
-                      label: t(`tags.colors.${color}`),
-                      value: color,
-                    }))}
+                  <input
+                    aria-label={t("profile.labels.name")}
+                    value={draft.name}
+                    onChange={(event) =>
+                      updateDraft(tag.id, { name: event.target.value })
+                    }
+                  />
+                  <ColorPicker
+                    ariaLabel={t("profile.labels.color")}
+                    onChange={(color) => updateDraft(tag.id, { color })}
                     value={draft.color}
                   />
-                  <button className="icon-button danger" type="button" aria-label={t('common.remove')} onClick={() => markDeleted(tag.id)}>
+                  <button
+                    className="icon-button danger"
+                    type="button"
+                    aria-label={t("common.remove")}
+                    onClick={() => markDeleted(tag.id)}
+                  >
                     <Trash2 />
                   </button>
                 </div>
@@ -325,7 +364,11 @@ export function TagsPage() {
             })}
           </div>
         ) : (
-          <TagSummaryGrid emptyText={t('tagsPage.emptyAll')} tags={tagsWithCounts} t={t} />
+          <TagSummaryGrid
+            emptyText={t("tagsPage.emptyAll")}
+            tags={tagsWithCounts}
+            t={t}
+          />
         )}
       </section>
     </div>

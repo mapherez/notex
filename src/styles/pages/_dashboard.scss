@@ -1,3 +1,5 @@
+@use "../abstracts/variables" as *;
+
 .dashboard-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 22rem;
@@ -61,60 +63,13 @@
   height: 1.375rem;
 }
 
-.icon-badge.red,
-.tag-chip.red,
-.collection-chip.red,
-.notes-filter-dot.red {
-  color: var(--nx-color-red);
-}
-
-.icon-badge.blue,
-.tag-chip.blue,
-.collection-chip.blue,
-.notes-filter-dot.blue {
-  color: var(--nx-color-blue);
-}
-
-.icon-badge.green,
-.tag-chip.green,
-.collection-chip.green,
-.notes-filter-dot.green {
-  color: var(--nx-color-success);
-}
-
-.icon-badge.amber,
-.tag-chip.amber,
-.collection-chip.amber,
-.notes-filter-dot.amber {
-  color: var(--nx-color-warning);
-}
-
-.icon-badge.orange,
-.tag-chip.orange,
-.collection-chip.orange,
-.notes-filter-dot.orange {
-  color: var(--nx-color-orange);
-}
-
-.icon-badge.pink,
-.tag-chip.pink,
-.collection-chip.pink,
-.notes-filter-dot.pink {
-  color: var(--nx-color-pink);
-}
-
-.icon-badge.yellow,
-.tag-chip.yellow,
-.collection-chip.yellow,
-.notes-filter-dot.yellow {
-  color: var(--nx-color-yellow);
-}
-
-.icon-badge.neutral,
-.tag-chip.neutral,
-.collection-chip.neutral,
-.notes-filter-dot.neutral {
-  color: var(--nx-color-text-muted);
+@each $name, $value in $palette-colors {
+  .icon-badge.#{$name},
+  .tag-chip.#{$name},
+  .collection-chip.#{$name},
+  .notes-filter-dot.#{$name} {
+    color: #{$value};
+  }
 }
 
 .stat-label {
@@ -361,4 +316,3 @@
   font-size: 0.88rem;
   font-weight: 650;
 }
-

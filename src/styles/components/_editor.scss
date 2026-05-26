@@ -1,3 +1,5 @@
+@use "../abstracts/variables" as *;
+
 .markdown-editor {
   display: grid;
   gap: var(--nx-space-3);
@@ -56,17 +58,6 @@
   padding: var(--nx-space-2);
 }
 
-$rich-text-colors: (
-  "blue": var(--nx-color-blue),
-  "green": var(--nx-color-success),
-  "amber": var(--nx-color-warning),
-  "red": var(--nx-color-red),
-  "orange": var(--nx-color-orange),
-  "yellow": var(--nx-color-yellow),
-  "pink": var(--nx-color-pink),
-  "neutral": var(--nx-color-text-muted)
-);
-
 .styled-text-field {
   display: grid;
   gap: var(--nx-space-2);
@@ -96,7 +87,7 @@ $rich-text-colors: (
   top: calc(100% + var(--nx-space-2));
   z-index: 65;
   display: grid;
-  grid-template-columns: repeat(4, 1.75rem);
+  grid-template-columns: repeat(5, 1.75rem);
   gap: var(--nx-space-1);
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-md);
@@ -130,7 +121,7 @@ $rich-text-colors: (
   border-radius: 999px;
 }
 
-@each $name, $value in $rich-text-colors {
+@each $name, $value in $palette-colors {
   .text-style-picker__swatch--color-#{$name} span {
     background: #{$value};
   }

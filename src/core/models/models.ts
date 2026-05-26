@@ -101,14 +101,26 @@ export type Note = {
 };
 
 export type TagColor =
-  | 'blue'
-  | 'green'
   | 'amber'
-  | 'red'
-  | 'pink'
+  | 'blue'
+  | 'brown'
+  | 'cyan'
+  | 'fuchsia'
+  | 'green'
+  | 'indigo'
+  | 'lime'
+  | 'mint'
+  | 'neutral'
   | 'orange'
-  | 'yellow'
-  | 'neutral';
+  | 'pink'
+  | 'purple'
+  | 'red'
+  | 'rose'
+  | 'sky'
+  | 'slate'
+  | 'teal'
+  | 'violet'
+  | 'yellow';
 
 export type Tag = {
   id: string;

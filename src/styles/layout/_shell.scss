@@ -1,3 +1,5 @@
+@use "../abstracts/variables" as *;
+
 .app-shell {
   display: grid;
   grid-template-columns: var(--nx-sidebar-width) minmax(0, 1fr);
@@ -190,36 +192,10 @@
   color: color-mix(in srgb, var(--nx-color-accent) 74%, var(--nx-color-text));
 }
 
-.nav-item.collection-blue svg {
-  color: var(--nx-color-blue);
-}
-
-.nav-item.collection-green svg {
-  color: var(--nx-color-success);
-}
-
-.nav-item.collection-red svg {
-  color: var(--nx-color-red);
-}
-
-.nav-item.collection-amber svg {
-  color: var(--nx-color-warning);
-}
-
-.nav-item.collection-orange svg {
-  color: var(--nx-color-orange);
-}
-
-.nav-item.collection-pink svg {
-  color: var(--nx-color-pink);
-}
-
-.nav-item.collection-yellow svg {
-  color: var(--nx-color-yellow);
-}
-
-.nav-item.collection-neutral svg {
-  color: var(--nx-color-text-muted);
+@each $name, $value in $palette-colors {
+  .nav-item.collection-#{$name} svg {
+    color: #{$value};
+  }
 }
 
 .sidebar-spacer {

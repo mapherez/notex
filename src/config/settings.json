@@ -44,7 +44,28 @@
     "linkedNoteSuggestions": 6
   },
   "options": {
-    "tagColors": ["blue", "green", "amber", "red", "pink", "orange", "yellow", "neutral"],
+    "tagColors": [
+      "red",
+      "rose",
+      "pink",
+      "fuchsia",
+      "purple",
+      "violet",
+      "indigo",
+      "blue",
+      "sky",
+      "cyan",
+      "teal",
+      "mint",
+      "green",
+      "lime",
+      "yellow",
+      "amber",
+      "orange",
+      "brown",
+      "slate",
+      "neutral"
+    ],
     "noteTypes": ["standard", "linguistic_doubt", "reference", "snippet"],
     "thumbnailVariants": [
       {
