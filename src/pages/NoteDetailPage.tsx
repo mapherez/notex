@@ -18,6 +18,8 @@ import {
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { EditableUsageExamplesTable } from '../components/editing/EditableUsageExamplesTable';
+import { EditorToolbarProvider, type EditorToolbarMode } from '../components/editing/EditorToolbarContext';
+import { GlobalEditorToolbar } from '../components/editing/GlobalEditorToolbar';
 import { InlineFormattedText } from '../components/editing/InlineFormattedText';
 import { MarkdownEditor } from '../components/editing/MarkdownEditor';
 import { MarkdownPreview } from '../components/editing/MarkdownPreview';
@@ -75,6 +77,7 @@ export function NoteDetailPage() {
   const [editingExampleText, setEditingExampleText] = useState('');
   const [selectedLinkedNoteId, setSelectedLinkedNoteId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(isNewNote);
+  const [editorMode, setEditorMode] = useState<EditorToolbarMode>('text');
   const [savingPage, setSavingPage] = useState(false);
   const [draft, setDraft] = useState<NoteEditDraft>(() => buildEmptyDraft(initialType, initialCollectionId, t('noteDetail.tip')));
   const favoriteTagIds = useAppStore((state) => state.settings.favoriteTagIds);
@@ -118,6 +121,7 @@ export function NoteDetailPage() {
   useEffect(() => {
     if (isNewNote) {
       setIsEditing(true);
+      setEditorMode('text');
       setDraft(buildEmptyDraft(initialType, initialCollectionId, t('noteDetail.tip')));
       return;
     }
@@ -186,6 +190,7 @@ export function NoteDetailPage() {
     }
 
     setDraft(buildDraftFromNote(note, t('noteDetail.tip')));
+    setEditorMode('text');
     setIsEditing(true);
   }
 
@@ -198,6 +203,7 @@ export function NoteDetailPage() {
     if (note) {
       setDraft(buildDraftFromNote(note, t('noteDetail.tip')));
     }
+    setEditorMode('text');
     setIsEditing(false);
   }
 
@@ -353,7 +359,8 @@ export function NoteDetailPage() {
   }
 
   return (
-    <>
+    <EditorToolbarProvider mode={editorMode} onModeChange={setEditorMode}>
+      {isEditing ? <GlobalEditorToolbar saving={savingPage} onCancel={cancelPageEdit} onSave={savePageEdit} /> : null}
       <header className="document-top">
         <button className="back-button" type="button" onClick={() => navigate(-1)}>
           <ChevronLeft />
@@ -440,57 +447,44 @@ export function NoteDetailPage() {
 
       <div className={note ? 'document-shell' : 'document-shell single-column'}>
         <article className="document-main">
-          <div className="document-heading-row">
-            <div className="document-title-stack">
+          <div className="document-heading">
+            <div className="document-meta-row">
               {isEditing ? (
                 <CollectionSelect collections={collections} value={draft.collectionId} onChange={(collectionId) => updateDraft({ collectionId })} />
               ) : (
                 <CollectionBreadcrumb collection={collection} emptyText={t('noteDetail.noCollection')} />
               )}
 
-              {isEditing ? (
-                <StyledTextField
-                  className="document-title-styled-field"
-                  controlClassName="editable-control document-title-input"
-                  disabled={savingPage}
-                  onChange={(title) => updateDraft({ title })}
-                  placeholder={t('noteDetail.titlePlaceholder')}
-                  value={draft.title}
-                />
-              ) : (
-                <h1 className="document-title">
-                  <InlineFormattedText value={note?.title} />
-                </h1>
-              )}
-
-              {noteTags.length ? (
-                <div className="tag-row document-title-tags">
-                  {noteTags.map((tag) => (
-                    <TagChip key={tag.id} tag={tag} href={`/notes?tag=${tag.id}`} />
-                  ))}
-                </div>
-              ) : null}
-            </div>
-            <div className="document-heading-side">
-              <div className="document-edit-actions">
-                {isEditing ? (
-                  <>
-                    <button className="editor-accept-button" disabled={savingPage} type="button" onClick={() => void savePageEdit()}>
-                      <Check />
-                      {t('common.save')}
-                    </button>
-                    <button className="editor-cancel-button" disabled={savingPage} type="button" onClick={cancelPageEdit}>
-                      <X />
-                      {t('common.cancel')}
-                    </button>
-                  </>
-                ) : (
+              {!isEditing ? (
+                <div className="document-edit-actions">
                   <button className="editor-cancel-button" type="button" onClick={beginPageEdit}>
                     <Pencil />
                     {t('editor.edit')}
                   </button>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="document-title-row">
+              <div className="document-title-stack">
+                {isEditing ? (
+                  <StyledTextField
+                    className="document-title-styled-field"
+                    controlClassName="editable-control document-title-input"
+                    disabled={savingPage}
+                    multiline
+                    onChange={(title) => updateDraft({ title })}
+                    placeholder={t('noteDetail.titlePlaceholder')}
+                    rows={3}
+                    value={draft.title}
+                  />
+                ) : (
+                  <h1 className="document-title">
+                    <InlineFormattedText value={note?.title} />
+                  </h1>
                 )}
               </div>
+
               {note ? (
                 <ThumbnailPicker
                   current={note.thumbnail}
@@ -502,33 +496,44 @@ export function NoteDetailPage() {
                 />
               ) : null}
             </div>
-          </div>
 
-          {isEditing ? (
-            <StyledTextField
-              className="document-intro-styled-field"
-              controlClassName="editable-control document-intro-input"
-              disabled={savingPage}
-              multiline
-              onChange={(intro) => updateDraft({ intro })}
-              placeholder={t('noteDetail.introPlaceholder')}
-              value={draft.intro}
-            />
-          ) : (
-            <p className="document-intro">
-              <InlineFormattedText value={note?.content.intro} />
-            </p>
-          )}
+            {noteTags.length ? (
+              <div className="tag-row document-title-tags">
+                {noteTags.map((tag) => (
+                  <TagChip key={tag.id} tag={tag} href={`/notes?tag=${tag.id}`} />
+                ))}
+              </div>
+            ) : null}
+
+            {isEditing ? (
+              <StyledTextField
+                className="document-intro-styled-field"
+                controlClassName="editable-control document-intro-input"
+                disabled={savingPage}
+                multiline
+                onChange={(intro) => updateDraft({ intro })}
+                placeholder={t('noteDetail.introPlaceholder')}
+                value={draft.intro}
+              />
+            ) : (
+              <p className="document-intro">
+                <InlineFormattedText value={note?.content.intro} />
+              </p>
+            )}
+          </div>
 
           <section className="content-section">
             <h2 className="section-title">{t('noteDetail.summary')}</h2>
             {isEditing ? (
               <MarkdownEditor
+                bare
                 label={t('noteDetail.summary')}
                 onChange={(summaryMarkdown) => updateDraft({ summaryMarkdown })}
                 placeholder={t('noteDetail.summaryPlaceholder')}
                 rows={8}
                 showActions={false}
+                showTabs={false}
+                showToolbar={false}
                 value={draft.summaryMarkdown}
               />
             ) : (
@@ -540,11 +545,14 @@ export function NoteDetailPage() {
             <h2 className="section-title">{t('noteDetail.explanation')}</h2>
             {isEditing ? (
               <MarkdownEditor
+                bare
                 label={t('noteDetail.explanation')}
                 onChange={(explanationMarkdown) => updateDraft({ explanationMarkdown })}
                 placeholder={t('noteDetail.explanationPlaceholder')}
                 rows={10}
                 showActions={false}
+                showTabs={false}
+                showToolbar={false}
                 value={draft.explanationMarkdown}
               />
             ) : (
@@ -813,7 +821,7 @@ export function NoteDetailPage() {
           </aside>
         ) : null}
       </div>
-    </>
+    </EditorToolbarProvider>
   );
 }
 
@@ -1018,12 +1026,15 @@ function EditableDraftTip({
             <InlineFormattedText value={title} />
           </h2>
           <MarkdownEditor
+            bare
             compact
             label={t('noteDetail.tip')}
             onChange={onChange}
             placeholder={t('noteDetail.tipPlaceholder')}
             rows={5}
             showActions={false}
+            showTabs={false}
+            showToolbar={false}
             value={body}
           />
         </div>

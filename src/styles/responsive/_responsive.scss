@@ -63,6 +63,23 @@
     transform: none;
   }
 
+  .note-edit-toolbar-shell {
+    padding: 0 var(--nx-page-gutter) var(--nx-space-2);
+  }
+
+  .note-edit-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .note-edit-toolbar__actions-divider {
+    display: none;
+  }
+
+  .note-edit-toolbar__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
   .search-box,
   .search-box-shell {
     min-width: 0;

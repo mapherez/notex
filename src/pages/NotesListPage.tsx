@@ -59,6 +59,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
   const activeCollection = collections.find((collection) => collection.id === collectionParam);
   const tagId = activeTag?.id ?? null;
   const collectionId = activeCollection?.id ?? null;
+  const pinControlsEnabled = mode === 'all';
 
   const copy = {
     all: { title: t('notes.title'), subtitle: t('notes.subtitle') },
@@ -73,10 +74,10 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
         mode,
         tagId,
         collectionId,
-        pinnedFirst: true,
+        pinnedFirst: pinControlsEnabled,
         sortOrder,
       }),
-    [collectionId, mode, notes, sortOrder, tagId],
+    [collectionId, mode, notes, pinControlsEnabled, sortOrder, tagId],
   );
   const selectionEnabled = mode === 'all';
   const visibleNoteIdsKey = filtered.map((note) => note.id).join('|');
@@ -85,7 +86,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
     () => filtered.filter((note) => selectedNoteIdSet.has(note.id)),
     [filtered, selectedNoteIdSet],
   );
-  const splitPinnedLists = mode !== 'trash' && filtered.some((note) => note.isPinned);
+  const splitPinnedLists = pinControlsEnabled && filtered.some((note) => note.isPinned);
   const pinnedNotes = useMemo(
     () => orderPinnedNotes(filtered.filter((note) => note.isPinned), orderedPinnedDragIds.length ? orderedPinnedDragIds : pinnedNoteIds),
     [filtered, orderedPinnedDragIds, pinnedNoteIds],
@@ -307,13 +308,14 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
             : undefined
         }
         tagDisplayLimit={preferredLayout === 'grid' ? 2 : undefined}
-        showPinIndicator={mode !== 'trash'}
-        showPinnedDragHandle={pinnedList}
+        showPinActions={pinControlsEnabled}
+        showPinIndicator={pinControlsEnabled}
+        showPinnedDragHandle={pinControlsEnabled && pinnedList}
         pinnedDragActive={activePinnedDragId === note.id}
-        onPinnedDragPointerDown={pinnedList ? (event) => beginPinnedNoteReorder(event, note.id) : undefined}
-        onPinnedDragPointerEnter={pinnedList ? () => previewPinnedNoteReorder(note.id) : undefined}
-        onPinnedDragPointerMove={pinnedList ? trackPinnedNoteReorder : undefined}
-        onPinnedDragPointerUp={pinnedList ? finishPinnedNoteReorder : undefined}
+        onPinnedDragPointerDown={pinControlsEnabled && pinnedList ? (event) => beginPinnedNoteReorder(event, note.id) : undefined}
+        onPinnedDragPointerEnter={pinControlsEnabled && pinnedList ? () => previewPinnedNoteReorder(note.id) : undefined}
+        onPinnedDragPointerMove={pinControlsEnabled && pinnedList ? trackPinnedNoteReorder : undefined}
+        onPinnedDragPointerUp={pinControlsEnabled && pinnedList ? finishPinnedNoteReorder : undefined}
       />
     ));
   }
@@ -816,4 +818,3 @@ export function CollectionsPage() {
     </div>
   );
 }
-

@@ -26,6 +26,7 @@ export function NoteRow({
   selected = false,
   onSelectionChange,
   tagDisplayLimit,
+  showPinActions = true,
   showPinIndicator = false,
   showPinnedDragHandle = false,
   pinnedDragActive = false,
@@ -46,6 +47,7 @@ export function NoteRow({
   selected?: boolean;
   onSelectionChange?: (noteId: string, selected: boolean) => void;
   tagDisplayLimit?: number;
+  showPinActions?: boolean;
   showPinIndicator?: boolean;
   showPinnedDragHandle?: boolean;
   pinnedDragActive?: boolean;
@@ -265,10 +267,12 @@ export function NoteRow({
               <Star />
               {note.isFavorite ? t("common.unfavorite") : t("common.favorite")}
             </button>
-            <button type="button" onClick={() => void handlePin()}>
-              <Pin />
-              {note.isPinned ? t("common.unpin") : t("common.pin")}
-            </button>
+            {showPinActions ? (
+              <button type="button" onClick={() => void handlePin()}>
+                <Pin />
+                {note.isPinned ? t("common.unpin") : t("common.pin")}
+              </button>
+            ) : null}
             <button type="button" onClick={() => void handleDuplicate()}>
               <Copy />
               {t("common.duplicate")}
@@ -333,4 +337,3 @@ function formatDisplayTime(value: string, today: string, yesterday: string) {
 
   return date.toLocaleDateString([], { day: '2-digit', month: 'short' });
 }
-

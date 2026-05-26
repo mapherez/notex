@@ -2,6 +2,7 @@ import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { UsageExample } from '../../core/models/models';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useOptionalEditorToolbar } from './EditorToolbarContext';
 import { InlineFormattedText } from './InlineFormattedText';
 import { StyledTextField } from './TextStyleToolbar';
 
@@ -26,10 +27,12 @@ export function EditableUsageExamplesTable({
   rows: UsageExample[];
 }) {
   const { t } = useI18n();
+  const editorToolbar = useOptionalEditorToolbar();
   const [editing, setEditing] = useState(false);
   const [draftRows, setDraftRows] = useState<UsageExample[]>(rows);
   const [saving, setSaving] = useState(false);
   const isEditing = controlledEditing || editing;
+  const isPreviewMode = editorToolbar?.mode === 'preview';
   const editableRows = controlledEditing ? rows : draftRows;
 
   useEffect(() => {
@@ -132,7 +135,13 @@ export function EditableUsageExamplesTable({
                   />
                 </td>
                 <td className="usage-actions-cell">
-                  <button className="icon-button danger" type="button" aria-label={t('common.remove')} onClick={() => deleteDraftRow(row.id)}>
+                  <button
+                    className="icon-button danger"
+                    disabled={isPreviewMode}
+                    type="button"
+                    aria-label={t('common.remove')}
+                    onClick={() => deleteDraftRow(row.id)}
+                  >
                     <Trash2 />
                   </button>
                 </td>
@@ -166,7 +175,7 @@ export function EditableUsageExamplesTable({
 
       {isEditing ? (
         <div className="usage-editor-actions">
-          <button className="usage-add-row-button" type="button" onClick={addDraftRow}>
+          <button className="usage-add-row-button" disabled={isPreviewMode} type="button" onClick={addDraftRow}>
             <Plus />
             {t('noteDetail.addUsageRow')}
           </button>

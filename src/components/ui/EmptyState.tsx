@@ -5,7 +5,7 @@ export function EmptyState() {
 
   return (
     <section className="panel">
-      <p className="page-subtitle">{t('common.empty')}</p>
+      <p className="page-subtitle empty">{t("common.empty")}</p>
     </section>
   );
 }

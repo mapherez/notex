@@ -13,6 +13,13 @@
   padding: var(--nx-space-2);
 }
 
+.markdown-editor.bare {
+  gap: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
 .markdown-editor-top,
 .markdown-editor-actions,
 .markdown-toolbar {
@@ -60,11 +67,6 @@
 
 .styled-text-field {
   display: grid;
-  gap: var(--nx-space-2);
-}
-
-.styled-text-field .text-style-toolbar {
-  justify-self: start;
 }
 
 .text-style-toolbar {
@@ -94,6 +96,42 @@
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-2);
   box-shadow: var(--nx-shadow-soft);
+}
+
+.text-style-picker__reset {
+  display: flex;
+  grid-column: 1 / -1;
+  min-height: 2rem;
+  align-items: center;
+  gap: var(--nx-space-2);
+  border: 0;
+  border-radius: var(--nx-radius-sm);
+  background: transparent;
+  color: var(--nx-color-text-muted);
+  padding: 0 var(--nx-space-2);
+  font-size: 0.86rem;
+  font-weight: 650;
+  text-align: left;
+}
+
+.text-style-picker__reset:hover,
+.text-style-picker__reset:focus-visible {
+  background: var(--nx-color-hover);
+  color: var(--nx-color-text);
+  outline: none;
+}
+
+.text-style-picker__reset svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.text-style-picker__auto-swatch {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--nx-color-border-strong);
+  border-radius: 0.22rem;
+  background: var(--nx-color-text);
 }
 
 .text-style-picker__swatch {
@@ -234,6 +272,10 @@
   min-height: 7rem;
 }
 
+.markdown-editor.bare .markdown-textarea {
+  display: block;
+}
+
 .markdown-textarea:focus {
   border-color: color-mix(in srgb, var(--nx-color-accent) 48%, var(--nx-color-border));
 }
@@ -244,6 +286,28 @@
   border-radius: var(--nx-radius-sm);
   background: var(--nx-color-input);
   padding: var(--nx-space-4);
+}
+
+.markdown-editor.bare .markdown-preview-panel {
+  display: block;
+}
+
+.styled-text-preview {
+  white-space: pre-wrap;
+}
+
+.styled-text-preview--multiline {
+  display: grid;
+  align-content: start;
+  gap: var(--nx-space-2);
+}
+
+.styled-text-preview--multiline p {
+  margin: 0;
+}
+
+.styled-text-preview__placeholder {
+  color: var(--nx-color-text-soft);
 }
 
 .markdown-editor-actions {

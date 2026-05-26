@@ -7,6 +7,54 @@
   padding: calc(var(--nx-space-4) + var(--nx-space-5)) var(--nx-page-gutter) var(--nx-space-8);
 }
 
+.note-edit-toolbar-shell {
+  position: sticky;
+  top: var(--nx-topbar-height);
+  z-index: 80;
+  width: min(100%, var(--nx-content-max));
+  margin: 0 auto;
+  padding: 0 var(--nx-space-8) var(--nx-space-2);
+  background: color-mix(in srgb, var(--nx-color-canvas) 94%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.note-edit-toolbar {
+  display: flex;
+  min-height: 3.1rem;
+  align-items: center;
+  gap: var(--nx-space-2);
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-md);
+  background: var(--nx-color-surface);
+  padding: var(--nx-space-2);
+  box-shadow: var(--nx-shadow-soft);
+}
+
+.note-edit-toolbar__mode {
+  flex: 0 0 auto;
+}
+
+.note-edit-toolbar__tools {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nx-space-1);
+  transition: opacity 160ms ease;
+}
+
+.note-edit-toolbar__tools--disabled {
+  opacity: 0.46;
+}
+
+.note-edit-toolbar__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--nx-space-2);
+  margin-left: auto;
+}
 .document-shell.single-column {
   grid-template-columns: minmax(0, 1fr);
   width: min(100%, 58rem);
@@ -68,25 +116,30 @@
   color: var(--nx-color-text-muted);
 }
 
-.document-heading-row {
+.document-heading {
+  display: grid;
+  gap: var(--nx-space-4);
+}
+
+.document-meta-row,
+.document-title-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--nx-space-4);
 }
 
+.document-meta-row {
+  align-items: center;
+}
+
+.document-title-row .thumbnail-picker {
+  flex: 0 0 auto;
+}
 .document-title-stack {
   display: grid;
   flex: 1;
   min-width: 0;
-  gap: var(--nx-space-3);
-}
-
-.document-heading-side {
-  display: grid;
-  justify-items: end;
-  gap: var(--nx-space-3);
-  margin-left: auto;
 }
 
 .document-edit-actions {
@@ -222,11 +275,10 @@
 }
 
 .document-title-input {
-  min-height: 3.25rem;
+  min-height: 6rem;
   margin: var(--nx-space-6) 0 var(--nx-space-4);
-  font-size: clamp(1.8rem, 3vw, 2.25rem);
-  font-weight: 780;
-  line-height: 1.15;
+  line-height: 1.7;
+    resize: vertical;
 }
 
 .document-title-stack .document-title,
@@ -235,7 +287,7 @@
 }
 
 .document-title-tags {
-  margin-top: var(--nx-space-1);
+  margin-top: 0;
 }
 
 .document-title-editor {
@@ -265,13 +317,13 @@
 }
 
 .document-intro {
-  margin: var(--nx-space-5) 0;
+  margin: 0;
   color: var(--nx-color-text-muted);
 }
 
 .document-intro-input {
   min-height: 7rem;
-  margin: var(--nx-space-5) 0;
+  margin: 0;
   color: var(--nx-color-text);
   line-height: 1.7;
   resize: vertical;
@@ -393,6 +445,13 @@
   white-space: nowrap;
 }
 
+.usage-edit-row td {
+  padding: 0;
+}
+
+.usage-edit-row .usage-actions-cell {
+  padding: var(--nx-space-2);
+}
 .usage-actions-cell .icon-button {
   display: inline-grid;
   margin-right: var(--nx-space-1);
@@ -617,4 +676,3 @@
   font-size: 0.92rem;
   font-weight: 760;
 }
-

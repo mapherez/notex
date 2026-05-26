@@ -1,8 +1,9 @@
-import { Baseline, ChevronDown, Highlighter } from 'lucide-react';
+import { Baseline, ChevronDown, Eraser, Highlighter } from 'lucide-react';
 import clsx from 'clsx';
-import { useRef, useState } from 'react';
+import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import {
+  applyInlineFormatToken,
   applyInlineStyleToken,
   inlineStyleColors,
   type InlineStyleColor,
@@ -10,6 +11,8 @@ import {
 } from '../../core/utils/inlineFormatting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
+import { InlineFormattedText } from './InlineFormattedText';
+import { useEditorToolbarTarget, type EditorToolbarTarget } from './EditorToolbarContext';
 
 type TextControlElement = HTMLInputElement | HTMLTextAreaElement;
 
@@ -20,7 +23,7 @@ export function TextStyleToolbar({
 }: {
   compact?: boolean;
   disabled?: boolean;
-  onSelect: (kind: InlineStyleKind, color: InlineStyleColor) => void;
+  onSelect: (kind: InlineStyleKind, color: InlineStyleColor | null) => void;
 }) {
   const { t } = useI18n();
 
@@ -53,10 +56,11 @@ export function StyledTextField({
 }) {
   const { t } = useI18n();
   const controlRef = useRef<TextControlElement | null>(null);
+  const targetId = useId();
   const [selectionStart, setSelectionStart] = useState(0);
   const [selectionEnd, setSelectionEnd] = useState(0);
 
-  function syncSelection() {
+  const syncSelection = useCallback(() => {
     const control = controlRef.current;
     if (!control) {
       return;
@@ -64,32 +68,106 @@ export function StyledTextField({
 
     setSelectionStart(control.selectionStart ?? 0);
     setSelectionEnd(control.selectionEnd ?? 0);
-  }
+  }, []);
 
-  function applyStyle(kind: InlineStyleKind, color: InlineStyleColor) {
-    const edit = applyInlineStyleToken({
-      color,
-      fallback: kind === 'color' ? t('editor.coloredText') : t('editor.highlightedText'),
-      kind,
-      selectionEnd,
-      selectionStart,
-      text: value,
-    });
+  const applyTextEdit = useCallback(
+    (edit: { selectionEnd: number; selectionStart: number; text: string }) => {
+      onChange(edit.text);
+      setSelectionStart(edit.selectionStart);
+      setSelectionEnd(edit.selectionEnd);
+      requestAnimationFrame(() => {
+        controlRef.current?.focus();
+        controlRef.current?.setSelectionRange(edit.selectionStart, edit.selectionEnd);
+      });
+    },
+    [onChange],
+  );
 
-    onChange(edit.text);
-    setSelectionStart(edit.selectionStart);
-    setSelectionEnd(edit.selectionEnd);
-    requestAnimationFrame(() => {
-      controlRef.current?.focus();
-      controlRef.current?.setSelectionRange(edit.selectionStart, edit.selectionEnd);
+  const replaceSelection = useCallback(
+    ({
+      fallback,
+      prefix,
+      suffix = prefix,
+    }: {
+      fallback: string;
+      prefix: string;
+      suffix?: string;
+    }) => {
+      const control = controlRef.current;
+      const start = control?.selectionStart ?? selectionStart;
+      const end = control?.selectionEnd ?? selectionEnd;
+      applyTextEdit(
+        applyInlineFormatToken({
+          fallback,
+          prefix,
+          selectionEnd: end,
+          selectionStart: start,
+          suffix,
+          text: value,
+        }),
+      );
+    },
+    [applyTextEdit, selectionEnd, selectionStart, value],
+  );
+
+  const insertLink = useCallback(() => {
+    const control = controlRef.current;
+    const start = control?.selectionStart ?? selectionStart;
+    const end = control?.selectionEnd ?? selectionEnd;
+    const selected = value.slice(start, end);
+    const labelText = selected || t('editor.linkText');
+    const insertion = `[${labelText}](https://)`;
+    const next = `${value.slice(0, start)}${insertion}${value.slice(end)}`;
+    const urlStart = start + labelText.length + 3;
+
+    applyTextEdit({
+      text: next,
+      selectionStart: urlStart,
+      selectionEnd: urlStart + 8,
     });
-  }
+  }, [applyTextEdit, selectionEnd, selectionStart, t, value]);
+
+  const applyStyle = useCallback(
+    (kind: InlineStyleKind, color: InlineStyleColor | null) => {
+      const control = controlRef.current;
+      const start = control?.selectionStart ?? selectionStart;
+      const end = control?.selectionEnd ?? selectionEnd;
+      const edit = applyInlineStyleToken({
+        color,
+        fallback: kind === 'color' ? t('editor.coloredText') : t('editor.highlightedText'),
+        kind,
+        selectionEnd: end,
+        selectionStart: start,
+        text: value,
+      });
+
+      applyTextEdit(edit);
+    },
+    [applyTextEdit, selectionEnd, selectionStart, t, value],
+  );
+
+  const toolbarTarget = useMemo<EditorToolbarTarget>(
+    () => ({
+      id: targetId,
+      kind: 'plain',
+      disabled,
+      actions: {
+        applyInlineStyle: applyStyle,
+        insertLink,
+        replaceSelection,
+      },
+    }),
+    [applyStyle, disabled, insertLink, replaceSelection, targetId],
+  );
+  const editorToolbar = useEditorToolbarTarget(toolbarTarget);
+  const isPreview = editorToolbar.mode === 'preview';
 
   const controlProps = {
     className: controlClassName,
     disabled,
     onChange: (event: ChangeEvent<TextControlElement>) => onChange(event.target.value),
     onClick: syncSelection,
+    onFocus: editorToolbar.activateTarget,
     onKeyUp: syncSelection,
     onSelect: syncSelection,
     placeholder,
@@ -99,9 +177,30 @@ export function StyledTextField({
     value,
   };
 
+  if (isPreview) {
+    return (
+      <div className={clsx('styled-text-field', className)}>
+        <div className={clsx(controlClassName, 'styled-text-preview', multiline && 'styled-text-preview--multiline')}>
+          {value.trim() ? (
+            multiline ? (
+              value.split('\n').map((line, index) => (
+                <p key={index}>
+                  <InlineFormattedText value={line} />
+                </p>
+              ))
+            ) : (
+              <InlineFormattedText value={value} />
+            )
+          ) : (
+            <span className="styled-text-preview__placeholder">{placeholder}</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={clsx('styled-text-field', className)}>
-      <TextStyleToolbar compact disabled={disabled} onSelect={applyStyle} />
       {multiline ? <textarea {...controlProps} rows={rows} /> : <input {...controlProps} type="text" />}
     </div>
   );
@@ -116,7 +215,7 @@ function TextStylePicker({
   disabled: boolean;
   kind: InlineStyleKind;
   label: string;
-  onSelect: (kind: InlineStyleKind, color: InlineStyleColor) => void;
+  onSelect: (kind: InlineStyleKind, color: InlineStyleColor | null) => void;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -141,6 +240,19 @@ function TextStylePicker({
       </button>
       {open ? (
         <div className="text-style-picker__menu" role="menu" aria-label={label}>
+          <button
+            className="text-style-picker__reset"
+            type="button"
+            title={kind === 'color' ? t('editor.automaticColor') : t('editor.noHighlightColor')}
+            aria-label={kind === 'color' ? `${label}: ${t('editor.automaticColor')}` : `${label}: ${t('editor.noHighlightColor')}`}
+            onClick={() => {
+              onSelect(kind, null);
+              setOpen(false);
+            }}
+          >
+            {kind === 'color' ? <span className="text-style-picker__auto-swatch" /> : <Eraser />}
+            <span>{kind === 'color' ? t('editor.automaticColor') : t('editor.noHighlightColor')}</span>
+          </button>
           {inlineStyleColors.map((color) => (
             <button
               className={`text-style-picker__swatch text-style-picker__swatch--${kind}-${color}`}

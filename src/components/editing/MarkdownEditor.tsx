@@ -8,6 +8,8 @@ import {
   ChevronDown,
   Code,
   Heading1,
+  Heading2,
+  Heading3,
   Italic,
   Link2,
   List,
@@ -20,14 +22,16 @@ import {
   X,
 } from 'lucide-react';
 import clsx from 'clsx';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ClipboardEvent, ReactNode } from 'react';
 import {
+  applyInlineFormatToken,
   applyInlineStyleToken,
   type InlineStyleColor,
   type InlineStyleKind,
 } from '../../core/utils/inlineFormatting';
 import { htmlToMarkdown } from '../../core/utils/htmlToMarkdown';
+import { applyMarkdownBlockStyle, type MarkdownBlockStyle } from '../../core/utils/markdownFormatting';
 import {
   applyMarkdownTableAction,
   hasMarkdownTableAtCursor,
@@ -36,12 +40,14 @@ import {
 } from '../../core/utils/markdownTables';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useEditorToolbarTarget, type EditorToolbarMode, type EditorToolbarTarget } from './EditorToolbarContext';
 import { MarkdownPreview } from './MarkdownPreview';
 import { TextStyleToolbar } from './TextStyleToolbar';
 
-type MarkdownEditorTab = 'preview' | 'text';
+type MarkdownEditorTab = EditorToolbarMode;
 
 export function MarkdownEditor({
+  bare = false,
   className,
   compact = false,
   label,
@@ -51,8 +57,11 @@ export function MarkdownEditor({
   placeholder,
   rows = 8,
   showActions = true,
+  showTabs = true,
+  showToolbar = true,
   value,
 }: {
+  bare?: boolean;
   className?: string;
   compact?: boolean;
   label: string;
@@ -62,11 +71,14 @@ export function MarkdownEditor({
   placeholder?: string;
   rows?: number;
   showActions?: boolean;
+  showTabs?: boolean;
+  showToolbar?: boolean;
   value: string;
 }) {
   const { t } = useI18n();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const tableToolRef = useRef<HTMLDivElement>(null);
+  const targetId = useId();
   const [activeTab, setActiveTab] = useState<MarkdownEditorTab>('text');
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
@@ -81,12 +93,12 @@ export function MarkdownEditor({
     setDraft(value);
   }, [value]);
 
-  function updateDraft(value: string) {
+  const updateDraft = useCallback((value: string) => {
     setDraft(value);
     onChange?.(value);
-  }
+  }, [onChange]);
 
-  function syncSelection() {
+  const syncSelection = useCallback(() => {
     const textarea = textareaRef.current;
     if (!textarea) {
       return;
@@ -94,9 +106,9 @@ export function MarkdownEditor({
 
     setSelectionStart(textarea.selectionStart);
     setSelectionEnd(textarea.selectionEnd);
-  }
+  }, []);
 
-  function applyTextEdit(edit: MarkdownTextEdit) {
+  const applyTextEdit = useCallback((edit: MarkdownTextEdit) => {
     updateDraft(edit.text);
     setSelectionStart(edit.selectionStart);
     setSelectionEnd(edit.selectionEnd);
@@ -104,50 +116,47 @@ export function MarkdownEditor({
       textareaRef.current?.focus();
       textareaRef.current?.setSelectionRange(edit.selectionStart, edit.selectionEnd);
     });
-  }
+  }, [updateDraft]);
 
-  function replaceSelection({
-    fallback,
-    prefix,
-    suffix = prefix,
-  }: {
-    fallback: string;
-    prefix: string;
-    suffix?: string;
-  }) {
-    const selected = draft.slice(selectionStart, selectionEnd) || fallback;
-    const next = `${draft.slice(0, selectionStart)}${prefix}${selected}${suffix}${draft.slice(selectionEnd)}`;
-    const cursorStart = selectionStart + prefix.length;
-    const cursorEnd = cursorStart + selected.length;
+  const replaceSelection = useCallback(
+    ({
+      fallback,
+      prefix,
+      suffix = prefix,
+    }: {
+      fallback: string;
+      prefix: string;
+      suffix?: string;
+    }) => {
+      applyTextEdit(
+        applyInlineFormatToken({
+          fallback,
+          prefix,
+          selectionEnd,
+          selectionStart,
+          suffix,
+          text: draft,
+        }),
+      );
+    },
+    [applyTextEdit, draft, selectionEnd, selectionStart],
+  );
 
-    applyTextEdit({
-      text: next,
-      selectionStart: cursorStart,
-      selectionEnd: cursorEnd,
-      changed: true,
-    });
-  }
+  const applyBlockStyle = useCallback(
+    (style: MarkdownBlockStyle) => {
+      applyTextEdit(
+        applyMarkdownBlockStyle({
+          selectionEnd,
+          selectionStart,
+          style,
+          text: draft,
+        }),
+      );
+    },
+    [applyTextEdit, draft, selectionEnd, selectionStart],
+  );
 
-  function prefixLines(prefixer: (line: string, index: number) => string) {
-    const lineStart = draft.lastIndexOf('\n', Math.max(0, selectionStart - 1)) + 1;
-    const lineEndSearch = draft.indexOf('\n', selectionEnd);
-    const lineEnd = lineEndSearch === -1 ? draft.length : lineEndSearch;
-    const selectedBlock = draft.slice(lineStart, lineEnd);
-    const nextBlock = selectedBlock
-      .split('\n')
-      .map((line, index) => prefixer(line, index))
-      .join('\n');
-    const next = `${draft.slice(0, lineStart)}${nextBlock}${draft.slice(lineEnd)}`;
-
-    applyTextEdit({
-      text: next,
-      selectionStart: lineStart,
-      selectionEnd: lineStart + nextBlock.length,
-      changed: true,
-    });
-  }
-
-  function insertLink() {
+  const insertLink = useCallback(() => {
     const selected = draft.slice(selectionStart, selectionEnd);
     const labelText = selected || t('editor.linkText');
     const insertion = `[${labelText}](https://)`;
@@ -160,9 +169,9 @@ export function MarkdownEditor({
       selectionEnd: urlStart + 8,
       changed: true,
     });
-  }
+  }, [applyTextEdit, draft, selectionEnd, selectionStart, t]);
 
-  function insertCodeBlock() {
+  const insertCodeBlock = useCallback(() => {
     const selected = draft.slice(selectionStart, selectionEnd) || t('editor.codeText');
     const insertion = ['```', selected, '```'].join('\n');
     const next = `${draft.slice(0, selectionStart)}${insertion}${draft.slice(selectionEnd)}`;
@@ -173,9 +182,9 @@ export function MarkdownEditor({
       selectionEnd: selectionStart + 4 + selected.length,
       changed: true,
     });
-  }
+  }, [applyTextEdit, draft, selectionEnd, selectionStart, t]);
 
-  function insertTextAtSelection(text: string) {
+  const insertTextAtSelection = useCallback((text: string) => {
     const textarea = textareaRef.current;
     const start = textarea?.selectionStart ?? selectionStart;
     const end = textarea?.selectionEnd ?? selectionEnd;
@@ -188,9 +197,9 @@ export function MarkdownEditor({
       selectionEnd: cursor,
       changed: true,
     });
-  }
+  }, [applyTextEdit, draft, selectionEnd, selectionStart]);
 
-  function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+  const handlePaste = useCallback((event: ClipboardEvent<HTMLTextAreaElement>) => {
     const html = event.clipboardData.getData('text/html');
     if (!html.trim()) {
       return;
@@ -203,9 +212,9 @@ export function MarkdownEditor({
 
     event.preventDefault();
     insertTextAtSelection(markdown);
-  }
+  }, [insertTextAtSelection]);
 
-  function applyTableAction(action: MarkdownTableAction) {
+  const applyTableAction = useCallback((action: MarkdownTableAction) => {
     const edit = applyMarkdownTableAction({
       action,
       selectionEnd,
@@ -218,9 +227,9 @@ export function MarkdownEditor({
     }
 
     setTableMenuOpen(false);
-  }
+  }, [applyTextEdit, draft, selectionEnd, selectionStart]);
 
-  function applyInlineStyle(kind: InlineStyleKind, color: InlineStyleColor) {
+  const applyInlineStyle = useCallback((kind: InlineStyleKind, color: InlineStyleColor | null) => {
     applyTextEdit(
       applyInlineStyleToken({
         color,
@@ -231,7 +240,28 @@ export function MarkdownEditor({
         text: draft,
       }),
     );
-  }
+  }, [applyTextEdit, draft, selectionEnd, selectionStart, t]);
+
+  const toolbarTarget = useMemo<EditorToolbarTarget>(
+    () => ({
+      id: targetId,
+      kind: 'markdown',
+      disabled: saving,
+      canEditCurrentTable,
+      actions: {
+        applyBlockStyle,
+        applyInlineStyle,
+        applyTableAction,
+        insertCodeBlock,
+        insertLink,
+        replaceSelection,
+      },
+    }),
+    [applyBlockStyle, applyInlineStyle, applyTableAction, canEditCurrentTable, insertCodeBlock, insertLink, replaceSelection, saving, targetId],
+  );
+  const editorToolbar = useEditorToolbarTarget(toolbarTarget);
+  const currentTab = editorToolbar.mode ?? activeTab;
+  const setCurrentTab = editorToolbar.setMode ?? setActiveTab;
 
   async function accept() {
     if (!onAccept) {
@@ -249,114 +279,122 @@ export function MarkdownEditor({
   }
 
   return (
-    <div className={clsx('markdown-editor', compact && 'compact', className)}>
-      <div className="markdown-editor-top">
-        <div className="editor-tabs" role="tablist" aria-label={label}>
-          <button
-            className={activeTab === 'text' ? 'active' : undefined}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'text'}
-            onClick={() => setActiveTab('text')}
-          >
-            {t('editor.text')}
-          </button>
-          <button
-            className={activeTab === 'preview' ? 'active' : undefined}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'preview'}
-            onClick={() => setActiveTab('preview')}
-          >
-            {t('editor.preview')}
-          </button>
-        </div>
-      </div>
-
-      {activeTab === 'text' ? (
-        <>
-          <div className="markdown-toolbar" aria-label={t('editor.toolbar')}>
-            <ToolbarButton label={t('editor.bold')} onClick={() => replaceSelection({ fallback: t('editor.boldText'), prefix: '**' })}>
-              <Bold />
-            </ToolbarButton>
-            <ToolbarButton label={t('editor.italic')} onClick={() => replaceSelection({ fallback: t('editor.italicText'), prefix: '*' })}>
-              <Italic />
-            </ToolbarButton>
-            <ToolbarButton label={t('editor.underline')} onClick={() => replaceSelection({ fallback: t('editor.underlinedText'), prefix: '[[u]]', suffix: '[[/u]]' })}>
-              <Underline />
-            </ToolbarButton>
-            <ToolbarButton label={t('editor.strikethrough')} onClick={() => replaceSelection({ fallback: t('editor.strikethroughText'), prefix: '~~' })}>
-              <Strikethrough />
-            </ToolbarButton>
-            <ToolbarButton label={t('editor.heading')} onClick={() => prefixLines((line) => `## ${line.replace(/^#{1,6}\s+/, '')}`)}>
-              <Heading1 />
-            </ToolbarButton>
-            <TextStyleToolbar compact disabled={saving} onSelect={applyInlineStyle} />
-            <span className="toolbar-divider" />
-            <ToolbarButton label={t('editor.bulletList')} onClick={() => prefixLines((line) => `- ${line.replace(/^[-*+]\s+/, '')}`)}>
-              <List />
-            </ToolbarButton>
-            <ToolbarButton
-              label={t('editor.numberedList')}
-              onClick={() => prefixLines((line, index) => `${index + 1}. ${line.replace(/^\d+[.)]\s+/, '')}`)}
+    <div className={clsx('markdown-editor', bare && 'bare', compact && 'compact', className)}>
+      {showTabs ? (
+        <div className="markdown-editor-top">
+          <div className="editor-tabs" role="tablist" aria-label={label}>
+            <button
+              className={currentTab === 'text' ? 'active' : undefined}
+              type="button"
+              role="tab"
+              aria-selected={currentTab === 'text'}
+              onClick={() => setCurrentTab('text')}
             >
-              <ListOrdered />
-            </ToolbarButton>
-            <ToolbarButton label={t('editor.checkList')} onClick={() => prefixLines((line) => `- [ ] ${line.replace(/^[-*+]\s+(?:\[[ xX]\]\s+)?/, '')}`)}>
-              <ListChecks />
-            </ToolbarButton>
-            <ToolbarButton label={t('editor.quote')} onClick={() => prefixLines((line) => `> ${line.replace(/^>\s?/, '')}`)}>
-              <Quote />
-            </ToolbarButton>
-            <span className="toolbar-divider" />
-            <ToolbarButton label={t('editor.inlineCode')} onClick={() => replaceSelection({ fallback: t('editor.codeText'), prefix: '`' })}>
-              <Code />
-            </ToolbarButton>
-            <ToolbarButton label={t('editor.codeBlock')} onClick={insertCodeBlock}>
-              <Code />
-            </ToolbarButton>
-            <ToolbarButton label={t('editor.link')} onClick={insertLink}>
-              <Link2 />
-            </ToolbarButton>
-            <span className="toolbar-divider" />
-            <div className="table-tool" ref={tableToolRef}>
-              <button
-                className="markdown-tool-button"
-                type="button"
-                aria-expanded={tableMenuOpen}
-                aria-label={t('editor.tableMenu')}
-                onClick={() => setTableMenuOpen((open) => !open)}
-              >
-                <Table2 />
-                <ChevronDown />
-              </button>
-              {tableMenuOpen ? (
-                <div className="markdown-table-menu">
-                  <ToolbarButton label={t('editor.insertTable')} onClick={() => applyTableAction('insert-table')}>
-                    <Table2 />
-                  </ToolbarButton>
-                  <ToolbarButton disabled={!canEditCurrentTable} label={t('editor.addRowAbove')} onClick={() => applyTableAction('row-above')}>
-                    <ArrowUp />
-                  </ToolbarButton>
-                  <ToolbarButton disabled={!canEditCurrentTable} label={t('editor.addRowBelow')} onClick={() => applyTableAction('row-below')}>
-                    <ArrowDown />
-                  </ToolbarButton>
-                  <ToolbarButton disabled={!canEditCurrentTable} label={t('editor.addColumnLeft')} onClick={() => applyTableAction('column-left')}>
-                    <ArrowLeft />
-                  </ToolbarButton>
-                  <ToolbarButton disabled={!canEditCurrentTable} label={t('editor.addColumnRight')} onClick={() => applyTableAction('column-right')}>
-                    <ArrowRight />
-                  </ToolbarButton>
-                </div>
-              ) : null}
-            </div>
+              {t('editor.text')}
+            </button>
+            <button
+              className={currentTab === 'preview' ? 'active' : undefined}
+              type="button"
+              role="tab"
+              aria-selected={currentTab === 'preview'}
+              onClick={() => setCurrentTab('preview')}
+            >
+              {t('editor.preview')}
+            </button>
           </div>
+        </div>
+      ) : null}
+
+      {currentTab === 'text' ? (
+        <>
+          {showToolbar ? (
+            <div className="markdown-toolbar" aria-label={t('editor.toolbar')}>
+              <ToolbarButton label={t('editor.bold')} onClick={() => replaceSelection({ fallback: t('editor.boldText'), prefix: '**' })}>
+                <Bold />
+              </ToolbarButton>
+              <ToolbarButton label={t('editor.italic')} onClick={() => replaceSelection({ fallback: t('editor.italicText'), prefix: '*' })}>
+                <Italic />
+              </ToolbarButton>
+              <ToolbarButton label={t('editor.underline')} onClick={() => replaceSelection({ fallback: t('editor.underlinedText'), prefix: '[[u]]', suffix: '[[/u]]' })}>
+                <Underline />
+              </ToolbarButton>
+              <ToolbarButton label={t('editor.strikethrough')} onClick={() => replaceSelection({ fallback: t('editor.strikethroughText'), prefix: '~~' })}>
+                <Strikethrough />
+              </ToolbarButton>
+              <ToolbarButton label={t('editor.heading1')} onClick={() => applyBlockStyle('heading-1')}>
+                <Heading1 />
+              </ToolbarButton>
+              <ToolbarButton label={t('editor.heading2')} onClick={() => applyBlockStyle('heading-2')}>
+                <Heading2 />
+              </ToolbarButton>
+              <ToolbarButton label={t('editor.heading3')} onClick={() => applyBlockStyle('heading-3')}>
+                <Heading3 />
+              </ToolbarButton>
+              <TextStyleToolbar compact disabled={saving} onSelect={applyInlineStyle} />
+              <span className="toolbar-divider" />
+              <ToolbarButton label={t('editor.bulletList')} onClick={() => applyBlockStyle('bullet-list')}>
+                <List />
+              </ToolbarButton>
+              <ToolbarButton label={t('editor.numberedList')} onClick={() => applyBlockStyle('numbered-list')}>
+                <ListOrdered />
+              </ToolbarButton>
+              <ToolbarButton label={t('editor.checkList')} onClick={() => applyBlockStyle('check-list')}>
+                <ListChecks />
+              </ToolbarButton>
+              <ToolbarButton label={t('editor.quote')} onClick={() => applyBlockStyle('quote')}>
+                <Quote />
+              </ToolbarButton>
+              <span className="toolbar-divider" />
+              <ToolbarButton label={t('editor.inlineCode')} onClick={() => replaceSelection({ fallback: t('editor.codeText'), prefix: '`' })}>
+                <Code />
+              </ToolbarButton>
+              <ToolbarButton label={t('editor.codeBlock')} onClick={insertCodeBlock}>
+                <Code />
+              </ToolbarButton>
+              <ToolbarButton label={t('editor.link')} onClick={insertLink}>
+                <Link2 />
+              </ToolbarButton>
+              <span className="toolbar-divider" />
+              <div className="table-tool" ref={tableToolRef}>
+                <button
+                  className="markdown-tool-button"
+                  type="button"
+                  aria-expanded={tableMenuOpen}
+                  aria-label={t('editor.tableMenu')}
+                  onClick={() => setTableMenuOpen((open) => !open)}
+                >
+                  <Table2 />
+                  <ChevronDown />
+                </button>
+                {tableMenuOpen ? (
+                  <div className="markdown-table-menu">
+                    <ToolbarButton label={t('editor.insertTable')} onClick={() => applyTableAction('insert-table')}>
+                      <Table2 />
+                    </ToolbarButton>
+                    <ToolbarButton disabled={!canEditCurrentTable} label={t('editor.addRowAbove')} onClick={() => applyTableAction('row-above')}>
+                      <ArrowUp />
+                    </ToolbarButton>
+                    <ToolbarButton disabled={!canEditCurrentTable} label={t('editor.addRowBelow')} onClick={() => applyTableAction('row-below')}>
+                      <ArrowDown />
+                    </ToolbarButton>
+                    <ToolbarButton disabled={!canEditCurrentTable} label={t('editor.addColumnLeft')} onClick={() => applyTableAction('column-left')}>
+                      <ArrowLeft />
+                    </ToolbarButton>
+                    <ToolbarButton disabled={!canEditCurrentTable} label={t('editor.addColumnRight')} onClick={() => applyTableAction('column-right')}>
+                      <ArrowRight />
+                    </ToolbarButton>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           <textarea
             ref={textareaRef}
             className="markdown-textarea"
             disabled={saving}
             onChange={(event) => updateDraft(event.target.value)}
             onClick={syncSelection}
+            onFocus={editorToolbar.activateTarget}
             onKeyUp={syncSelection}
             onPaste={handlePaste}
             onSelect={syncSelection}
