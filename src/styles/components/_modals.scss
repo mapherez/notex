@@ -19,6 +19,12 @@
   box-shadow: var(--nx-shadow-soft);
 }
 
+.delete-confirm-modal {
+  width: min(100%, 26rem);
+  gap: var(--nx-space-3);
+  padding: var(--nx-space-5);
+}
+
 .choice-modal h2 {
   margin: 0;
   font-size: 1.35rem;

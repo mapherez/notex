@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ColorPicker } from '../components/ui/ColorPicker';
 import { CustomSelect } from '../components/ui/CustomSelect';
+import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
 import { IconBadge } from '../components/ui/IconBadge';
 import { NotesFilterRow } from '../components/ui/NotesFilterRow';
 import { NoteRow } from '../components/ui/NoteRow';
@@ -649,6 +650,7 @@ export function CollectionsPage() {
   const [newDraft, setNewDraft] = useState<CollectionDraft>({ name: '', color: defaultNewCollectionColor });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingDraft, setEditingDraft] = useState<CollectionDraft>({ name: '', color: defaultNewCollectionColor });
+  const [deleteCandidate, setDeleteCandidate] = useState<Collection | null>(null);
   const collections = useKnowledgeStore((state) => state.collections);
   const notes = useKnowledgeStore((state) => state.notes);
   const createCollection = useKnowledgeStore((state) => state.createCollection);
@@ -682,139 +684,163 @@ export function CollectionsPage() {
     pushToast(t('collections.updated'), 'success');
   }
 
-  async function removeCollection(collectionId: string) {
-    if (!window.confirm(t('collections.deleteConfirm'))) {
+  async function confirmRemoveCollection() {
+    if (!deleteCandidate) {
       return;
     }
 
-    if (settings.primaryCollectionId === collectionId) {
-      await setPrimaryCollection(collections.find((collection) => collection.id !== collectionId)?.id ?? '');
+    if (settings.primaryCollectionId === deleteCandidate.id) {
+      await setPrimaryCollection(collections.find((collection) => collection.id !== deleteCandidate.id)?.id ?? '');
     }
 
-    await deleteCollection(collectionId);
+    await deleteCollection(deleteCandidate.id);
     setEditingId(null);
+    setDeleteCandidate(null);
     pushToast(t('collections.deleted'), 'warning');
   }
 
   return (
-    <div className="page-content list-page-grid">
+    <div className="page-content list-page-grid collections-page">
       <header>
         <h1 className="page-title">{t('notes.collectionsTitle')}</h1>
         <p className="page-subtitle">{t('notes.collectionsSubtitle')}</p>
       </header>
 
-      <section className="settings-card collection-preference-card">
-        <div>
-          <h2 className="settings-title">{t('collections.primaryCollection')}</h2>
-          <p className="settings-description">{t('collections.primaryCollectionDescription')}</p>
-        </div>
-        <CustomSelect
-          ariaLabel={t('collections.primaryCollection')}
-          emptyText={t('notes.filters.noCollections')}
-          onChange={(collectionId) => {
-            void setPrimaryCollection(collectionId).then(() => pushToast(t('collections.primaryCollectionUpdated'), 'success'));
-          }}
-          options={collections.map((collection) => ({
-            color: collection.color,
-            label: collection.name,
-            value: collection.id,
-          }))}
-          placeholder={t('notes.filters.allCollections')}
-          value={settings.primaryCollectionId}
-        />
-      </section>
-
-      <form
-        className="collection-create-row"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void createCollectionFromDraft();
-        }}
-      >
-        <input
-          value={newDraft.name}
-          onChange={(event) => setNewDraft((draft) => ({ ...draft, name: event.target.value }))}
-          placeholder={t('collections.newPlaceholder')}
-        />
-        <ColorPicker
-          ariaLabel={t('collections.color')}
-          onChange={(color) => setNewDraft((draft) => ({ ...draft, color }))}
-          value={newDraft.color}
-        />
-        <button type="submit">
-          <Plus />
-          {t('collections.create')}
-        </button>
-      </form>
-
-      <div className="collection-grid">
-        {collections.map((collection) => {
-          const count = notes.filter((note) => note.collectionId === collection.id && !note.isTrashed).length;
-          const isEditing = editingId === collection.id;
-          return (
-            <article className="collection-card" key={collection.id}>
-              {isEditing ? (
-                <form
-                  className="collection-edit-form"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void saveEdit(collection.id);
-                  }}
-                >
-                  <IconBadge icon={Folder} color={editingDraft.color} />
-                  <input
-                    aria-label={t('collections.name')}
-                    value={editingDraft.name}
-                    onChange={(event) => setEditingDraft((draft) => ({ ...draft, name: event.target.value }))}
-                  />
-                  <ColorPicker
-                    ariaLabel={t('collections.color')}
-                    onChange={(color) => setEditingDraft((draft) => ({ ...draft, color }))}
-                    value={editingDraft.color}
-                  />
-                  <div className="collection-card-actions">
-                    <button className="collection-action-button" disabled={!editingDraft.name.trim()} type="submit">
-                      <Check />
-                      {t('common.save')}
-                    </button>
-                    <button className="collection-action-button" type="button" onClick={() => setEditingId(null)}>
-                      <X />
-                      {t('common.cancel')}
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <>
-                  <div className="collection-card-header">
-                    <Link className="collection-card-main" to={`/notes?collection=${collection.id}`}>
-                      <IconBadge icon={Folder} color={collection.color} />
-                      <div>
-                        <div className="stat-label">{collection.name}</div>
-                        <div className="stat-delta">
-                          {count} {t('navigation.notes')}
+      <div className="collections-layout">
+        <section className="collections-main-section" aria-label={t('navigation.collections')}>
+          <div className="collection-grid">
+            {collections.map((collection) => {
+              const count = notes.filter((note) => note.collectionId === collection.id && !note.isTrashed).length;
+              const isEditing = editingId === collection.id;
+              return (
+                <article className="collection-card" key={collection.id}>
+                  {isEditing ? (
+                    <form
+                      className="collection-edit-form"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void saveEdit(collection.id);
+                      }}
+                    >
+                      <IconBadge icon={Folder} color={editingDraft.color} />
+                      <input
+                        aria-label={t('collections.name')}
+                        value={editingDraft.name}
+                        onChange={(event) => setEditingDraft((draft) => ({ ...draft, name: event.target.value }))}
+                      />
+                      <ColorPicker
+                        ariaLabel={t('collections.color')}
+                        onChange={(color) => setEditingDraft((draft) => ({ ...draft, color }))}
+                        value={editingDraft.color}
+                      />
+                      <div className="collection-card-actions">
+                        <button className="collection-action-button" disabled={!editingDraft.name.trim()} type="submit">
+                          <Check />
+                          {t('common.save')}
+                        </button>
+                        <button className="collection-action-button" type="button" onClick={() => setEditingId(null)}>
+                          <X />
+                          {t('common.cancel')}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <div className="collection-card-header">
+                        <Link
+                          className="collection-card-link-overlay"
+                          to={`/notes?collection=${collection.id}`}
+                          aria-label={collection.name}
+                        />
+                        <div className="collection-card-main">
+                          <IconBadge icon={Folder} color={collection.color} />
+                          <div>
+                            <div className="stat-label">{collection.name}</div>
+                            <div className="stat-delta">
+                              {count} {t('navigation.notes')}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="collection-card-actions">
+                          <button className="collection-action-button" type="button" aria-label={t('collections.edit')} onClick={() => beginEdit(collection)}>
+                            <Edit3 />
+                          </button>
+                          <button
+                            className="collection-action-button danger"
+                            type="button"
+                            aria-label={t('collections.delete')}
+                            onClick={() => setDeleteCandidate(collection)}
+                          >
+                            <Trash2 />
+                          </button>
                         </div>
                       </div>
-                    </Link>
-                    <div className="collection-card-actions">
-                      <button className="collection-action-button" type="button" aria-label={t('collections.edit')} onClick={() => beginEdit(collection)}>
-                        <Edit3 />
-                      </button>
-                      <button
-                        className="collection-action-button danger"
-                        type="button"
-                        aria-label={t('collections.delete')}
-                        onClick={() => void removeCollection(collection.id)}
-                      >
-                        <Trash2 />
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </article>
-          );
-        })}
+                    </>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <aside className="collections-side-panel">
+          <form
+            className="settings-card collection-create-card"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void createCollectionFromDraft();
+            }}
+          >
+            <h2 className="settings-title">{t('collections.addNewCollection')}</h2>
+            <input
+              aria-label={t('collections.name')}
+              value={newDraft.name}
+              onChange={(event) => setNewDraft((draft) => ({ ...draft, name: event.target.value }))}
+              placeholder={t('collections.name')}
+            />
+            <div className="collection-create-actions">
+              <ColorPicker
+                ariaLabel={t('collections.color')}
+                onChange={(color) => setNewDraft((draft) => ({ ...draft, color }))}
+                value={newDraft.color}
+              />
+              <button type="submit">
+                <Plus />
+                {t('collections.create')}
+              </button>
+            </div>
+          </form>
+
+          <section className="settings-card collection-preference-card">
+            <h2 className="settings-title">{t('collections.primaryCollection')}</h2>
+            <p className="settings-description">{t('collections.primaryCollectionDescription')}</p>
+            <CustomSelect
+              ariaLabel={t('collections.primaryCollection')}
+              emptyText={t('notes.filters.noCollections')}
+              onChange={(collectionId) => {
+                void setPrimaryCollection(collectionId).then(() => pushToast(t('collections.primaryCollectionUpdated'), 'success'));
+              }}
+              options={collections.map((collection) => ({
+                color: collection.color,
+                label: collection.name,
+                value: collection.id,
+              }))}
+              placeholder={t('notes.filters.allCollections')}
+              value={settings.primaryCollectionId}
+            />
+          </section>
+        </aside>
       </div>
+      {deleteCandidate ? (
+        <DeleteConfirmModal
+          cancelLabel={t('common.cancel')}
+          confirmLabel={t('common.delete')}
+          description={t('collections.deleteConfirm')}
+          onCancel={() => setDeleteCandidate(null)}
+          onConfirm={() => void confirmRemoveCollection()}
+          title={t('collections.deleteTitle', { name: deleteCandidate.name })}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,11 +1,13 @@
-import { Edit3, Plus, Save, Search, Trash2, X } from 'lucide-react';
+import { Check, Edit3, Hash, Plus, Search, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ColorPicker } from "../components/ui/ColorPicker";
+import { ColorPicker } from '../components/ui/ColorPicker';
+import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
+import { IconBadge } from '../components/ui/IconBadge';
 import { SortableTagList } from '../components/ui/SortableTagList';
 import { TagChip } from '../components/ui/TagChip';
 import { appLimits, defaultNewTagColor } from '../config/appSettings';
-import type { Tag, TagColor } from "../core/models/models";
+import type { Tag, TagColor } from '../core/models/models';
 import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
@@ -25,12 +27,11 @@ type TagDraft = {
 
 export function TagsPage() {
   const { t } = useI18n();
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingDraft, setEditingDraft] = useState<TagDraft>({ name: '', color: defaultNewTagColor });
+  const [deleteCandidate, setDeleteCandidate] = useState<TagWithCount | null>(null);
   const [favoritePickerOpen, setFavoritePickerOpen] = useState(false);
   const [favoriteQuery, setFavoriteQuery] = useState('');
-  const [drafts, setDrafts] = useState<Record<string, TagDraft>>({});
-  const [deletedTagIds, setDeletedTagIds] = useState<Set<string>>(new Set());
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState<TagColor>(defaultNewTagColor);
   const favoritePickerRef = useRef<HTMLDivElement>(null);
@@ -90,23 +91,6 @@ export function TagsPage() {
       }
     },
   });
-  const visibleEditTags = tagsWithCounts.filter((tag) => !deletedTagIds.has(tag.id));
-  const hasInvalidDraft = visibleEditTags.some((tag) => !getDraftForTag(tag, drafts).name.trim());
-  const hasDraftChanges =
-    deletedTagIds.size > 0 ||
-    tagsWithCounts.some((tag) => {
-      const draft = drafts[tag.id];
-      return draft ? draft.name !== tag.name || draft.color !== (tag.color ?? 'neutral') : false;
-    });
-
-  useEffect(() => {
-    if (!editing) {
-      return;
-    }
-
-    setDrafts(buildDrafts(tagsWithCounts));
-    setDeletedTagIds(new Set());
-  }, [editing, tagsWithCounts]);
 
   useClickOutside(favoritePickerRef, favoritePickerOpen, closeFavoritePicker);
 
@@ -116,36 +100,36 @@ export function TagsPage() {
     }
   }, [favoritePickerOpen]);
 
-  function beginEdit() {
-    setCreateOpen(false);
+  function beginEdit(tag: TagWithCount) {
     closeFavoritePicker();
-    setDrafts(buildDrafts(tagsWithCounts));
-    setDeletedTagIds(new Set());
-    setEditing(true);
+    setEditingId(tag.id);
+    setEditingDraft({
+      name: tag.name,
+      color: tag.color ?? 'neutral',
+    });
   }
 
-  function cancelEdit() {
-    setEditing(false);
-    setDrafts({});
-    setDeletedTagIds(new Set());
-  }
-
-  function updateDraft(tagId: string, input: Partial<TagDraft>) {
-    setDrafts((current) => ({
-      ...current,
-      [tagId]: {
-        ...getDraftForTag(tagsWithCounts.find((tag) => tag.id === tagId), current),
-        ...input,
-      },
-    }));
-  }
-
-  function markDeleted(tagId: string) {
-    if (!window.confirm(t('profile.labels.deleteConfirm'))) {
+  async function saveEdit(tagId: string) {
+    if (!editingDraft.name.trim()) {
       return;
     }
 
-    setDeletedTagIds((current) => new Set(current).add(tagId));
+    await updateTag(tagId, editingDraft);
+    setEditingId(null);
+    pushToast(t('tagsPage.updated'), 'success');
+  }
+
+  async function confirmRemoveTag() {
+    if (!deleteCandidate) {
+      return;
+    }
+
+    await deleteTag(deleteCandidate.id);
+    if (editingId === deleteCandidate.id) {
+      setEditingId(null);
+    }
+    setDeleteCandidate(null);
+    pushToast(t('tagsPage.deleted'), 'warning');
   }
 
   async function createLabel() {
@@ -156,7 +140,7 @@ export function TagsPage() {
 
     setNewName('');
     setNewColor(defaultNewTagColor);
-    pushToast(t('profile.labels.created'), 'success');
+    pushToast(t('tagsPage.created'), 'success');
   }
 
   function closeFavoritePicker() {
@@ -167,10 +151,10 @@ export function TagsPage() {
   async function addFavoriteTag(tagId: string) {
     if (!canAddFavoriteTag) {
       pushToast(
-        t("tagsPage.favoriteTagsLimit", {
+        t('tagsPage.favoriteTagsLimit', {
           count: appLimits.favoriteTags,
         }),
-        "warning",
+        'warning',
       );
       closeFavoritePicker();
       return;
@@ -178,305 +162,260 @@ export function TagsPage() {
 
     await toggleFavoriteTag(tagId);
     closeFavoritePicker();
-    pushToast(t("tagsPage.favoriteTagsUpdated"), "success");
-  }
-
-  async function saveEdits() {
-    if (hasInvalidDraft) {
-      return;
-    }
-
-    for (const tagId of deletedTagIds) {
-      await deleteTag(tagId);
-    }
-
-    for (const tag of tagsWithCounts) {
-      if (deletedTagIds.has(tag.id)) {
-        continue;
-      }
-
-      const draft = drafts[tag.id];
-      if (!draft || (draft.name === tag.name && draft.color === (tag.color ?? 'neutral'))) {
-        continue;
-      }
-
-      await updateTag(tag.id, draft);
-    }
-
-    setEditing(false);
-    setDrafts({});
-    setDeletedTagIds(new Set());
-    pushToast(t('tagsPage.saved'), 'success');
+    pushToast(t('tagsPage.favoriteTagsUpdated'), 'success');
   }
 
   return (
-    <div className="page-content list-page-grid">
+    <div className="page-content list-page-grid tags-page">
       <header>
-        <h1 className="page-title">{t("tagsPage.title")}</h1>
-        <p className="page-subtitle">{t("tagsPage.subtitle")}</p>
+        <h1 className="page-title">{t('tagsPage.title')}</h1>
+        <p className="page-subtitle">{t('tagsPage.subtitle')}</p>
       </header>
 
-      <section className="tags-page-section">
-        <h2 className="tags-section-title">{t("tagsPage.popular")}</h2>
-        <TagSummaryGrid
-          emptyText={t("tagsPage.emptyPopular")}
-          tags={popularTags}
-          t={t}
-        />
-      </section>
-
-      <section className="tags-page-section tags-favorites-card">
-        <div className="tags-favorites-header">
-          <span>
-            <h2 className="tags-section-title">{t("tagsPage.favoriteTags")}</h2>
-            <span className="tags-section-description">
-              {t("tagsPage.favoriteTagsDescription", {
-                count: appLimits.favoriteTags,
-              })}
-            </span>
-          </span>
-          <div className="tags-favorites-add" ref={favoritePickerRef}>
-            <button
-              className="tags-action-button"
-              type="button"
-              aria-disabled={!canAddFavoriteTag}
-              aria-expanded={favoritePickerOpen}
-              aria-haspopup="listbox"
-              onClick={() => {
-                if (!canAddFavoriteTag) {
-                  pushToast(
-                    t("tagsPage.favoriteTagsLimit", {
-                      count: appLimits.favoriteTags,
-                    }),
-                    "warning",
-                  );
-                  return;
-                }
-
-                setFavoritePickerOpen((value) => !value);
-              }}
-            >
-              <Plus />
-              {t("common.add")}
-            </button>
-            {favoritePickerOpen ? (
-              <div className="tags-favorite-picker-menu">
-                <label className="tags-favorite-picker-search">
-                  <Search />
-                  <input
-                    ref={favoriteSearchRef}
-                    type="search"
-                    value={favoriteQuery}
-                    onChange={(event) => setFavoriteQuery(event.target.value)}
-                    onKeyDown={favoritePickerNavigation.onKeyDown}
-                    placeholder={t("tagsPage.searchFavoriteTags")}
-                  />
-                </label>
-                <div className="tags-favorite-picker-options" role="listbox">
-                  {filteredFavoriteOptions.length ? (
-                    filteredFavoriteOptions.map((tag, index) => (
-                      <button
-                        className={favoritePickerNavigation.activeIndex === index ? "active" : undefined}
-                        key={tag.id}
-                        type="button"
-                        role="option"
-                        aria-selected={favoritePickerNavigation.activeIndex === index}
-                        onClick={() => void addFavoriteTag(tag.id)}
-                        onMouseEnter={() => favoritePickerNavigation.setActiveIndex(index)}
+      <div className="tags-layout">
+        <section className="tags-main-section" aria-label={t('tagsPage.allTags')}>
+          {tagsWithCounts.length ? (
+            <div className="tag-grid">
+              {tagsWithCounts.map((tag) => {
+                const isEditing = editingId === tag.id;
+                return (
+                  <article className="tag-card" key={tag.id}>
+                    {isEditing ? (
+                      <form
+                        className="tag-edit-form"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void saveEdit(tag.id);
+                        }}
                       >
-                        <TagChip tag={tag} />
-                      </button>
-                    ))
-                  ) : (
-                    <span className="tags-favorite-picker-empty">
-                      {t("tagsPage.noFavoriteTagOptions")}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </div>
-        <div className="chip-stack chip-stack--spaced">
-          {favoriteTags.length ? (
-            <SortableTagList
-              ariaLabel={t("tagsPage.reorderFavoriteTags")}
-              getHref={(tag) => `/notes?tag=${tag.id}`}
-              onRemove={(tagId) => {
-                void toggleFavoriteTag(tagId).then(() =>
-                  pushToast(t("tagsPage.favoriteTagsUpdated"), "success"),
+                        <IconBadge icon={Hash} color={editingDraft.color} />
+                        <input
+                          aria-label={t('tagsPage.name')}
+                          value={editingDraft.name}
+                          onChange={(event) => setEditingDraft((draft) => ({ ...draft, name: event.target.value }))}
+                        />
+                        <ColorPicker
+                          ariaLabel={t('tagsPage.color')}
+                          onChange={(color) => setEditingDraft((draft) => ({ ...draft, color }))}
+                          value={editingDraft.color}
+                        />
+                        <div className="tag-card-actions">
+                          <button className="tag-action-button" disabled={!editingDraft.name.trim()} type="submit">
+                            <Check />
+                            {t('common.save')}
+                          </button>
+                          <button className="tag-action-button" type="button" onClick={() => setEditingId(null)}>
+                            <X />
+                            {t('common.cancel')}
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="tag-card-header">
+                        <Link
+                          className="tag-card-link-overlay"
+                          to={`/notes?tag=${tag.id}`}
+                          aria-label={tag.name}
+                        />
+                        <div className="tag-card-main">
+                          <IconBadge icon={Hash} color={tag.color} />
+                          <div>
+                            <div className="stat-label">{tag.name}</div>
+                            <div className="stat-delta">{formatTagCount(tag.count, t)}</div>
+                          </div>
+                        </div>
+                        <div className="tag-card-actions">
+                          <button className="tag-action-button" type="button" aria-label={t('tagsPage.edit')} onClick={() => beginEdit(tag)}>
+                            <Edit3 />
+                          </button>
+                          <button
+                            className="tag-action-button danger"
+                            type="button"
+                            aria-label={t('tagsPage.delete')}
+                            onClick={() => setDeleteCandidate(tag)}
+                          >
+                            <Trash2 />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </article>
                 );
-              }}
-              onReorder={(tagIds) => reorderFavoriteTags(tagIds)}
-              removable
-              tags={favoriteTags}
-            />
-          ) : (
-            <span className="tags-empty">{t("tagsPage.emptyFavorites")}</span>
-          )}
-        </div>
-      </section>
-
-      <section className="tags-page-section">
-        <div
-          className={editing ? "tags-action-row editing" : "tags-action-row"}
-        >
-          {editing ? (
-            <div className="tags-edit-actions">
-              <button
-                className="tags-action-button primary"
-                disabled={!hasDraftChanges || hasInvalidDraft}
-                type="button"
-                onClick={() => void saveEdits()}
-              >
-                <Save />
-                {t("common.save")}
-              </button>
-              <button
-                className="tags-action-button"
-                type="button"
-                onClick={cancelEdit}
-              >
-                <X />
-                {t("common.cancel")}
-              </button>
+              })}
             </div>
           ) : (
-            <>
-              <button
-                className="tags-action-button primary"
-                type="button"
-                onClick={() => setCreateOpen((value) => !value)}
-              >
-                <Plus />
-                {t("tagsPage.newTag")}
-              </button>
-              <button
-                className="tags-action-button"
-                type="button"
-                onClick={beginEdit}
-              >
-                <Edit3 />
-                {t("tagsPage.edit")}
-              </button>
-            </>
+            <p className="tags-empty">{t('tagsPage.emptyAll')}</p>
           )}
-        </div>
+        </section>
 
-        {createOpen && !editing ? (
+        <aside className="tags-side-panel">
           <form
-            className="label-create-row tags-create-row"
+            className="settings-card tag-create-card"
             onSubmit={(event) => {
               event.preventDefault();
               void createLabel();
             }}
           >
+            <h2 className="settings-title">{t('tagsPage.addNewTag')}</h2>
             <input
+              aria-label={t('tagsPage.name')}
               value={newName}
               onChange={(event) => setNewName(event.target.value)}
-              placeholder={t("profile.labels.newPlaceholder")}
+              placeholder={t('tagsPage.name')}
             />
-            <ColorPicker
-              ariaLabel={t("profile.labels.color")}
-              onChange={setNewColor}
-              value={newColor}
-            />
-            <button disabled={!newName.trim()} type="submit">
-              <Plus />
-              {t("common.create")}
-            </button>
+            <div className="tag-create-actions">
+              <ColorPicker
+                ariaLabel={t('tagsPage.color')}
+                onChange={setNewColor}
+                value={newColor}
+              />
+              <button disabled={!newName.trim()} type="submit">
+                <Plus />
+                {t('tagsPage.create')}
+              </button>
+            </div>
           </form>
-        ) : null}
-      </section>
 
-      <section className="tags-page-section">
-        <h2 className="tags-section-title">{t("tagsPage.allTags")}</h2>
-        {editing ? (
-          <div className="tags-edit-list">
-            {visibleEditTags.map((tag) => {
-              const draft = getDraftForTag(tag, drafts);
-              return (
-                <div className="tag-edit-row" key={tag.id}>
-                  <TagChip
-                    tag={{ name: draft.name || tag.name, color: draft.color }}
-                  />
-                  <input
-                    aria-label={t("profile.labels.name")}
-                    value={draft.name}
-                    onChange={(event) =>
-                      updateDraft(tag.id, { name: event.target.value })
+          <section className="settings-card tags-quick-access-card">
+            <div className="tags-side-card-header">
+              <span>
+                <h2 className="settings-title">{t('tagsPage.quickAccess')}</h2>
+                <span className="tags-section-description">
+                  {t('tagsPage.favoriteTagsDescription', {
+                    count: appLimits.favoriteTags,
+                  })}
+                </span>
+              </span>
+              <div className="tags-favorites-add" ref={favoritePickerRef}>
+                <button
+                  className="tags-action-button"
+                  type="button"
+                  aria-disabled={!canAddFavoriteTag}
+                  aria-expanded={favoritePickerOpen}
+                  aria-haspopup="listbox"
+                  onClick={() => {
+                    if (!canAddFavoriteTag) {
+                      pushToast(
+                        t('tagsPage.favoriteTagsLimit', {
+                          count: appLimits.favoriteTags,
+                        }),
+                        'warning',
+                      );
+                      return;
                     }
-                  />
-                  <ColorPicker
-                    ariaLabel={t("profile.labels.color")}
-                    onChange={(color) => updateDraft(tag.id, { color })}
-                    value={draft.color}
-                  />
-                  <button
-                    className="icon-button danger"
-                    type="button"
-                    aria-label={t("common.remove")}
-                    onClick={() => markDeleted(tag.id)}
-                  >
-                    <Trash2 />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <TagSummaryGrid
-            emptyText={t("tagsPage.emptyAll")}
-            tags={tagsWithCounts}
-            t={t}
-          />
-        )}
-      </section>
+
+                    setFavoritePickerOpen((value) => !value);
+                  }}
+                >
+                  <Plus />
+                  {t('common.add')}
+                </button>
+                {favoritePickerOpen ? (
+                  <div className="tags-favorite-picker-menu">
+                    <label className="tags-favorite-picker-search">
+                      <Search />
+                      <input
+                        ref={favoriteSearchRef}
+                        type="search"
+                        value={favoriteQuery}
+                        onChange={(event) => setFavoriteQuery(event.target.value)}
+                        onKeyDown={favoritePickerNavigation.onKeyDown}
+                        placeholder={t('tagsPage.searchFavoriteTags')}
+                      />
+                    </label>
+                    <div className="tags-favorite-picker-options" role="listbox">
+                      {filteredFavoriteOptions.length ? (
+                        filteredFavoriteOptions.map((tag, index) => (
+                          <button
+                            className={favoritePickerNavigation.activeIndex === index ? 'active' : undefined}
+                            key={tag.id}
+                            type="button"
+                            role="option"
+                            aria-selected={favoritePickerNavigation.activeIndex === index}
+                            onClick={() => void addFavoriteTag(tag.id)}
+                            onMouseEnter={() => favoritePickerNavigation.setActiveIndex(index)}
+                          >
+                            <TagChip tag={tag} />
+                          </button>
+                        ))
+                      ) : (
+                        <span className="tags-favorite-picker-empty">
+                          {t('tagsPage.noFavoriteTagOptions')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            {favoriteTags.length ? (
+              <SortableTagList
+                ariaLabel={t('tagsPage.reorderFavoriteTags')}
+                className="tag-row"
+                getHref={(tag) => `/notes?tag=${tag.id}`}
+                onRemove={(tagId) => {
+                  void toggleFavoriteTag(tagId).then(() =>
+                    pushToast(t('tagsPage.favoriteTagsUpdated'), 'success'),
+                  );
+                }}
+                onReorder={(tagIds) => reorderFavoriteTags(tagIds)}
+                removable
+                tags={favoriteTags}
+              />
+            ) : (
+              <span className="tags-empty">{t('tagsPage.emptyFavorites')}</span>
+            )}
+          </section>
+
+          <section className="panel tags-popular-card">
+            <div className="panel-header">
+              <h2 className="panel-title">{t('tagsPage.popular')}</h2>
+            </div>
+            <PopularTagList emptyText={t('tagsPage.emptyPopular')} tags={popularTags} />
+          </section>
+        </aside>
+      </div>
+      {deleteCandidate ? (
+        <DeleteConfirmModal
+          cancelLabel={t('common.cancel')}
+          confirmLabel={t('common.delete')}
+          description={t('tagsPage.deleteConfirm')}
+          onCancel={() => setDeleteCandidate(null)}
+          onConfirm={() => void confirmRemoveTag()}
+          title={t('tagsPage.deleteTitle', { name: deleteCandidate.name })}
+        />
+      ) : null}
     </div>
   );
 }
 
-function TagSummaryGrid({
+function PopularTagList({
   emptyText,
   tags,
-  t,
 }: {
   emptyText: string;
   tags: TagWithCount[];
-  t: ReturnType<typeof useI18n>['t'];
 }) {
   if (!tags.length) {
     return <p className="tags-empty">{emptyText}</p>;
   }
 
   return (
-    <div className="tags-chip-grid">
+    <div className="tag-list">
       {tags.map((tag) => (
-        <Link className="tag-summary-card" key={tag.id} to={`/notes?tag=${tag.id}`}>
-          <TagChip tag={tag} />
-          <span>{formatTagCount(tag.count, t)}</span>
-        </Link>
+        <PopularTagRow key={tag.id} tag={tag} />
       ))}
     </div>
   );
 }
 
-function buildDrafts(tags: TagWithCount[]) {
-  return tags.reduce<Record<string, TagDraft>>((nextDrafts, tag) => {
-    nextDrafts[tag.id] = {
-      color: tag.color ?? 'neutral',
-      name: tag.name,
-    };
-    return nextDrafts;
-  }, {});
-}
-
-function getDraftForTag(tag: TagWithCount | undefined, drafts: Record<string, TagDraft>) {
-  if (!tag) {
-    return { color: 'neutral' as TagColor, name: '' };
-  }
-
-  return drafts[tag.id] ?? { color: tag.color ?? 'neutral', name: tag.name };
+function PopularTagRow({ tag }: { tag: TagWithCount }) {
+  return (
+    <Link className="tag-popular-row" to={`/notes?tag=${tag.id}`}>
+      <strong className={`tag-chip ${tag.color ?? 'neutral'}`}># {tag.name}</strong>
+      <span>{tag.count}</span>
+    </Link>
+  );
 }
 
 function formatTagCount(count: number, t: ReturnType<typeof useI18n>['t']) {
@@ -487,6 +426,6 @@ function normalizeSearchValue(value: string) {
   return value
     .trim()
     .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }

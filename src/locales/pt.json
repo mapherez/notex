@@ -192,6 +192,16 @@
     "emptyPopular": "Ainda nenhuma tag foi usada.",
     "emptyAll": "Ainda não há tags.",
     "emptyFavorites": "Ainda não selecionaste tags favoritas.",
+    "quickAccess": "Acesso rápido",
+    "addNewTag": "Adicionar nova tag",
+    "name": "Nome da tag",
+    "color": "Cor da tag",
+    "create": "criar",
+    "created": "Tag criada",
+    "updated": "Tag atualizada",
+    "deleted": "Tag apagada",
+    "deleteTitle": "Apagar tag \"{{name}}\"?",
+    "deleteConfirm": "Apagar esta tag? Ela será removida de todas as notas.",
     "noteCount": "{{count}} notas",
     "noteCountSingular": "{{count}} nota"
   },
@@ -489,7 +499,8 @@
     "unknownVersion": "desconhecida"
   },
   "collections": {
-    "create": "Criar coleção",
+    "addNewCollection": "Adicionar nova coleção",
+    "create": "criar",
     "newPlaceholder": "Nome da nova coleção",
     "edit": "Editar",
     "delete": "Apagar",
@@ -501,6 +512,7 @@
     "created": "Coleção criada",
     "updated": "Coleção atualizada",
     "deleted": "Coleção apagada",
+    "deleteTitle": "Apagar coleção \"{{name}}\"?",
     "deleteConfirm": "Apagar esta coleção? As notas associadas continuam na app sem coleção."
   },
   "mock": {

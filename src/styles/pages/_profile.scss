@@ -373,6 +373,28 @@ button.security-row:hover {
   gap: var(--nx-space-6);
 }
 
+.collections-page {
+  gap: var(--nx-space-4);
+}
+
+.collections-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 24rem);
+  align-items: start;
+  gap: var(--nx-space-5);
+}
+
+.collections-main-section,
+.collections-side-panel {
+  min-width: 0;
+}
+
+.collections-side-panel {
+  display: grid;
+  align-content: start;
+  gap: var(--nx-space-4);
+}
+
 .page-header-actions {
   display: flex;
   align-items: flex-start;
@@ -397,19 +419,23 @@ button.security-row:hover {
 
 .collection-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
   gap: var(--nx-space-4);
 }
 
 .collection-preference-card {
   display: grid;
-  width: calc((100% - var(--nx-space-4)) / 2);
-  grid-column: 1;
-  grid-row: 2;
-  grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
-  align-items: center;
-  gap: var(--nx-space-5);
-  justify-self: start;
+  align-content: start;
+  gap: var(--nx-space-3);
+}
+
+.collection-create-card .settings-title,
+.collection-preference-card .settings-title {
+  margin-bottom: 0;
+}
+
+.collection-preference-card .settings-description {
+  margin-top: 0;
 }
 
 .collection-preference-card .custom-select {
@@ -417,6 +443,7 @@ button.security-row:hover {
 }
 
 .collection-card {
+  position: relative;
   display: grid;
   min-height: 5.5rem;
   align-content: space-between;
@@ -425,6 +452,13 @@ button.security-row:hover {
   border-radius: var(--nx-radius-card);
   background: var(--nx-color-surface);
   padding: var(--nx-space-4);
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.collection-card:hover {
+  border-color: var(--nx-color-border-strong);
+  background: var(--nx-color-surface-elevated);
+  transform: translateY(-1px);
 }
 
 .collection-card-header {
@@ -432,6 +466,18 @@ button.security-row:hover {
   align-items: center;
   justify-content: space-between;
   gap: var(--nx-space-3);
+}
+
+.collection-card-link-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+.collection-card-link-overlay:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--nx-color-accent) 64%, transparent);
+  outline-offset: 3px;
 }
 
 .collection-card-main {
@@ -446,26 +492,17 @@ button.security-row:hover {
   min-width: 0;
 }
 
-.collection-create-row,
+.collection-create-card,
 .collection-edit-form {
   display: grid;
-  align-items: center;
   gap: var(--nx-space-3);
 }
 
-.collection-create-row {
-  width: calc((100% - var(--nx-space-4)) / 2);
-  grid-column: 1;
-  grid-row: 2;
-  grid-template-columns: minmax(0, 1fr) 10rem auto;
-  border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
-  background: var(--nx-color-surface);
-  padding: var(--nx-space-3);
-  justify-self: end;
+.collection-create-card {
+  align-content: start;
 }
 
-.collection-create-row input,
+.collection-create-card input,
 .collection-edit-form input {
   min-width: 0;
   height: 2.65rem;
@@ -477,7 +514,18 @@ button.security-row:hover {
   outline: none;
 }
 
-.collection-create-row > button {
+.collection-create-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--nx-space-3);
+}
+
+.collection-create-actions .color-picker {
+  min-width: 0;
+}
+
+.collection-create-actions > button {
   display: inline-flex;
   min-height: 2.65rem;
   align-items: center;
@@ -496,10 +544,12 @@ button.security-row:hover {
 }
 
 .collection-card-actions {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--nx-space-2);
+  z-index: 2;
 }
 
 .collection-action-button {

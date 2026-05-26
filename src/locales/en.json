@@ -192,6 +192,16 @@
     "emptyPopular": "No tag has been used yet.",
     "emptyAll": "No tags yet.",
     "emptyFavorites": "No favorite tags selected.",
+    "quickAccess": "Quick access",
+    "addNewTag": "Add new tag",
+    "name": "Tag name",
+    "color": "Tag color",
+    "create": "create",
+    "created": "Tag created",
+    "updated": "Tag updated",
+    "deleted": "Tag deleted",
+    "deleteTitle": "Delete tag \"{{name}}\"?",
+    "deleteConfirm": "Delete this tag? It will be removed from every note.",
     "noteCount": "{{count}} notes",
     "noteCountSingular": "{{count}} note"
   },
@@ -489,7 +499,8 @@
     "unknownVersion": "unknown"
   },
   "collections": {
-    "create": "Create collection",
+    "addNewCollection": "Add new collection",
+    "create": "create",
     "newPlaceholder": "New collection name",
     "edit": "Edit",
     "delete": "Delete",
@@ -501,6 +512,7 @@
     "created": "Collection created",
     "updated": "Collection updated",
     "deleted": "Collection deleted",
+    "deleteTitle": "Delete collection \"{{name}}\"?",
     "deleteConfirm": "Delete this collection? Notes assigned to it will stay in the app without a collection."
   },
   "mock": {

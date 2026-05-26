@@ -92,8 +92,10 @@
   .profile-left,
   .profile-top-row,
   .database-management-grid,
-  .collection-preference-card,
-  .collection-grid {
+  .collections-layout,
+  .collection-grid,
+  .tags-layout,
+  .tag-grid {
     grid-template-columns: 1fr;
   }
 
@@ -104,14 +106,6 @@
 
   .database-management-grid .database-path-row {
     padding: var(--nx-space-4) 0;
-  }
-
-  .collection-preference-card,
-  .collection-create-row {
-    width: 100%;
-    grid-column: auto;
-    grid-row: auto;
-    justify-self: stretch;
   }
 
   .database-management-grid .database-path-row:first-child {
@@ -190,7 +184,8 @@
   }
 
   .page-header-actions,
-  .collection-card-actions {
+  .collection-card-actions,
+  .tag-card-actions {
     align-items: stretch;
     flex-direction: column;
   }
@@ -260,7 +255,7 @@
     grid-template-columns: 1.35rem 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
   }
 
-  .collection-create-row {
+  .tag-create-actions {
     grid-template-columns: 1fr;
   }
 
