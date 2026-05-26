@@ -3,7 +3,7 @@ import { openExternalUrl } from '../../core/services/externalLinks';
 import { isSafeMarkdownHref } from '../../core/utils/markdown';
 import { normalizeInlineStyleColor } from '../../core/utils/inlineFormatting';
 
-const inlinePattern = /(\[\[(color|bg):([a-z-]+)\]\][\s\S]+?\[\[\/\2\]\]|`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|\[[^\]]+\]\([^)]+\))/g;
+const inlinePattern = /(\[\[(color|bg):([a-z-]+)\]\][\s\S]+?\[\[\/\2\]\]|\[\[u\]\][\s\S]+?\[\[\/u\]\]|~~[^~]+~~|`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|\[[^\]]+\]\([^)]+\))/g;
 
 export function InlineFormattedText({ value }: { value?: string | null }) {
   return <>{renderInlineText(value ?? '')}</>;
@@ -46,6 +46,23 @@ function renderInlineToken(token: string, key: number) {
       <span className={`rich-text-${kind}--${color}`} key={key}>
         {renderInlineText(styleToken[3])}
       </span>
+    );
+  }
+
+  const underlineToken = token.match(/^\[\[u\]\]([\s\S]*)\[\[\/u\]\]$/);
+  if (underlineToken) {
+    return (
+      <span className="rich-text-underline" key={key}>
+        {renderInlineText(underlineToken[1])}
+      </span>
+    );
+  }
+
+  if (token.startsWith('~~') && token.endsWith('~~')) {
+    return (
+      <s className="rich-text-strike" key={key}>
+        {renderInlineText(token.slice(2, -2))}
+      </s>
     );
   }
 

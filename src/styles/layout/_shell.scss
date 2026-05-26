@@ -498,7 +498,8 @@
 }
 
 .search-result-row:hover,
-.search-result-row:focus-visible {
+.search-result-row:focus-visible,
+.search-result-row.active {
   background: var(--nx-color-hover);
   outline: none;
 }

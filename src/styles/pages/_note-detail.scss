@@ -597,7 +597,8 @@
   text-align: left;
 }
 
-.note-link-picker button:hover {
+.note-link-picker button:hover,
+.note-link-picker button.active {
   background: var(--nx-color-hover);
   color: var(--nx-color-text);
 }

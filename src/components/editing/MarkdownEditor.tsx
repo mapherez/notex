@@ -14,17 +14,20 @@ import {
   ListChecks,
   ListOrdered,
   Quote,
+  Strikethrough,
   Table2,
+  Underline,
   X,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { ClipboardEvent, ReactNode } from 'react';
 import {
   applyInlineStyleToken,
   type InlineStyleColor,
   type InlineStyleKind,
 } from '../../core/utils/inlineFormatting';
+import { htmlToMarkdown } from '../../core/utils/htmlToMarkdown';
 import {
   applyMarkdownTableAction,
   hasMarkdownTableAtCursor,
@@ -172,6 +175,36 @@ export function MarkdownEditor({
     });
   }
 
+  function insertTextAtSelection(text: string) {
+    const textarea = textareaRef.current;
+    const start = textarea?.selectionStart ?? selectionStart;
+    const end = textarea?.selectionEnd ?? selectionEnd;
+    const next = `${draft.slice(0, start)}${text}${draft.slice(end)}`;
+    const cursor = start + text.length;
+
+    applyTextEdit({
+      text: next,
+      selectionStart: cursor,
+      selectionEnd: cursor,
+      changed: true,
+    });
+  }
+
+  function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const html = event.clipboardData.getData('text/html');
+    if (!html.trim()) {
+      return;
+    }
+
+    const markdown = htmlToMarkdown(html);
+    if (!markdown.trim()) {
+      return;
+    }
+
+    event.preventDefault();
+    insertTextAtSelection(markdown);
+  }
+
   function applyTableAction(action: MarkdownTableAction) {
     const edit = applyMarkdownTableAction({
       action,
@@ -249,6 +282,12 @@ export function MarkdownEditor({
             <ToolbarButton label={t('editor.italic')} onClick={() => replaceSelection({ fallback: t('editor.italicText'), prefix: '*' })}>
               <Italic />
             </ToolbarButton>
+            <ToolbarButton label={t('editor.underline')} onClick={() => replaceSelection({ fallback: t('editor.underlinedText'), prefix: '[[u]]', suffix: '[[/u]]' })}>
+              <Underline />
+            </ToolbarButton>
+            <ToolbarButton label={t('editor.strikethrough')} onClick={() => replaceSelection({ fallback: t('editor.strikethroughText'), prefix: '~~' })}>
+              <Strikethrough />
+            </ToolbarButton>
             <ToolbarButton label={t('editor.heading')} onClick={() => prefixLines((line) => `## ${line.replace(/^#{1,6}\s+/, '')}`)}>
               <Heading1 />
             </ToolbarButton>
@@ -319,6 +358,7 @@ export function MarkdownEditor({
             onChange={(event) => updateDraft(event.target.value)}
             onClick={syncSelection}
             onKeyUp={syncSelection}
+            onPaste={handlePaste}
             onSelect={syncSelection}
             placeholder={placeholder ?? t('editor.placeholder')}
             rows={rows}

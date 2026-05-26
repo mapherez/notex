@@ -11,6 +11,7 @@ import { appLimits, demoSettings } from '../config/appSettings';
 import { stripInlineFormatting } from '../core/utils/inlineFormatting';
 import { filterNotes } from '../core/utils/noteFilters';
 import { useClickOutside } from '../core/utils/useClickOutside';
+import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
@@ -104,6 +105,19 @@ export function DashboardPage() {
       to: '/trash',
     },
   ] as const;
+  const quickPinNavigation = useKeyboardListNavigation({
+    enabled: activeQuickPinIndex !== null,
+    itemCount: quickPinOptions.length,
+    onEscape: closeQuickPinPicker,
+    onSelect: (index) => {
+      const option = quickPinOptions[index];
+      if (!option || activeQuickPinIndex === null) {
+        return;
+      }
+
+      void selectQuickPin(activeQuickPinIndex, option.id);
+    },
+  });
 
   useClickOutside(quickPinPickerRef, activeQuickPinIndex !== null, () => closeQuickPinPicker());
 
@@ -212,6 +226,7 @@ export function DashboardPage() {
                           onChange={(event) =>
                             setQuickPinQuery(event.target.value)
                           }
+                          onKeyDown={quickPinNavigation.onKeyDown}
                           placeholder={t(
                             "dashboard.quickPins.searchPlaceholder",
                           )}
@@ -219,13 +234,15 @@ export function DashboardPage() {
                       </label>
                       <div className="quick-pin-options">
                         {quickPinOptions.length ? (
-                          quickPinOptions.map((option) => (
+                          quickPinOptions.map((option, optionIndex) => (
                             <button
+                              className={optionIndex === quickPinNavigation.activeIndex ? 'active' : undefined}
                               key={option.id}
                               type="button"
                               onClick={() =>
                                 void selectQuickPin(index, option.id)
                               }
+                              onMouseEnter={() => quickPinNavigation.setActiveIndex(optionIndex)}
                             >
                               <NoteThumbnail thumbnail={option.thumbnail} />
                               <span>

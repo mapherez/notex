@@ -257,7 +257,8 @@
 }
 
 .quick-pin-options button:hover,
-.quick-pin-options button:focus-visible {
+.quick-pin-options button:focus-visible,
+.quick-pin-options button.active {
   background: var(--nx-color-hover);
   outline: none;
 }

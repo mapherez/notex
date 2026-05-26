@@ -288,11 +288,15 @@
     "placeholder": "Write with Markdown...",
     "preview": "Preview",
     "quote": "Quote",
+    "strikethrough": "Strikethrough",
+    "strikethroughText": "struck text",
     "tableMenu": "Table actions",
     "text": "Text",
     "textColor": "Text color",
     "textStyleToolbar": "Text color toolbar",
     "toolbar": "Formatting toolbar",
+    "underline": "Underline",
+    "underlinedText": "underlined text",
     "write": "Write"
   },
   "profile": {

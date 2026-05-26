@@ -7,7 +7,7 @@ export type InlineStyleColor = TagColor;
 export type InlineStyleKind = 'bg' | 'color';
 
 const inlineStyleColorSet = new Set<string>(inlineStyleColors);
-const inlineStyleTokenPattern = /\[\[(?:color|bg):[a-z-]+\]\]|\[\[\/(?:color|bg)\]\]/g;
+const inlineStyleTokenPattern = /\[\[(?:color|bg):[a-z-]+\]\]|\[\[\/(?:color|bg)\]\]|\[\[u\]\]|\[\[\/u\]\]/g;
 
 export type InlineStyleTextEdit = {
   changed: boolean;

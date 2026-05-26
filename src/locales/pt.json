@@ -288,11 +288,15 @@
     "placeholder": "Escreve com Markdown...",
     "preview": "Pré-visualizar",
     "quote": "Citação",
+    "strikethrough": "Rasurado",
+    "strikethroughText": "texto rasurado",
     "tableMenu": "Ações de tabela",
     "text": "Texto",
     "textColor": "Cor do texto",
     "textStyleToolbar": "Barra de cor do texto",
     "toolbar": "Barra de formatação",
+    "underline": "Sublinhado",
+    "underlinedText": "texto sublinhado",
     "write": "Escrever"
   },
   "profile": {

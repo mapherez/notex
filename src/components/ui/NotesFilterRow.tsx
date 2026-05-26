@@ -22,6 +22,7 @@ import {
 } from "../../core/utils/noteFilters";
 import { sortTagsByName } from "../../core/utils/tagSorting";
 import { useClickOutside } from "../../core/utils/useClickOutside";
+import { useKeyboardListNavigation } from "../../core/utils/useKeyboardListNavigation";
 import { useI18n } from "../../i18n/I18nProvider";
 import { CustomSelect } from "./CustomSelect";
 
@@ -214,6 +215,23 @@ function SearchableFilterField({
         ),
       )
     : options;
+  const optionCount = filteredOptions.length + 1;
+  const optionNavigation = useKeyboardListNavigation({
+    enabled: open,
+    itemCount: optionCount,
+    onEscape: () => setOpen(false),
+    onSelect: (index) => {
+      if (index === 0) {
+        selectValue(null);
+        return;
+      }
+
+      const option = filteredOptions[index - 1];
+      if (option) {
+        selectValue(option.value);
+      }
+    },
+  });
 
   useClickOutside(wrapperRef, open, () => {
     setOpen(false);
@@ -269,28 +287,31 @@ function SearchableFilterField({
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={optionNavigation.onKeyDown}
               placeholder={searchPlaceholder}
             />
           </label>
           <div className="notes-filter-options" role="listbox">
             <button
-              className={!value ? "selected" : undefined}
+              className={filterOptionClassName(!value, optionNavigation.activeIndex === 0)}
               type="button"
               role="option"
               aria-selected={!value}
               onClick={() => selectValue(null)}
+              onMouseEnter={() => optionNavigation.setActiveIndex(0)}
             >
               {allLabel}
             </button>
             {filteredOptions.length ? (
-              filteredOptions.map((option) => (
+              filteredOptions.map((option, index) => (
                 <button
-                  className={option.value === value ? "selected" : undefined}
+                  className={filterOptionClassName(option.value === value, optionNavigation.activeIndex === index + 1)}
                   key={option.value}
                   type="button"
                   role="option"
                   aria-selected={option.value === value}
                   onClick={() => selectValue(option.value)}
+                  onMouseEnter={() => optionNavigation.setActiveIndex(index + 1)}
                 >
                   <span
                     className={
@@ -314,6 +335,18 @@ function SearchableFilterField({
 
 function formatOptionLabel(option: FilterOption) {
   return option.marker ? `${option.marker} ${option.label}` : option.label;
+}
+
+function filterOptionClassName(selected: boolean, active: boolean) {
+  if (selected && active) {
+    return "selected active";
+  }
+
+  if (selected) {
+    return "selected";
+  }
+
+  return active ? "active" : undefined;
 }
 
 function normalizeSearchValue(value: string) {

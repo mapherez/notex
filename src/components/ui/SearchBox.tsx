@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { appLimits } from '../../config/appSettings';
 import { stripInlineFormatting } from '../../core/utils/inlineFormatting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
+import { useKeyboardListNavigation } from '../../core/utils/useKeyboardListNavigation';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
@@ -35,6 +36,20 @@ export function SearchBox({ className }: { className?: string }) {
     [collections, normalizedQuery, notes, tags],
   );
   const showResults = resultsOpen && Boolean(normalizedQuery);
+  const resultNavigation = useKeyboardListNavigation({
+    enabled: showResults,
+    itemCount: results.length,
+    onEscape: () => setResultsOpen(false),
+    onSelect: (index) => {
+      const result = results[index];
+      if (!result) {
+        return;
+      }
+
+      navigate(`/notes/${result.note.id}`);
+      closeSearch();
+    },
+  });
 
   useClickOutside(searchRef, showResults, () => setResultsOpen(false));
 
@@ -74,28 +89,25 @@ export function SearchBox({ className }: { className?: string }) {
           value={query}
           aria-expanded={showResults}
           aria-controls={showResults ? resultsId : undefined}
+          aria-activedescendant={showResults && resultNavigation.activeIndex >= 0 ? `${resultsId}-option-${resultNavigation.activeIndex}` : undefined}
           onChange={(event) => updateQuery(event.target.value)}
           onFocus={() => setResultsOpen(Boolean(query.trim()))}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              setResultsOpen(false);
-              return;
-            }
-
-            if (event.key === 'Enter' && results[0]) {
-              event.preventDefault();
-              navigate(`/notes/${results[0].note.id}`);
-              closeSearch();
-            }
-          }}
+          onKeyDown={resultNavigation.onKeyDown}
         />
         <span className="kbd">{t('topbar.keyboardHint')}</span>
       </label>
       {showResults ? (
         <div className="search-results-popover" id={resultsId} role="list" aria-label={t('topbar.searchResults')}>
           {results.length ? (
-            results.map((result) => (
-              <Link className="search-result-row" key={result.note.id} to={`/notes/${result.note.id}`} onClick={closeSearch}>
+            results.map((result, index) => (
+              <Link
+                className={index === resultNavigation.activeIndex ? 'search-result-row active' : 'search-result-row'}
+                id={`${resultsId}-option-${index}`}
+                key={result.note.id}
+                to={`/notes/${result.note.id}`}
+                onClick={closeSearch}
+                onMouseEnter={() => resultNavigation.setActiveIndex(index)}
+              >
                 <NoteThumbnail thumbnail={result.note.thumbnail} />
                 <span className="search-result-copy">
                   <strong>

@@ -43,6 +43,7 @@ import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/link
 import { stripInlineFormatting } from '../core/utils/inlineFormatting';
 import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
+import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
 import { useKnowledgeStore, type NoteEditDraft } from '../store/useKnowledgeStore';
@@ -130,6 +131,32 @@ export function NoteDetailPage() {
     }
   }, [linkOpen]);
 
+  const noteTags = note ? sortTagsByName(tags.filter((tag) => note.tagIds.includes(tag.id))) : [];
+  const collectionId = isEditing ? draft.collectionId : note?.collectionId ?? null;
+  const collection = collections.find((item) => item.id === collectionId);
+  const savedCollection = note ? collections.find((item) => item.id === note.collectionId) : undefined;
+  const availableTags = note ? sortTagsByFavoriteOrder(tags.filter((tag) => !note.tagIds.includes(tag.id)), favoriteTagIds) : [];
+  const linkedNotes = note ? note.linkedNoteIds.flatMap((linkedId) => notes.find((item) => item.id === linkedId) ?? []) : [];
+  const backlinkNotes = note ? notes.filter((item) => item.id !== note.id && item.linkedNoteIds.includes(note.id)) : [];
+  const linkSearchActive = linkInput.trim().startsWith('/');
+  const linkSearchQuery = linkSearchActive ? linkInput.trim().slice(1).toLowerCase() : '';
+  const linkableNotes = notes
+    .filter((item) => item.id !== note?.id && !item.isTrashed && !note?.linkedNoteIds.includes(item.id))
+    .filter((item) => !linkSearchQuery || stripInlineFormatting(item.title).toLowerCase().includes(linkSearchQuery))
+    .slice(0, appLimits.linkedNoteSuggestions);
+  const linkableNoteNavigation = useKeyboardListNavigation({
+    enabled: linkOpen && linkSearchActive,
+    itemCount: linkableNotes.length,
+    onEscape: () => setLinkOpen(false),
+    onSelect: (index) => {
+      const linkableNote = linkableNotes[index];
+      if (linkableNote) {
+        selectLinkedNote(linkableNote.id);
+      }
+    },
+  });
+  const saveStatusLabel = getSaveStatusLabel({ isEditing, isNewNote, note, saving: savingPage, t });
+
   if (!isReady) {
     return null;
   }
@@ -145,21 +172,6 @@ export function NoteDetailPage() {
       </div>
     );
   }
-
-  const noteTags = note ? sortTagsByName(tags.filter((tag) => note.tagIds.includes(tag.id))) : [];
-  const collectionId = isEditing ? draft.collectionId : note?.collectionId ?? null;
-  const collection = collections.find((item) => item.id === collectionId);
-  const savedCollection = note ? collections.find((item) => item.id === note.collectionId) : undefined;
-  const availableTags = note ? sortTagsByFavoriteOrder(tags.filter((tag) => !note.tagIds.includes(tag.id)), favoriteTagIds) : [];
-  const linkedNotes = note ? note.linkedNoteIds.flatMap((linkedId) => notes.find((item) => item.id === linkedId) ?? []) : [];
-  const backlinkNotes = note ? notes.filter((item) => item.id !== note.id && item.linkedNoteIds.includes(note.id)) : [];
-  const linkSearchActive = linkInput.trim().startsWith('/');
-  const linkSearchQuery = linkSearchActive ? linkInput.trim().slice(1).toLowerCase() : '';
-  const linkableNotes = notes
-    .filter((item) => item.id !== note?.id && !item.isTrashed && !note?.linkedNoteIds.includes(item.id))
-    .filter((item) => !linkSearchQuery || item.title.toLowerCase().includes(linkSearchQuery))
-    .slice(0, appLimits.linkedNoteSuggestions);
-  const saveStatusLabel = getSaveStatusLabel({ isEditing, isNewNote, note, saving: savingPage, t });
 
   function updateDraft(input: Partial<NoteEditDraft>) {
     setDraft((current) => ({ ...current, ...input }));
@@ -743,14 +755,21 @@ export function NoteDetailPage() {
                       setLinkInput(event.target.value);
                       setSelectedLinkedNoteId(null);
                     }}
+                    onKeyDown={linkSearchActive ? linkableNoteNavigation.onKeyDown : undefined}
                     placeholder={t('noteDetail.linkInputPlaceholder')}
                     title={t('noteDetail.linkInputPlaceholder')}
                   />
                   {linkSearchActive ? (
                     <div className="note-link-picker">
                       {linkableNotes.length ? (
-                        linkableNotes.map((linkableNote) => (
-                          <button key={linkableNote.id} type="button" onClick={() => selectLinkedNote(linkableNote.id)}>
+                        linkableNotes.map((linkableNote, linkIndex) => (
+                          <button
+                            className={linkIndex === linkableNoteNavigation.activeIndex ? 'active' : undefined}
+                            key={linkableNote.id}
+                            type="button"
+                            onClick={() => selectLinkedNote(linkableNote.id)}
+                            onMouseEnter={() => linkableNoteNavigation.setActiveIndex(linkIndex)}
+                          >
                             <FileText />
                             <InlineFormattedText value={linkableNote.title} />
                           </button>

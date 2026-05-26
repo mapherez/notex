@@ -187,6 +187,7 @@
 }
 
 .notes-filter-options button:hover,
+.notes-filter-options button.active,
 .notes-filter-options button.selected {
   background: var(--nx-color-hover);
 }
