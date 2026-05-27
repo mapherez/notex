@@ -458,6 +458,27 @@
   white-space: normal;
 }
 
+.notes-grid .note-row__summary-preview {
+  grid-area: summary;
+  align-self: start;
+}
+
+.notes-grid .note-row__summary-preview .markdown-preview {
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.notes-grid .note-row__summary-preview .markdown-preview h1,
+.notes-grid .note-row__summary-preview .markdown-preview h2,
+.notes-grid .note-row__summary-preview .markdown-preview h3,
+.notes-grid .note-row__summary-preview .markdown-preview h4,
+.notes-grid .note-row__summary-preview .markdown-preview h5,
+.notes-grid .note-row__summary-preview .markdown-preview h6 {
+  font-size: inherit;
+  line-height: inherit;
+}
+
 .notes-grid .note-row__badges {
   grid-area: badges;
   align-self: end;

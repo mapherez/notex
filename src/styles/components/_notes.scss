@@ -7,7 +7,7 @@
 
 .note-list-stack {
   display: grid;
-  gap: 10px;
+  gap: var(--nx-space-4);
 }
 
 .pin-list {
@@ -278,6 +278,29 @@
   white-space: nowrap;
 }
 
+.note-row__summary-preview {
+  position: relative;
+  min-width: 0;
+  max-height: calc(3.5em + var(--nx-space-3));
+  overflow: hidden;
+  color: var(--nx-color-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.75;
+}
+
+.note-row__summary-preview.is-overflowing::after {
+  content: "...";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding-left: 1.9rem;
+  background: linear-gradient(90deg, transparent, var(--nx-color-surface) 48%);
+  color: var(--nx-color-text-muted);
+}
+
+.note-row:hover .note-row__summary-preview.is-overflowing::after {
+  background: linear-gradient(90deg, transparent, var(--nx-color-hover) 48%);
+}
 .note-row__time {
   width: 5.75rem;
   color: var(--nx-color-text-muted);

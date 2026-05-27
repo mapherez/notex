@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
-import { useRef, useState, type PointerEventHandler } from 'react';
+import { useLayoutEffect, useRef, useState, type PointerEventHandler } from 'react';
 import { ArchiveRestore, Copy, Folder, GripVertical, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { InlineFormattedText } from '../editing/InlineFormattedText';
-import type { Collection, Note, Tag } from '../../core/models/models';
+import { MarkdownPreview } from '../editing/MarkdownPreview';
+import type { Collection, Note, PreferredLayout, Tag } from '../../core/models/models';
 import { stripInlineFormatting } from '../../core/utils/inlineFormatting';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
@@ -22,6 +23,7 @@ export function NoteRow({
   onAction,
   onPermanentDelete,
   timeValue,
+  layout = 'list',
   selectable = false,
   selected = false,
   onSelectionChange,
@@ -41,6 +43,7 @@ export function NoteRow({
   onAction?: (noteId: string) => void;
   onPermanentDelete?: (noteId: string) => void;
   timeValue?: string | null;
+  layout?: PreferredLayout;
   selectable?: boolean;
   selected?: boolean;
   onSelectionChange?: (noteId: string, selected: boolean) => void;
@@ -54,7 +57,9 @@ export function NoteRow({
 }) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [summaryOverflowing, setSummaryOverflowing] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
   const toggleFavorite = useKnowledgeStore((state) => state.toggleFavorite);
   const togglePinned = useKnowledgeStore((state) => state.togglePinned);
   const setPinnedNoteState = useAppStore((state) => state.setPinnedNoteState);
@@ -65,8 +70,39 @@ export function NoteRow({
   const noteTags = sortTagsByName(tags.filter((tag) => note.tagIds.includes(tag.id)));
   const collection = collections.find((item) => item.id === note.collectionId);
   const plainTitle = stripInlineFormatting(note.title);
+  const summaryMarkdown = blocksToMarkdown(note.content.summary);
 
   useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
+
+  useLayoutEffect(() => {
+    if (layout !== 'grid') {
+      setSummaryOverflowing(false);
+      return;
+    }
+
+    const summaryElement = summaryRef.current;
+    if (!summaryElement) {
+      return;
+    }
+
+    const checkOverflow = () => {
+      setSummaryOverflowing(
+        summaryElement.scrollHeight > summaryElement.clientHeight + 1 ||
+          summaryElement.scrollWidth > summaryElement.clientWidth + 1,
+      );
+    };
+
+    checkOverflow();
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', checkOverflow);
+      return () => window.removeEventListener('resize', checkOverflow);
+    }
+
+    const observer = new ResizeObserver(checkOverflow);
+    observer.observe(summaryElement);
+    return () => observer.disconnect();
+  }, [layout, summaryMarkdown]);
 
   async function handleFavorite() {
     await (onToggleFavorite ? onToggleFavorite(note.id) : toggleFavorite(note.id));
@@ -185,9 +221,25 @@ export function NoteRow({
             <InlineFormattedText value={note.title} />
           </span>
         </div>
-        <p className="note-row__intro">
-          <InlineFormattedText value={note.content.intro} />
-        </p>
+        {layout === 'grid' ? (
+          <div
+            className={
+              summaryOverflowing
+                ? 'note-row__summary-preview is-overflowing'
+                : 'note-row__summary-preview'
+            }
+            ref={summaryRef}
+          >
+            <MarkdownPreview
+              emptyText={t("noteDetail.emptySummary")}
+              value={summaryMarkdown}
+            />
+          </div>
+        ) : (
+          <p className="note-row__intro">
+            <InlineFormattedText value={note.content.intro} />
+          </p>
+        )}
       </div>
       <div className="note-row__badges">
         {collection ? (
@@ -307,4 +359,8 @@ function formatDisplayTime(value: string, today: string, yesterday: string) {
   }
 
   return date.toLocaleDateString([], { day: '2-digit', month: 'short' });
+}
+
+function blocksToMarkdown(blocks?: Note['content']['summary']) {
+  return blocks?.map((block) => block.text).filter(Boolean).join('\n\n') ?? '';
 }

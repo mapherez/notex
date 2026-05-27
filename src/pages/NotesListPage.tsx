@@ -318,6 +318,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
         tags={tags}
         collections={collections}
         timeValue={mode === 'recent' ? note.lastOpenedAt ?? note.updatedAt : undefined}
+        layout={preferredLayout}
         selectable={selectionEnabled}
         selected={selectedNoteIdSet.has(note.id)}
         onSelectionChange={updateNoteSelection}
