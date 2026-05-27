@@ -6,7 +6,6 @@ import {
   FileText,
   Folder,
   Lightbulb,
-  Link as LinkIcon,
   MoreVertical,
   Pencil,
   Pin,
@@ -246,11 +245,6 @@ export function NoteDetailPage() {
     }
   }
 
-  async function copyText(text: string, message: string) {
-    await navigator.clipboard?.writeText(text);
-    pushToast(message, 'success');
-  }
-
   async function removeTag(tagId: string) {
     if (!note) {
       return;
@@ -360,21 +354,39 @@ export function NoteDetailPage() {
 
   return (
     <EditorToolbarProvider mode={editorMode} onModeChange={setEditorMode}>
-      {isEditing ? <GlobalEditorToolbar saving={savingPage} onCancel={cancelPageEdit} onSave={savePageEdit} /> : null}
+      {isEditing ? (
+        <GlobalEditorToolbar
+          saving={savingPage}
+          onCancel={cancelPageEdit}
+          onSave={savePageEdit}
+        />
+      ) : null}
       <header className="document-top">
-        <button className="back-button" type="button" onClick={() => navigate(-1)}>
+        <button
+          className="back-button"
+          type="button"
+          onClick={() => navigate(-1)}
+        >
           <ChevronLeft />
-          {t('common.back')}
+          {t("common.back")}
         </button>
         <div className="document-actions" ref={documentActionsRef}>
           {note ? (
             <button
-              className={note.isFavorite ? 'icon-button document-actions__favorite is-active' : 'icon-button document-actions__favorite'}
+              className={
+                note.isFavorite
+                  ? "icon-button document-actions__favorite is-active"
+                  : "icon-button document-actions__favorite"
+              }
               type="button"
-              aria-label={note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
+              aria-label={
+                note.isFavorite ? t("common.unfavorite") : t("common.favorite")
+              }
               aria-pressed={note.isFavorite}
               onClick={() => {
-                void toggleFavorite(note.id).then(() => pushToast(t('notes.favoriteChanged'), 'success'));
+                void toggleFavorite(note.id).then(() =>
+                  pushToast(t("notes.favoriteChanged"), "success"),
+                );
               }}
             >
               <Star />
@@ -386,7 +398,12 @@ export function NoteDetailPage() {
           </span>
           {note ? (
             <>
-              <button className="icon-button" type="button" aria-label={t('common.more')} onClick={() => setMoreOpen((value) => !value)}>
+              <button
+                className="icon-button"
+                type="button"
+                aria-label={t("common.more")}
+                onClick={() => setMoreOpen((value) => !value)}
+              >
                 <MoreVertical />
               </button>
               {moreOpen ? (
@@ -394,18 +411,25 @@ export function NoteDetailPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      void togglePinned(note.id).then(() => setPinnedNoteState(note.id, !note.isPinned)).then(() => pushToast(t('notes.pinChanged'), 'success'));
+                      void togglePinned(note.id)
+                        .then(() => setPinnedNoteState(note.id, !note.isPinned))
+                        .then(() =>
+                          pushToast(t("notes.pinChanged"), "success"),
+                        );
                       setMoreOpen(false);
                     }}
                   >
                     <Pin />
-                    {note.isPinned ? t('common.unpin') : t('common.pin')}
+                    {note.isPinned ? t("common.unpin") : t("common.pin")}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      void duplicateNote(note.id, `${stripInlineFormatting(note.title)} (${t('common.copy')})`).then((created) => {
-                        pushToast(t('notes.duplicated'), 'success');
+                      void duplicateNote(
+                        note.id,
+                        `${stripInlineFormatting(note.title)} (${t("common.copy")})`,
+                      ).then((created) => {
+                        pushToast(t("notes.duplicated"), "success");
                         if (created) {
                           navigate(`/notes/${created.id}`);
                         }
@@ -414,29 +438,19 @@ export function NoteDetailPage() {
                     }}
                   >
                     <Copy />
-                    {t('common.duplicate')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void copyText(window.location.href, t('noteDetail.copiedLink'));
-                      setMoreOpen(false);
-                    }}
-                  >
-                    <LinkIcon />
-                    {t('common.copyLink')}
+                    {t("common.duplicate")}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       void moveToTrash(note.id).then(() => {
-                        pushToast(t('notes.trashChanged'), 'warning');
-                        navigate('/trash');
+                        pushToast(t("notes.trashChanged"), "warning");
+                        navigate("/trash");
                       });
                     }}
                   >
                     <Trash2 />
-                    {t('notes.moveToTrash')}
+                    {t("notes.moveToTrash")}
                   </button>
                 </div>
               ) : null}
@@ -445,21 +459,32 @@ export function NoteDetailPage() {
         </div>
       </header>
 
-      <div className={note ? 'document-shell' : 'document-shell single-column'}>
+      <div className={note ? "document-shell" : "document-shell single-column"}>
         <article className="document-main">
           <div className="document-heading">
             <div className="document-meta-row">
               {isEditing ? (
-                <CollectionSelect collections={collections} value={draft.collectionId} onChange={(collectionId) => updateDraft({ collectionId })} />
+                <CollectionSelect
+                  collections={collections}
+                  value={draft.collectionId}
+                  onChange={(collectionId) => updateDraft({ collectionId })}
+                />
               ) : (
-                <CollectionBreadcrumb collection={collection} emptyText={t('noteDetail.noCollection')} />
+                <CollectionBreadcrumb
+                  collection={collection}
+                  emptyText={t("noteDetail.noCollection")}
+                />
               )}
 
               {!isEditing ? (
                 <div className="document-edit-actions">
-                  <button className="editor-cancel-button" type="button" onClick={beginPageEdit}>
+                  <button
+                    className="editor-cancel-button"
+                    type="button"
+                    onClick={beginPageEdit}
+                  >
                     <Pencil />
-                    {t('editor.edit')}
+                    {t("editor.edit")}
                   </button>
                 </div>
               ) : null}
@@ -474,7 +499,7 @@ export function NoteDetailPage() {
                     disabled={savingPage}
                     multiline
                     onChange={(title) => updateDraft({ title })}
-                    placeholder={t('noteDetail.titlePlaceholder')}
+                    placeholder={t("noteDetail.titlePlaceholder")}
                     rows={3}
                     value={draft.title}
                   />
@@ -500,7 +525,11 @@ export function NoteDetailPage() {
             {noteTags.length ? (
               <div className="tag-row document-title-tags">
                 {noteTags.map((tag) => (
-                  <TagChip key={tag.id} tag={tag} href={`/notes?tag=${tag.id}`} />
+                  <TagChip
+                    key={tag.id}
+                    tag={tag}
+                    href={`/notes?tag=${tag.id}`}
+                  />
                 ))}
               </div>
             ) : null}
@@ -512,7 +541,7 @@ export function NoteDetailPage() {
                 disabled={savingPage}
                 multiline
                 onChange={(intro) => updateDraft({ intro })}
-                placeholder={t('noteDetail.introPlaceholder')}
+                placeholder={t("noteDetail.introPlaceholder")}
                 value={draft.intro}
               />
             ) : (
@@ -523,13 +552,13 @@ export function NoteDetailPage() {
           </div>
 
           <section className="content-section">
-            <h2 className="section-title">{t('noteDetail.summary')}</h2>
+            <h2 className="section-title">{t("noteDetail.summary")}</h2>
             {isEditing ? (
               <MarkdownEditor
                 bare
-                label={t('noteDetail.summary')}
+                label={t("noteDetail.summary")}
                 onChange={(summaryMarkdown) => updateDraft({ summaryMarkdown })}
-                placeholder={t('noteDetail.summaryPlaceholder')}
+                placeholder={t("noteDetail.summaryPlaceholder")}
                 rows={8}
                 showActions={false}
                 showTabs={false}
@@ -537,18 +566,23 @@ export function NoteDetailPage() {
                 value={draft.summaryMarkdown}
               />
             ) : (
-              <MarkdownPreview emptyText={t('noteDetail.emptySummary')} value={blocksToMarkdown(note?.content.summary)} />
+              <MarkdownPreview
+                emptyText={t("noteDetail.emptySummary")}
+                value={blocksToMarkdown(note?.content.summary)}
+              />
             )}
           </section>
 
           <section className="content-section">
-            <h2 className="section-title">{t('noteDetail.explanation')}</h2>
+            <h2 className="section-title">{t("noteDetail.explanation")}</h2>
             {isEditing ? (
               <MarkdownEditor
                 bare
-                label={t('noteDetail.explanation')}
-                onChange={(explanationMarkdown) => updateDraft({ explanationMarkdown })}
-                placeholder={t('noteDetail.explanationPlaceholder')}
+                label={t("noteDetail.explanation")}
+                onChange={(explanationMarkdown) =>
+                  updateDraft({ explanationMarkdown })
+                }
+                placeholder={t("noteDetail.explanationPlaceholder")}
                 rows={10}
                 showActions={false}
                 showTabs={false}
@@ -556,68 +590,92 @@ export function NoteDetailPage() {
                 value={draft.explanationMarkdown}
               />
             ) : (
-              <MarkdownPreview emptyText={t('noteDetail.emptyExplanation')} value={blocksToMarkdown(note?.content.explanation)} />
+              <MarkdownPreview
+                emptyText={t("noteDetail.emptyExplanation")}
+                value={blocksToMarkdown(note?.content.explanation)}
+              />
             )}
           </section>
 
           <section className="content-section">
-            <h2 className="section-title">{t('noteDetail.usageExamples')}</h2>
+            <h2 className="section-title">{t("noteDetail.usageExamples")}</h2>
             <EditableUsageExamplesTable
               controlledEditing={isEditing}
               onRowsChange={(usageExamples) => updateDraft({ usageExamples })}
               readOnly
-              rows={isEditing ? draft.usageExamples : note?.content.usageExamples?.rows ?? []}
+              rows={
+                isEditing
+                  ? draft.usageExamples
+                  : (note?.content.usageExamples?.rows ?? [])
+              }
             />
           </section>
 
           {isEditing ? (
             <EditableDraftTip
               body={draft.tipBody}
-              onChange={(tipBody) => updateDraft({ tipBody, tipTitle: draft.tipTitle || t('noteDetail.tip') })}
-              title={draft.tipTitle || t('noteDetail.tip')}
+              onChange={(tipBody) =>
+                updateDraft({
+                  tipBody,
+                  tipTitle: draft.tipTitle || t("noteDetail.tip"),
+                })
+              }
+              title={draft.tipTitle || t("noteDetail.tip")}
             />
           ) : note?.content.tip ? (
-            <TipPreview body={note.content.tip.body} title={note.content.tip.title} />
+            <TipPreview
+              body={note.content.tip.body}
+              title={note.content.tip.title}
+            />
           ) : null}
 
           {note ? (
             <footer className="document-footer-stats">
               <span>
-                {note.stats.wordCount} {t('noteDetail.words')} • {note.stats.characterCount} {t('noteDetail.characters')} •{' '}
-                {t('noteDetail.readingTime', { count: note.stats.readingTimeMinutes })}
+                {note.stats.wordCount} {t("noteDetail.words")} •{" "}
+                {note.stats.characterCount} {t("noteDetail.characters")}
               </span>
-              <span>{t('noteDetail.lastEdit')}</span>
+              <span>
+                {t("noteDetail.updatedAt")}:{" "}
+                {formatDate(note.updatedAt, locale)}
+              </span>
             </footer>
           ) : null}
         </article>
 
         {note ? (
           <aside className="document-aside">
-            <Panel title={t('noteDetail.metadata')}>
+            <Panel title={t("noteDetail.metadata")}>
               <div className="meta-list">
                 <div className="meta-row">
-                  <span>{t('noteDetail.createdAt')}</span>
-                  <span className="meta-value">{formatDate(note.createdAt, locale)}</span>
+                  <span>{t("noteDetail.createdAt")}</span>
+                  <span className="meta-value">
+                    {formatDate(note.createdAt, locale)}
+                  </span>
                 </div>
                 <div className="meta-row">
-                  <span>{t('noteDetail.updatedAt')}</span>
-                  <span className="meta-value">{formatDate(note.updatedAt, locale)}</span>
+                  <span>{t("noteDetail.updatedAt")}</span>
+                  <span className="meta-value">
+                    {formatDate(note.updatedAt, locale)}
+                  </span>
                 </div>
                 <div className="meta-row">
-                  <span>{t('noteDetail.collectionLabel')}</span>
+                  <span>{t("noteDetail.collectionLabel")}</span>
                   <span className="meta-value">{savedCollection?.name}</span>
                 </div>
                 <div className="meta-row">
-                  <span>{t('noteDetail.author')}</span>
-                  <span className="meta-value">{accountConnected ? user?.name : t('profile.localUser')}</span>
+                  <span>{t("noteDetail.author")}</span>
+                  <span className="meta-value">
+                    {accountConnected ? user?.name : t("profile.localUser")}
+                  </span>
                 </div>
               </div>
             </Panel>
 
-            <Panel title={t('noteDetail.tags')}>
+            <Panel title={t("noteDetail.tags")}>
               {noteTags.length ? (
                 <SortableTagList
-                  ariaLabel={t('noteDetail.reorderTags')}
+                  ariaLabel={t("noteDetail.reorderTags")}
                   className="document-tag-sortable-list"
                   getHref={(tag) => `/notes?tag=${tag.id}`}
                   onRemove={(tagId) => void removeTag(tagId)}
@@ -626,22 +684,32 @@ export function NoteDetailPage() {
                   tags={noteTags}
                 />
               ) : null}
-              <button className="nav-item nav-item--spaced" type="button" onClick={() => setTagPickerOpen((value) => !value)}>
+              <button
+                className="nav-item nav-item--spaced"
+                type="button"
+                onClick={() => setTagPickerOpen((value) => !value)}
+              >
                 <Plus />
-                {t('noteDetail.addTag')}
+                {t("noteDetail.addTag")}
               </button>
               {tagPickerOpen ? (
                 <div className="tag-picker-panel">
                   {availableTags.length ? (
                     <div className="inline-picker">
                       {availableTags.map((tag) => (
-                        <button key={tag.id} type="button" onClick={() => void addTag(tag.id)}>
+                        <button
+                          key={tag.id}
+                          type="button"
+                          onClick={() => void addTag(tag.id)}
+                        >
                           <TagChip tag={tag} />
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <p className="inline-help">{t('noteDetail.noTagsAvailable')}</p>
+                    <p className="inline-help">
+                      {t("noteDetail.noTagsAvailable")}
+                    </p>
                   )}
                   <form
                     className="inline-form tag-create-form"
@@ -650,19 +718,25 @@ export function NoteDetailPage() {
                       void createAndAddTag();
                     }}
                   >
-                    <input value={newTagName} onChange={(event) => setNewTagName(event.target.value)} placeholder={t('noteDetail.newTagPlaceholder')} />
+                    <input
+                      value={newTagName}
+                      onChange={(event) => setNewTagName(event.target.value)}
+                      placeholder={t("noteDetail.newTagPlaceholder")}
+                    />
                     <ColorPicker
-                      ariaLabel={t('profile.labels.color')}
+                      ariaLabel={t("profile.labels.color")}
                       onChange={setNewTagColor}
                       value={newTagColor}
                     />
-                    <button type="submit">{t('noteDetail.createAndAddTag')}</button>
+                    <button type="submit">
+                      {t("noteDetail.createAndAddTag")}
+                    </button>
                   </form>
                 </div>
               ) : null}
             </Panel>
 
-            <Panel title={t('noteDetail.additionalExamples')}>
+            <Panel title={t("noteDetail.additionalExamples")}>
               <ul className="side-list">
                 {note.content.additionalExamples?.map((example, index) => (
                   <li className="side-edit-row" key={`${example}-${index}`}>
@@ -676,10 +750,20 @@ export function NoteDetailPage() {
                           onChange={setEditingExampleText}
                         />
                         <span className="side-row-actions">
-                          <button className="icon-button" type="button" aria-label={t('editor.accept')} onClick={() => void saveExampleEdit(index)}>
+                          <button
+                            className="icon-button"
+                            type="button"
+                            aria-label={t("editor.accept")}
+                            onClick={() => void saveExampleEdit(index)}
+                          >
                             <Check />
                           </button>
-                          <button className="icon-button" type="button" aria-label={t('common.cancel')} onClick={cancelExampleEdit}>
+                          <button
+                            className="icon-button"
+                            type="button"
+                            aria-label={t("common.cancel")}
+                            onClick={cancelExampleEdit}
+                          >
                             <X />
                           </button>
                         </span>
@@ -690,15 +774,26 @@ export function NoteDetailPage() {
                           <InlineFormattedText value={example} />
                         </span>
                         <span className="side-row-actions">
-                          <button className="icon-button" type="button" aria-label={t('editor.edit')} onClick={() => startExampleEdit(index, example)}>
+                          <button
+                            className="icon-button"
+                            type="button"
+                            aria-label={t("editor.edit")}
+                            onClick={() => startExampleEdit(index, example)}
+                          >
                             <Pencil />
                           </button>
                           <button
                             className="icon-button danger"
                             type="button"
-                            aria-label={t('common.remove')}
+                            aria-label={t("common.remove")}
                             onClick={() => {
-                              void deleteAdditionalExample(note.id, index).then(() => pushToast(t('noteDetail.exampleDeleted'), 'warning'));
+                              void deleteAdditionalExample(note.id, index).then(
+                                () =>
+                                  pushToast(
+                                    t("noteDetail.exampleDeleted"),
+                                    "warning",
+                                  ),
+                              );
                             }}
                           >
                             <Trash2 />
@@ -709,9 +804,13 @@ export function NoteDetailPage() {
                   </li>
                 ))}
               </ul>
-              <button className="nav-item nav-item--spaced" type="button" onClick={() => setExampleOpen((value) => !value)}>
+              <button
+                className="nav-item nav-item--spaced"
+                type="button"
+                onClick={() => setExampleOpen((value) => !value)}
+              >
                 <Plus />
-                {t('noteDetail.addExample')}
+                {t("noteDetail.addExample")}
               </button>
               {exampleOpen ? (
                 <form
@@ -719,9 +818,9 @@ export function NoteDetailPage() {
                   onSubmit={(event) => {
                     event.preventDefault();
                     void addAdditionalExample(note.id, exampleText).then(() => {
-                      setExampleText('');
+                      setExampleText("");
                       setExampleOpen(false);
-                      pushToast(t('noteDetail.exampleAdded'), 'success');
+                      pushToast(t("noteDetail.exampleAdded"), "success");
                     });
                   }}
                 >
@@ -731,14 +830,14 @@ export function NoteDetailPage() {
                     multiline
                     value={exampleText}
                     onChange={setExampleText}
-                    placeholder={t('noteDetail.examplePlaceholder')}
+                    placeholder={t("noteDetail.examplePlaceholder")}
                   />
-                  <button type="submit">{t('common.save')}</button>
+                  <button type="submit">{t("common.save")}</button>
                 </form>
               ) : null}
             </Panel>
 
-            <Panel title={t('noteDetail.relatedLinks')}>
+            <Panel title={t("noteDetail.relatedLinks")}>
               <div className="side-list">
                 {linkedNotes.map((linkedNote) => (
                   <LinkedNoteRow
@@ -746,7 +845,9 @@ export function NoteDetailPage() {
                     noteId={linkedNote.id}
                     title={linkedNote.title}
                     onRemove={() => {
-                      void deleteLinkedNote(note.id, linkedNote.id).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'));
+                      void deleteLinkedNote(note.id, linkedNote.id).then(() =>
+                        pushToast(t("noteDetail.linkDeleted"), "warning"),
+                      );
                     }}
                   />
                 ))}
@@ -756,14 +857,20 @@ export function NoteDetailPage() {
                     href={link.href}
                     title={link.title}
                     onRemove={() => {
-                      void deleteRelatedLink(note.id, link.id).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'));
+                      void deleteRelatedLink(note.id, link.id).then(() =>
+                        pushToast(t("noteDetail.linkDeleted"), "warning"),
+                      );
                     }}
                   />
                 ))}
               </div>
-              <button className="nav-item nav-item--spaced" type="button" onClick={() => setLinkOpen((value) => !value)}>
+              <button
+                className="nav-item nav-item--spaced"
+                type="button"
+                onClick={() => setLinkOpen((value) => !value)}
+              >
                 <Plus />
-                {t('noteDetail.addLink')}
+                {t("noteDetail.addLink")}
               </button>
               {linkOpen ? (
                 <form
@@ -780,39 +887,53 @@ export function NoteDetailPage() {
                       setLinkInput(event.target.value);
                       setSelectedLinkedNoteId(null);
                     }}
-                    onKeyDown={linkSearchActive ? linkableNoteNavigation.onKeyDown : undefined}
-                    placeholder={t('noteDetail.linkInputPlaceholder')}
-                    title={t('noteDetail.linkInputPlaceholder')}
+                    onKeyDown={
+                      linkSearchActive
+                        ? linkableNoteNavigation.onKeyDown
+                        : undefined
+                    }
+                    placeholder={t("noteDetail.linkInputPlaceholder")}
+                    title={t("noteDetail.linkInputPlaceholder")}
                   />
                   {linkSearchActive ? (
                     <div className="note-link-picker">
                       {linkableNotes.length ? (
                         linkableNotes.map((linkableNote, linkIndex) => (
                           <button
-                            className={linkIndex === linkableNoteNavigation.activeIndex ? 'active' : undefined}
+                            className={
+                              linkIndex === linkableNoteNavigation.activeIndex
+                                ? "active"
+                                : undefined
+                            }
                             key={linkableNote.id}
                             type="button"
                             onClick={() => selectLinkedNote(linkableNote.id)}
-                            onMouseEnter={() => linkableNoteNavigation.setActiveIndex(linkIndex)}
+                            onMouseEnter={() =>
+                              linkableNoteNavigation.setActiveIndex(linkIndex)
+                            }
                           >
                             <FileText />
                             <InlineFormattedText value={linkableNote.title} />
                           </button>
                         ))
                       ) : (
-                        <span>{t('noteDetail.noLinkableNotes')}</span>
+                        <span>{t("noteDetail.noLinkableNotes")}</span>
                       )}
                     </div>
                   ) : null}
-                  <button type="submit">{t('common.save')}</button>
+                  <button type="submit">{t("common.save")}</button>
                 </form>
               ) : null}
               {backlinkNotes.length ? (
                 <div className="backlink-section">
-                  <h3>{t('noteDetail.backlinks')}</h3>
+                  <h3>{t("noteDetail.backlinks")}</h3>
                   <div className="side-list">
                     {backlinkNotes.map((backlink) => (
-                      <LinkedNoteRow key={backlink.id} noteId={backlink.id} title={backlink.title} />
+                      <LinkedNoteRow
+                        key={backlink.id}
+                        noteId={backlink.id}
+                        title={backlink.title}
+                      />
                     ))}
                   </div>
                 </div>
@@ -956,7 +1077,7 @@ function getSaveStatusLabel({
 function CollectionBreadcrumb({ collection, emptyText }: { collection?: Collection; emptyText: string }) {
   if (!collection) {
     return (
-      <span className="breadcrumb">
+      <span className="breadcrumb neutral">
         <Folder />
         {emptyText}
       </span>
@@ -964,7 +1085,10 @@ function CollectionBreadcrumb({ collection, emptyText }: { collection?: Collecti
   }
 
   return (
-    <Link className="breadcrumb" to={`/notes?collection=${collection.id}`}>
+    <Link
+      className={`breadcrumb ${collection.color ?? 'neutral'}`}
+      to={`/notes?collection=${collection.id}`}
+    >
       <Folder />
       {collection.name}
     </Link>
@@ -981,9 +1105,14 @@ function CollectionSelect({
   value: string | null;
 }) {
   const { t } = useI18n();
+  const selectedCollection = collections.find(
+    (collection) => collection.id === value,
+  );
 
   return (
-    <div className="editable-collection-field editing">
+    <div
+      className={`editable-collection-field editing ${selectedCollection?.color ?? 'neutral'}`}
+    >
       <Folder />
       <CustomSelect
         ariaLabel={t('noteDetail.collectionLabel')}
@@ -1146,4 +1275,3 @@ function formatDate(value: string, locale: string) {
     minute: '2-digit',
   }).format(new Date(value));
 }
-

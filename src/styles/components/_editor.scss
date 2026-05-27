@@ -69,6 +69,9 @@
   display: grid;
 }
 
+div.usage-styled-field__control {
+  padding: var(--nx-space-3);
+}
 .text-style-toolbar {
   display: inline-flex;
   align-items: center;

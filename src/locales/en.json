@@ -263,8 +263,6 @@
     "copiedLink": "Link copied",
     "words": "words",
     "characters": "characters",
-    "readingTime": "Reading time: {{count}} min",
-    "lastEdit": "Last edit 2 h ago",
     "table": {
       "expression": "Expression",
       "meaning": "Meaning",

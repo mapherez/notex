@@ -1,3 +1,5 @@
+@use "../abstracts/variables" as *;
+
 .document-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 20rem;
@@ -9,7 +11,7 @@
 
 .note-edit-toolbar-shell {
   position: sticky;
-  top: var(--nx-topbar-height);
+  top: calc(var(--nx-topbar-height) + var(--nx-space-6));
   z-index: 80;
   width: min(100%, var(--nx-content-max));
   margin: 0 auto;
@@ -55,6 +57,7 @@
   gap: var(--nx-space-2);
   margin-left: auto;
 }
+
 .document-shell.single-column {
   grid-template-columns: minmax(0, 1fr);
   width: min(100%, 58rem);
@@ -136,6 +139,7 @@
 .document-title-row .thumbnail-picker {
   flex: 0 0 auto;
 }
+
 .document-title-stack {
   display: grid;
   flex: 1;
@@ -237,7 +241,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--nx-space-2);
-  color: var(--nx-color-success);
+  color: var(--nx-color-neutral);
   font-weight: 650;
 }
 
@@ -259,11 +263,27 @@
 }
 
 .editable-collection-field.editing {
-  color: var(--nx-color-success);
+  color: var(--nx-color-neutral);
 }
 
 .editable-collection-field.editing .custom-select {
   min-width: 13rem;
+}
+
+.editable-collection-field.editing .custom-select__trigger {
+  color: inherit;
+}
+
+.editable-collection-field.editing .custom-select__chevron {
+  color: inherit;
+  opacity: 0.72;
+}
+
+@each $name, $value in $palette-colors {
+  .breadcrumb.#{$name},
+  .editable-collection-field.#{$name} {
+    color: #{$value};
+  }
 }
 
 .document-title {
@@ -452,6 +472,7 @@
 .usage-edit-row .usage-actions-cell {
   padding: var(--nx-space-2);
 }
+
 .usage-actions-cell .icon-button {
   display: inline-grid;
   margin-right: var(--nx-space-1);

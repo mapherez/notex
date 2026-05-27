@@ -60,7 +60,9 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
   const activeCollection = collections.find((collection) => collection.id === collectionParam);
   const tagId = activeTag?.id ?? null;
   const collectionId = activeCollection?.id ?? null;
-  const pinControlsEnabled = mode === 'all';
+  const hasActiveFilter = sortOrder !== defaultSortOrder || Boolean(tagId || collectionId);
+  const pinActionsEnabled = mode === 'all';
+  const pinOrderingEnabled = pinActionsEnabled && !hasActiveFilter;
 
   const copy = {
     all: { title: t('notes.title'), subtitle: t('notes.subtitle') },
@@ -75,10 +77,10 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
         mode,
         tagId,
         collectionId,
-        pinnedFirst: pinControlsEnabled,
+        pinnedFirst: pinOrderingEnabled,
         sortOrder,
       }),
-    [collectionId, mode, notes, pinControlsEnabled, sortOrder, tagId],
+    [collectionId, mode, notes, pinOrderingEnabled, sortOrder, tagId],
   );
   const selectionEnabled = mode === 'all';
   const visibleNoteIdsKey = filtered.map((note) => note.id).join('|');
@@ -87,7 +89,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
     () => filtered.filter((note) => selectedNoteIdSet.has(note.id)),
     [filtered, selectedNoteIdSet],
   );
-  const splitPinnedLists = pinControlsEnabled && filtered.some((note) => note.isPinned);
+  const splitPinnedLists = pinOrderingEnabled && filtered.some((note) => note.isPinned);
   const pinnedNotes = useMemo(
     () => orderPinnedNotes(filtered.filter((note) => note.isPinned), orderedPinnedDragIds.length ? orderedPinnedDragIds : pinnedNoteIds),
     [filtered, orderedPinnedDragIds, pinnedNoteIds],
@@ -309,14 +311,14 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
             : undefined
         }
         tagDisplayLimit={preferredLayout === 'grid' ? 2 : undefined}
-        showPinActions={pinControlsEnabled}
-        showPinIndicator={pinControlsEnabled}
-        showPinnedDragHandle={pinControlsEnabled && pinnedList}
+        showPinActions={pinActionsEnabled}
+        showPinIndicator={pinOrderingEnabled}
+        showPinnedDragHandle={pinOrderingEnabled && pinnedList}
         pinnedDragActive={activePinnedDragId === note.id}
-        onPinnedDragPointerDown={pinControlsEnabled && pinnedList ? (event) => beginPinnedNoteReorder(event, note.id) : undefined}
-        onPinnedDragPointerEnter={pinControlsEnabled && pinnedList ? () => previewPinnedNoteReorder(note.id) : undefined}
-        onPinnedDragPointerMove={pinControlsEnabled && pinnedList ? trackPinnedNoteReorder : undefined}
-        onPinnedDragPointerUp={pinControlsEnabled && pinnedList ? finishPinnedNoteReorder : undefined}
+        onPinnedDragPointerDown={pinOrderingEnabled && pinnedList ? (event) => beginPinnedNoteReorder(event, note.id) : undefined}
+        onPinnedDragPointerEnter={pinOrderingEnabled && pinnedList ? () => previewPinnedNoteReorder(note.id) : undefined}
+        onPinnedDragPointerMove={pinOrderingEnabled && pinnedList ? trackPinnedNoteReorder : undefined}
+        onPinnedDragPointerUp={pinOrderingEnabled && pinnedList ? finishPinnedNoteReorder : undefined}
       />
     ));
   }
