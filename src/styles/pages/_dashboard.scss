@@ -56,7 +56,7 @@
   height: 3.35rem;
   place-items: center;
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.75rem;
+  border-radius: 0.37rem;
   background: color-mix(in srgb, var(--nx-badge-hue) 74%, #f4f5f7);
   color: color-mix(in srgb, var(--nx-badge-hue) 46%, #0d0f13);
 }
@@ -181,7 +181,7 @@
 .quick-pin-card .note-thumb {
   width: 3rem;
   height: 3rem;
-  border-radius: 0.5rem;
+  border-radius: 0.25rem;
 }
 
 .quick-pin-copy,
@@ -231,7 +231,7 @@
   gap: var(--nx-space-2);
   height: 2.5rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.65rem;
+  border-radius: 0.32rem;
   background: var(--nx-color-input);
   padding: 0 var(--nx-space-3);
   color: var(--nx-color-text-muted);
@@ -259,7 +259,7 @@
   align-items: center;
   gap: var(--nx-space-3);
   border: 0;
-  border-radius: 0.55rem;
+  border-radius: 0.28rem;
   background: transparent;
   padding: var(--nx-space-2);
   text-align: left;
@@ -275,7 +275,7 @@
 .quick-pin-options .note-thumb {
   width: 2.4rem;
   height: 2.4rem;
-  border-radius: 0.45rem;
+  border-radius: 0.23rem;
 }
 
 .quick-pin-clear {
@@ -285,7 +285,7 @@
   gap: var(--nx-space-2);
   min-height: 2.35rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.55rem;
+  border-radius: 0.28rem;
   background: transparent;
   color: var(--nx-color-text-muted);
   font-size: 0.86rem;

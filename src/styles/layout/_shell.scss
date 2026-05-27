@@ -40,7 +40,7 @@
   width: 2.25rem;
   height: 2.25rem;
   place-items: center;
-  border-radius: 0.55rem;
+  border-radius: 0.28rem;
   background: linear-gradient(135deg, #7d9acb, #3f5f9c);
   color: #fff;
   font-weight: 850;
@@ -50,14 +50,14 @@
 .logo-mark--google {
   width: 1.25rem;
   height: 1.25rem;
-  border-radius: 0.35rem;
+  border-radius: 0.18rem;
   font-size: 0.75rem;
 }
 
 .logo-image {
   width: 2.55rem;
   height: 2.55rem;
-  border-radius: 0.75rem;
+  border-radius: 0.37rem;
   box-shadow: 0 0.75rem 2rem rgba(63, 95, 156, 0.22);
 }
 
@@ -95,7 +95,7 @@
   min-height: 3.125rem;
   margin-bottom: var(--nx-space-6);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.65rem;
+  border-radius: 0.32rem;
   background: var(--nx-color-accent);
   color: #fff;
   font-size: 1.05rem;
@@ -168,7 +168,7 @@
   align-items: center;
   gap: var(--nx-space-3);
   border: 0;
-  border-radius: 0.65rem;
+  border-radius: 0.32rem;
   background: transparent;
   padding: 0 var(--nx-space-3);
   color: var(--nx-color-text-muted);
@@ -465,7 +465,7 @@
   gap: var(--nx-space-3);
   height: 3rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.9rem;
+  border-radius: 0.43rem;
   background: var(--nx-color-input);
   padding: 0 var(--nx-space-4);
   color: var(--nx-color-text-muted);
@@ -492,7 +492,7 @@
   grid-template-columns: 2.6rem minmax(0, 1fr);
   align-items: center;
   gap: var(--nx-space-3);
-  border-radius: 0.65rem;
+  border-radius: 0.32rem;
   padding: var(--nx-space-2);
   transition: background 160ms ease;
 }
@@ -507,7 +507,7 @@
 .search-result-row .note-thumb {
   width: 2.6rem;
   height: 2.6rem;
-  border-radius: 0.48rem;
+  border-radius: 0.25rem;
 }
 
 .search-result-copy {

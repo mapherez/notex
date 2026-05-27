@@ -161,7 +161,7 @@
   position: relative;
   display: grid;
   border: 0;
-  border-radius: 0.72rem;
+  border-radius: 0.35rem;
   background: transparent;
   padding: 0;
 }
@@ -214,7 +214,7 @@
   height: 2.9rem;
   place-items: center;
   border: 1px solid transparent;
-  border-radius: 0.6rem;
+  border-radius: 0.3rem;
   background: transparent;
   padding: 0;
 }
@@ -234,7 +234,7 @@
 .thumbnail-option .note-thumb {
   width: 2.25rem;
   height: 2.25rem;
-  border-radius: 0.45rem;
+  border-radius: 0.23rem;
 }
 
 .breadcrumb {
@@ -419,7 +419,7 @@
   border: 1px solid var(--nx-color-border-strong);
   border-collapse: separate;
   border-spacing: 0;
-  border-radius: 0.65rem;
+  border-radius: 0.32rem;
 }
 
 .usage-table th,
@@ -551,7 +551,7 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--nx-space-4);
   border: 1px solid var(--nx-color-border-strong);
-  border-radius: 0.65rem;
+  border-radius: 0.32rem;
   background: var(--nx-color-surface);
   padding: var(--nx-space-4);
 }

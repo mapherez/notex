@@ -43,7 +43,7 @@
 .editor-tabs button {
   min-height: 2rem;
   border: 0;
-  border-radius: 0.38rem;
+  border-radius: 0.2rem;
   background: transparent;
   color: var(--nx-color-text-muted);
   padding: 0 var(--nx-space-3);
@@ -72,6 +72,7 @@
 div.usage-styled-field__control {
   padding: var(--nx-space-3);
 }
+
 .text-style-toolbar {
   display: inline-flex;
   align-items: center;
@@ -133,7 +134,7 @@ div.usage-styled-field__control {
   width: 1rem;
   height: 1rem;
   border: 1px solid var(--nx-color-border-strong);
-  border-radius: 0.22rem;
+  border-radius: 0.13rem;
   background: var(--nx-color-text);
 }
 
@@ -177,7 +178,7 @@ div.usage-styled-field__control {
   }
 
   .rich-text-bg--#{$name} {
-    border-radius: 0.22rem;
+    border-radius: 0.13rem;
     background: color-mix(in srgb, #{$value} 28%, transparent);
     color: var(--nx-color-text);
     padding: 0 0.14em;
@@ -202,7 +203,7 @@ div.usage-styled-field__control {
   justify-content: center;
   gap: 0.15rem;
   border: 0;
-  border-radius: 0.42rem;
+  border-radius: 0.22rem;
   background: transparent;
   color: var(--nx-color-text-muted);
 }
@@ -401,7 +402,7 @@ div.usage-styled-field__control {
 
 .markdown-preview code {
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.35rem;
+  border-radius: 0.18rem;
   background: var(--nx-color-surface-subtle);
   color: var(--nx-color-text);
   padding: 0.12rem 0.36rem;
@@ -445,7 +446,7 @@ div.usage-styled-field__control {
   border: 1px solid var(--nx-color-border-strong);
   border-collapse: separate;
   border-spacing: 0;
-  border-radius: 0.65rem;
+  border-radius: 0.32rem;
 }
 
 .markdown-table th,
@@ -495,4 +496,3 @@ div.usage-styled-field__control {
   display: flex;
   gap: var(--nx-space-2);
 }
-

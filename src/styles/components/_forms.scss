@@ -9,7 +9,7 @@
 
 .kbd {
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.45rem;
+  border-radius: 0.23rem;
   padding: 0.18rem 0.48rem;
   background: var(--nx-color-surface);
   color: var(--nx-color-text-muted);
@@ -49,6 +49,7 @@
 .page-subtitle.empty {
   margin: 0;
 }
+
 .legal-page {
   width: min(100%, 58rem);
 }
@@ -69,4 +70,3 @@
 .legal-copy p {
   margin: 0;
 }
-
