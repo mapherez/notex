@@ -43,6 +43,7 @@ import type { Collection, Note, NoteThumbnail as NoteThumbnailModel, NoteType, R
 import { openExternalUrl } from '../core/services/externalLinks';
 import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
 import { stripInlineFormatting } from '../core/utils/inlineFormatting';
+import { isPrimaryShortcut } from '../core/utils/keyboardShortcuts';
 import { sortTagsByFavoriteOrder } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
@@ -162,6 +163,48 @@ export function NoteDetailPage() {
     },
   });
   const saveStatusLabel = getSaveStatusLabel({ isEditing, isNewNote, note, saving: savingPage, t });
+
+  useEffect(() => {
+    function handleNoteShortcut(event: KeyboardEvent) {
+      if (!isReady) {
+        return;
+      }
+
+      if (!isEditing && !isNewNote && note && isPrimaryShortcut(event, 'e')) {
+        event.preventDefault();
+        beginPageEdit();
+        return;
+      }
+
+      if (isEditing && isPrimaryShortcut(event, 's')) {
+        event.preventDefault();
+        if (!savingPage) {
+          void savePageEdit();
+        }
+        return;
+      }
+
+      if (
+        isEditing &&
+        event.key === 'Escape' &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.shiftKey &&
+        !moreOpen &&
+        !tagPickerOpen &&
+        !thumbnailPickerOpen &&
+        !exampleOpen &&
+        !linkOpen
+      ) {
+        event.preventDefault();
+        cancelPageEdit();
+      }
+    }
+
+    window.addEventListener('keydown', handleNoteShortcut);
+    return () => window.removeEventListener('keydown', handleNoteShortcut);
+  });
 
   if (!isReady) {
     return null;

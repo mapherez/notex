@@ -8,6 +8,11 @@ import { SortableTagList } from '../components/ui/SortableTagList';
 import { TagChip } from '../components/ui/TagChip';
 import { appLimits, defaultNewTagColor } from '../config/appSettings';
 import type { Tag, TagColor } from '../core/models/models';
+import {
+  focusTextControlAtEnd,
+  isEditableShortcutTarget,
+  isPlainLetterShortcut,
+} from '../core/utils/keyboardShortcuts';
 import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
@@ -35,6 +40,8 @@ export function TagsPage() {
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState<TagColor>(defaultNewTagColor);
   const editNameInputRef = useRef<HTMLInputElement>(null);
+  const editSaveButtonRef = useRef<HTMLButtonElement>(null);
+  const newNameInputRef = useRef<HTMLInputElement>(null);
   const favoritePickerRef = useRef<HTMLDivElement>(null);
   const favoriteSearchRef = useRef<HTMLInputElement>(null);
   const tags = useKnowledgeStore((state) => state.tags);
@@ -106,6 +113,27 @@ export function TagsPage() {
       requestAnimationFrame(() => editNameInputRef.current?.focus());
     }
   }, [editingId]);
+
+  useEffect(() => {
+    function handleTagPageShortcut(event: KeyboardEvent) {
+      if (
+        editingId ||
+        favoritePickerOpen ||
+        deleteCandidate ||
+        !isPlainLetterShortcut(event) ||
+        isEditableShortcutTarget(event.target)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      setNewName((current) => `${current}${event.key}`);
+      requestAnimationFrame(() => focusTextControlAtEnd(newNameInputRef.current));
+    }
+
+    window.addEventListener('keydown', handleTagPageShortcut);
+    return () => window.removeEventListener('keydown', handleTagPageShortcut);
+  }, [deleteCandidate, editingId, favoritePickerOpen]);
 
   function beginEdit(tag: TagWithCount) {
     closeFavoritePicker();
@@ -214,11 +242,13 @@ export function TagsPage() {
                         />
                         <ColorPicker
                           ariaLabel={t('tagsPage.color')}
+                          onKeyboardCancel={() => editNameInputRef.current?.focus()}
+                          onKeyboardCommit={() => editSaveButtonRef.current?.focus()}
                           onChange={(color) => setEditingDraft((draft) => ({ ...draft, color }))}
                           value={editingDraft.color}
                         />
                         <div className="tag-card-actions">
-                          <button className="tag-action-button" disabled={!editingDraft.name.trim()} type="submit">
+                          <button ref={editSaveButtonRef} className="tag-action-button" disabled={!editingDraft.name.trim()} type="submit">
                             <Check />
                             {t('common.save')}
                           </button>
@@ -276,9 +306,17 @@ export function TagsPage() {
           >
             <h2 className="settings-title">{t('tagsPage.addNewTag')}</h2>
             <input
+              ref={newNameInputRef}
               aria-label={t('tagsPage.name')}
               value={newName}
               onChange={(event) => setNewName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  setNewName('');
+                  event.currentTarget.blur();
+                }
+              }}
               placeholder={t('tagsPage.name')}
             />
             <div className="tag-create-actions">

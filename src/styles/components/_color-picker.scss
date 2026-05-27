@@ -95,10 +95,15 @@
 
 .color-palette-menu__swatch:hover,
 .color-palette-menu__swatch:focus-visible,
+.color-palette-menu__swatch.is-active,
 .color-palette-menu__swatch.is-selected {
   border-color: var(--nx-color-border-strong);
   background: var(--nx-color-hover);
   outline: none;
+}
+
+.color-palette-menu__swatch.is-active {
+  box-shadow: 0 0 0 0.16rem color-mix(in srgb, var(--nx-color-accent) 28%, transparent);
 }
 
 .color-palette-menu__swatch span {

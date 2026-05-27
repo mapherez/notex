@@ -1,5 +1,5 @@
 import { ArrowRight, Edit3, FileText, Folder, Plus, Search, Star, Tag, Timer, Trash, Trash2, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { IconBadge } from '../components/ui/IconBadge';
@@ -9,6 +9,14 @@ import { NoteRow } from '../components/ui/NoteRow';
 import { Panel } from "../components/ui/Panel";
 import { appLimits, demoSettings } from '../config/appSettings';
 import { stripInlineFormatting } from '../core/utils/inlineFormatting';
+import {
+  focusTextControlAtEnd,
+  getPrimaryDigitShortcutIndex,
+  getShiftDigitShortcutIndex,
+  isEditableShortcutTarget,
+  isPlainLetterShortcut,
+  isPrimaryShortcut,
+} from '../core/utils/keyboardShortcuts';
 import { filterNotes } from '../core/utils/noteFilters';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
@@ -27,6 +35,7 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const quickPinPickerRef = useRef<HTMLDivElement>(null);
   const quickPinInputRef = useRef<HTMLInputElement>(null);
+  const quickCaptureTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [activeQuickPinIndex, setActiveQuickPinIndex] = useState<number | null>(null);
   const [quickPinQuery, setQuickPinQuery] = useState('');
   const settings = useAppStore((state) => state.settings);
@@ -36,7 +45,9 @@ export function DashboardPage() {
   const collections = useKnowledgeStore((state) => state.collections);
   const createQuickNote = useKnowledgeStore((state) => state.createQuickNote);
   const pushToast = useToastStore((state) => state.pushToast);
-  const { register, handleSubmit, reset } = useForm<CaptureForm>();
+  const { getValues, handleSubmit, register, reset, setFocus, setValue } = useForm<CaptureForm>({
+    defaultValues: { capture: '' },
+  });
 
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const quickPinNotes = settings.quickPinNoteIds
@@ -127,9 +138,55 @@ export function DashboardPage() {
     }
   }, [activeQuickPinIndex]);
 
+  useEffect(() => {
+    function handleDashboardShortcut(event: KeyboardEvent) {
+      const statIndex = getPrimaryDigitShortcutIndex(event, stats.length);
+      if (statIndex !== null) {
+        event.preventDefault();
+        navigate(stats[statIndex].to);
+        return;
+      }
+
+      if (isPrimaryShortcut(event, 'u')) {
+        event.preventDefault();
+        navigate('/profile');
+        return;
+      }
+
+      const quickPinIndex = getShiftDigitShortcutIndex(event, appLimits.quickPins);
+      if (quickPinIndex !== null && !isEditableShortcutTarget(event.target)) {
+        event.preventDefault();
+        activateQuickPinSlot(quickPinIndex);
+        return;
+      }
+
+      if (
+        activeQuickPinIndex === null &&
+        isPlainLetterShortcut(event) &&
+        !isEditableShortcutTarget(event.target)
+      ) {
+        event.preventDefault();
+        appendToQuickCaptureAndFocus(event.key);
+      }
+    }
+
+    window.addEventListener('keydown', handleDashboardShortcut);
+    return () => window.removeEventListener('keydown', handleDashboardShortcut);
+  });
+
   function openQuickPinPicker(index: number) {
     setActiveQuickPinIndex(index);
     setQuickPinQuery('');
+  }
+
+  function activateQuickPinSlot(index: number) {
+    const note = quickPinSlots[index];
+    if (note) {
+      navigate(`/notes/${note.id}`);
+      return;
+    }
+
+    openQuickPinPicker(index);
   }
 
   function closeQuickPinPicker() {
@@ -141,6 +198,44 @@ export function DashboardPage() {
     await setQuickPinAt(index, noteId);
     closeQuickPinPicker();
     pushToast(t('dashboard.quickPins.updated'), 'success');
+  }
+
+  function appendToQuickCaptureAndFocus(value: string) {
+    setValue('capture', `${getValues('capture') ?? ''}${value}`, {
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+    requestAnimationFrame(() => {
+      setFocus('capture');
+      focusTextControlAtEnd(quickCaptureTextareaRef.current);
+    });
+  }
+
+  const captureField = register('capture');
+  const submitQuickCapture = handleSubmit(async ({ capture }) => {
+    const note = await createQuickNote(
+      capture,
+      t("dashboard.quickCapture.title"),
+    );
+    if (note) {
+      pushToast(t("notes.draftCreated"), "success");
+      navigate(`/notes/${note.id}`);
+    }
+    reset({ capture: '' });
+  });
+
+  function handleQuickCaptureKeyDown(event: ReactKeyboardEvent<HTMLTextAreaElement>) {
+    if (isPrimaryShortcut(event, 's')) {
+      event.preventDefault();
+      void submitQuickCapture();
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      reset({ capture: '' });
+      event.currentTarget.blur();
+    }
   }
 
   return (
@@ -303,21 +398,16 @@ export function DashboardPage() {
           <Panel title={t("dashboard.quickCapture.title")}>
             <form
               className="quick-capture"
-              onSubmit={handleSubmit(async ({ capture }) => {
-                const note = await createQuickNote(
-                  capture,
-                  t("dashboard.quickCapture.title"),
-                );
-                if (note) {
-                  pushToast(t("notes.draftCreated"), "success");
-                  navigate(`/notes/${note.id}`);
-                }
-                reset();
-              })}
+              onSubmit={submitQuickCapture}
             >
               <div className="capture-box">
                 <textarea
-                  {...register("capture")}
+                  {...captureField}
+                  ref={(element) => {
+                    captureField.ref(element);
+                    quickCaptureTextareaRef.current = element;
+                  }}
+                  onKeyDown={handleQuickCaptureKeyDown}
                   placeholder={t("dashboard.quickCapture.placeholder")}
                 />
                 <div className="capture-actions">

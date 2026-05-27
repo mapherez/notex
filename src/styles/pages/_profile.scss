@@ -461,6 +461,10 @@ button.security-row:hover {
   transform: translateY(-1px);
 }
 
+.collection-card:has(.color-picker__trigger[aria-expanded="true"]) {
+  z-index: 85;
+}
+
 .collection-card-header {
   display: flex;
   align-items: center;

@@ -301,6 +301,7 @@
 .note-row:hover .note-row__summary-preview.is-overflowing::after {
   background: linear-gradient(90deg, transparent, var(--nx-color-hover) 48%);
 }
+
 .note-row__time {
   width: 5.75rem;
   color: var(--nx-color-text-muted);

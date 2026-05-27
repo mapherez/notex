@@ -1,8 +1,9 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { appLimits } from '../../config/appSettings';
 import { stripInlineFormatting } from '../../core/utils/inlineFormatting';
+import { isPrimaryShortcut } from '../../core/utils/keyboardShortcuts';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../../core/utils/useKeyboardListNavigation';
 import { sortTagsByName } from '../../core/utils/tagSorting';
@@ -55,7 +56,7 @@ export function SearchBox({ className }: { className?: string }) {
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      if (isPrimaryShortcut(event, 'f') || isPrimaryShortcut(event, 'k')) {
         event.preventDefault();
         inputRef.current?.focus();
         if (normalizedQuery) {
@@ -78,6 +79,17 @@ export function SearchBox({ className }: { className?: string }) {
     setResultsOpen(Boolean(value.trim()));
   }
 
+  function handleInputKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeSearch();
+      inputRef.current?.blur();
+      return;
+    }
+
+    resultNavigation.onKeyDown(event);
+  }
+
   return (
     <div className={className ? `search-box-shell ${className}` : 'search-box-shell'} ref={searchRef}>
       <label className="search-box">
@@ -92,7 +104,7 @@ export function SearchBox({ className }: { className?: string }) {
           aria-activedescendant={showResults && resultNavigation.activeIndex >= 0 ? `${resultsId}-option-${resultNavigation.activeIndex}` : undefined}
           onChange={(event) => updateQuery(event.target.value)}
           onFocus={() => setResultsOpen(Boolean(query.trim()))}
-          onKeyDown={resultNavigation.onKeyDown}
+          onKeyDown={handleInputKeyDown}
         />
         <span className="kbd">{t('topbar.keyboardHint')}</span>
       </label>

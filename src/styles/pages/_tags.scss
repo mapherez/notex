@@ -59,6 +59,10 @@
   transform: translateY(-1px);
 }
 
+.tag-card:has(.color-picker__trigger[aria-expanded="true"]) {
+  z-index: 85;
+}
+
 .tag-card-header {
   display: flex;
   align-items: center;

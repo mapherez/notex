@@ -10,6 +10,11 @@ import { NotesFilterRow } from '../components/ui/NotesFilterRow';
 import { NoteRow } from '../components/ui/NoteRow';
 import { defaultNewCollectionColor } from '../config/appSettings';
 import type { Collection, Note, PreferredLayout, Tag as TagModel, TagColor } from '../core/models/models';
+import {
+  focusTextControlAtEnd,
+  isEditableShortcutTarget,
+  isPlainLetterShortcut,
+} from '../core/utils/keyboardShortcuts';
 import { defaultNotesSortOrder, filterNotes, normalizeNotesSortOrder, recentNotesSortOrder, type NotesSortOrder } from '../core/utils/noteFilters';
 import { sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
@@ -672,6 +677,8 @@ export function CollectionsPage() {
   const [editingDraft, setEditingDraft] = useState<CollectionDraft>({ name: '', color: defaultNewCollectionColor });
   const [deleteCandidate, setDeleteCandidate] = useState<Collection | null>(null);
   const editNameInputRef = useRef<HTMLInputElement>(null);
+  const editSaveButtonRef = useRef<HTMLButtonElement>(null);
+  const newNameInputRef = useRef<HTMLInputElement>(null);
   const collections = useKnowledgeStore((state) => state.collections);
   const notes = useKnowledgeStore((state) => state.notes);
   const createCollection = useKnowledgeStore((state) => state.createCollection);
@@ -686,6 +693,26 @@ export function CollectionsPage() {
       requestAnimationFrame(() => editNameInputRef.current?.focus());
     }
   }, [editingId]);
+
+  useEffect(() => {
+    function handleCollectionPageShortcut(event: KeyboardEvent) {
+      if (
+        editingId ||
+        deleteCandidate ||
+        !isPlainLetterShortcut(event) ||
+        isEditableShortcutTarget(event.target)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      setNewDraft((draft) => ({ ...draft, name: `${draft.name}${event.key}` }));
+      requestAnimationFrame(() => focusTextControlAtEnd(newNameInputRef.current));
+    }
+
+    window.addEventListener('keydown', handleCollectionPageShortcut);
+    return () => window.removeEventListener('keydown', handleCollectionPageShortcut);
+  }, [deleteCandidate, editingId]);
 
   async function createCollectionFromDraft() {
     const created = await createCollection(newDraft.name, newDraft.color);
@@ -768,11 +795,13 @@ export function CollectionsPage() {
                       />
                       <ColorPicker
                         ariaLabel={t('collections.color')}
+                        onKeyboardCancel={() => editNameInputRef.current?.focus()}
+                        onKeyboardCommit={() => editSaveButtonRef.current?.focus()}
                         onChange={(color) => setEditingDraft((draft) => ({ ...draft, color }))}
                         value={editingDraft.color}
                       />
                       <div className="collection-card-actions">
-                        <button className="collection-action-button" disabled={!editingDraft.name.trim()} type="submit">
+                        <button ref={editSaveButtonRef} className="collection-action-button" disabled={!editingDraft.name.trim()} type="submit">
                           <Check />
                           {t('common.save')}
                         </button>
@@ -831,9 +860,17 @@ export function CollectionsPage() {
           >
             <h2 className="settings-title">{t('collections.addNewCollection')}</h2>
             <input
+              ref={newNameInputRef}
               aria-label={t('collections.name')}
               value={newDraft.name}
               onChange={(event) => setNewDraft((draft) => ({ ...draft, name: event.target.value }))}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  setNewDraft((draft) => ({ ...draft, name: '' }));
+                  event.currentTarget.blur();
+                }
+              }}
               placeholder={t('collections.name')}
             />
             <div className="collection-create-actions">
@@ -858,11 +895,17 @@ export function CollectionsPage() {
               onChange={(collectionId) => {
                 void setPrimaryCollection(collectionId).then(() => pushToast(t('collections.primaryCollectionUpdated'), 'success'));
               }}
-              options={collections.map((collection) => ({
-                color: collection.color,
-                label: collection.name,
-                value: collection.id,
-              }))}
+              options={[
+                {
+                  label: t('noteDetail.noCollection'),
+                  value: '',
+                },
+                ...collections.map((collection) => ({
+                  color: collection.color,
+                  label: collection.name,
+                  value: collection.id,
+                })),
+              ]}
               placeholder={t('notes.filters.allCollections')}
               value={settings.primaryCollectionId}
             />
