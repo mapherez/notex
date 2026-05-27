@@ -14,6 +14,11 @@ export function AppShell() {
         event.preventDefault();
         navigate('/notes/new');
       }
+
+      if (isPrimaryShortcut(event, "u")) {
+        event.preventDefault();
+        navigate("/profile");
+      }
     }
 
     window.addEventListener('keydown', handleGlobalShortcut);

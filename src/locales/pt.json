@@ -43,7 +43,7 @@
   },
   "topbar": {
     "searchPlaceholder": "Pesquisar notas, títulos, etiquetas...",
-    "keyboardHint": "⌘ K",
+    "keyboardHint": "⌘ F",
     "theme": "Alternar tema",
     "account": "Conta",
     "profile": "Abrir perfil",
@@ -330,6 +330,54 @@
       "favorites": "Favoritos",
       "lastActivity": "Última atividade"
     },
+    "shortcuts": {
+      "title": "Atalhos de teclado",
+      "description": "Veja os comandos de atalho disponíveis",
+      "helpButton": "Ajuda de atalhos",
+      "modalTitle": "Atalhos de teclado",
+      "modalDescription": "Estes atalhos funcionam na página ou no controlo focado correspondente.",
+      "groups": {
+        "global": "Globais",
+        "dashboard": "Dashboard",
+        "notes": "Notas",
+        "organization": "Tags e coleções",
+        "pickers": "Menus e controlos"
+      },
+      "keys": {
+        "letter": "Tecla de letra",
+        "primaryDigitRange": "Ctrl / ⌘ + 1-{{count}}",
+        "shiftDigitRange": "Shift + 1-{{count}}"
+      },
+      "items": {
+        "newNote": "Criar uma nova nota a partir de qualquer página da aplicação.",
+        "focusSearch": "Focar a pesquisa global.",
+        "moveSearchResults": "Percorrer os resultados da pesquisa global.",
+        "selectHighlighted": "Abrir ou selecionar o resultado destacado numa pesquisa, filtro ou menu.",
+        "closeSearchOrPicker": "Fechar a pesquisa, menu, seletor ou modal ativo.",
+        "openDashboardStats": "Abrir os cartões de estatísticas do dashboard por ordem.",
+        "openProfile": "Abrir a página de perfil a partir do dashboard.",
+        "openQuickPins": "Abrir o atalho rápido correspondente, ou escolher uma nota para um espaço vazio.",
+        "startQuickCapture": "Começar a escrever na captura rápida a partir do dashboard.",
+        "saveQuickCapture": "Guardar o texto atual da captura rápida como nota.",
+        "clearQuickCapture": "Limpar a captura rápida e sair do campo.",
+        "editNote": "Começar a editar a nota atual.",
+        "saveNote": "Guardar a nota atual enquanto está em edição.",
+        "cancelNoteEdit": "Cancelar a edição da nota quando não há nenhum menu ou seletor aberto.",
+        "searchLinkedNotes": "No campo de ligações relacionadas, pesquisar notas existentes para ligar.",
+        "openFocusedTag": "Abrir a lista de notas da tag focada.",
+        "reorderTags": "Mover uma tag focada para a esquerda ou direita.",
+        "startNewTag": "Na página Tags, focar o campo de nova tag e começar o nome.",
+        "startNewCollection": "Na página Coleções, focar o campo de nova coleção e começar o nome.",
+        "cancelOrganizationEdit": "Limpar um rascunho de tag ou coleção, ou cancelar o formulário de edição atual.",
+        "cancelReorder": "Cancelar uma reordenação por arrasto ativa.",
+        "movePickerOptions": "Percorrer opções de filtros, pesquisas, atalhos rápidos, tags favoritas e notas ligadas.",
+        "selectPickerOption": "Selecionar a opção destacada.",
+        "closePicker": "Fechar o menu ativo.",
+        "moveColorPicker": "Abrir a paleta de cores e mover a cor ativa.",
+        "selectColorPicker": "Selecionar a cor ativa.",
+        "closeColorPicker": "Fechar a paleta de cores."
+      }
+    },
     "preferences": {
       "title": "Preferências",
       "theme": "Tema",
@@ -484,6 +532,12 @@
     "navigationLabel": "Legal",
     "privacyLink": "Privacidade",
     "termsLink": "Termos"
+  },
+  "patchNotes": {
+    "title": "Notas da versão",
+    "versions": "Versões",
+    "open": "Abrir notas da versão {{version}}",
+    "empty": "Nenhuma nota da versão disponível."
   },
   "updater": {
     "title": "Atualização disponível",

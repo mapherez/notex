@@ -175,6 +175,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
+  min-height: var(--nx-space-11);
 }
 
 .database-management-grid .database-path-row {
@@ -234,6 +235,10 @@
   padding: var(--nx-space-3) 0;
 }
 
+button.shortcuts-button {
+  padding: 0;
+  min-height: var(--nx-space-11);
+}
 button.security-row {
   width: 100%;
   border: 0;
@@ -584,5 +589,3 @@ button.security-row:hover {
   cursor: not-allowed;
   opacity: 0.55;
 }
-
-

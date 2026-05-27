@@ -281,10 +281,23 @@
 }
 
 .sidebar-version {
+  align-self: center;
   margin-top: var(--nx-space-1);
+  border: 0;
+  border-radius: var(--nx-radius-sm);
+  background: transparent;
   color: var(--nx-color-text-soft);
+  padding: var(--nx-space-1) var(--nx-space-2);
   font-size: 0.74rem;
   text-align: center;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.sidebar-version:hover,
+.sidebar-version:focus-visible {
+  background: var(--nx-color-hover);
+  color: var(--nx-color-text-muted);
+  outline: none;
 }
 
 .storage-card,

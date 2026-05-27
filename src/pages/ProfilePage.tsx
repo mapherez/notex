@@ -9,17 +9,18 @@ import {
   FolderOpen,
   Globe2,
   HardDrive,
+  Keyboard,
   Loader2,
   Star,
   Upload,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState } from 'react';
-import { CustomSelect } from '../components/ui/CustomSelect';
-import { IconBadge } from '../components/ui/IconBadge';
-import { Panel } from '../components/ui/Panel';
-import { cloudSyncEnabled } from '../config/appSettings';
+import { useEffect, useState } from "react";
+import { CustomSelect } from "../components/ui/CustomSelect";
+import { IconBadge } from "../components/ui/IconBadge";
+import { Panel } from "../components/ui/Panel";
+import { appLimits, cloudSyncEnabled } from "../config/appSettings";
 import {
   chooseSqliteExportDestination,
   chooseSqliteImportFile,
@@ -30,32 +31,31 @@ import {
   replaceSqliteDatabaseFromFile,
   type SqliteDatabaseInfo,
   type SqliteExportInfo,
-} from '../core/services/sqliteDataManagement';
-import { themeRegistry } from '../core/theme/themeRegistry';
-import { filterNotes } from '../core/utils/noteFilters';
-import { useI18n } from '../i18n/I18nProvider';
-import { useAppStore } from '../store/useAppStore';
-import { useKnowledgeStore } from '../store/useKnowledgeStore';
-import { useSyncStore } from '../store/useSyncStore';
-import { useToastStore } from '../store/useToastStore';
-import type {
-  Locale,
-  Note,
-  ThemePreference,
-} from "../core/models/models";
+} from "../core/services/sqliteDataManagement";
+import { themeRegistry } from "../core/theme/themeRegistry";
+import { filterNotes } from "../core/utils/noteFilters";
+import { useI18n } from "../i18n/I18nProvider";
+import { useAppStore } from "../store/useAppStore";
+import { useKnowledgeStore } from "../store/useKnowledgeStore";
+import { useSyncStore } from "../store/useSyncStore";
+import { useToastStore } from "../store/useToastStore";
+import type { Locale, Note, ThemePreference } from "../core/models/models";
 
 type ExportModalState =
   | null
-  | { phase: 'confirm' }
-  | { phase: 'exporting' }
-  | { phase: 'ready'; exportInfo: SqliteExportInfo };
+  | { phase: "confirm" }
+  | { phase: "exporting" }
+  | { phase: "ready"; exportInfo: SqliteExportInfo };
 
 export function ProfilePage() {
   const { locale, t } = useI18n();
-  const [databaseInfo, setDatabaseInfo] = useState<SqliteDatabaseInfo | null>(null);
+  const [databaseInfo, setDatabaseInfo] = useState<SqliteDatabaseInfo | null>(
+    null,
+  );
   const [exportModal, setExportModal] = useState<ExportModalState>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [isImportingDatabase, setIsImportingDatabase] = useState(false);
+  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
   const settings = useAppStore((state) => state.settings);
   const hydrateSettings = useAppStore((state) => state.hydrateSettings);
   const setTheme = useAppStore((state) => state.setTheme);
@@ -68,10 +68,14 @@ export function ProfilePage() {
   const pushToast = useToastStore((state) => state.pushToast);
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const favoriteNotes = activeNotes.filter((note) => note.isFavorite);
-  const mostRecentNote = filterNotes(notes, { mode: 'recent' })[0];
+  const mostRecentNote = filterNotes(notes, { mode: "recent" })[0];
   const lastActivityValue = mostRecentNote
-    ? formatRecentActivityTimestamp(getRecentTimestamp(mostRecentNote), locale, t)
-    : t('profile.values.noActivity');
+    ? formatRecentActivityTimestamp(
+        getRecentTimestamp(mostRecentNote),
+        locale,
+        t,
+      )
+    : t("profile.values.noActivity");
   const accountConnected = cloudSyncEnabled && Boolean(syncState?.connected);
 
   useEffect(() => {
@@ -85,7 +89,12 @@ export function ProfilePage() {
       })
       .catch((error) => {
         if (!cancelled) {
-          pushToast(error instanceof Error ? error.message : t('profile.dataManagement.databasePathError'), 'warning');
+          pushToast(
+            error instanceof Error
+              ? error.message
+              : t("profile.dataManagement.databasePathError"),
+            "warning",
+          );
         }
       });
 
@@ -95,14 +104,19 @@ export function ProfilePage() {
   }, [pushToast, t]);
 
   async function handleCreateDatabaseExport() {
-    setExportModal({ phase: 'exporting' });
+    setExportModal({ phase: "exporting" });
     try {
       const exportInfo = await createSqliteTempExport();
-      setExportModal({ phase: 'ready', exportInfo });
-      pushToast(t('profile.dataManagement.exportReady'), 'success');
+      setExportModal({ phase: "ready", exportInfo });
+      pushToast(t("profile.dataManagement.exportReady"), "success");
     } catch (error) {
       setExportModal(null);
-      pushToast(error instanceof Error ? error.message : t('profile.dataManagement.exportFailed'), 'warning');
+      pushToast(
+        error instanceof Error
+          ? error.message
+          : t("profile.dataManagement.exportFailed"),
+        "warning",
+      );
     }
   }
 
@@ -111,10 +125,15 @@ export function ProfilePage() {
       const destinationPath = await chooseSqliteExportDestination(exportInfo);
       if (destinationPath) {
         setExportModal(null);
-        pushToast(t('profile.dataManagement.exportSaved'), 'success');
+        pushToast(t("profile.dataManagement.exportSaved"), "success");
       }
     } catch (error) {
-      pushToast(error instanceof Error ? error.message : t('profile.dataManagement.exportFailed'), 'warning');
+      pushToast(
+        error instanceof Error
+          ? error.message
+          : t("profile.dataManagement.exportFailed"),
+        "warning",
+      );
     }
   }
 
@@ -128,11 +147,20 @@ export function ProfilePage() {
       }
 
       await replaceSqliteDatabaseFromFile(sourcePath);
-      await Promise.all([refreshKnowledge(), hydrateSettings(), readSqliteDatabaseInfo().then(setDatabaseInfo)]);
+      await Promise.all([
+        refreshKnowledge(),
+        hydrateSettings(),
+        readSqliteDatabaseInfo().then(setDatabaseInfo),
+      ]);
       setImportModalOpen(false);
-      pushToast(t('profile.dataManagement.importComplete'), 'success');
+      pushToast(t("profile.dataManagement.importComplete"), "success");
     } catch (error) {
-      pushToast(error instanceof Error ? error.message : t('profile.dataManagement.importFailed'), 'warning');
+      pushToast(
+        error instanceof Error
+          ? error.message
+          : t("profile.dataManagement.importFailed"),
+        "warning",
+      );
     } finally {
       setIsImportingDatabase(false);
     }
@@ -142,7 +170,12 @@ export function ProfilePage() {
     try {
       await openSqliteDatabaseFolder();
     } catch (error) {
-      pushToast(error instanceof Error ? error.message : t('profile.dataManagement.openFolderFailed'), 'warning');
+      pushToast(
+        error instanceof Error
+          ? error.message
+          : t("profile.dataManagement.openFolderFailed"),
+        "warning",
+      );
     }
   }
 
@@ -150,7 +183,12 @@ export function ProfilePage() {
     try {
       await openSqliteLocalDataFolder();
     } catch (error) {
-      pushToast(error instanceof Error ? error.message : t('profile.dataManagement.openFolderFailed'), 'warning');
+      pushToast(
+        error instanceof Error
+          ? error.message
+          : t("profile.dataManagement.openFolderFailed"),
+        "warning",
+      );
     }
   }
 
@@ -177,8 +215,12 @@ export function ProfilePage() {
                 <UserRound strokeWidth={1.6} />
               )}
             </div>
-            <h2 className="panel-title">{accountConnected ? user?.name : t("profile.localUser")}</h2>
-            {accountConnected && user?.handle ? <div className="handle">{user.handle}</div> : null}
+            <h2 className="panel-title">
+              {accountConnected ? user?.name : t("profile.localUser")}
+            </h2>
+            {accountConnected && user?.handle ? (
+              <div className="handle">{user.handle}</div>
+            ) : null}
             <div className="connected">
               {accountConnected ? (
                 <>
@@ -190,12 +232,28 @@ export function ProfilePage() {
               )}
             </div>
           </article>
+
+          <Panel title={t("profile.shortcuts.title")}>
+            <button
+              className="security-row shortcuts-button"
+              type="button"
+              onClick={() => setShortcutHelpOpen(true)}
+            >
+              <Keyboard className="security-row__icon security-row__icon--blue" />
+              <span className="security-sub">
+                {t("profile.shortcuts.description")}
+              </span>
+              <ChevronRight />
+            </button>
+          </Panel>
         </section>
 
         <section className="profile-main">
           <div className="profile-top-row">
             <section className="settings-card profile-top-card">
-              <h2 className="settings-title">{t("profile.preferences.title")}</h2>
+              <h2 className="settings-title">
+                {t("profile.preferences.title")}
+              </h2>
               <PreferenceSelect
                 icon={<IconBadge icon={CalendarClock} color="red" />}
                 label={t("profile.preferences.theme")}
@@ -206,7 +264,10 @@ export function ProfilePage() {
                     pushToast(t("common.done"), "success"),
                   )
                 }
-                options={themeRegistry.map((theme) => ({ value: theme.id, label: t(theme.labelKey) }))}
+                options={themeRegistry.map((theme) => ({
+                  value: theme.id,
+                  label: t(theme.labelKey),
+                }))}
               />
               <PreferenceSelect
                 icon={<IconBadge icon={Globe2} color="green" />}
@@ -229,12 +290,14 @@ export function ProfilePage() {
               <button
                 className="security-row"
                 type="button"
-                onClick={() => setExportModal({ phase: 'confirm' })}
+                onClick={() => setExportModal({ phase: "confirm" })}
               >
                 <Download className="security-row__icon security-row__icon--success" />
                 <span>
                   <span>{t("profile.dataManagement.exportData")}</span>
-                  <span className="security-sub">{t("profile.dataManagement.exportDescription")}</span>
+                  <span className="security-sub">
+                    {t("profile.dataManagement.exportDescription")}
+                  </span>
                 </span>
                 <ChevronRight />
               </button>
@@ -246,7 +309,9 @@ export function ProfilePage() {
                 <Upload className="security-row__icon security-row__icon--blue" />
                 <span>
                   <span>{t("profile.dataManagement.importData")}</span>
-                  <span className="security-sub">{t("profile.dataManagement.importDescription")}</span>
+                  <span className="security-sub">
+                    {t("profile.dataManagement.importDescription")}
+                  </span>
                 </span>
                 <ChevronRight />
               </button>
@@ -254,17 +319,25 @@ export function ProfilePage() {
           </div>
 
           <section className="settings-card profile-wide-section database-management-card">
-            <h2 className="settings-title">{t("profile.databaseManagement.title")}</h2>
+            <h2 className="settings-title">
+              {t("profile.databaseManagement.title")}
+            </h2>
             <div className="database-management-grid">
               <DatabasePathRow
-                databasePath={databaseInfo?.databasePath ?? t("profile.dataManagement.databasePathLoading")}
+                databasePath={
+                  databaseInfo?.databasePath ??
+                  t("profile.dataManagement.databasePathLoading")
+                }
                 icon={Database}
                 label={t("profile.databaseManagement.currentDatabase")}
                 onOpen={handleOpenDatabaseFolder}
                 openLabel={t("profile.dataManagement.openDatabaseFolder")}
               />
               <DatabasePathRow
-                databasePath={databaseInfo?.localDataDirectory ?? t("profile.databaseManagement.localDataPathLoading")}
+                databasePath={
+                  databaseInfo?.localDataDirectory ??
+                  t("profile.databaseManagement.localDataPathLoading")
+                }
                 icon={HardDrive}
                 label={t("profile.databaseManagement.localDataPath")}
                 onOpen={handleOpenLocalDataFolder}
@@ -325,6 +398,11 @@ export function ProfilePage() {
         onImport={handleImportDatabase}
         t={t}
       />
+      <ShortcutHelpModal
+        open={shortcutHelpOpen}
+        onClose={() => setShortcutHelpOpen(false)}
+        t={t}
+      />
     </div>
   );
 }
@@ -335,8 +413,8 @@ function Metric({
   label,
   value,
 }: {
-  icon: Parameters<typeof IconBadge>[0]['icon'];
-  color: Parameters<typeof IconBadge>[0]['color'];
+  icon: Parameters<typeof IconBadge>[0]["icon"];
+  color: Parameters<typeof IconBadge>[0]["color"];
   label: string;
   value: string;
 }) {
@@ -373,7 +451,12 @@ function PreferenceSelect({
         <span className="settings-label">{label}</span>
         <span className="settings-description">{description}</span>
       </span>
-      <CustomSelect ariaLabel={label} onChange={onChange} options={options} value={value} />
+      <CustomSelect
+        ariaLabel={label}
+        onChange={onChange}
+        options={options}
+        value={value}
+      />
     </div>
   );
 }
@@ -400,7 +483,12 @@ function DatabasePathRow({
           {databasePath}
         </span>
       </span>
-      <button className="icon-button" type="button" aria-label={openLabel} onClick={onOpen}>
+      <button
+        className="icon-button"
+        type="button"
+        aria-label={openLabel}
+        onClick={onOpen}
+      >
         <FolderOpen />
       </button>
     </div>
@@ -426,9 +514,16 @@ function ExportDatabaseModal({
 
   return (
     <div className="modal-backdrop">
-      <section className="choice-modal" role="dialog" aria-modal="true" aria-labelledby="export-db-title">
-        <h2 id="export-db-title">{t("profile.dataManagement.exportModalTitle")}</h2>
-        {modal.phase === 'confirm' ? (
+      <section
+        className="choice-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-db-title"
+      >
+        <h2 id="export-db-title">
+          {t("profile.dataManagement.exportModalTitle")}
+        </h2>
+        {modal.phase === "confirm" ? (
           <>
             <p>{t("profile.dataManagement.exportModalDescription")}</p>
             <div className="choice-modal-actions two-column-actions">
@@ -442,16 +537,19 @@ function ExportDatabaseModal({
             </div>
           </>
         ) : null}
-        {modal.phase === 'exporting' ? (
+        {modal.phase === "exporting" ? (
           <div className="choice-modal-status">
             <Loader2 />
             <span>{t("profile.dataManagement.exporting")}</span>
           </div>
         ) : null}
-        {modal.phase === 'ready' ? (
+        {modal.phase === "ready" ? (
           <>
             <p>{t("profile.dataManagement.exportReadyDescription")}</p>
-            <div className="choice-modal-path" title={modal.exportInfo.tempPath}>
+            <div
+              className="choice-modal-path"
+              title={modal.exportInfo.tempPath}
+            >
               {modal.exportInfo.tempPath}
             </div>
             <div className="choice-modal-actions">
@@ -459,14 +557,18 @@ function ExportDatabaseModal({
                 <Cloud />
                 <span>
                   <span>{t("profile.dataManagement.exportToGoogleDrive")}</span>
-                  <span>{t("profile.dataManagement.exportToGoogleDrivePlaceholder")}</span>
+                  <span>
+                    {t("profile.dataManagement.exportToGoogleDrivePlaceholder")}
+                  </span>
                 </span>
               </button>
               <button type="button" onClick={() => onSave(modal.exportInfo)}>
                 <FolderOpen />
                 <span>
                   <span>{t("profile.dataManagement.downloadExport")}</span>
-                  <span>{t("profile.dataManagement.downloadExportDescription")}</span>
+                  <span>
+                    {t("profile.dataManagement.downloadExportDescription")}
+                  </span>
                 </span>
               </button>
               <button type="button" onClick={onCancel}>
@@ -501,8 +603,15 @@ function ImportDatabaseModal({
 
   return (
     <div className="modal-backdrop">
-      <section className="choice-modal" role="dialog" aria-modal="true" aria-labelledby="import-db-title">
-        <h2 id="import-db-title">{t("profile.dataManagement.importModalTitle")}</h2>
+      <section
+        className="choice-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="import-db-title"
+      >
+        <h2 id="import-db-title">
+          {t("profile.dataManagement.importModalTitle")}
+        </h2>
         <p>{t("profile.dataManagement.importModalDescription")}</p>
         {isImporting ? (
           <div className="choice-modal-status">
@@ -511,18 +620,30 @@ function ImportDatabaseModal({
           </div>
         ) : null}
         <div className="choice-modal-actions">
-          <button type="button" disabled={isImporting} onClick={onExportCurrent}>
+          <button
+            type="button"
+            disabled={isImporting}
+            onClick={onExportCurrent}
+          >
             <Download />
             <span>
-              <span>{t("profile.dataManagement.exportCurrentBeforeImport")}</span>
-              <span>{t("profile.dataManagement.exportCurrentBeforeImportDescription")}</span>
+              <span>
+                {t("profile.dataManagement.exportCurrentBeforeImport")}
+              </span>
+              <span>
+                {t(
+                  "profile.dataManagement.exportCurrentBeforeImportDescription",
+                )}
+              </span>
             </span>
           </button>
           <button type="button" disabled={isImporting} onClick={onImport}>
             <Upload />
             <span>
               <span>{t("profile.dataManagement.chooseImportDatabase")}</span>
-              <span>{t("profile.dataManagement.chooseImportDatabaseDescription")}</span>
+              <span>
+                {t("profile.dataManagement.chooseImportDatabaseDescription")}
+              </span>
             </span>
           </button>
           <button type="button" disabled={isImporting} onClick={onCancel}>
@@ -532,6 +653,225 @@ function ImportDatabaseModal({
       </section>
     </div>
   );
+}
+
+function ShortcutHelpModal({
+  open,
+  onClose,
+  t,
+}: {
+  open: boolean;
+  onClose: () => void;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, open]);
+
+  if (!open) {
+    return null;
+  }
+
+  const groups = buildShortcutHelpGroups(t);
+
+  return (
+    <div className="modal-backdrop">
+      <section
+        className="choice-modal shortcut-help-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shortcut-help-title"
+      >
+        <div>
+          <h2 id="shortcut-help-title">{t("profile.shortcuts.modalTitle")}</h2>
+          <p>{t("profile.shortcuts.modalDescription")}</p>
+        </div>
+        <div className="shortcut-help-list">
+          {groups.map((group) => (
+            <section className="shortcut-help-group" key={group.title}>
+              <h3>{group.title}</h3>
+              <div className="shortcut-help-rows">
+                {group.items.map((item) => (
+                  <div
+                    className="shortcut-help-row"
+                    key={`${group.title}-${item.description}`}
+                  >
+                    <span className="shortcut-help-keys">
+                      {item.keys.map((key) => (
+                        <kbd className="kbd" key={key}>
+                          {key}
+                        </kbd>
+                      ))}
+                    </span>
+                    <span>{item.description}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+        <div className="choice-modal-actions">
+          <button type="button" onClick={onClose}>
+            <span>{t("common.close")}</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
+  return [
+    {
+      title: t("profile.shortcuts.groups.global"),
+      items: [
+        {
+          keys: ["Ctrl / ⌘ + U"],
+          description: t("profile.shortcuts.items.openProfile"),
+        },
+        {
+          keys: ["Ctrl / ⌘ + N"],
+          description: t("profile.shortcuts.items.newNote"),
+        },
+        {
+          keys: ["Ctrl / ⌘ + F"],
+          description: t("profile.shortcuts.items.focusSearch"),
+        },
+        {
+          keys: ["↑ / ↓"],
+          description: t("profile.shortcuts.items.moveSearchResults"),
+        },
+        {
+          keys: ["Enter"],
+          description: t("profile.shortcuts.items.selectHighlighted"),
+        },
+        {
+          keys: ["Esc"],
+          description: t("profile.shortcuts.items.closeSearchOrPicker"),
+        },
+      ],
+    },
+    {
+      title: t("profile.shortcuts.groups.dashboard"),
+      items: [
+        {
+          keys: [t("profile.shortcuts.keys.primaryDigitRange", { count: 5 })],
+          description: t("profile.shortcuts.items.openDashboardStats"),
+        },
+        {
+          keys: [
+            t("profile.shortcuts.keys.shiftDigitRange", {
+              count: appLimits.quickPins,
+            }),
+          ],
+          description: t("profile.shortcuts.items.openQuickPins"),
+        },
+        {
+          keys: [t("profile.shortcuts.keys.letter")],
+          description: t("profile.shortcuts.items.startQuickCapture"),
+        },
+        {
+          keys: ["Ctrl / ⌘ + S"],
+          description: t("profile.shortcuts.items.saveQuickCapture"),
+        },
+        {
+          keys: ["Esc"],
+          description: t("profile.shortcuts.items.clearQuickCapture"),
+        },
+      ],
+    },
+    {
+      title: t("profile.shortcuts.groups.notes"),
+      items: [
+        {
+          keys: ["Ctrl / ⌘ + E"],
+          description: t("profile.shortcuts.items.editNote"),
+        },
+        {
+          keys: ["Ctrl / ⌘ + S"],
+          description: t("profile.shortcuts.items.saveNote"),
+        },
+        {
+          keys: ["Esc"],
+          description: t("profile.shortcuts.items.cancelNoteEdit"),
+        },
+        {
+          keys: ["/"],
+          description: t("profile.shortcuts.items.searchLinkedNotes"),
+        },
+        {
+          keys: ["Enter", "Space"],
+          description: t("profile.shortcuts.items.openFocusedTag"),
+        },
+        {
+          keys: ["Ctrl / ⌘ / Alt + ← / →"],
+          description: t("profile.shortcuts.items.reorderTags"),
+        },
+      ],
+    },
+    {
+      title: t("profile.shortcuts.groups.organization"),
+      items: [
+        {
+          keys: [t("profile.shortcuts.keys.letter")],
+          description: t("profile.shortcuts.items.startNewTag"),
+        },
+        {
+          keys: [t("profile.shortcuts.keys.letter")],
+          description: t("profile.shortcuts.items.startNewCollection"),
+        },
+        {
+          keys: ["Esc"],
+          description: t("profile.shortcuts.items.cancelOrganizationEdit"),
+        },
+        {
+          keys: ["Esc"],
+          description: t("profile.shortcuts.items.cancelReorder"),
+        },
+      ],
+    },
+    {
+      title: t("profile.shortcuts.groups.pickers"),
+      items: [
+        {
+          keys: ["↑ / ↓"],
+          description: t("profile.shortcuts.items.movePickerOptions"),
+        },
+        {
+          keys: ["Enter"],
+          description: t("profile.shortcuts.items.selectPickerOption"),
+        },
+        {
+          keys: ["Esc"],
+          description: t("profile.shortcuts.items.closePicker"),
+        },
+        {
+          keys: ["← / ↑ / ↓ / →"],
+          description: t("profile.shortcuts.items.moveColorPicker"),
+        },
+        {
+          keys: ["Enter"],
+          description: t("profile.shortcuts.items.selectColorPicker"),
+        },
+        {
+          keys: ["Esc", "Tab"],
+          description: t("profile.shortcuts.items.closeColorPicker"),
+        },
+      ],
+    },
+  ];
 }
 
 function getRecentTimestamp(note: Note) {

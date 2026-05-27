@@ -376,6 +376,13 @@ div.usage-styled-field__control {
   margin: 0;
 }
 
+.markdown-preview hr {
+  width: 100%;
+  height: 1px;
+  border: 0;
+  background: var(--nx-color-border);
+}
+
 .markdown-preview strong {
   color: var(--nx-color-text);
 }

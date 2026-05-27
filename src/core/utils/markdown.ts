@@ -7,12 +7,14 @@ export type MarkdownBlock =
   | { type: 'blockquote'; lines: string[] }
   | { type: 'code'; code: string; language?: string }
   | { type: 'heading'; level: 1 | 2 | 3 | 4 | 5 | 6; text: string }
+  | { type: 'horizontal-rule' }
   | { type: 'ordered-list'; items: MarkdownListItem[] }
   | { type: 'paragraph'; lines: string[] }
   | { type: 'table'; headers: string[]; rows: string[][] }
   | { type: 'unordered-list'; items: MarkdownListItem[] };
 
 const headingPattern = /^(#{1,6})\s+(.+)$/;
+const horizontalRulePattern = /^\s*-{3,}\s*$/;
 const unorderedListPattern = /^\s*[-*+]\s+(?:\[( |x|X)\]\s+)?(.+)$/;
 const orderedListPattern = /^\s*\d+[.)]\s+(?:\[( |x|X)\]\s+)?(.+)$/;
 
@@ -45,6 +47,12 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
       }
 
       blocks.push({ type: 'code', code: codeLines.join('\n'), language });
+      continue;
+    }
+
+    if (horizontalRulePattern.test(line)) {
+      blocks.push({ type: 'horizontal-rule' });
+      index += 1;
       continue;
     }
 
@@ -148,6 +156,7 @@ function isBlockBoundary(lines: string[], index: number) {
   const line = lines[index];
   return (
     headingPattern.test(line) ||
+    horizontalRulePattern.test(line) ||
     line.trimStart().startsWith('>') ||
     line.trimStart().startsWith('```') ||
     unorderedListPattern.test(line) ||

@@ -23,6 +23,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { useSyncStore } from '../../store/useSyncStore';
 import { useToastStore } from '../../store/useToastStore';
+import { latestPatchNoteVersion, PatchNotesModal } from '../ui/PatchNotesModal';
 import type { NoteType } from '../../core/models/models';
 
 const navIcons = {
@@ -37,7 +38,8 @@ const navIcons = {
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
   const [newNoteOpen, setNewNoteOpen] = useState(false);
-  const [appVersion, setAppVersion] = useState('');
+  const [appVersion, setAppVersion] = useState(latestPatchNoteVersion);
+  const [patchNotesOpen, setPatchNotesOpen] = useState(false);
   const newNoteRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -65,7 +67,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
     void getVersion()
       .then((version) => setAppVersion(version))
-      .catch(() => setAppVersion(''));
+      .catch(() => setAppVersion(latestPatchNoteVersion));
   }, []);
 
   function createNote(type: NoteType = defaultNewNoteType) {
@@ -194,8 +196,18 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             </NavLink>
           ))}
         </nav>
-        {appVersion ? <div className="sidebar-version">v{appVersion}</div> : null}
+        {appVersion ? (
+          <button
+            className="sidebar-version"
+            type="button"
+            aria-label={t('patchNotes.open', { version: appVersion })}
+            onClick={() => setPatchNotesOpen(true)}
+          >
+            v{appVersion}
+          </button>
+        ) : null}
       </aside>
+      <PatchNotesModal open={patchNotesOpen} onClose={() => setPatchNotesOpen(false)} />
     </>
   );
 }

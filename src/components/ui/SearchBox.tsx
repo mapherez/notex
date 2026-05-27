@@ -56,7 +56,7 @@ export function SearchBox({ className }: { className?: string }) {
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
-      if (isPrimaryShortcut(event, 'f') || isPrimaryShortcut(event, 'k')) {
+      if (isPrimaryShortcut(event, "f")) {
         event.preventDefault();
         inputRef.current?.focus();
         if (normalizedQuery) {

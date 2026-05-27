@@ -23,6 +23,10 @@ export function MarkdownPreview({
           return <HeadingTag key={index}>{renderInlineText(block.text)}</HeadingTag>;
         }
 
+        if (block.type === 'horizontal-rule') {
+          return <hr key={index} />;
+        }
+
         if (block.type === 'paragraph') {
           return <p key={index}>{renderParagraphLines(block.lines)}</p>;
         }

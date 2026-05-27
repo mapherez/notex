@@ -147,12 +147,6 @@ export function DashboardPage() {
         return;
       }
 
-      if (isPrimaryShortcut(event, 'u')) {
-        event.preventDefault();
-        navigate('/profile');
-        return;
-      }
-
       const quickPinIndex = getShiftDigitShortcutIndex(event, appLimits.quickPins);
       if (quickPinIndex !== null && !isEditableShortcutTarget(event.target)) {
         event.preventDefault();

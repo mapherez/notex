@@ -43,7 +43,7 @@
   },
   "topbar": {
     "searchPlaceholder": "Search notes, titles, tags...",
-    "keyboardHint": "⌘ K",
+    "keyboardHint": "⌘ F",
     "theme": "Toggle theme",
     "account": "Account",
     "profile": "Open profile",
@@ -330,6 +330,54 @@
       "favorites": "Favorites",
       "lastActivity": "Last activity"
     },
+    "shortcuts": {
+      "title": "Keyboard shortcuts",
+      "description": "View available shortcut commands",
+      "helpButton": "Shortcut Help",
+      "modalTitle": "Keyboard shortcuts",
+      "modalDescription": "These shortcuts work in the relevant page or focused control.",
+      "groups": {
+        "global": "Global",
+        "dashboard": "Dashboard",
+        "notes": "Notes",
+        "organization": "Tags and collections",
+        "pickers": "Pickers and controls"
+      },
+      "keys": {
+        "letter": "Letter key",
+        "primaryDigitRange": "Ctrl / ⌘ + 1-{{count}}",
+        "shiftDigitRange": "Shift + 1-{{count}}"
+      },
+      "items": {
+        "newNote": "Create a new note from anywhere in the app.",
+        "focusSearch": "Focus global search.",
+        "moveSearchResults": "Move through global search results.",
+        "selectHighlighted": "Open or select the highlighted search, filter, or picker result.",
+        "closeSearchOrPicker": "Close the active search, picker, menu, or modal.",
+        "openDashboardStats": "Open the dashboard stat cards in order.",
+        "openProfile": "Open the profile page from the dashboard.",
+        "openQuickPins": "Open the matching quick pin, or choose a note for an empty quick-pin slot.",
+        "startQuickCapture": "Start writing in Quick capture from the dashboard.",
+        "saveQuickCapture": "Save the current Quick capture text as a note.",
+        "clearQuickCapture": "Clear Quick capture and leave the field.",
+        "editNote": "Start editing the current note.",
+        "saveNote": "Save the current note while editing.",
+        "cancelNoteEdit": "Cancel note editing when no picker or menu is open.",
+        "searchLinkedNotes": "In the related-link field, search existing notes to link.",
+        "openFocusedTag": "Open the focused tag's note list.",
+        "reorderTags": "Move a focused tag left or right.",
+        "startNewTag": "On the Tags page, focus the new-tag field and start the tag name.",
+        "startNewCollection": "On the Collections page, focus the new-collection field and start the collection name.",
+        "cancelOrganizationEdit": "Clear a new tag or collection draft, or cancel the current edit form.",
+        "cancelReorder": "Cancel an active drag reorder.",
+        "movePickerOptions": "Move through filter, search, quick-pin, favorite-tag, and linked-note options.",
+        "selectPickerOption": "Select the highlighted picker option.",
+        "closePicker": "Close the active picker.",
+        "moveColorPicker": "Open the color palette and move the active color.",
+        "selectColorPicker": "Select the active color.",
+        "closeColorPicker": "Close the color palette."
+      }
+    },
     "preferences": {
       "title": "Preferences",
       "theme": "Theme",
@@ -484,6 +532,12 @@
     "navigationLabel": "Legal",
     "privacyLink": "Privacy",
     "termsLink": "Terms"
+  },
+  "patchNotes": {
+    "title": "Patch notes",
+    "versions": "Versions",
+    "open": "Open patch notes for version {{version}}",
+    "empty": "No patch notes available."
   },
   "updater": {
     "title": "Update available",
