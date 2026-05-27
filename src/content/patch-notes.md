@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD025 -->
 # 1.3.1
 
 - Implemented global shortcut for navigating to the profile page using "Ctrl / ⌘ + U".
