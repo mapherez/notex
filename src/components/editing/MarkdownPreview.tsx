@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import { parseMarkdown, type MarkdownListItem } from '../../core/utils/markdown';
 import { renderInlineText } from './InlineFormattedText';
 
@@ -24,7 +24,7 @@ export function MarkdownPreview({
         }
 
         if (block.type === 'paragraph') {
-          return <p key={index}>{renderInlineText(block.lines.join(' '))}</p>;
+          return <p key={index}>{renderParagraphLines(block.lines)}</p>;
         }
 
         if (block.type === 'blockquote') {
@@ -90,6 +90,15 @@ export function MarkdownPreview({
       })}
     </div>
   );
+}
+
+function renderParagraphLines(lines: string[]) {
+  return lines.map((line, lineIndex) => (
+    <Fragment key={lineIndex}>
+      {lineIndex > 0 ? <br /> : null}
+      {renderInlineText(line)}
+    </Fragment>
+  ));
 }
 
 function renderListItem(item: MarkdownListItem) {

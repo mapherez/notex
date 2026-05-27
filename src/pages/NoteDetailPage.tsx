@@ -494,6 +494,7 @@ export function NoteDetailPage() {
               <div className="document-title-stack">
                 {isEditing ? (
                   <StyledTextField
+                    autoFocus
                     className="document-title-styled-field"
                     controlClassName="editable-control document-title-input"
                     disabled={savingPage}

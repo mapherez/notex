@@ -23,10 +23,11 @@
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
+
 .note-row {
   position: relative;
   display: grid;
-  grid-template-columns: 3.7rem minmax(0, 1fr) auto auto auto;
+  grid-template-columns: 1.45rem 3.7rem minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: var(--nx-space-4);
   min-height: 5.4rem;
@@ -35,7 +36,7 @@
 }
 
 .note-row.selectable {
-  grid-template-columns: 2rem 3.7rem minmax(0, 1fr) auto auto auto;
+  grid-template-columns: 2rem 1.45rem 3.7rem minmax(0, 1fr) auto auto auto;
 }
 
 .note-row.with-pin-indicator {
@@ -62,6 +63,27 @@
   background: var(--nx-color-hover);
 }
 
+.note-row__link-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+.note-row__link-overlay:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--nx-color-accent) 64%, transparent);
+  outline-offset: 3px;
+}
+
+.note-select-control,
+.note-row__drag-handle,
+.note-row__status-stack,
+.note-row__badges,
+.note-row-actions {
+  position: relative;
+  z-index: 2;
+}
+
 .note-select-control {
   display: grid;
   place-items: center;
@@ -73,8 +95,16 @@
   accent-color: var(--nx-color-accent);
 }
 
+.note-row__status-stack {
+  display: grid;
+  width: 1.45rem;
+  align-content: center;
+  justify-items: center;
+  gap: 0.1rem;
+}
+
 .note-row__drag-handle,
-.note-row__pin-indicator {
+.note-row__status-button {
   display: inline-grid;
   width: 1.45rem;
   height: 1.45rem;
@@ -83,16 +113,22 @@
   cursor: pointer;
 }
 
-.note-row__drag-handle {
+.note-row__drag-handle,
+.note-row__status-button {
   border: 0;
   border-radius: var(--nx-radius-sm);
   background: transparent;
-  cursor: grab;
   padding: 0;
 }
 
+.note-row__drag-handle {
+  cursor: grab;
+}
+
 .note-row__drag-handle:hover,
-.note-row__drag-handle:focus-visible {
+.note-row__drag-handle:focus-visible,
+.note-row__status-button:hover,
+.note-row__status-button:focus-visible {
   background: var(--nx-color-hover);
   color: var(--nx-color-text);
   outline: none;
@@ -108,7 +144,7 @@
 }
 
 .note-row__drag-handle svg,
-.note-row__pin-indicator svg {
+.note-row__status-button svg {
   width: 1rem;
   height: 1rem;
 }
@@ -123,6 +159,20 @@
 
 .note-row__pin-indicator.is-pinned svg {
   transform: rotate(0deg);
+  fill: currentColor;
+}
+
+.note-row__favorite-toggle svg {
+  fill: transparent;
+}
+
+.note-row__favorite-toggle:hover,
+.note-row__favorite-toggle:focus-visible,
+.note-row__favorite-toggle.is-favorite {
+  color: var(--nx-color-warning);
+}
+
+.note-row__favorite-toggle.is-favorite svg {
   fill: currentColor;
 }
 
@@ -207,15 +257,9 @@
   gap: var(--nx-space-2);
 }
 
-.note-row__content-link {
+.note-row__thumbnail,
+.note-row__content {
   min-width: 0;
-}
-
-.note-row__favorite-icon {
-  width: 0.875rem;
-  height: 0.875rem;
-  color: var(--nx-color-warning);
-  fill: currentColor;
 }
 
 .note-row__title {
@@ -235,8 +279,10 @@
 }
 
 .note-row__time {
+  width: 5.75rem;
   color: var(--nx-color-text-muted);
   font-size: 0.85rem;
+  text-align: right;
   white-space: nowrap;
 }
 
@@ -312,13 +358,21 @@
   text-overflow: ellipsis;
 }
 
+.collection-chip--empty {
+  color: var(--nx-color-text-muted);
+}
+
 .note-row__tag-chain {
-  display: inline-flex;
+  --nx-tag-chain-step: 2rem;
+
+  display: inline-grid;
+  grid-template-columns: auto;
+  grid-auto-columns: var(--nx-tag-chain-step);
+  grid-auto-flow: column;
   min-width: 0;
   align-items: center;
+  justify-content: start;
   overflow: hidden;
-  padding-left: 0.28rem;
-  padding-right: 0.16rem;
 }
 
 .note-row__tag-chain:hover,
@@ -333,7 +387,9 @@
 .note-row__tag-chain-item {
   position: relative;
   display: inline-flex;
+  grid-row: 1;
   flex: 0 0 auto;
+  justify-self: end;
 }
 
 @for $index from 1 through 24 {
@@ -342,50 +398,10 @@
   }
 }
 
-.note-row__tag-chain-item + .note-row__tag-chain-item {
-  margin-left: -2rem;
-}
-
-.note-row__tag-chain-item:first-of-type + .note-row__tag-chain-item {
-  margin-left: -4rem;
-}
-
 .note-row__tag-chain-item:hover,
 .note-row__tag-chain-item:focus-within {
   z-index: 60;
   padding-block-end: var(--nx-space-3);
-}
-
-.note-row__tag-overflow {
-  z-index: 58;
-}
-
-.note-row__tag-overflow-button {
-  appearance: none;
-  display: inline-grid;
-  min-width: 2.25rem;
-  min-height: 1.85rem;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--nx-color-text-muted) 22%, transparent);
-  border-radius: 0.62rem;
-  background: color-mix(in srgb, var(--nx-color-text-muted) 12%, var(--nx-color-chip-solid));
-  color: var(--nx-color-text-muted);
-  padding: 0 var(--nx-space-2);
-  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
-}
-
-.note-row__tag-overflow-button:hover,
-.note-row__tag-overflow-button:focus-visible,
-.note-row__tag-overflow-button[aria-expanded="true"] {
-  border-color: var(--nx-color-border-strong);
-  background: var(--nx-color-hover);
-  color: var(--nx-color-text);
-  outline: none;
-}
-
-.note-row__tag-overflow-button svg {
-  width: 1rem;
-  height: 1rem;
 }
 
 .note-row__tag-chain-item .tag-chip {

@@ -34,6 +34,7 @@ export function TagsPage() {
   const [favoriteQuery, setFavoriteQuery] = useState('');
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState<TagColor>(defaultNewTagColor);
+  const editNameInputRef = useRef<HTMLInputElement>(null);
   const favoritePickerRef = useRef<HTMLDivElement>(null);
   const favoriteSearchRef = useRef<HTMLInputElement>(null);
   const tags = useKnowledgeStore((state) => state.tags);
@@ -100,6 +101,12 @@ export function TagsPage() {
     }
   }, [favoritePickerOpen]);
 
+  useEffect(() => {
+    if (editingId) {
+      requestAnimationFrame(() => editNameInputRef.current?.focus());
+    }
+  }, [editingId]);
+
   function beginEdit(tag: TagWithCount) {
     closeFavoritePicker();
     setEditingId(tag.id);
@@ -107,6 +114,10 @@ export function TagsPage() {
       name: tag.name,
       color: tag.color ?? 'neutral',
     });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
   }
 
   async function saveEdit(tagId: string) {
@@ -183,6 +194,12 @@ export function TagsPage() {
                     {isEditing ? (
                       <form
                         className="tag-edit-form"
+                        onKeyDown={(event) => {
+                          if (event.key === 'Escape') {
+                            event.preventDefault();
+                            cancelEdit();
+                          }
+                        }}
                         onSubmit={(event) => {
                           event.preventDefault();
                           void saveEdit(tag.id);
@@ -190,6 +207,7 @@ export function TagsPage() {
                       >
                         <IconBadge icon={Hash} color={editingDraft.color} />
                         <input
+                          ref={editNameInputRef}
                           aria-label={t('tagsPage.name')}
                           value={editingDraft.name}
                           onChange={(event) => setEditingDraft((draft) => ({ ...draft, name: event.target.value }))}
@@ -204,7 +222,7 @@ export function TagsPage() {
                             <Check />
                             {t('common.save')}
                           </button>
-                          <button className="tag-action-button" type="button" onClick={() => setEditingId(null)}>
+                          <button className="tag-action-button" type="button" onClick={cancelEdit}>
                             <X />
                             {t('common.cancel')}
                           </button>

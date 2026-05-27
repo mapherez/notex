@@ -173,7 +173,6 @@ export function NotesFilterRow({
             type="button"
             aria-pressed={preferredLayout === "grid"}
             onClick={() => onLayoutChange("grid")}
-            disabled
           >
             <Grid2X2 />
             {t("notes.filters.gridView")}

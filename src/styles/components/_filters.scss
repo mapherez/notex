@@ -366,40 +366,121 @@
 }
 
 .notes-grid .note-row {
-  grid-template-columns: 3.7rem minmax(0, 1fr) auto auto;
+  grid-template:
+    "status thumb title actions" auto
+    "summary summary summary summary" minmax(0, 1fr)
+    "badges badges badges time" auto / 1.45rem 3.7rem minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 11rem;
+  gap: var(--nx-space-3) var(--nx-space-4);
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-card);
   background: var(--nx-color-surface);
+  padding: var(--nx-space-4);
 }
 
 .notes-grid .note-row.selectable {
-  grid-template-columns: 2rem 3.7rem minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "select status thumb title actions"
+    "summary summary summary summary summary"
+    "badges badges badges badges time";
+  grid-template-columns: 2rem 1.45rem 3.7rem minmax(0, 1fr) auto;
 }
 
 .notes-grid .note-row.with-pin-indicator {
-  grid-template-columns: 1.45rem 3.7rem minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "status thumb title actions"
+    "summary summary summary summary"
+    "badges badges badges time";
+  grid-template-columns: 1.45rem 3.7rem minmax(0, 1fr) auto;
 }
 
 .notes-grid .note-row.selectable.with-pin-indicator {
-  grid-template-columns: 2rem 1.45rem 3.7rem minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "select status thumb title actions"
+    "summary summary summary summary summary"
+    "badges badges badges badges time";
+  grid-template-columns: 2rem 1.45rem 3.7rem minmax(0, 1fr) auto;
 }
 
 .notes-grid .note-row.with-drag-handle.with-pin-indicator {
-  grid-template-columns: 1.45rem 1.45rem 3.7rem minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "drag status thumb title actions"
+    "summary summary summary summary summary"
+    "badges badges badges badges time";
+  grid-template-columns: 1.45rem 1.45rem 3.7rem minmax(0, 1fr) auto;
 }
 
 .notes-grid .note-row.selectable.with-drag-handle.with-pin-indicator {
-  grid-template-columns: 1.45rem 2rem 1.45rem 3.7rem minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "drag select status thumb title actions"
+    "summary summary summary summary summary summary"
+    "badges badges badges badges badges time";
+  grid-template-columns: 1.45rem 2rem 1.45rem 3.7rem minmax(0, 1fr) auto;
+}
+
+.notes-grid .note-row__drag-handle {
+  grid-area: drag;
+}
+
+.notes-grid .note-select-control {
+  grid-area: select;
+}
+
+.notes-grid .note-row__status-stack {
+  grid-area: status;
+}
+
+.notes-grid .note-row__thumbnail {
+  display: block;
+  grid-area: thumb;
+}
+
+.notes-grid .note-row__content {
+  display: contents;
+}
+
+.notes-grid .note-row__title-line {
+  grid-area: title;
+  align-self: center;
+}
+
+.notes-grid .note-row__title {
+  font-size: 1.04rem;
+}
+
+.notes-grid .note-row__intro {
+  grid-area: summary;
+  align-self: start;
+  max-height: calc(1.45em * 3);
+  margin-top: 0;
+  line-height: 1.45;
+  white-space: normal;
+}
+
+.notes-grid .note-row__badges {
+  grid-area: badges;
+  align-self: end;
+  max-width: 100%;
+  min-height: 1.85rem;
 }
 
 .notes-grid .note-row__time {
-  display: none;
+  display: block;
+  grid-area: time;
+  place-self: end;
+}
+
+.notes-grid .note-row-actions {
+  grid-area: actions;
+  align-self: center;
 }
 
 .note-row-actions {
   position: relative;
   display: inline-flex;
   justify-content: flex-end;
+  z-index: 80;
 }
 
 .floating-menu {
@@ -412,7 +493,7 @@
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-2);
   box-shadow: var(--nx-shadow-soft);
-  z-index: 60;
+  z-index: 90;
 }
 
 .floating-menu strong {
@@ -468,15 +549,3 @@
   right: 0;
   top: calc(100% + var(--nx-space-2));
 }
-
-.note-row-tags-menu {
-  right: 0;
-  top: calc(100% + var(--nx-space-2));
-  min-width: 11rem;
-  z-index: 80;
-}
-
-.note-row-tags-menu a {
-  justify-content: flex-start;
-}
-

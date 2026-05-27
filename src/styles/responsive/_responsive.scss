@@ -150,7 +150,7 @@
   }
 
   .note-row {
-    grid-template-columns: 3rem minmax(0, 1fr) auto;
+    grid-template-columns: 1.35rem 3rem minmax(0, 1fr) auto;
     min-height: 4.8rem;
   }
 
@@ -162,15 +162,45 @@
     grid-template-columns: 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
   }
 
-  .note-row.with-drag-handle.with-pin-indicator,
+  .note-row.with-drag-handle.with-pin-indicator {
+    grid-template-columns: 1.35rem 1.35rem 3rem minmax(0, 1fr) auto;
+  }
+
   .note-row.selectable.with-drag-handle.with-pin-indicator {
     grid-template-columns: 1.35rem 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
+  }
+
+  .note-row__status-stack,
+  .note-row__drag-handle,
+  .note-row__status-button {
+    width: 1.35rem;
+  }
+
+  .note-row__drag-handle,
+  .note-row__status-button {
+    height: 1.35rem;
   }
 
   .note-row .note-row__badges,
   .note-row .tag-chip,
   .note-row .icon-button {
     display: none;
+  }
+
+  .notes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .notes-grid .note-row .note-row__badges {
+    display: flex;
+  }
+
+  .notes-grid .note-row .tag-chip {
+    display: inline-flex;
+  }
+
+  .notes-grid .note-row .icon-button {
+    display: inline-grid;
   }
 
   .note-thumb {
@@ -244,7 +274,7 @@
   }
 
   .note-row.selectable {
-    grid-template-columns: 1.6rem 3rem minmax(0, 1fr) auto;
+    grid-template-columns: 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
   }
 
   .note-row.selectable.with-pin-indicator {

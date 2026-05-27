@@ -36,6 +36,7 @@ export function TextStyleToolbar({
 }
 
 export function StyledTextField({
+  autoFocus = false,
   className,
   controlClassName,
   disabled = false,
@@ -45,6 +46,7 @@ export function StyledTextField({
   rows = 4,
   value,
 }: {
+  autoFocus?: boolean;
   className?: string;
   controlClassName?: string;
   disabled?: boolean;
@@ -163,6 +165,7 @@ export function StyledTextField({
   const isPreview = editorToolbar.mode === 'preview';
 
   const controlProps = {
+    autoFocus,
     className: controlClassName,
     disabled,
     onChange: (event: ChangeEvent<TextControlElement>) => onChange(event.target.value),

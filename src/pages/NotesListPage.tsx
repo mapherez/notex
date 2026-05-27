@@ -90,13 +90,26 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
     [filtered, selectedNoteIdSet],
   );
   const splitPinnedLists = pinOrderingEnabled && filtered.some((note) => note.isPinned);
+  const filteredPinnedNotes = useMemo(() => filtered.filter((note) => note.isPinned), [filtered]);
+  const persistedPinnedNotes = useMemo(
+    () => orderPinnedNotes(filteredPinnedNotes, pinnedNoteIds),
+    [filteredPinnedNotes, pinnedNoteIds],
+  );
   const pinnedNotes = useMemo(
-    () => orderPinnedNotes(filtered.filter((note) => note.isPinned), orderedPinnedDragIds.length ? orderedPinnedDragIds : pinnedNoteIds),
-    [filtered, orderedPinnedDragIds, pinnedNoteIds],
+    () =>
+      activePinnedDragId && orderedPinnedDragIds.length
+        ? orderPinnedNotes(filteredPinnedNotes, orderedPinnedDragIds)
+        : persistedPinnedNotes,
+    [activePinnedDragId, filteredPinnedNotes, orderedPinnedDragIds, persistedPinnedNotes],
   );
   const regularNotes = splitPinnedLists ? filtered.filter((note) => !note.isPinned) : filtered;
   const showBulkActions = selectionEnabled && selectedNotes.length > 0;
   const trashCount = notes.filter((note) => note.isTrashed).length;
+  const listContextKey = `${mode}|${tagId ?? ''}|${collectionId ?? ''}|${sortOrder}`;
+
+  useEffect(() => {
+    setSelectedNoteIds([]);
+  }, [listContextKey]);
 
   useEffect(() => {
     if (!selectionEnabled) {
@@ -112,12 +125,18 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
   }, [selectionEnabled, visibleNoteIdsKey]);
 
   useEffect(() => {
-    if (activePinnedDragId) {
+    if (activePinnedDragId || !pinOrderingEnabled) {
       return;
     }
 
-    updateOrderedPinnedDragIds(pinnedNotes.map((note) => note.id));
-  }, [activePinnedDragId, pinnedNotes]);
+    updateOrderedPinnedDragIds(persistedPinnedNotes.map((note) => note.id));
+  }, [activePinnedDragId, persistedPinnedNotes, pinOrderingEnabled]);
+
+  useEffect(() => {
+    if (!pinOrderingEnabled && activePinnedDragIdRef.current) {
+      finishPinnedNoteReorder();
+    }
+  }, [pinOrderingEnabled]);
 
   useEffect(() => {
     if (!activePinnedDragId) {
@@ -259,7 +278,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
 
   function finishPinnedNoteReorder() {
     const nextIds = orderedPinnedDragIdsRef.current;
-    const originalIds = pinnedNotes.map((note) => note.id);
+    const originalIds = persistedPinnedNotes.map((note) => note.id);
 
     if (activePinnedDragIdRef.current && pinnedDragMovedRef.current && !isSameOrder(originalIds, nextIds)) {
       void reorderPinnedNotes(nextIds);
@@ -269,7 +288,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
   }
 
   function cancelPinnedNoteReorder() {
-    updateOrderedPinnedDragIds(pinnedNotes.map((note) => note.id));
+    updateOrderedPinnedDragIds(persistedPinnedNotes.map((note) => note.id));
     resetPinnedDragState();
   }
 
@@ -310,9 +329,7 @@ export function NotesListPage({ mode }: { mode: ListMode }) {
               }
             : undefined
         }
-        tagDisplayLimit={preferredLayout === 'grid' ? 2 : undefined}
-        showPinActions={pinActionsEnabled}
-        showPinIndicator={pinOrderingEnabled}
+        showPinIndicator={pinActionsEnabled}
         showPinnedDragHandle={pinOrderingEnabled && pinnedList}
         pinnedDragActive={activePinnedDragId === note.id}
         onPinnedDragPointerDown={pinOrderingEnabled && pinnedList ? (event) => beginPinnedNoteReorder(event, note.id) : undefined}
@@ -653,6 +670,7 @@ export function CollectionsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingDraft, setEditingDraft] = useState<CollectionDraft>({ name: '', color: defaultNewCollectionColor });
   const [deleteCandidate, setDeleteCandidate] = useState<Collection | null>(null);
+  const editNameInputRef = useRef<HTMLInputElement>(null);
   const collections = useKnowledgeStore((state) => state.collections);
   const notes = useKnowledgeStore((state) => state.notes);
   const createCollection = useKnowledgeStore((state) => state.createCollection);
@@ -661,6 +679,12 @@ export function CollectionsPage() {
   const settings = useAppStore((state) => state.settings);
   const setPrimaryCollection = useAppStore((state) => state.setPrimaryCollection);
   const pushToast = useToastStore((state) => state.pushToast);
+
+  useEffect(() => {
+    if (editingId) {
+      requestAnimationFrame(() => editNameInputRef.current?.focus());
+    }
+  }, [editingId]);
 
   async function createCollectionFromDraft() {
     const created = await createCollection(newDraft.name, newDraft.color);
@@ -678,6 +702,10 @@ export function CollectionsPage() {
       name: collection.name,
       color: collection.color ?? 'neutral',
     });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
   }
 
   async function saveEdit(collectionId: string) {
@@ -719,6 +747,12 @@ export function CollectionsPage() {
                   {isEditing ? (
                     <form
                       className="collection-edit-form"
+                      onKeyDown={(event) => {
+                        if (event.key === 'Escape') {
+                          event.preventDefault();
+                          cancelEdit();
+                        }
+                      }}
                       onSubmit={(event) => {
                         event.preventDefault();
                         void saveEdit(collection.id);
@@ -726,6 +760,7 @@ export function CollectionsPage() {
                     >
                       <IconBadge icon={Folder} color={editingDraft.color} />
                       <input
+                        ref={editNameInputRef}
                         aria-label={t('collections.name')}
                         value={editingDraft.name}
                         onChange={(event) => setEditingDraft((draft) => ({ ...draft, name: event.target.value }))}
@@ -740,7 +775,7 @@ export function CollectionsPage() {
                           <Check />
                           {t('common.save')}
                         </button>
-                        <button className="collection-action-button" type="button" onClick={() => setEditingId(null)}>
+                        <button className="collection-action-button" type="button" onClick={cancelEdit}>
                           <X />
                           {t('common.cancel')}
                         </button>
