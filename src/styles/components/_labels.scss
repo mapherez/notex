@@ -70,7 +70,7 @@
 
 .label-tag-link:hover .tag-chip,
 .label-tag-link:focus-visible .tag-chip {
-  background: color-mix(in srgb, currentColor 20%, var(--nx-color-chip-solid));
+  background: color-mix(in srgb, var(--nx-chip-hue) 78%, #f8f9fb);
 }
 
 .label-tag-link:focus-visible {

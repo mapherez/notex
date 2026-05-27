@@ -49,13 +49,16 @@
 }
 
 .icon-badge {
+  --nx-badge-hue: var(--nx-color-neutral);
+
   display: grid;
   width: 3.35rem;
   height: 3.35rem;
   place-items: center;
-  border: 1px solid currentColor;
+  border: 1px solid var(--nx-color-border);
   border-radius: 0.75rem;
-  background: color-mix(in srgb, currentColor 11%, transparent);
+  background: color-mix(in srgb, var(--nx-badge-hue) 74%, #f4f5f7);
+  color: color-mix(in srgb, var(--nx-badge-hue) 46%, #0d0f13);
 }
 
 .icon-badge svg {
@@ -64,9 +67,15 @@
 }
 
 @each $name, $value in $palette-colors {
-  .icon-badge.#{$name},
+  .icon-badge.#{$name} {
+    --nx-badge-hue: #{$value};
+  }
+
   .tag-chip.#{$name},
-  .collection-chip.#{$name},
+  .collection-chip.#{$name} {
+    --nx-chip-hue: #{$value};
+  }
+
   .notes-filter-dot.#{$name} {
     color: #{$value};
   }

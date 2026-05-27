@@ -41,7 +41,7 @@
   height: 2.25rem;
   place-items: center;
   border-radius: 0.55rem;
-  background: linear-gradient(135deg, #835fff, #4c2dd2);
+  background: linear-gradient(135deg, #7d9acb, #3f5f9c);
   color: #fff;
   font-weight: 850;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
@@ -58,7 +58,7 @@
   width: 2.55rem;
   height: 2.55rem;
   border-radius: 0.75rem;
-  box-shadow: 0 0.75rem 2rem rgba(109, 76, 255, 0.26);
+  box-shadow: 0 0.75rem 2rem rgba(63, 95, 156, 0.22);
 }
 
 .icon-button {
@@ -189,7 +189,7 @@
 }
 
 .nav-item.active {
-  color: color-mix(in srgb, var(--nx-color-accent) 74%, var(--nx-color-text));
+  color: color-mix(in srgb, var(--nx-color-accent) 58%, var(--nx-color-text));
 }
 
 @each $name, $value in $palette-colors {
