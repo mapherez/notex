@@ -31,7 +31,8 @@
       "primaryCollectionId": "collection-work",
       "favoriteTagIds": ["tag-grammar", "tag-doubt"],
       "pinnedNoteIds": ["note-linguistic"],
-      "quickPinNoteIds": ["note-linguistic"]
+      "quickPinNoteIds": ["note-linguistic"],
+      "dynamicNoteHiddenPanelIds": []
     }
   },
   "limits": {
@@ -159,7 +160,21 @@
       "columns": ["Column 1", "Column 2"],
       "rows": 1
     },
-    "readingWordsPerMinute": 180
+    "readingWordsPerMinute": 180,
+    "dynamicTools": [
+      { "id": "bold", "shortcut": "Mod+B" },
+      { "id": "italic", "shortcut": "Mod+I" },
+      { "id": "underline", "shortcut": "Mod+U" },
+      { "id": "strike", "shortcut": "Mod+Shift+X" },
+      { "id": "bulletList", "shortcut": "Mod+Shift+8" },
+      { "id": "orderedList", "shortcut": "Mod+Shift+7" },
+      { "id": "taskList", "shortcut": "Mod+Shift+9" },
+      { "id": "blockquote", "shortcut": "Mod+Shift+B" },
+      { "id": "codeBlock", "shortcut": "Mod+Alt+C" },
+      { "id": "table", "shortcut": "Mod+Alt+T" },
+      { "id": "image", "shortcut": "Mod+Alt+I" },
+      { "id": "file", "shortcut": "Mod+Alt+F" }
+    ]
   },
   "demo": {
     "enabled": true,

@@ -2,6 +2,7 @@ import {
   Check,
   ChevronLeft,
   Copy,
+  ArrowRight,
   ExternalLink,
   FileText,
   Folder,
@@ -49,6 +50,7 @@ import { useClickOutside } from '../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
+import { useDynamicNotesStore } from '../store/useDynamicNotesStore';
 import { useKnowledgeStore, type NoteEditDraft } from '../store/useKnowledgeStore';
 import { useSyncStore } from '../store/useSyncStore';
 import { useToastStore } from '../store/useToastStore';
@@ -93,6 +95,7 @@ export function NoteDetailPage() {
   const togglePinned = useKnowledgeStore((state) => state.togglePinned);
   const moveToTrash = useKnowledgeStore((state) => state.moveToTrash);
   const duplicateNote = useKnowledgeStore((state) => state.duplicateNote);
+  const migrateClassicNote = useDynamicNotesStore((state) => state.migrateClassicNote);
   const markNoteOpened = useKnowledgeStore((state) => state.markNoteOpened);
   const saveNoteDraft = useKnowledgeStore((state) => state.saveNoteDraft);
   const createNoteFromDraft = useKnowledgeStore((state) => state.createNoteFromDraft);
@@ -266,7 +269,7 @@ export function NoteDetailPage() {
 
         pushToast(t('noteDetail.noteCreated'), 'success');
         setIsEditing(false);
-        navigate(`/notes/${created.id}`, { replace: true });
+        navigate(`/classic-notes/${created.id}`, { replace: true });
         return;
       }
 
@@ -474,7 +477,7 @@ export function NoteDetailPage() {
                       ).then((created) => {
                         pushToast(t("notes.duplicated"), "success");
                         if (created) {
-                          navigate(`/notes/${created.id}`);
+                          navigate(`/classic-notes/${created.id}`);
                         }
                       });
                       setMoreOpen(false);
@@ -482,6 +485,19 @@ export function NoteDetailPage() {
                   >
                     <Copy />
                     {t("common.duplicate")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void migrateClassicNote(note).then((created) => {
+                        pushToast(t("dynamicNotes.migrated"), "success");
+                        navigate(`/notes/${created.id}`);
+                      });
+                      setMoreOpen(false);
+                    }}
+                  >
+                    <ArrowRight />
+                    {t("dynamicNotes.migrateFromClassic")}
                   </button>
                   <button
                     type="button"
@@ -572,7 +588,7 @@ export function NoteDetailPage() {
                   <TagChip
                     key={tag.id}
                     tag={tag}
-                    href={`/notes?tag=${tag.id}`}
+                    href={`/classic-notes?tag=${tag.id}`}
                   />
                 ))}
               </div>
@@ -721,7 +737,7 @@ export function NoteDetailPage() {
                 <SortableTagList
                   ariaLabel={t("noteDetail.reorderTags")}
                   className="document-tag-sortable-list"
-                  getHref={(tag) => `/notes?tag=${tag.id}`}
+                  getHref={(tag) => `/classic-notes?tag=${tag.id}`}
                   onRemove={(tagId) => void removeTag(tagId)}
                   onReorder={(tagIds) => reorderNoteTags(tagIds)}
                   removable
@@ -1131,7 +1147,7 @@ function CollectionBreadcrumb({ collection, emptyText }: { collection?: Collecti
   return (
     <Link
       className={`breadcrumb ${collection.color ?? 'neutral'}`}
-      to={`/notes?collection=${collection.id}`}
+      to={`/classic-notes?collection=${collection.id}`}
     >
       <Folder />
       {collection.name}
@@ -1243,7 +1259,7 @@ function LinkedNoteRow({ noteId, onRemove, title }: { noteId: string; onRemove?:
 
   return (
     <span className="linked-row-shell">
-      <Link className="linked-row" to={`/notes/${noteId}`}>
+      <Link className="linked-row" to={`/classic-notes/${noteId}`}>
         <span className="inline-actions">
           <FileText />
           <InlineFormattedText value={title} />
@@ -1319,3 +1335,4 @@ function formatDate(value: string, locale: string) {
     minute: '2-digit',
   }).format(new Date(value));
 }
+

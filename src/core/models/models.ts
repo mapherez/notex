@@ -69,6 +69,64 @@ export type NoteThumbnail = {
   variant: 'purple' | 'paper' | 'terminal' | 'landscape' | 'book' | 'text' | 'correct' | 'wrong';
 };
 
+export type TiptapDocument = {
+  type: 'doc';
+  content?: unknown[];
+};
+
+export type DynamicNoteBlockKind = 'title' | 'content';
+
+export type DynamicNoteBlock = {
+  id: string;
+  noteId: string;
+  sortOrder: number;
+  title: string;
+  kind: DynamicNoteBlockKind;
+  contentJson: TiptapDocument | null;
+  contentText: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DynamicNoteFileKind = 'image' | 'attachment';
+
+export type DynamicNoteFile = {
+  id: string;
+  noteId: string;
+  blockId?: string | null;
+  kind: DynamicNoteFileKind;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  checksum: string;
+  relativePath: string;
+  createdAt: string;
+};
+
+export type DynamicNote = {
+  id: string;
+  title: string;
+  subtitle: string;
+  collectionId: string | null;
+  tagIds: string[];
+  linkedNoteIds: string[];
+  isFavorite: boolean;
+  isPinned: boolean;
+  isArchived: boolean;
+  isTrashed: boolean;
+  saveState: SaveState;
+  authorId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lastOpenedAt?: string | null;
+  stats: NoteStats;
+  thumbnail?: NoteThumbnail;
+  version: number;
+  syncStatus: SyncStatus;
+  blocks?: DynamicNoteBlock[];
+  files?: DynamicNoteFile[];
+};
+
 export type Note = {
   id: string;
   type: NoteType;
@@ -159,6 +217,7 @@ export type UserSettings = {
   favoriteTagIds: string[];
   pinnedNoteIds: string[];
   quickPinNoteIds: string[];
+  dynamicNoteHiddenPanelIds?: string[];
   updatedAt: string;
 };
 

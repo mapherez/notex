@@ -8,15 +8,15 @@ import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../../core/utils/useKeyboardListNavigation';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useDynamicNotesStore } from '../../store/useDynamicNotesStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
-import { InlineFormattedText } from '../editing/InlineFormattedText';
 import { NoteThumbnail } from './NoteThumbnail';
-import type { Collection, Note, Tag } from '../../core/models/models';
+import type { Collection, DynamicNote, Tag } from '../../core/models/models';
 
 type SearchResult = {
   collectionName?: string;
   matchType: 'collection' | 'tag' | 'title';
-  note: Note;
+  note: DynamicNote;
   tagNames: string[];
 };
 
@@ -28,7 +28,7 @@ export function SearchBox({ className }: { className?: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [resultsOpen, setResultsOpen] = useState(false);
-  const notes = useKnowledgeStore((state) => state.notes);
+  const notes = useDynamicNotesStore((state) => state.dynamicNotes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const normalizedQuery = normalizeSearchValue(query);
@@ -123,7 +123,7 @@ export function SearchBox({ className }: { className?: string }) {
                 <NoteThumbnail thumbnail={result.note.thumbnail} />
                 <span className="search-result-copy">
                   <strong>
-                    <InlineFormattedText value={result.note.title} />
+                    {result.note.title || t('dynamicNotes.untitled')}
                   </strong>
                   <span className="search-result-meta">
                     <span className="search-result-match">{t(`topbar.searchMatch.${result.matchType}`)}</span>
@@ -152,7 +152,7 @@ function buildSearchResults({
 }: {
   collections: Collection[];
   normalizedQuery: string;
-  notes: Note[];
+  notes: DynamicNote[];
   tags: Tag[];
 }): SearchResult[] {
   if (!normalizedQuery) {
@@ -170,7 +170,7 @@ function buildSearchResults({
 
       const noteTags = sortTagsByName(note.tagIds.flatMap((tagId) => tagById.get(tagId) ?? []));
       const collection = note.collectionId ? collectionById.get(note.collectionId) : undefined;
-      const titleMatches = normalizeSearchValue(note.title).includes(normalizedQuery);
+      const titleMatches = normalizeSearchValue([note.title, note.subtitle, ...(note.blocks?.map((block) => `${block.title} ${block.contentText}`) ?? [])].join(' ')).includes(normalizedQuery);
       const matchedTags = sortTagsByName(noteTags.filter((tag) => normalizeSearchValue(tag.name).includes(normalizedQuery)));
       const collectionMatches = collection ? normalizeSearchValue(collection.name).includes(normalizedQuery) : false;
 
@@ -208,4 +208,3 @@ function normalizeSearchValue(value: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 }
-

@@ -4,6 +4,7 @@ import { open, save } from '@tauri-apps/plugin-dialog';
 export type SqliteDatabaseInfo = {
   initialized: boolean;
   databasePath: string;
+  filesDirectory: string;
   localDataDirectory: string;
   backupDirectory: string;
   tempDirectory: string;

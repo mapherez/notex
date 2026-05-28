@@ -19,6 +19,7 @@ type AppStore = {
   reorderPinnedNotes: (noteIds: string[]) => Promise<void>;
   setQuickPinAt: (index: number, noteId: string | null) => Promise<void>;
   toggleQuickPin: (noteId: string) => Promise<void>;
+  setDynamicNotePanelHidden: (panelId: string, hidden: boolean) => Promise<void>;
   replaceSettings: (settings: UserSettings) => Promise<void>;
 };
 
@@ -48,6 +49,7 @@ function normalizeSettings(settings?: Partial<UserSettings> | null): UserSetting
     favoriteTagIds: source.favoriteTagIds ?? defaultUserSettings.favoriteTagIds,
     pinnedNoteIds: source.pinnedNoteIds ?? defaultUserSettings.pinnedNoteIds,
     quickPinNoteIds: source.quickPinNoteIds ?? defaultUserSettings.quickPinNoteIds,
+    dynamicNoteHiddenPanelIds: source.dynamicNoteHiddenPanelIds ?? defaultUserSettings.dynamicNoteHiddenPanelIds ?? [],
     updatedAt: source.updatedAt ?? defaultUserSettings.updatedAt,
   };
 }
@@ -131,6 +133,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const current = get().settings.quickPinNoteIds;
     const quickPinNoteIds = current.includes(noteId) ? current.filter((id) => id !== noteId) : [...current, noteId].slice(-appLimits.quickPins);
     const settings = { ...get().settings, quickPinNoteIds };
+    await updateSettings(set, settings);
+  },
+  setDynamicNotePanelHidden: async (panelId, hidden) => {
+    const current = get().settings.dynamicNoteHiddenPanelIds ?? [];
+    const dynamicNoteHiddenPanelIds = hidden ? uniqueIds([...current, panelId]) : current.filter((id) => id !== panelId);
+    const settings = { ...get().settings, dynamicNoteHiddenPanelIds };
     await updateSettings(set, settings);
   },
   replaceSettings: async (settings) => {

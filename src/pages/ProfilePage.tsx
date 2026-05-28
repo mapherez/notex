@@ -22,24 +22,27 @@ import { IconBadge } from "../components/ui/IconBadge";
 import { Panel } from "../components/ui/Panel";
 import { appLimits, cloudSyncEnabled } from "../config/appSettings";
 import {
-  chooseSqliteExportDestination,
-  chooseSqliteImportFile,
-  createSqliteTempExport,
   openSqliteDatabaseFolder,
   openSqliteLocalDataFolder,
   readSqliteDatabaseInfo,
-  replaceSqliteDatabaseFromFile,
   type SqliteDatabaseInfo,
   type SqliteExportInfo,
 } from "../core/services/sqliteDataManagement";
+import {
+  chooseNotexPackageExportDestination,
+  chooseNotexPackageImportFile,
+  createNotexPackageTempExport,
+  replaceFromNotexPackage,
+} from "../core/services/notexPackage";
 import { themeRegistry } from "../core/theme/themeRegistry";
-import { filterNotes } from "../core/utils/noteFilters";
+import { filterDynamicNotes } from "../core/utils/dynamicNoteFilters";
 import { useI18n } from "../i18n/I18nProvider";
 import { useAppStore } from "../store/useAppStore";
+import { useDynamicNotesStore } from "../store/useDynamicNotesStore";
 import { useKnowledgeStore } from "../store/useKnowledgeStore";
 import { useSyncStore } from "../store/useSyncStore";
 import { useToastStore } from "../store/useToastStore";
-import type { Locale, Note, ThemePreference } from "../core/models/models";
+import type { DynamicNote, Locale, ThemePreference } from "../core/models/models";
 
 type ExportModalState =
   | null
@@ -60,15 +63,16 @@ export function ProfilePage() {
   const hydrateSettings = useAppStore((state) => state.hydrateSettings);
   const setTheme = useAppStore((state) => state.setTheme);
   const setLanguage = useAppStore((state) => state.setLanguage);
-  const notes = useKnowledgeStore((state) => state.notes);
+  const notes = useDynamicNotesStore((state) => state.dynamicNotes);
   const collections = useKnowledgeStore((state) => state.collections);
   const user = useKnowledgeStore((state) => state.user);
   const refreshKnowledge = useKnowledgeStore((state) => state.refreshKnowledge);
+  const refreshDynamicNotes = useDynamicNotesStore((state) => state.refreshDynamicNotes);
   const syncState = useSyncStore((state) => state.syncState);
   const pushToast = useToastStore((state) => state.pushToast);
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const favoriteNotes = activeNotes.filter((note) => note.isFavorite);
-  const mostRecentNote = filterNotes(notes, { mode: "recent" })[0];
+  const mostRecentNote = filterDynamicNotes(notes, { mode: "recent" })[0];
   const lastActivityValue = mostRecentNote
     ? formatRecentActivityTimestamp(
         getRecentTimestamp(mostRecentNote),
@@ -106,7 +110,7 @@ export function ProfilePage() {
   async function handleCreateDatabaseExport() {
     setExportModal({ phase: "exporting" });
     try {
-      const exportInfo = await createSqliteTempExport();
+      const exportInfo = await createNotexPackageTempExport();
       setExportModal({ phase: "ready", exportInfo });
       pushToast(t("profile.dataManagement.exportReady"), "success");
     } catch (error) {
@@ -122,7 +126,7 @@ export function ProfilePage() {
 
   async function handleSaveDatabaseExport(exportInfo: SqliteExportInfo) {
     try {
-      const destinationPath = await chooseSqliteExportDestination(exportInfo);
+      const destinationPath = await chooseNotexPackageExportDestination(exportInfo);
       if (destinationPath) {
         setExportModal(null);
         pushToast(t("profile.dataManagement.exportSaved"), "success");
@@ -140,15 +144,16 @@ export function ProfilePage() {
   async function handleImportDatabase() {
     setIsImportingDatabase(true);
     try {
-      const sourcePath = await chooseSqliteImportFile();
+      const sourcePath = await chooseNotexPackageImportFile();
       if (!sourcePath) {
         setIsImportingDatabase(false);
         return;
       }
 
-      await replaceSqliteDatabaseFromFile(sourcePath);
+      await replaceFromNotexPackage(sourcePath);
       await Promise.all([
         refreshKnowledge(),
+        refreshDynamicNotes(),
         hydrateSettings(),
         readSqliteDatabaseInfo().then(setDatabaseInfo),
       ]);
@@ -340,6 +345,16 @@ export function ProfilePage() {
                 }
                 icon={HardDrive}
                 label={t("profile.databaseManagement.localDataPath")}
+                onOpen={handleOpenLocalDataFolder}
+                openLabel={t("profile.databaseManagement.openLocalDataFolder")}
+              />
+              <DatabasePathRow
+                databasePath={
+                  databaseInfo?.filesDirectory ??
+                  t("profile.databaseManagement.localDataPathLoading")
+                }
+                icon={Folder}
+                label={t("profile.databaseManagement.filesPath")}
                 onOpen={handleOpenLocalDataFolder}
                 openLabel={t("profile.databaseManagement.openLocalDataFolder")}
               />
@@ -874,7 +889,7 @@ function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
   ];
 }
 
-function getRecentTimestamp(note: Note) {
+function getRecentTimestamp(note: DynamicNote) {
   return note.lastOpenedAt ?? note.updatedAt;
 }
 

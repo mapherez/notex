@@ -5,6 +5,9 @@ The authoritative model definitions live in `src/core/models/models.ts`.
 ## Core Entities
 
 - `Note` stores structured note content, tags, collection membership, favorite/pin/trash state, thumbnail variant, statistics, related links, and sync status.
+- `DynamicNote` stores the new block-based note header, subtitle, tags, collection membership, favorite/pin/trash state, thumbnail variant, statistics, and local sync status.
+- `DynamicNoteBlock` stores one ordered Dynamic Note block with a text-only title and optional Tiptap JSON content.
+- `DynamicNoteFile` stores metadata for files copied into the app data `files` folder and referenced by Dynamic Note blocks.
 - `Tag` stores a label name, optional color, and optional computed count for display contexts.
 - `Collection` stores a collection name, icon, and optional color.
 - `User` stores local or Google account identity, including optional first name, handle, email, avatar URL, Google subject, provider, and last login.
@@ -19,3 +22,7 @@ The authoritative model definitions live in `src/core/models/models.ts`.
 - `CloudNoteFile`, `CloudWorkspaceFile`, and `CloudManifestFile` define the Google Drive payload format.
 
 Keep this document high-level. Update `src/core/models/models.ts` first when the schema changes.
+
+## Local Packages
+
+`.notex` exports bundle the SQLite database plus the app data `files` folder. SQLite-only exports remain available at the service layer, but the profile UI uses `.notex` packages so Dynamic Note attachments are included.

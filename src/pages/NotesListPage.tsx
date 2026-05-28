@@ -925,3 +925,4 @@ export function CollectionsPage() {
     </div>
   );
 }
+

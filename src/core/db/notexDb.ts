@@ -3,6 +3,9 @@ import type {
   ActivityItem,
   Collection,
   DeviceSession,
+  DynamicNote,
+  DynamicNoteBlock,
+  DynamicNoteFile,
   Note,
   SyncItem,
   SyncState,
@@ -14,6 +17,9 @@ import type { MockDataBundle } from '../data/createMockData';
 
 type TableName =
   | 'notes'
+  | 'dynamicNotes'
+  | 'dynamicNoteBlocks'
+  | 'dynamicNoteFiles'
   | 'tags'
   | 'collections'
   | 'users'
@@ -48,6 +54,9 @@ export type StorageTable<T> = {
 
 type NoteXStorageDatabase = {
   notes: StorageTable<Note>;
+  dynamicNotes: StorageTable<DynamicNote>;
+  dynamicNoteBlocks: StorageTable<DynamicNoteBlock>;
+  dynamicNoteFiles: StorageTable<DynamicNoteFile>;
   tags: StorageTable<Tag>;
   collections: StorageTable<Collection>;
   users: StorageTable<User>;
@@ -75,6 +84,9 @@ let sqliteTransactionContext: SqliteTransactionContext | null = null;
 
 class SqliteStorageAdapter implements NoteXStorageDatabase {
   notes = new SqliteTable<Note>('notes');
+  dynamicNotes = new SqliteTable<DynamicNote>('dynamicNotes');
+  dynamicNoteBlocks = new SqliteTable<DynamicNoteBlock>('dynamicNoteBlocks');
+  dynamicNoteFiles = new SqliteTable<DynamicNoteFile>('dynamicNoteFiles');
   tags = new SqliteTable<Tag>('tags');
   collections = new SqliteTable<Collection>('collections');
   users = new SqliteTable<User>('users');

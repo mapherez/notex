@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Cloud,
+  ChevronDown,
   Clock3,
   FileText,
   Folder,
@@ -70,10 +71,16 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       .catch(() => setAppVersion(latestPatchNoteVersion));
   }, []);
 
-  function createNote(type: NoteType = defaultNewNoteType) {
+  function createDynamicNote() {
     setNewNoteOpen(false);
     onClose();
-    navigate(`/notes/new?type=${type}&collection=${settings.primaryCollectionId}`);
+    navigate(`/notes/new?collection=${settings.primaryCollectionId}`);
+  }
+
+  function createClassicNote(type: NoteType = defaultNewNoteType) {
+    setNewNoteOpen(false);
+    onClose();
+    navigate(`/classic-notes/new?type=${type}&collection=${settings.primaryCollectionId}`);
   }
 
   function handleSyncClick() {
@@ -116,11 +123,32 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <button
             className="primary-action-main"
             type="button"
-            onClick={() => createNote("standard")}
+            onClick={createDynamicNote}
           >
             <Plus />
             {t("navigation.newNote")}
           </button>
+          <button
+            className="primary-action-side"
+            type="button"
+            aria-label={t("navigation.expand")}
+            aria-expanded={newNoteOpen}
+            onClick={() => setNewNoteOpen((open) => !open)}
+          >
+            <ChevronDown />
+          </button>
+          {newNoteOpen ? (
+            <div className="floating-menu new-note-menu" ref={newNoteRef}>
+              <button type="button" onClick={createDynamicNote}>
+                <FileText />
+                {t("navigation.dynamicNote")}
+              </button>
+              <button type="button" onClick={() => createClassicNote("standard")}>
+                <FileText />
+                {t("navigation.classicNote")}
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <nav className="sidebar-section" aria-label={t("navigation.notes")}>
@@ -142,6 +170,14 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               </NavLink>
             );
           })}
+          <NavLink
+            to="/classic-notes"
+            className={({ isActive }) => clsx("nav-item", isActive && "active")}
+            onClick={onClose}
+          >
+            <FileText strokeWidth={1.8} />
+            <span>{t("navigation.classicNotes")}</span>
+          </NavLink>
         </nav>
 
         <div className="sidebar-section">

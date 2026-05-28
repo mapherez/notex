@@ -12,7 +12,15 @@ Includes:
 - Popular tags
 - Recent activity
 
-## Note Detail
+## Notes
+
+The primary `/notes` experience now shows Dynamic Notes: block-based notes with a title, subtitle, thumbnail, tags, table of contents, Tiptap content blocks, inline images, file attachments, and configurable side panels.
+
+## Classic Notes
+
+The migration-period Classic Notes experience lives under `/classic-notes`.
+
+## Classic Note Detail
 
 Includes:
 
@@ -24,6 +32,7 @@ Includes:
 - Additional examples
 - Related links and backlinks
 - Metadata and note statistics
+- Migration action to create an equivalent Dynamic Note without deleting the Classic Note
 
 ## Tags
 

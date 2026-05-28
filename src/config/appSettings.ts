@@ -47,5 +47,6 @@ export const defaultUserSettings: UserSettings = {
   favoriteTagIds: userSettingsDefaults.favoriteTagIds,
   pinnedNoteIds: userSettingsDefaults.pinnedNoteIds,
   quickPinNoteIds: userSettingsDefaults.quickPinNoteIds,
+  dynamicNoteHiddenPanelIds: userSettingsDefaults.dynamicNoteHiddenPanelIds,
   updatedAt: new Date().toISOString(),
 };

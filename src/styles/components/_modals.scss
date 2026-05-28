@@ -39,6 +39,7 @@
   grid-template-rows: auto minmax(0, 1fr);
   padding: 0;
 }
+
 .choice-modal h2 {
   margin: 0;
   font-size: 1.35rem;
@@ -249,6 +250,7 @@
 .patch-notes-modal__content .markdown-preview h1 {
   scroll-margin-top: var(--nx-space-5);
 }
+
 .sync-conflict-modal {
   display: grid;
   width: min(72rem, 100%);
@@ -458,6 +460,7 @@
     grid-template-columns: 1fr;
     gap: var(--nx-space-2);
   }
+
 .patch-notes-modal__layout {
   grid-template-columns: 1fr;
 }
@@ -468,4 +471,3 @@
   border-bottom: 1px solid var(--nx-color-border);
 }
 }
-

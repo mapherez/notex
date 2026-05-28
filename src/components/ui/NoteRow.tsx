@@ -154,7 +154,7 @@ export function NoteRow({
     >
       <Link
         className="note-row__link-overlay"
-        to={`/notes/${note.id}`}
+        to={`/classic-notes/${note.id}`}
         aria-label={`${t("common.open")} ${plainTitle}`}
       />
       {showPinnedDragHandle ? (
@@ -245,7 +245,7 @@ export function NoteRow({
         {collection ? (
           <Link
             className={`collection-chip ${collection.color ?? "neutral"}`}
-            to={`/notes?collection=${collection.id}`}
+            to={`/classic-notes?collection=${collection.id}`}
           >
             <Folder strokeWidth={1.9} />
             <span>{collection.name}</span>
@@ -253,7 +253,7 @@ export function NoteRow({
         ) : (
           <Link
             className="collection-chip neutral collection-chip--empty"
-            to={`/notes/${note.id}`}
+            to={`/classic-notes/${note.id}`}
             aria-label={`${t("common.open")} ${plainTitle}`}
           >
             <Folder strokeWidth={1.9} />
@@ -267,7 +267,7 @@ export function NoteRow({
                 <TagChip
                   tag={tag}
                   color={tag.color}
-                  href={`/notes?tag=${tag.id}`}
+                  href={`/classic-notes?tag=${tag.id}`}
                 />
               </span>
             ))}
@@ -295,7 +295,7 @@ export function NoteRow({
         </button>
         {menuOpen ? (
           <div className="floating-menu note-row-menu">
-            <Link to={`/notes/${note.id}`}>{t("common.open")}</Link>
+            <Link to={`/classic-notes/${note.id}`}>{t("common.open")}</Link>
             <button type="button" onClick={() => void handleDuplicate()}>
               <Copy />
               {t("common.duplicate")}
@@ -364,3 +364,4 @@ function formatDisplayTime(value: string, today: string, yesterday: string) {
 function blocksToMarkdown(blocks?: Note['content']['summary']) {
   return blocks?.map((block) => block.text).filter(Boolean).join('\n\n') ?? '';
 }
+
