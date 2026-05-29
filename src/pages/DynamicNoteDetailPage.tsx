@@ -5,23 +5,24 @@ import {
   Folder,
   GripVertical,
   Image as ImageIcon,
-  Plus,
+  Pencil,
   Star,
   Tag as TagIcon,
   Trash2,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { DynamicTiptapEditor } from '../components/dynamic/DynamicTiptapEditor';
+import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { DynamicTiptapEditor, DynamicTiptapToolbar, type DynamicTiptapToolbarTarget } from '../components/dynamic/DynamicTiptapEditor';
 import { ColorPicker } from '../components/ui/ColorPicker';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
 import { EmptyState } from '../components/ui/EmptyState';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
+import { SortableTagList } from '../components/ui/SortableTagList';
 import { TagChip } from '../components/ui/TagChip';
-import { defaultNewTagColor, thumbnailOptions } from '../config/appSettings';
-import type { DynamicNote, DynamicNoteBlock, DynamicNoteFile, NoteThumbnail as NoteThumbnailModel, TagColor, TiptapDocument } from '../core/models/models';
+import { defaultNewTagColor, defaultNoteThumbnailVariant, thumbnailOptions } from '../config/appSettings';
+import type { Collection, DynamicNote, DynamicNoteBlock, DynamicNoteFile, NoteThumbnail as NoteThumbnailModel, Tag, TagColor, TiptapDocument } from '../core/models/models';
 import { chooseDynamicAttachment } from '../core/services/dynamicFiles';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { sortTagsByFavoriteOrder } from '../core/utils/tagSorting';
@@ -68,6 +69,10 @@ export function DynamicNoteDetailPage() {
   const pushToast = useToastStore((state) => state.pushToast);
   const [deleteBlockState, setDeleteBlockState] = useState<DeleteBlockState>(null);
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
+  const [dragBlockIds, setDragBlockIds] = useState<string[] | null>(null);
+  const dragBlockIdsRef = useRef<string[] | null>(null);
+  const draggedBlockIdRef = useRef<string | null>(null);
+  const [toolbarTarget, setToolbarTarget] = useState<DynamicTiptapToolbarTarget | null>(null);
   const note = isNewNote ? undefined : dynamicNotes.find((item) => item.id === id);
   const classicNote = !isNewNote && !note ? notes.find((item) => item.id === id) : undefined;
 
@@ -98,6 +103,60 @@ export function DynamicNoteDetailPage() {
     return note ? note.tagIds.flatMap((tagId) => tagById.get(tagId) ?? []) : [];
   }, [note, tags]);
   const hiddenPanels = new Set(settings.dynamicNoteHiddenPanelIds ?? []);
+  const visibleBlocks = useMemo(() => {
+    const blocks = note?.blocks ?? [];
+    if (!dragBlockIds) {
+      return blocks;
+    }
+
+    const blockMap = new Map(blocks.map((block) => [block.id, block]));
+    const ordered = dragBlockIds.flatMap((blockId) => blockMap.get(blockId) ?? []);
+    const orderedIds = new Set(ordered.map((block) => block.id));
+    return [...ordered, ...blocks.filter((block) => !orderedIds.has(block.id))];
+  }, [dragBlockIds, note?.blocks]);
+
+  useEffect(() => {
+    if (!toolbarTarget || !note) {
+      return;
+    }
+    if (!(note.blocks ?? []).some((block) => block.id === toolbarTarget.blockId)) {
+      setToolbarTarget(null);
+    }
+  }, [note, toolbarTarget]);
+
+  useEffect(() => {
+    if (!draggedBlockId) {
+      return undefined;
+    }
+
+    function handlePointerMove(event: globalThis.PointerEvent) {
+      event.preventDefault();
+      const blockList = document.querySelector('.dynamic-block-list');
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-dynamic-block-id]');
+      if (!blockList || !target || !blockList.contains(target)) {
+        return;
+      }
+
+      const overBlockId = target.dataset.dynamicBlockId;
+      if (overBlockId) {
+        previewBlockReorder(overBlockId);
+      }
+    }
+
+    function handlePointerEnd() {
+      finishBlockDrag();
+    }
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerEnd);
+    window.addEventListener('pointercancel', handlePointerEnd);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerEnd);
+      window.removeEventListener('pointercancel', handlePointerEnd);
+    };
+  }, [draggedBlockId]);
 
   if (!dynamicReady || isNewNote) {
     return null;
@@ -137,20 +196,58 @@ export function DynamicNoteDetailPage() {
     pushToast(t('dynamicNotes.blockDeleted'), 'warning');
   }
 
-  function moveDraggedBlock(overBlockId: string) {
-    if (!note || !draggedBlockId || draggedBlockId === overBlockId) {
+  function startBlockDrag(event: PointerEvent<HTMLButtonElement>, blockId: string) {
+    if (!note) {
       return;
     }
+    if (event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
     const blockIds = (note.blocks ?? []).map((block) => block.id);
-    const fromIndex = blockIds.indexOf(draggedBlockId);
-    const toIndex = blockIds.indexOf(overBlockId);
-    if (fromIndex === -1 || toIndex === -1) {
+    dragBlockIdsRef.current = blockIds;
+    draggedBlockIdRef.current = blockId;
+    setDragBlockIds(blockIds);
+    setDraggedBlockId(blockId);
+  }
+
+  function previewBlockReorder(overBlockId: string) {
+    const activeBlockId = draggedBlockIdRef.current;
+    if (!note || !activeBlockId || activeBlockId === overBlockId) {
       return;
     }
-    const nextIds = [...blockIds];
-    const [moved] = nextIds.splice(fromIndex, 1);
-    nextIds.splice(toIndex, 0, moved);
-    void reorderBlocks(note.id, nextIds);
+    setDragBlockIds((current) => {
+      const blockIds = current ?? (note.blocks ?? []).map((block) => block.id);
+      const fromIndex = blockIds.indexOf(activeBlockId);
+      const toIndex = blockIds.indexOf(overBlockId);
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+        return current;
+      }
+      const nextIds = [...blockIds];
+      const [moved] = nextIds.splice(fromIndex, 1);
+      nextIds.splice(toIndex, 0, moved);
+      dragBlockIdsRef.current = nextIds;
+      return nextIds;
+    });
+  }
+
+  function finishBlockDrag() {
+    if (!note) {
+      return;
+    }
+    const nextIds = dragBlockIdsRef.current;
+    const currentIds = (note.blocks ?? []).map((block) => block.id);
+    setDraggedBlockId(null);
+    dragBlockIdsRef.current = null;
+    draggedBlockIdRef.current = null;
+
+    if (!nextIds || arraysEqual(nextIds, currentIds)) {
+      setDragBlockIds(null);
+      return;
+    }
+
+    void reorderBlocks(note.id, nextIds).finally(() => setDragBlockIds(null));
   }
 
   return (
@@ -190,6 +287,17 @@ export function DynamicNoteDetailPage() {
         </div>
       </header>
 
+      <div className="dynamic-global-toolbar-shell">
+        <DynamicTiptapToolbar
+          disabled={!toolbarTarget}
+          editor={toolbarTarget?.editor ?? null}
+          onInsertFile={() => {
+            void toolbarTarget?.insertFile();
+          }}
+          t={t}
+        />
+      </div>
+
       <div className="dynamic-document-shell">
         <aside className="dynamic-toc">
           <span className="dynamic-toc-title">{t('dynamicNotes.tableOfContents')}</span>
@@ -211,22 +319,22 @@ export function DynamicNoteDetailPage() {
           <DynamicNoteHeader
             collections={collections}
             note={note}
+            noteTags={noteTags}
             onChange={(input) => void updateHeader(note.id, input)}
+            onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
             onThumbnailChange={(thumbnail) => void updateThumbnail(note.id, thumbnail)}
             t={t}
           />
 
-          <section className="dynamic-block-list">
-            {(note.blocks ?? []).map((block) => (
+          <section className={draggedBlockId ? 'dynamic-block-list is-reordering' : 'dynamic-block-list'}>
+            {visibleBlocks.map((block) => (
               <DynamicBlockEditor
                 block={block}
                 dragged={draggedBlockId === block.id}
                 key={block.id}
                 noteId={note.id}
                 onDelete={() => setDeleteBlockState({ blockId: block.id, title: block.title.trim() || t('dynamicNotes.untitledBlock') })}
-                onDragEnd={() => setDraggedBlockId(null)}
-                onDragOver={() => moveDraggedBlock(block.id)}
-                onDragStart={() => setDraggedBlockId(block.id)}
+                onDragStart={(event) => startBlockDrag(event, block.id)}
                 onRequestFileUpload={async () => {
                   const sourcePath = await chooseDynamicAttachment();
                   if (!sourcePath) {
@@ -238,18 +346,14 @@ export function DynamicNoteDetailPage() {
                   }
                   return file;
                 }}
+                onToolbarTargetChange={setToolbarTarget}
               />
             ))}
           </section>
 
           <div className="dynamic-add-block-row">
-            <button type="button" onClick={() => void addContentBlock('content')}>
-              <Plus />
-              {t('dynamicNotes.addContentBlock')}
-            </button>
-            <button type="button" onClick={() => void addContentBlock('title')}>
-              <Plus />
-              {t('dynamicNotes.addTitleBlock')}
+            <button type="button" aria-label={t('dynamicNotes.addContentBlock')} title={t('dynamicNotes.addContentBlock')} onClick={() => void addContentBlock('content')}>
+              +
             </button>
           </div>
         </main>
@@ -338,13 +442,17 @@ export function DynamicNoteDetailPage() {
 function DynamicNoteHeader({
   collections,
   note,
+  noteTags,
   onChange,
+  onTagsChange,
   onThumbnailChange,
   t,
 }: {
-  collections: Array<{ id: string; name: string; color?: TagColor }>;
+  collections: Collection[];
   note: DynamicNote;
+  noteTags: Tag[];
   onChange: (input: { collectionId?: string | null; subtitle?: string; title?: string }) => void;
+  onTagsChange: (tagIds: string[]) => void;
   onThumbnailChange: (thumbnail: NoteThumbnailModel) => void;
   t: ReturnType<typeof useI18n>['t'];
 }) {
@@ -376,10 +484,12 @@ function DynamicNoteHeader({
     };
   }, [collectionId, note.collectionId, note.subtitle, note.title, onChange, subtitle, title]);
 
+  const selectedCollection = collections.find((collection) => collection.id === collectionId);
+
   return (
-    <section className="dynamic-document-heading">
+    <section className="document-heading dynamic-document-heading">
       <div className="document-meta-row">
-        <div className="editable-collection-field editing">
+        <div className={`editable-collection-field editing ${selectedCollection?.color ?? 'neutral'}`}>
           <Folder />
           <CustomSelect
             ariaLabel={t('noteDetail.collectionLabel')}
@@ -396,10 +506,36 @@ function DynamicNoteHeader({
             value={collectionId}
           />
         </div>
+      </div>
+
+      <div className="document-title-row">
+        <div className="document-title-stack">
+          <AutoResizeTextarea
+            className="document-title-input dynamic-title-input"
+            onChange={setTitle}
+            placeholder={t('noteDetail.titlePlaceholder')}
+            value={title}
+          />
+        </div>
         <DynamicThumbnailPicker current={note.thumbnail} onSelect={onThumbnailChange} t={t} />
       </div>
-      <textarea className="dynamic-title-input" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t('noteDetail.titlePlaceholder')} rows={2} />
-      <textarea className="dynamic-subtitle-input" value={subtitle} onChange={(event) => setSubtitle(event.target.value)} placeholder={t('dynamicNotes.subtitlePlaceholder')} rows={3} />
+
+      {noteTags.length ? (
+        <SortableTagList
+          ariaLabel={t('noteDetail.tags')}
+          className="document-title-tags"
+          getHref={(tag) => `/notes?tag=${tag.id}`}
+          onReorder={onTagsChange}
+          tags={noteTags}
+        />
+      ) : null}
+
+      <AutoResizeTextarea
+        className="document-intro-input dynamic-subtitle-input"
+        onChange={setSubtitle}
+        placeholder={t('dynamicNotes.subtitlePlaceholder')}
+        value={subtitle}
+      />
     </section>
   );
 }
@@ -415,22 +551,35 @@ function DynamicThumbnailPicker({
 }) {
   const [open, setOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
-  const currentThumbnail = current ?? { variant: 'text' as const };
+  const currentThumbnail = current ?? { variant: defaultNoteThumbnailVariant };
 
   useClickOutside(pickerRef, open, () => setOpen(false));
 
   return (
     <div className="thumbnail-picker" ref={pickerRef}>
-      <button className="thumbnail-picker-trigger" type="button" aria-label={t('noteDetail.changeThumbnail')} onClick={() => setOpen((value) => !value)}>
+      <button
+        className="thumbnail-picker-trigger"
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={t('noteDetail.changeThumbnail')}
+        title={t('noteDetail.changeThumbnail')}
+        onClick={() => setOpen((value) => !value)}
+      >
         <NoteThumbnail thumbnail={currentThumbnail} />
+        <span className="thumbnail-picker-edit" aria-hidden="true">
+          <Pencil />
+        </span>
       </button>
       {open ? (
-        <div className="thumbnail-picker-menu">
+        <div className="thumbnail-picker-menu" role="menu" aria-label={t('noteDetail.thumbnail')}>
           {thumbnailOptions.map(({ id: variant }) => (
             <button
               className={variant === currentThumbnail.variant ? 'thumbnail-option active' : 'thumbnail-option'}
               key={variant}
               type="button"
+              role="menuitemradio"
+              aria-checked={variant === currentThumbnail.variant}
               aria-label={`${t('noteDetail.changeThumbnail')}: ${variant}`}
               onClick={() => {
                 onSelect({ variant });
@@ -451,19 +600,17 @@ function DynamicBlockEditor({
   dragged,
   noteId,
   onDelete,
-  onDragEnd,
-  onDragOver,
   onDragStart,
   onRequestFileUpload,
+  onToolbarTargetChange,
 }: {
   block: DynamicNoteBlock;
   dragged: boolean;
   noteId: string;
   onDelete: () => void;
-  onDragEnd: () => void;
-  onDragOver: () => void;
-  onDragStart: () => void;
+  onDragStart: (event: PointerEvent<HTMLButtonElement>) => void;
   onRequestFileUpload: () => Promise<DynamicNoteFile | null>;
+  onToolbarTargetChange: (target: DynamicTiptapToolbarTarget) => void;
 }) {
   const { t } = useI18n();
   const updateBlock = useDynamicNotesStore((state) => state.updateDynamicBlock);
@@ -503,30 +650,30 @@ function DynamicBlockEditor({
   return (
     <article
       className={dragged ? 'dynamic-block is-dragging' : 'dynamic-block'}
-      draggable
+      data-dynamic-block-id={block.id}
       id={`block-${block.id}`}
-      onDragEnd={onDragEnd}
-      onDragOver={(event) => {
-        event.preventDefault();
-        onDragOver();
-      }}
-      onDragStart={(event) => {
-        event.dataTransfer.effectAllowed = 'move';
-        onDragStart();
-      }}
     >
-      <button className="dynamic-block-handle" type="button" aria-label={t('dynamicNotes.reorderBlock')} title={t('dynamicNotes.reorderBlock')}>
+      <button
+        className="dynamic-block-handle"
+        type="button"
+        aria-label={t('dynamicNotes.reorderBlock')}
+        aria-grabbed={dragged}
+        title={t('dynamicNotes.reorderBlock')}
+        onPointerDown={onDragStart}
+      >
         <GripVertical />
       </button>
       <div className="dynamic-block-body">
         <input className="dynamic-block-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t('dynamicNotes.blockTitlePlaceholder')} />
         {block.kind === 'content' ? (
           <DynamicTiptapEditor
+            blockId={block.id}
             onChange={(nextJson, nextText) => {
               setContentJson(nextJson);
               setContentText(nextText);
             }}
             onRequestFileUpload={onRequestFileUpload}
+            onToolbarTargetChange={onToolbarTargetChange}
             placeholder={t('dynamicNotes.blockContentPlaceholder')}
             value={contentJson ?? emptyTiptapDocument}
           />
@@ -571,13 +718,14 @@ function DynamicTagEditor({
 
   return (
     <div className="dynamic-tags-editor">
-      <div className="tag-row">
-        {noteTags.map((tag) => (
-          <button key={tag.id} className="tag-chip-button" type="button" onClick={() => onTagsChange(note.tagIds.filter((tagId) => tagId !== tag.id))}>
-            <TagChip tag={tag} />
-          </button>
-        ))}
-      </div>
+      <SortableTagList
+        ariaLabel={t('noteDetail.tags')}
+        className="tag-row"
+        onRemove={(tagId) => onTagsChange(note.tagIds.filter((id) => id !== tagId))}
+        onReorder={onTagsChange}
+        removable
+        tags={noteTags}
+      />
       {availableTags.length ? (
         <div className="inline-picker dynamic-tag-picker">
           {availableTags.map((tag) => (
@@ -635,4 +783,42 @@ function formatDate(value: string, locale: string) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(value));
+}
+
+function arraysEqual(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function AutoResizeTextarea({
+  className,
+  onChange,
+  placeholder,
+  value,
+}: {
+  className: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  value: string;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      return;
+    }
+    textarea.style.height = '0';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [value]);
+
+  return (
+    <textarea
+      className={className}
+      ref={textareaRef}
+      rows={1}
+      value={value}
+      onChange={(event) => onChange(event.currentTarget.value)}
+      placeholder={placeholder}
+    />
+  );
 }

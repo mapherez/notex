@@ -1,4 +1,29 @@
 <!-- markdownlint-disable MD025 -->
+<!-- markdownlint-disable MD024 -->
+# 2.0.0
+
+## What's New in NoteX
+
+Implemented the Dynamic Notes pass across the app.
+
+### Highlights
+
+- Added separate SQLite-backed Dynamic Note tables and Tauri commands for `.notex` package export/import plus dynamic file import/open/export.
+- Added `useDynamicNotesStore`, dynamic note models, filters, file services, and package services.
+- `/notes` is now the Dynamic Notes experience; Classic Notes moved to `/classic-notes`.
+- Sidebar New Note is now a split button for Dynamic Note vs Classic Note.
+- Built the Dynamic Note editor with header fields, empty state, add-block controls, block drag/reorder/delete, autosave, TOC, configurable right panels, sticky toolbar, and selection bubble toolbar.
+- Integrated Tiptap JSON storage per block, including tables, task lists, links, colors/highlights, text alignment, images, and attachment cards.
+- Added Classic Note migration action on Classic detail pages.
+- Updated profile backup/import to use `.notex` packages.
+- Updated docs and locale strings.
+
+### Notes
+
+- Dashboard quick capture still creates Classic Notes during the migration period, but Classic IDs now redirect correctly from `/notes/:id` to `/classic-notes/:id`.
+
+---
+
 # 1.3.1
 
 - Implemented global shortcut for navigating to the profile page using "Ctrl / ⌘ + U".

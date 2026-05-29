@@ -59,29 +59,49 @@
   min-width: 0;
 }
 
+.dynamic-global-toolbar-shell {
+  position: sticky;
+  top: var(--nx-topbar-height);
+  z-index: 70;
+  display: flex;
+  justify-content: center;
+  border-bottom: 1px solid var(--nx-color-border);
+  background: color-mix(in srgb, var(--nx-color-background) 92%, transparent);
+  padding: var(--nx-space-2) var(--nx-page-gutter);
+  backdrop-filter: blur(16px);
+}
+
 .dynamic-document-heading {
-  display: grid;
-  gap: var(--nx-space-4);
   padding-bottom: var(--nx-space-6);
 }
 
-.dynamic-title-input,
-.dynamic-subtitle-input {
+.dynamic-document-heading .dynamic-title-input,
+.dynamic-document-heading .dynamic-subtitle-input {
   width: 100%;
   border: 0;
   background: transparent;
   color: var(--nx-color-text);
+  padding: 0;
   outline: none;
+  overflow: hidden;
   resize: none;
 }
 
-.dynamic-title-input {
-  font-size: clamp(2rem, 4vw, 3.2rem);
-  font-weight: 780;
-  line-height: 1.08;
+.dynamic-document-heading .dynamic-title-input:focus,
+.dynamic-document-heading .dynamic-subtitle-input:focus {
+  border-color: transparent;
 }
 
-.dynamic-subtitle-input {
+.dynamic-document-heading .dynamic-title-input {
+  min-height: 2.6rem;
+  font-size: clamp(1.8rem, 3vw, 2.25rem);
+  font-weight: 780;
+  letter-spacing: 0;
+  line-height: 1.15;
+}
+
+.dynamic-document-heading .dynamic-subtitle-input {
+  min-height: 1.7rem;
   color: var(--nx-color-text-muted);
   font-size: 1.02rem;
   line-height: 1.7;
@@ -90,6 +110,10 @@
 .dynamic-block-list {
   display: grid;
   gap: var(--nx-space-4);
+}
+
+.dynamic-block-list.is-reordering {
+  user-select: none;
 }
 
 .dynamic-block {
@@ -129,6 +153,11 @@
 
 .dynamic-block-handle {
   cursor: grab;
+  touch-action: none;
+}
+
+.dynamic-block-handle:active {
+  cursor: grabbing;
 }
 
 .dynamic-block:hover .dynamic-block-handle,
@@ -170,8 +199,7 @@
 
 .dynamic-add-block-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--nx-space-3);
+  justify-content: center;
   border-top: 1px solid var(--nx-color-border);
   margin-top: var(--nx-space-5);
   padding-top: var(--nx-space-5);
@@ -186,13 +214,18 @@
 }
 
 .dynamic-add-block-row button {
-  min-height: 2.5rem;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: 999px;
   background: var(--nx-color-surface);
   color: var(--nx-color-text-muted);
-  padding: 0 var(--nx-space-4);
+  padding: 0;
+  font-size: 1.4rem;
   font-weight: 720;
+  line-height: 1;
 }
 
 .dynamic-add-block-row button:hover,
@@ -209,9 +242,8 @@
 }
 
 .dynamic-tiptap-toolbar {
-  position: sticky;
-  top: calc(var(--nx-topbar-height) + var(--nx-space-2));
   flex-wrap: wrap;
+  width: min(100%, 58rem);
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-md);
   background: color-mix(in srgb, var(--nx-color-surface) 95%, transparent);

@@ -20,8 +20,8 @@ import {
   Table2,
   Underline,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Node, mergeAttributes, type JSONContent } from '@tiptap/core';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Node, mergeAttributes, type Editor, type JSONContent } from '@tiptap/core';
 import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type ReactNodeViewProps } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
@@ -43,11 +43,19 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { emptyTiptapDocument } from '../../store/useDynamicNotesStore';
 
 type DynamicTiptapEditorProps = {
+  blockId: string;
   disabled?: boolean;
   onChange: (contentJson: TiptapDocument, contentText: string) => void;
   onRequestFileUpload: () => Promise<DynamicNoteFile | null>;
+  onToolbarTargetChange: (target: DynamicTiptapToolbarTarget) => void;
   placeholder: string;
   value: TiptapDocument | null;
+};
+
+export type DynamicTiptapToolbarTarget = {
+  blockId: string;
+  editor: Editor;
+  insertFile: () => Promise<void>;
 };
 
 type DynamicFileAttrs = DynamicNoteFile & {
@@ -122,9 +130,11 @@ const extensions = [
 ];
 
 export function DynamicTiptapEditor({
+  blockId,
   disabled = false,
   onChange,
   onRequestFileUpload,
+  onToolbarTargetChange,
   placeholder,
   value,
 }: DynamicTiptapEditorProps) {
@@ -151,25 +161,7 @@ export function DynamicTiptapEditor({
     [],
   );
 
-  useEffect(() => {
-    editor?.setEditable(!disabled);
-  }, [disabled, editor]);
-
-  useEffect(() => {
-    if (!editor || editor.isFocused) {
-      return;
-    }
-
-    const nextKey = JSON.stringify(value ?? emptyTiptapDocument);
-    if (nextKey !== contentKey) {
-      editor.commands.setContent((value ?? emptyTiptapDocument) as JSONContent, { emitUpdate: false });
-      setContentKey(nextKey);
-    }
-  }, [contentKey, editor, value]);
-
-  const configuredTools = useMemo(() => new Set((editorSettings.dynamicTools ?? []).map((tool) => tool.id)), []);
-
-  async function insertUploadedFile() {
+  const insertUploadedFile = useCallback(async () => {
     const file = await onRequestFileUpload();
     if (!file || !editor) {
       return;
@@ -187,17 +179,50 @@ export function DynamicTiptapEditor({
         },
       })
       .run();
-  }
+  }, [editor, onRequestFileUpload]);
+
+  useEffect(() => {
+    editor?.setEditable(!disabled);
+  }, [disabled, editor]);
+
+  useEffect(() => {
+    if (!editor || editor.isFocused) {
+      return;
+    }
+
+    const nextKey = JSON.stringify(value ?? emptyTiptapDocument);
+    if (nextKey !== contentKey) {
+      editor.commands.setContent((value ?? emptyTiptapDocument) as JSONContent, { emitUpdate: false });
+      setContentKey(nextKey);
+    }
+  }, [contentKey, editor, value]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    const publishTarget = () => {
+      onToolbarTargetChange({
+        blockId,
+        editor,
+        insertFile: insertUploadedFile,
+      });
+    };
+
+    editor.on('focus', publishTarget);
+    editor.on('selectionUpdate', publishTarget);
+    editor.on('update', publishTarget);
+
+    return () => {
+      editor.off('focus', publishTarget);
+      editor.off('selectionUpdate', publishTarget);
+      editor.off('update', publishTarget);
+    };
+  }, [blockId, editor, insertUploadedFile, onToolbarTargetChange]);
 
   return (
     <div className="dynamic-tiptap-editor">
-      <DynamicTiptapToolbar
-        configuredTools={configuredTools}
-        disabled={disabled}
-        editor={editor}
-        onInsertFile={() => void insertUploadedFile()}
-        t={t}
-      />
       {editor ? (
         <BubbleMenu className="dynamic-bubble-toolbar" editor={editor}>
           <ToolbarButton disabled={disabled} label={t('editor.bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
@@ -216,19 +241,18 @@ export function DynamicTiptapEditor({
   );
 }
 
-function DynamicTiptapToolbar({
-  configuredTools,
+export function DynamicTiptapToolbar({
   disabled,
   editor,
   onInsertFile,
   t,
 }: {
-  configuredTools: Set<string>;
   disabled: boolean;
-  editor: ReturnType<typeof useEditor> | null;
+  editor: Editor | null;
   onInsertFile: () => void;
   t: ReturnType<typeof useI18n>['t'];
 }) {
+  const configuredTools = useMemo(() => new Set((editorSettings.dynamicTools ?? []).map((tool) => tool.id)), []);
   const unavailable = disabled || !editor;
 
   function enabled(toolId: string) {
