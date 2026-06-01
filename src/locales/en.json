@@ -303,6 +303,8 @@
       "title": "Side panels",
       "metadata": "Information",
       "tags": "Tags",
+      "examples": "Examples",
+      "linked": "Linked to",
       "files": "Files"
     },
     "editor": {
@@ -326,6 +328,9 @@
     "codeBlock": "Code block",
     "codeText": "code",
     "coloredText": "colored text",
+    "deleteColumn": "Delete column",
+    "deleteRow": "Delete row",
+    "deleteTable": "Delete table",
     "edit": "Edit",
     "emptyPreview": "Nothing to preview yet.",
     "heading": "Heading",

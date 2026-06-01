@@ -1,7 +1,7 @@
 import { Baseline, ChevronDown, Eraser, Highlighter } from 'lucide-react';
 import clsx from 'clsx';
 import { useCallback, useId, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, MouseEvent } from 'react';
 import {
   applyInlineFormatToken,
   applyInlineStyleToken,
@@ -236,6 +236,7 @@ function TextStylePicker({
         title={label}
         aria-label={label}
         aria-expanded={open}
+        onMouseDown={preserveEditorSelection}
         onClick={() => setOpen((value) => !value)}
       >
         <Icon />
@@ -248,6 +249,7 @@ function TextStylePicker({
             type="button"
             title={kind === 'color' ? t('editor.automaticColor') : t('editor.noHighlightColor')}
             aria-label={kind === 'color' ? `${label}: ${t('editor.automaticColor')}` : `${label}: ${t('editor.noHighlightColor')}`}
+            onMouseDown={preserveEditorSelection}
             onClick={() => {
               onSelect(kind, null);
               setOpen(false);
@@ -263,6 +265,7 @@ function TextStylePicker({
               type="button"
               title={t(`tags.colors.${color}`)}
               aria-label={`${label}: ${t(`tags.colors.${color}`)}`}
+              onMouseDown={preserveEditorSelection}
               onClick={() => {
                 onSelect(kind, color);
                 setOpen(false);
@@ -275,4 +278,8 @@ function TextStylePicker({
       ) : null}
     </div>
   );
+}
+
+function preserveEditorSelection(event: MouseEvent<HTMLElement>) {
+  event.preventDefault();
 }

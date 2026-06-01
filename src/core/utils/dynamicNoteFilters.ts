@@ -1,6 +1,7 @@
 import { noteSettings } from '../../config/appSettings';
 import type { DynamicNote } from '../models/models';
 import type { NotesSortOrder } from './noteFilters';
+import { richTextToPlainText } from './richText';
 
 export type DynamicNotesFilter = {
   mode: 'all' | 'favorites' | 'recent' | 'trash';
@@ -39,9 +40,9 @@ export function filterDynamicNotes(notes: DynamicNote[], filter: DynamicNotesFil
       }
 
       return [
-        note.title,
-        note.subtitle,
-        ...(note.blocks?.flatMap((block) => [block.title, block.contentText]) ?? []),
+        richTextToPlainText(note.title),
+        richTextToPlainText(note.subtitle),
+        ...(note.blocks?.flatMap((block) => [richTextToPlainText(block.title), block.contentText]) ?? []),
       ]
         .join(' ')
         .toLowerCase()
@@ -79,5 +80,5 @@ function compareDynamicNotes(
 }
 
 function compareDynamicNoteTitles(a: Pick<DynamicNote, 'title'>, b: Pick<DynamicNote, 'title'>) {
-  return a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' });
+  return richTextToPlainText(a.title).localeCompare(richTextToPlainText(b.title), undefined, { numeric: true, sensitivity: 'base' });
 }

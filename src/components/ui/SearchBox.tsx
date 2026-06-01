@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { appLimits } from '../../config/appSettings';
 import { stripInlineFormatting } from '../../core/utils/inlineFormatting';
 import { isPrimaryShortcut } from '../../core/utils/keyboardShortcuts';
+import { richTextToPlainText } from '../../core/utils/richText';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../../core/utils/useKeyboardListNavigation';
 import { sortTagsByName } from '../../core/utils/tagSorting';
@@ -123,7 +124,7 @@ export function SearchBox({ className }: { className?: string }) {
                 <NoteThumbnail thumbnail={result.note.thumbnail} />
                 <span className="search-result-copy">
                   <strong>
-                    {result.note.title || t('dynamicNotes.untitled')}
+                    {richTextToPlainText(result.note.title).trim() || t('dynamicNotes.untitled')}
                   </strong>
                   <span className="search-result-meta">
                     <span className="search-result-match">{t(`topbar.searchMatch.${result.matchType}`)}</span>
@@ -170,7 +171,13 @@ function buildSearchResults({
 
       const noteTags = sortTagsByName(note.tagIds.flatMap((tagId) => tagById.get(tagId) ?? []));
       const collection = note.collectionId ? collectionById.get(note.collectionId) : undefined;
-      const titleMatches = normalizeSearchValue([note.title, note.subtitle, ...(note.blocks?.map((block) => `${block.title} ${block.contentText}`) ?? [])].join(' ')).includes(normalizedQuery);
+      const titleMatches = normalizeSearchValue(
+        [
+          richTextToPlainText(note.title),
+          richTextToPlainText(note.subtitle),
+          ...(note.blocks?.map((block) => `${richTextToPlainText(block.title)} ${block.contentText}`) ?? []),
+        ].join(' '),
+      ).includes(normalizedQuery);
       const matchedTags = sortTagsByName(noteTags.filter((tag) => normalizeSearchValue(tag.name).includes(normalizedQuery)));
       const collectionMatches = collection ? normalizeSearchValue(collection.name).includes(normalizedQuery) : false;
 
@@ -202,7 +209,7 @@ function searchResultScore(result: SearchResult) {
 }
 
 function normalizeSearchValue(value: string) {
-  return stripInlineFormatting(value)
+  return richTextToPlainText(stripInlineFormatting(value))
     .trim()
     .toLowerCase()
     .normalize('NFD')

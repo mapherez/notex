@@ -1,24 +1,90 @@
 .dynamic-document-shell {
   display: grid;
-  grid-template-columns: 14rem minmax(0, 1fr) 20rem;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 20rem;
   gap: var(--nx-space-7);
-  width: min(100%, 92rem);
+  width: min(100%, 88rem);
   margin: 0 auto;
-  padding: calc(var(--nx-space-4) + var(--nx-space-5)) var(--nx-page-gutter) var(--nx-space-8);
+  padding: var(--nx-space-8) 0;
 }
 
 .dynamic-toc,
 .dynamic-document-aside {
   position: sticky;
-  top: calc(var(--nx-topbar-height) + var(--nx-space-6));
+  top: calc(var(--nx-topbar-height) + var(--nx-space-6) + var(--nx-space-12));
   align-self: start;
 }
 
 .dynamic-toc {
-  display: grid;
-  gap: var(--nx-space-3);
+  position: sticky;
+    z-index: 40;
+    width: 2.75rem;
+    min-height: 9rem;
   color: var(--nx-color-text-muted);
   font-size: 0.88rem;
+}
+
+.dynamic-toc-dashes {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  width: 2.75rem;
+  padding-top: var(--nx-space-2);
+}
+
+.dynamic-toc-dashes span {
+  display: block;
+  width: 1.25rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--nx-color-text-soft);
+  opacity: 0.82;
+}
+
+.dynamic-toc-dashes .dynamic-toc-dash--level-1 {
+  width: 1.55rem;
+}
+
+.dynamic-toc-dashes .dynamic-toc-dash--level-2 {
+  width: 1.12rem;
+}
+
+.dynamic-toc-dashes .dynamic-toc-dash--level-3 {
+  width: 0.74rem;
+}
+
+.dynamic-toc-dashes .dynamic-toc-dash.is-active {
+  background: var(--nx-color-accent);
+  opacity: 1;
+}
+
+.dynamic-toc-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 14rem;
+  gap: var(--nx-space-3);
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-lg);
+  background: var(--nx-color-surface-elevated);
+  padding: var(--nx-space-4);
+  box-shadow: var(--nx-shadow-soft);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-0.35rem);
+  transition: opacity 140ms ease, transform 140ms ease;
+  visibility: hidden;
+}
+
+.dynamic-toc:hover .dynamic-toc-dashes {
+  opacity: 0;
+}
+
+.dynamic-toc:hover .dynamic-toc-content {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+  visibility: visible;
 }
 
 .dynamic-toc-title {
@@ -28,27 +94,41 @@
 
 .dynamic-toc nav {
   display: grid;
-  gap: var(--nx-space-2);
+  gap: var(--nx-space-1);
 }
 
-.dynamic-toc a {
-  display: grid;
-  grid-template-columns: 1.4rem minmax(0, 1fr);
-  align-items: center;
-  gap: var(--nx-space-2);
+.dynamic-toc-link {
+  display: block;
+  width: 100%;
+  border: 0;
   border-radius: var(--nx-radius-sm);
-  padding: var(--nx-space-2);
+  background: transparent;
+    color: var(--nx-color-text-muted);
+    padding: var(--nx-space-1) var(--nx-space-2);
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.dynamic-toc a:hover,
-.dynamic-toc a:focus-visible {
+.dynamic-toc-link--level-2 {
+  padding-left: var(--nx-space-4);
+}
+
+.dynamic-toc-link--level-3 {
+  padding-left: var(--nx-space-6);
+}
+
+.dynamic-toc-link:hover,
+.dynamic-toc-link:focus-visible,
+.dynamic-toc-link.is-active {
   background: var(--nx-color-hover);
   color: var(--nx-color-text);
+  outline: none;
 }
 
-.dynamic-toc a span {
-  color: var(--nx-color-text-soft);
-  font-size: 0.76rem;
+.dynamic-toc-link.is-active {
+  color: var(--nx-color-accent-strong);
 }
 
 .dynamic-toc-empty {
@@ -57,18 +137,18 @@
 
 .dynamic-document-main {
   min-width: 0;
+  padding: 2rem;
 }
 
 .dynamic-global-toolbar-shell {
   position: sticky;
-  top: var(--nx-topbar-height);
-  z-index: 70;
-  display: flex;
-  justify-content: center;
-  border-bottom: 1px solid var(--nx-color-border);
-  background: color-mix(in srgb, var(--nx-color-background) 92%, transparent);
-  padding: var(--nx-space-2) var(--nx-page-gutter);
-  backdrop-filter: blur(16px);
+  top: calc(var(--nx-topbar-height) + var(--nx-space-6));
+    z-index: 80;
+    width: min(100%, var(--nx-content-max));
+    margin: 0 auto;
+    padding: 0 var(--nx-space-8) var(--nx-space-2);
+    background: color-mix(in srgb, var(--nx-color-canvas) 94%, transparent);
+    backdrop-filter: blur(18px);
 }
 
 .dynamic-document-heading {
@@ -184,16 +264,74 @@
 .dynamic-block-body {
   display: grid;
   min-width: 0;
-  gap: var(--nx-space-3);
+  align-content: start;
+    gap: 10px;
+    min-height: 30px;
 }
 
 .dynamic-block-title {
   width: 100%;
+  min-height: 30px;
   border: 0;
   background: transparent;
   color: var(--nx-color-text);
   font-size: 1.1rem;
   font-weight: 760;
+  line-height: 1.35;
+    outline: none;
+    overflow: hidden;
+    resize: none;
+  }
+
+.dynamic-inline-editor {
+  min-width: 0;
+}
+
+.dynamic-inline-prosemirror {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.dynamic-inline-prosemirror p {
+  margin: 0;
+}
+
+.dynamic-inline-prosemirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--nx-color-text-soft);
+  pointer-events: none;
+}
+
+.dynamic-block-zone-add {
+  display: none;
+  width: 100%;
+  height: 30px;
+  min-height: 30px;
+  place-items: center;
+  border: 1px dashed transparent;
+  border-radius: var(--nx-radius-sm);
+  background: transparent;
+  color: var(--nx-color-text-soft);
+  padding: 0;
+}
+
+.dynamic-block-zone-add svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.dynamic-block:hover .dynamic-block-zone-add,
+.dynamic-block:focus-within .dynamic-block-zone-add {
+  display: grid;
+}
+
+.dynamic-block-zone-add:hover,
+.dynamic-block-zone-add:focus-visible {
+  border-color: var(--nx-color-border);
+  background: var(--nx-color-hover);
+  color: var(--nx-color-text);
   outline: none;
 }
 
@@ -238,17 +376,19 @@
 
 .dynamic-tiptap-editor {
   display: grid;
-  gap: var(--nx-space-2);
+  gap: 0;
+    min-height: 30px;
 }
 
 .dynamic-tiptap-toolbar {
+  display: flex;
   flex-wrap: wrap;
-  width: min(100%, 58rem);
+  min-height: 3.1rem;
+    align-items: center;
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-md);
-  background: color-mix(in srgb, var(--nx-color-surface) 95%, transparent);
+  background: var(--nx-color-surface);
   padding: var(--nx-space-2);
-  backdrop-filter: blur(16px);
   box-shadow: var(--nx-shadow-soft);
   z-index: 60;
 }
@@ -262,7 +402,7 @@
 }
 
 .dynamic-tiptap-prosemirror {
-  min-height: 7rem;
+  min-height: 30px;
   border-radius: var(--nx-radius-sm);
   color: var(--nx-color-text);
   line-height: 1.75;
@@ -285,6 +425,30 @@
   margin: var(--nx-space-4) 0;
   padding-left: var(--nx-space-4);
   color: var(--nx-color-text-muted);
+}
+
+.dynamic-tip-box {
+  position: relative;
+  margin: var(--nx-space-4) 0;
+  padding-right: calc(var(--nx-space-4) + 2.4rem);
+}
+
+.dynamic-tip-delete {
+  position: absolute;
+  top: var(--nx-space-3);
+  right: var(--nx-space-3);
+  opacity: 0;
+  transition: opacity 140ms ease, background 140ms ease, color 140ms ease;
+}
+
+.dynamic-tip-box:hover .dynamic-tip-delete,
+.dynamic-tip-box:focus-within .dynamic-tip-delete {
+  opacity: 1;
+}
+
+.dynamic-tip-content {
+  display: grid;
+  gap: var(--nx-space-2);
 }
 
 .dynamic-tiptap-prosemirror table {
@@ -398,10 +562,55 @@
 }
 
 .dynamic-panel-toggle-list label,
-.dynamic-file-side-list li {
+.dynamic-file-side-list li,
+.dynamic-example-side-list li,
+.dynamic-linked-list li {
   display: flex;
   align-items: center;
   gap: var(--nx-space-2);
+}
+
+.dynamic-file-side-list li,
+.dynamic-example-side-list li,
+.dynamic-linked-list li {
+  min-width: 0;
+}
+
+.dynamic-example-side-list a,
+.dynamic-linked-list a,
+.dynamic-file-side-list span:not(.side-list-actions) {
+  min-width: 0;
+  color: inherit;
+}
+
+.dynamic-example-side-list strong,
+.dynamic-example-side-list small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dynamic-example-side-list small {
+  color: var(--nx-color-text-muted);
+  white-space: nowrap;
+}
+
+.side-list-actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: var(--nx-space-1);
+  margin-left: auto;
+}
+
+.side-list-actions .icon-button,
+.dynamic-linked-list .icon-button {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
+.dynamic-linked-panel {
+  display: grid;
+  gap: var(--nx-space-3);
 }
 
 .tag-chip-button {

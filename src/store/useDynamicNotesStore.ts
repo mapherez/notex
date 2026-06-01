@@ -7,12 +7,14 @@ import type {
   DynamicNoteFileKind,
   Note,
   NoteStats,
+  RelatedLink,
   TiptapDocument,
   UsageExample,
 } from '../core/models/models';
 import { db } from '../core/storage/notexRepository';
 import { parseMarkdown, type MarkdownBlock } from '../core/utils/markdown';
-import { importDynamicAttachment } from '../core/services/dynamicFiles';
+import { richTextToPlainText } from '../core/utils/richText';
+import { deleteDynamicAttachment, importDynamicAttachment } from '../core/services/dynamicFiles';
 
 type DynamicNoteInput = {
   collectionId?: string | null;
@@ -32,6 +34,13 @@ type DynamicBlockInput = {
   title?: string;
 };
 
+type TiptapNodeRecord = {
+  attrs?: Record<string, unknown>;
+  content?: unknown[];
+  type?: string;
+  [key: string]: unknown;
+};
+
 type DynamicNotesStore = {
   dynamicNotes: DynamicNote[];
   isReady: boolean;
@@ -42,6 +51,14 @@ type DynamicNotesStore = {
   updateDynamicNoteHeader: (noteId: string, input: DynamicHeaderInput) => Promise<void>;
   updateDynamicNoteTags: (noteId: string, tagIds: string[]) => Promise<void>;
   updateDynamicNoteThumbnail: (noteId: string, thumbnail: DynamicNote['thumbnail']) => Promise<void>;
+  bulkUpdateDynamicNoteCollection: (noteIds: string[], collectionId: string | null) => Promise<void>;
+  bulkUpdateDynamicNoteTag: (noteIds: string[], tagId: string, assigned: boolean) => Promise<void>;
+  updateDynamicNoteLinkedNotes: (noteId: string, linkedNoteIds: string[]) => Promise<void>;
+  addDynamicAdditionalExample: (noteId: string, example: string) => Promise<void>;
+  updateDynamicAdditionalExample: (noteId: string, index: number, example: string) => Promise<void>;
+  deleteDynamicAdditionalExample: (noteId: string, index: number) => Promise<void>;
+  addDynamicRelatedLink: (noteId: string, title: string, href: string) => Promise<void>;
+  deleteDynamicRelatedLink: (noteId: string, linkId: string) => Promise<void>;
   toggleDynamicFavorite: (noteId: string) => Promise<void>;
   toggleDynamicPinned: (noteId: string) => Promise<void>;
   addDynamicBlock: (noteId: string, input?: DynamicBlockInput) => Promise<DynamicNoteBlock | null>;
@@ -49,6 +66,7 @@ type DynamicNotesStore = {
   reorderDynamicBlocks: (noteId: string, blockIds: string[]) => Promise<void>;
   deleteDynamicBlock: (noteId: string, blockId: string) => Promise<void>;
   importFileForBlock: (sourcePath: string, noteId: string, blockId: string | null) => Promise<DynamicNoteFile | null>;
+  deleteDynamicFile: (noteId: string, fileId: string) => Promise<void>;
   moveDynamicNoteToTrash: (noteId: string) => Promise<void>;
   restoreDynamicNote: (noteId: string) => Promise<void>;
   deleteDynamicNotesPermanently: (noteIds: string[]) => Promise<void>;
@@ -81,6 +99,8 @@ export const useDynamicNotesStore = create<DynamicNotesStore>((set, get) => ({
       collectionId: input.collectionId ?? defaultUserSettings.primaryCollectionId,
       tagIds: [],
       linkedNoteIds: [],
+      additionalExamples: [],
+      relatedLinks: [],
       isFavorite: false,
       isPinned: false,
       isArchived: false,
@@ -140,6 +160,118 @@ export const useDynamicNotesStore = create<DynamicNotesStore>((set, get) => ({
       return;
     }
     const updated = finalizeDynamicNote({ ...note, thumbnail });
+    await persistDynamicNote(updated);
+    set((state) => ({ dynamicNotes: sortDynamicNotes(state.dynamicNotes.map((item) => (item.id === noteId ? updated : item))) }));
+  },
+  bulkUpdateDynamicNoteCollection: async (noteIds, collectionId) => {
+    const noteIdSet = new Set(uniqueIds(noteIds));
+    const noteUpdates = get().dynamicNotes
+      .filter((note) => noteIdSet.has(note.id) && note.collectionId !== collectionId)
+      .map((note) => finalizeDynamicNote({ ...note, collectionId }));
+
+    if (!noteUpdates.length) {
+      return;
+    }
+
+    await db.dynamicNotes.bulkPut(noteUpdates.map(stripDynamicRelations));
+    set((state) => {
+      const updateMap = new Map(noteUpdates.map((note) => [note.id, note]));
+      return { dynamicNotes: sortDynamicNotes(state.dynamicNotes.map((note) => updateMap.get(note.id) ?? note)) };
+    });
+  },
+  bulkUpdateDynamicNoteTag: async (noteIds, tagId, assigned) => {
+    const noteIdSet = new Set(uniqueIds(noteIds));
+    const noteUpdates = get().dynamicNotes
+      .filter((note) => noteIdSet.has(note.id) && note.tagIds.includes(tagId) !== assigned)
+      .map((note) => {
+        const nextTagIds = assigned ? [...note.tagIds, tagId] : note.tagIds.filter((id) => id !== tagId);
+        return finalizeDynamicNote({ ...note, tagIds: uniqueIds(nextTagIds) });
+      });
+
+    if (!noteUpdates.length) {
+      return;
+    }
+
+    await db.dynamicNotes.bulkPut(noteUpdates.map(stripDynamicRelations));
+    set((state) => {
+      const updateMap = new Map(noteUpdates.map((note) => [note.id, note]));
+      return { dynamicNotes: sortDynamicNotes(state.dynamicNotes.map((note) => updateMap.get(note.id) ?? note)) };
+    });
+  },
+  updateDynamicNoteLinkedNotes: async (noteId, linkedNoteIds) => {
+    const note = findDynamicNote(get().dynamicNotes, noteId);
+    if (!note) {
+      return;
+    }
+    const updated = finalizeDynamicNote({ ...note, linkedNoteIds: uniqueIds(linkedNoteIds).filter((id) => id !== noteId) });
+    await persistDynamicNote(updated);
+    set((state) => ({ dynamicNotes: sortDynamicNotes(state.dynamicNotes.map((item) => (item.id === noteId ? updated : item))) }));
+  },
+  addDynamicAdditionalExample: async (noteId, example) => {
+    const trimmed = example.trim();
+    const note = findDynamicNote(get().dynamicNotes, noteId);
+    if (!note || !trimmed) {
+      return;
+    }
+    const updated = finalizeDynamicNote({
+      ...note,
+      additionalExamples: [...(note.additionalExamples ?? []), trimmed],
+    });
+    await persistDynamicNote(updated);
+    set((state) => ({ dynamicNotes: sortDynamicNotes(state.dynamicNotes.map((item) => (item.id === noteId ? updated : item))) }));
+  },
+  updateDynamicAdditionalExample: async (noteId, index, example) => {
+    const trimmed = example.trim();
+    const note = findDynamicNote(get().dynamicNotes, noteId);
+    if (!note || !trimmed) {
+      return;
+    }
+    const examples = [...(note.additionalExamples ?? [])];
+    if (index < 0 || index >= examples.length) {
+      return;
+    }
+    examples[index] = trimmed;
+    const updated = finalizeDynamicNote({ ...note, additionalExamples: examples });
+    await persistDynamicNote(updated);
+    set((state) => ({ dynamicNotes: sortDynamicNotes(state.dynamicNotes.map((item) => (item.id === noteId ? updated : item))) }));
+  },
+  deleteDynamicAdditionalExample: async (noteId, index) => {
+    const note = findDynamicNote(get().dynamicNotes, noteId);
+    if (!note) {
+      return;
+    }
+    const updated = finalizeDynamicNote({
+      ...note,
+      additionalExamples: (note.additionalExamples ?? []).filter((_, itemIndex) => itemIndex !== index),
+    });
+    await persistDynamicNote(updated);
+    set((state) => ({ dynamicNotes: sortDynamicNotes(state.dynamicNotes.map((item) => (item.id === noteId ? updated : item))) }));
+  },
+  addDynamicRelatedLink: async (noteId, title, href) => {
+    const trimmedTitle = title.trim();
+    const trimmedHref = href.trim();
+    const note = findDynamicNote(get().dynamicNotes, noteId);
+    if (!note || !trimmedTitle) {
+      return;
+    }
+    const link: RelatedLink = {
+      id: createId(),
+      title: trimmedTitle,
+      href: trimmedHref,
+    };
+    const updated = finalizeDynamicNote({ ...note, relatedLinks: [...(note.relatedLinks ?? []), link] });
+    await persistDynamicNote(updated);
+    set((state) => ({ dynamicNotes: sortDynamicNotes(state.dynamicNotes.map((item) => (item.id === noteId ? updated : item))) }));
+  },
+  deleteDynamicRelatedLink: async (noteId, linkId) => {
+    const note = findDynamicNote(get().dynamicNotes, noteId);
+    if (!note) {
+      return;
+    }
+    const updated = finalizeDynamicNote({
+      ...note,
+      relatedLinks: (note.relatedLinks ?? []).filter((link) => link.id !== linkId),
+    });
     await persistDynamicNote(updated);
     set((state) => ({ dynamicNotes: sortDynamicNotes(state.dynamicNotes.map((item) => (item.id === noteId ? updated : item))) }));
   },
@@ -285,6 +417,39 @@ export const useDynamicNotesStore = create<DynamicNotesStore>((set, get) => ({
     set((state) => ({ dynamicNotes: sortDynamicNotes(state.dynamicNotes.map((item) => (item.id === noteId ? updated : item))) }));
     return file;
   },
+  deleteDynamicFile: async (noteId, fileId) => {
+    const note = findDynamicNote(get().dynamicNotes, noteId);
+    if (!note) {
+      return;
+    }
+    const file = (note.files ?? []).find((item) => item.id === fileId);
+    const changedBlocks: DynamicNoteBlock[] = [];
+    const blocks = (note.blocks ?? []).map((block) => {
+      const nextContentJson = removeDynamicFileFromDocument(block.contentJson, fileId);
+      if (nextContentJson === block.contentJson) {
+        return block;
+      }
+      const updatedBlock = { ...block, contentJson: nextContentJson, updatedAt: new Date().toISOString() };
+      changedBlocks.push(updatedBlock);
+      return updatedBlock;
+    });
+    const updated = finalizeDynamicNote({
+      ...note,
+      blocks,
+      files: (note.files ?? []).filter((file) => file.id !== fileId),
+    });
+    await db.transaction('rw', [db.dynamicNotes, db.dynamicNoteBlocks, db.dynamicNoteFiles], async () => {
+      if (changedBlocks.length) {
+        await db.dynamicNoteBlocks.bulkPut(changedBlocks);
+      }
+      await db.dynamicNoteFiles.delete(fileId);
+      await db.dynamicNotes.put(stripDynamicRelations(updated));
+    });
+    if (file) {
+      await deleteDynamicAttachment(file.relativePath);
+    }
+    set((state) => ({ dynamicNotes: sortDynamicNotes(state.dynamicNotes.map((item) => (item.id === noteId ? updated : item))) }));
+  },
   moveDynamicNoteToTrash: async (noteId) => {
     const note = findDynamicNote(get().dynamicNotes, noteId);
     if (!note) {
@@ -329,6 +494,8 @@ export const useDynamicNotesStore = create<DynamicNotesStore>((set, get) => ({
       collectionId: classicNote.collectionId,
       tagIds: classicNote.tagIds,
       linkedNoteIds: [],
+      additionalExamples: classicNote.content.additionalExamples ?? [],
+      relatedLinks: classicNote.relatedLinks ?? [],
       isFavorite: classicNote.isFavorite,
       isPinned: classicNote.isPinned,
       isArchived: classicNote.isArchived,
@@ -397,9 +564,11 @@ function finalizeDynamicNote(note: DynamicNote, incrementVersion = true): Dynami
 
 function calculateDynamicStats(note: DynamicNote): NoteStats {
   const text = [
-    note.title,
-    note.subtitle,
-    ...(note.blocks?.flatMap((block) => [block.title, block.contentText]) ?? []),
+    richTextToPlainText(note.title),
+    richTextToPlainText(note.subtitle),
+    ...(note.additionalExamples ?? []),
+    ...(note.relatedLinks?.flatMap((link) => [link.title, link.href]) ?? []),
+    ...(note.blocks?.flatMap((block) => [richTextToPlainText(block.title), block.contentText]) ?? []),
     ...(note.files?.map((file) => file.originalName) ?? []),
   ].join(' ');
   const wordCount = text.split(/\s+/).filter(Boolean).length;
@@ -555,6 +724,54 @@ function emptyStats(): NoteStats {
 
 function uniqueIds(ids: string[]) {
   return [...new Set(ids)];
+}
+
+function removeDynamicFileFromDocument(document: TiptapDocument | null, fileId: string) {
+  if (!document?.content) {
+    return document;
+  }
+
+  let changed = false;
+  const content = removeDynamicFileFromNodes(document.content, fileId, () => {
+    changed = true;
+  });
+
+  if (!changed) {
+    return document;
+  }
+
+  return {
+    ...document,
+    content: content.length ? content : [{ type: 'paragraph' }],
+  } satisfies TiptapDocument;
+}
+
+function removeDynamicFileFromNodes(nodes: unknown[], fileId: string, onChanged: () => void): unknown[] {
+  return nodes.flatMap((node) => {
+    if (!isTiptapNodeRecord(node)) {
+      return [node];
+    }
+
+    if (node.type === 'dynamicFile' && node.attrs?.id === fileId) {
+      onChanged();
+      return [];
+    }
+
+    if (!Array.isArray(node.content)) {
+      return [node];
+    }
+
+    const nextContent: unknown[] = removeDynamicFileFromNodes(node.content, fileId, onChanged);
+    if (nextContent === node.content) {
+      return [node];
+    }
+
+    return [{ ...node, content: nextContent }];
+  });
+}
+
+function isTiptapNodeRecord(value: unknown): value is TiptapNodeRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function groupBy<T>(items: T[], key: (item: T) => string) {

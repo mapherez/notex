@@ -303,6 +303,8 @@
       "title": "Painéis laterais",
       "metadata": "Informação",
       "tags": "Tags",
+      "examples": "Exemplos",
+      "linked": "Ligada a",
       "files": "Ficheiros"
     },
     "editor": {
@@ -326,6 +328,9 @@
     "codeBlock": "Bloco de código",
     "codeText": "código",
     "coloredText": "texto colorido",
+    "deleteColumn": "Eliminar coluna",
+    "deleteRow": "Eliminar linha",
+    "deleteTable": "Eliminar tabela",
     "edit": "Editar",
     "emptyPreview": "Ainda não há nada para pré-visualizar.",
     "heading": "Título",

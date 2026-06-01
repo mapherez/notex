@@ -2,15 +2,20 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
   Bold,
   Code,
   FileUp,
   Heading1,
   Heading2,
   Heading3,
-  Highlighter,
   Image as ImageIcon,
   Italic,
+  ChevronDown,
+  Lightbulb,
   Link2,
   List,
   ListChecks,
@@ -18,11 +23,12 @@ import {
   Quote,
   Strikethrough,
   Table2,
+  Trash2,
   Underline,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { Node, mergeAttributes, type Editor, type JSONContent } from '@tiptap/core';
-import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type ReactNodeViewProps } from '@tiptap/react';
+import { EditorContent, NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type ReactNodeViewProps } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -36,26 +42,45 @@ import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import { layout, prepare } from '@chenglou/pretext';
-import { editorSettings } from '../../config/appSettings';
+import { TextStyleToolbar } from '../editing/TextStyleToolbar';
+import type { InlineStyleColor, InlineStyleKind } from '../../core/utils/inlineFormatting';
 import type { DynamicNoteFile, TiptapDocument } from '../../core/models/models';
 import { exportDynamicAttachment, openDynamicAttachment, resolveDynamicFileSrc } from '../../core/services/dynamicFiles';
+import { useClickOutside } from '../../core/utils/useClickOutside';
+import { richTextToTiptapContent } from '../../core/utils/richText';
 import { useI18n } from '../../i18n/I18nProvider';
 import { emptyTiptapDocument } from '../../store/useDynamicNotesStore';
 
 type DynamicTiptapEditorProps = {
+  autoFocus?: boolean;
   blockId: string;
   disabled?: boolean;
+  insertTextRequest?: DynamicTiptapInsertTextRequest | null;
+  onBlur?: () => void;
   onChange: (contentJson: TiptapDocument, contentText: string) => void;
+  onFocus?: () => void;
   onRequestFileUpload: () => Promise<DynamicNoteFile | null>;
   onToolbarTargetChange: (target: DynamicTiptapToolbarTarget) => void;
-  placeholder: string;
   value: TiptapDocument | null;
 };
 
-export type DynamicTiptapToolbarTarget = {
-  blockId: string;
-  editor: Editor;
-  insertFile: () => Promise<void>;
+export type DynamicTiptapToolbarTarget =
+  | {
+      blockId: string;
+      editor: Editor;
+      insertFile: () => Promise<void>;
+      kind: 'content';
+    }
+  | {
+      blockId?: string;
+      editor: Editor;
+      id: string;
+      kind: 'inline';
+    };
+
+export type DynamicTiptapInsertTextRequest = {
+  nonce: number;
+  text: string;
 };
 
 type DynamicFileAttrs = DynamicNoteFile & {
@@ -101,12 +126,38 @@ const DynamicFileNode = Node.create({
   },
 });
 
+const DynamicTipNode = Node.create({
+  name: 'dynamicTip',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+  isolating: true,
+
+  addAttributes() {
+    return {
+      title: { default: 'Tip' },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: 'notex-tip' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['notex-tip', mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(DynamicTipNodeView);
+  },
+});
+
 const extensions = [
   StarterKit.configure({
     link: false,
   }),
   Placeholder.configure({
-    placeholder: ({ node }) => (node.type.name === 'heading' ? 'Heading' : 'Write...'),
+    placeholder: '',
   }),
   UnderlineExtension,
   Link.configure({
@@ -126,20 +177,47 @@ const extensions = [
   TableCell,
   TaskList,
   TaskItem.configure({ nested: true }),
+  DynamicTipNode,
   DynamicFileNode,
 ];
 
+const inlineExtensions = [
+  StarterKit.configure({
+    blockquote: false,
+    bulletList: false,
+    codeBlock: false,
+    heading: false,
+    horizontalRule: false,
+    link: false,
+    listItem: false,
+    orderedList: false,
+  }),
+  UnderlineExtension,
+  Link.configure({
+    openOnClick: false,
+    autolink: true,
+    defaultProtocol: 'https',
+  }),
+  TextStyle,
+  Color,
+  Highlight.configure({ multicolor: true }),
+];
+
 export function DynamicTiptapEditor({
+  autoFocus = false,
   blockId,
   disabled = false,
+  insertTextRequest = null,
+  onBlur,
   onChange,
+  onFocus,
   onRequestFileUpload,
   onToolbarTargetChange,
-  placeholder,
   value,
 }: DynamicTiptapEditorProps) {
   const { t } = useI18n();
   const [contentKey, setContentKey] = useState(() => JSON.stringify(value ?? emptyTiptapDocument));
+  const lastInsertTextNonceRef = useRef<number | null>(null);
   const editor = useEditor(
     {
       editable: !disabled,
@@ -151,10 +229,11 @@ export function DynamicTiptapEditor({
         setContentKey(JSON.stringify(json));
         onChange(json, editor.getText({ blockSeparator: '\n' }));
       },
+      onBlur,
+      onFocus,
       editorProps: {
         attributes: {
           class: 'dynamic-tiptap-prosemirror',
-          'data-placeholder': placeholder,
         },
       },
     },
@@ -186,6 +265,23 @@ export function DynamicTiptapEditor({
   }, [disabled, editor]);
 
   useEffect(() => {
+    if (autoFocus && editor) {
+      requestAnimationFrame(() => editor.chain().focus('end').run());
+    }
+  }, [autoFocus, editor]);
+
+  useEffect(() => {
+    if (!editor || !insertTextRequest || lastInsertTextNonceRef.current === insertTextRequest.nonce) {
+      return;
+    }
+
+    lastInsertTextNonceRef.current = insertTextRequest.nonce;
+    requestAnimationFrame(() => {
+      editor.chain().focus('end').insertContent(insertTextRequest.text).run();
+    });
+  }, [editor, insertTextRequest]);
+
+  useEffect(() => {
     if (!editor || editor.isFocused) {
       return;
     }
@@ -207,6 +303,7 @@ export function DynamicTiptapEditor({
         blockId,
         editor,
         insertFile: insertUploadedFile,
+        kind: 'content',
       });
     };
 
@@ -241,114 +338,343 @@ export function DynamicTiptapEditor({
   );
 }
 
+export function DynamicInlineTiptapEditor({
+  autoFocus = false,
+  blockId,
+  className,
+  disabled = false,
+  id,
+  insertTextRequest = null,
+  onBlur,
+  onChange,
+  onFocus,
+  onToolbarTargetChange,
+  placeholder,
+  value,
+}: {
+  autoFocus?: boolean;
+  blockId?: string;
+  className: string;
+  disabled?: boolean;
+  id: string;
+  insertTextRequest?: DynamicTiptapInsertTextRequest | null;
+  onBlur?: () => void;
+  onChange: (value: string, plainText: string) => void;
+  onFocus?: () => void;
+  onToolbarTargetChange: (target: DynamicTiptapToolbarTarget) => void;
+  placeholder: string;
+  value: string;
+}) {
+  const [contentKey, setContentKey] = useState(() => value);
+  const lastInsertTextNonceRef = useRef<number | null>(null);
+  const fieldExtensions = useMemo(
+    () => [
+      ...inlineExtensions,
+      Placeholder.configure({
+        placeholder,
+      }),
+    ],
+    [placeholder],
+  );
+  const editor = useEditor(
+    {
+      editable: !disabled,
+      extensions: fieldExtensions,
+      content: richTextToTiptapContent(value),
+      immediatelyRender: false,
+      onUpdate: ({ editor }) => {
+        const plainText = editor.getText({ blockSeparator: '\n' });
+        const nextValue = plainText.trim() ? editor.getHTML() : '';
+        setContentKey(nextValue);
+        onChange(nextValue, plainText);
+      },
+      onBlur,
+      onFocus,
+      editorProps: {
+        attributes: {
+          class: `${className} dynamic-inline-prosemirror`,
+        },
+      },
+    },
+    [],
+  );
+
+  useEffect(() => {
+    editor?.setEditable(!disabled);
+  }, [disabled, editor]);
+
+  useEffect(() => {
+    if (autoFocus && editor) {
+      requestAnimationFrame(() => editor.chain().focus('end').run());
+    }
+  }, [autoFocus, editor]);
+
+  useEffect(() => {
+    if (!editor || !insertTextRequest || lastInsertTextNonceRef.current === insertTextRequest.nonce) {
+      return;
+    }
+
+    lastInsertTextNonceRef.current = insertTextRequest.nonce;
+    requestAnimationFrame(() => {
+      editor.chain().focus('end').insertContent(insertTextRequest.text).run();
+    });
+  }, [editor, insertTextRequest]);
+
+  useEffect(() => {
+    if (!editor || editor.isFocused) {
+      return;
+    }
+
+    if (value !== contentKey) {
+      editor.commands.setContent(richTextToTiptapContent(value), { emitUpdate: false });
+      setContentKey(value);
+    }
+  }, [contentKey, editor, value]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    const publishTarget = () => {
+      onToolbarTargetChange({
+        blockId,
+        editor,
+        id,
+        kind: 'inline',
+      });
+    };
+
+    editor.on('focus', publishTarget);
+    editor.on('selectionUpdate', publishTarget);
+    editor.on('update', publishTarget);
+
+    return () => {
+      editor.off('focus', publishTarget);
+      editor.off('selectionUpdate', publishTarget);
+      editor.off('update', publishTarget);
+    };
+  }, [blockId, editor, id, onToolbarTargetChange]);
+
+  return (
+    <div className="dynamic-inline-editor">
+      <EditorContent editor={editor} />
+    </div>
+  );
+}
+
 export function DynamicTiptapToolbar({
-  disabled,
-  editor,
-  onInsertFile,
+  target,
   t,
 }: {
-  disabled: boolean;
-  editor: Editor | null;
-  onInsertFile: () => void;
+  target: DynamicTiptapToolbarTarget | null;
   t: ReturnType<typeof useI18n>['t'];
 }) {
-  const configuredTools = useMemo(() => new Set((editorSettings.dynamicTools ?? []).map((tool) => tool.id)), []);
-  const unavailable = disabled || !editor;
+  const [tableMenuOpen, setTableMenuOpen] = useState(false);
+  const tableToolRef = useRef<HTMLDivElement>(null);
+  const editor = target?.editor ?? null;
+  const contentTarget = target?.kind === 'content' ? target : null;
+  const unavailable = !target || !editor;
+  const contentUnavailable = unavailable || !contentTarget;
+  const tableDisabled = contentUnavailable;
+  const canEditCurrentTable = Boolean(editor?.isActive('table'));
 
-  function enabled(toolId: string) {
-    return configuredTools.size === 0 || configuredTools.has(toolId);
+  useClickOutside(tableToolRef, tableMenuOpen, () => setTableMenuOpen(false));
+
+  function applyTextStyle(kind: InlineStyleKind, color: InlineStyleColor | null) {
+    if (!editor || unavailable) {
+      return;
+    }
+
+    const chain = editor.chain().focus();
+    if (kind === 'color') {
+      if (color) {
+        chain.setColor(`var(--nx-color-${color})`).run();
+      } else {
+        chain.unsetColor().run();
+      }
+      return;
+    }
+
+    if (color) {
+      chain.setHighlight({ color: `color-mix(in srgb, var(--nx-color-${color}) 28%, transparent)` }).run();
+    } else {
+      chain.unsetHighlight().run();
+    }
+  }
+
+  function applyTableAction(action: 'column-delete' | 'column-left' | 'column-right' | 'insert-table' | 'row-above' | 'row-below' | 'row-delete' | 'table-delete') {
+    if (!editor || contentUnavailable) {
+      return;
+    }
+
+    const chain = editor.chain().focus();
+    if (action === 'insert-table') {
+      chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    } else if (action === 'row-delete') {
+      chain.deleteRow().run();
+    } else if (action === 'column-delete') {
+      chain.deleteColumn().run();
+    } else if (action === 'table-delete') {
+      chain.deleteTable().run();
+    } else if (action === 'row-above') {
+      chain.addRowBefore().run();
+    } else if (action === 'row-below') {
+      chain.addRowAfter().run();
+    } else if (action === 'column-left') {
+      chain.addColumnBefore().run();
+    } else {
+      chain.addColumnAfter().run();
+    }
+    setTableMenuOpen(false);
   }
 
   return (
-    <div className="dynamic-tiptap-toolbar" aria-label={t('editor.toolbar')}>
-      {enabled('bold') ? (
-        <ToolbarButton active={editor?.isActive('bold')} disabled={unavailable} label={t('editor.bold')} onClick={() => editor?.chain().focus().toggleBold().run()}>
+    <div className="note-edit-toolbar dynamic-tiptap-toolbar" aria-label={t('editor.toolbar')}>
+      <div className={unavailable ? 'note-edit-toolbar__tools note-edit-toolbar__tools--disabled' : 'note-edit-toolbar__tools'}>
+        <ToolbarButton disabled={unavailable} label={t('editor.bold')} onClick={() => editor?.chain().focus().toggleBold().run()}>
           <Bold />
         </ToolbarButton>
-      ) : null}
-      {enabled('italic') ? (
-        <ToolbarButton active={editor?.isActive('italic')} disabled={unavailable} label={t('editor.italic')} onClick={() => editor?.chain().focus().toggleItalic().run()}>
+        <ToolbarButton disabled={unavailable} label={t('editor.italic')} onClick={() => editor?.chain().focus().toggleItalic().run()}>
           <Italic />
         </ToolbarButton>
-      ) : null}
-      {enabled('underline') ? (
-        <ToolbarButton active={editor?.isActive('underline')} disabled={unavailable} label={t('editor.underline')} onClick={() => editor?.chain().focus().toggleUnderline().run()}>
+        <ToolbarButton disabled={unavailable} label={t('editor.underline')} onClick={() => editor?.chain().focus().toggleUnderline().run()}>
           <Underline />
         </ToolbarButton>
-      ) : null}
-      {enabled('strike') ? (
-        <ToolbarButton active={editor?.isActive('strike')} disabled={unavailable} label={t('editor.strikethrough')} onClick={() => editor?.chain().focus().toggleStrike().run()}>
+        <ToolbarButton disabled={unavailable} label={t('editor.strikethrough')} onClick={() => editor?.chain().focus().toggleStrike().run()}>
           <Strikethrough />
         </ToolbarButton>
-      ) : null}
-      <span className="toolbar-divider" />
-      <ToolbarButton active={editor?.isActive('heading', { level: 1 })} disabled={unavailable} label={t('editor.heading1')} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}>
-        <Heading1 />
-      </ToolbarButton>
-      <ToolbarButton active={editor?.isActive('heading', { level: 2 })} disabled={unavailable} label={t('editor.heading2')} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}>
-        <Heading2 />
-      </ToolbarButton>
-      <ToolbarButton active={editor?.isActive('heading', { level: 3 })} disabled={unavailable} label={t('editor.heading3')} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}>
-        <Heading3 />
-      </ToolbarButton>
-      <ToolbarButton disabled={unavailable} label={t('editor.text')} onClick={() => editor?.chain().focus().setParagraph().run()}>
-        <AlignLeft />
-      </ToolbarButton>
-      <ToolbarButton disabled={unavailable} label={t('editor.text')} onClick={() => editor?.chain().focus().setTextAlign('center').run()}>
-        <AlignCenter />
-      </ToolbarButton>
-      <ToolbarButton disabled={unavailable} label={t('editor.text')} onClick={() => editor?.chain().focus().setTextAlign('right').run()}>
-        <AlignRight />
-      </ToolbarButton>
-      <span className="toolbar-divider" />
-      {enabled('bulletList') ? (
-        <ToolbarButton active={editor?.isActive('bulletList')} disabled={unavailable} label={t('editor.bulletList')} onClick={() => editor?.chain().focus().toggleBulletList().run()}>
+        <TextStyleToolbar compact disabled={unavailable} onSelect={applyTextStyle} />
+
+        <span className="toolbar-divider" />
+
+        <ToolbarButton disabled={contentUnavailable} label={t('editor.heading1')} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}>
+          <Heading1 />
+        </ToolbarButton>
+        <ToolbarButton disabled={contentUnavailable} label={t('editor.heading2')} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}>
+          <Heading2 />
+        </ToolbarButton>
+        <ToolbarButton disabled={contentUnavailable} label={t('editor.heading3')} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}>
+          <Heading3 />
+        </ToolbarButton>
+        <ToolbarButton disabled={contentUnavailable} label={t('editor.bulletList')} onClick={() => editor?.chain().focus().toggleBulletList().run()}>
           <List />
         </ToolbarButton>
-      ) : null}
-      {enabled('orderedList') ? (
-        <ToolbarButton active={editor?.isActive('orderedList')} disabled={unavailable} label={t('editor.numberedList')} onClick={() => editor?.chain().focus().toggleOrderedList().run()}>
+        <ToolbarButton disabled={contentUnavailable} label={t('editor.numberedList')} onClick={() => editor?.chain().focus().toggleOrderedList().run()}>
           <ListOrdered />
         </ToolbarButton>
-      ) : null}
-      {enabled('taskList') ? (
-        <ToolbarButton active={editor?.isActive('taskList')} disabled={unavailable} label={t('editor.checkList')} onClick={() => editor?.chain().focus().toggleTaskList().run()}>
+        <ToolbarButton disabled={contentUnavailable} label={t('editor.checkList')} onClick={() => editor?.chain().focus().toggleTaskList().run()}>
           <ListChecks />
         </ToolbarButton>
-      ) : null}
-      {enabled('blockquote') ? (
-        <ToolbarButton active={editor?.isActive('blockquote')} disabled={unavailable} label={t('editor.quote')} onClick={() => editor?.chain().focus().toggleBlockquote().run()}>
+        <ToolbarButton disabled={contentUnavailable} label={t('editor.quote')} onClick={() => editor?.chain().focus().toggleBlockquote().run()}>
           <Quote />
         </ToolbarButton>
-      ) : null}
-      {enabled('codeBlock') ? (
-        <ToolbarButton active={editor?.isActive('codeBlock')} disabled={unavailable} label={t('editor.codeBlock')} onClick={() => editor?.chain().focus().toggleCodeBlock().run()}>
+        <ToolbarButton
+          disabled={contentUnavailable}
+          label={t('noteDetail.tip')}
+          onClick={() =>
+            editor?.chain().focus().insertContent({
+              type: 'dynamicTip',
+              attrs: { title: t('noteDetail.tip') },
+              content: [{ type: 'paragraph' }],
+            }).run()
+          }
+        >
+          <Lightbulb />
+        </ToolbarButton>
+
+        <span className="toolbar-divider" />
+
+        <ToolbarButton disabled={unavailable} label={t('editor.inlineCode')} onClick={() => editor?.chain().focus().toggleCode().run()}>
           <Code />
         </ToolbarButton>
-      ) : null}
-      <ToolbarButton disabled={unavailable} label={t('editor.highlightColor')} onClick={() => editor?.chain().focus().toggleHighlight({ color: '#fff0a6' }).run()}>
-        <Highlighter />
-      </ToolbarButton>
-      <ToolbarButton disabled={unavailable} label={t('editor.link')} onClick={() => editor && setLink(editor, t('editor.linkText'))}>
-        <Link2 />
-      </ToolbarButton>
-      <span className="toolbar-divider" />
-      {enabled('table') ? (
-        <ToolbarButton disabled={unavailable} label={t('editor.insertTable')} onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
-          <Table2 />
+        <ToolbarButton disabled={contentUnavailable} label={t('editor.codeBlock')} onClick={() => editor?.chain().focus().toggleCodeBlock().run()}>
+          <Code />
         </ToolbarButton>
-      ) : null}
-      {enabled('image') ? (
-        <ToolbarButton disabled={unavailable} label={t('dynamicNotes.editor.addImage')} onClick={onInsertFile}>
+        <ToolbarButton disabled={unavailable} label={t('editor.link')} onClick={() => editor && setLink(editor, t('editor.linkText'))}>
+          <Link2 />
+        </ToolbarButton>
+        <div className="table-tool" ref={tableToolRef}>
+          <button
+            className="markdown-tool-button"
+            type="button"
+            disabled={tableDisabled}
+            aria-expanded={tableMenuOpen}
+            aria-label={t('editor.tableMenu')}
+            onMouseDown={preserveToolbarSelection}
+            onClick={() => setTableMenuOpen((open) => !open)}
+          >
+            <Table2 />
+            <ChevronDown />
+          </button>
+          {tableMenuOpen ? (
+            <div className="markdown-table-menu">
+              <ToolbarButton disabled={tableDisabled} label={t('editor.insertTable')} onClick={() => applyTableAction('insert-table')}>
+                <Table2 />
+              </ToolbarButton>
+              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.addRowAbove')} onClick={() => applyTableAction('row-above')}>
+                <ArrowUp />
+              </ToolbarButton>
+              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.addRowBelow')} onClick={() => applyTableAction('row-below')}>
+                <ArrowDown />
+              </ToolbarButton>
+              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.addColumnLeft')} onClick={() => applyTableAction('column-left')}>
+                <ArrowLeft />
+              </ToolbarButton>
+              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.addColumnRight')} onClick={() => applyTableAction('column-right')}>
+                <ArrowRight />
+              </ToolbarButton>
+              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.deleteRow')} onClick={() => applyTableAction('row-delete')}>
+                <Trash2 />
+              </ToolbarButton>
+              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.deleteColumn')} onClick={() => applyTableAction('column-delete')}>
+                <Trash2 />
+              </ToolbarButton>
+              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.deleteTable')} onClick={() => applyTableAction('table-delete')}>
+                <Trash2 />
+              </ToolbarButton>
+            </div>
+          ) : null}
+        </div>
+
+        <span className="toolbar-divider" />
+
+        <ToolbarButton disabled={contentUnavailable} label={t('dynamicNotes.editor.addImage')} onClick={() => void contentTarget?.insertFile()}>
           <ImageIcon />
         </ToolbarButton>
-      ) : null}
-      {enabled('file') ? (
-        <ToolbarButton disabled={unavailable} label={t('dynamicNotes.editor.addFile')} onClick={onInsertFile}>
+        <ToolbarButton disabled={contentUnavailable} label={t('dynamicNotes.editor.addFile')} onClick={() => void contentTarget?.insertFile()}>
           <FileUp />
         </ToolbarButton>
-      ) : null}
+      </div>
     </div>
+  );
+}
+
+function DynamicTipNodeView({ deleteNode, node }: ReactNodeViewProps) {
+  const { t } = useI18n();
+  const title = typeof node.attrs.title === 'string' && node.attrs.title.trim() ? node.attrs.title : t('noteDetail.tip');
+
+  return (
+    <NodeViewWrapper className="tip-box dynamic-tip-box" data-drag-handle>
+      <Lightbulb />
+      <div>
+        <h2 className="section-title" contentEditable={false}>
+          {title}
+        </h2>
+        <NodeViewContent className="dynamic-tip-content" />
+      </div>
+      <button
+        className="dynamic-tip-delete icon-button danger"
+        type="button"
+        contentEditable={false}
+        aria-label={t('common.delete')}
+        title={t('common.delete')}
+        onMouseDown={preserveToolbarSelection}
+        onClick={deleteNode}
+      >
+        <Trash2 />
+      </button>
+    </NodeViewWrapper>
   );
 }
 
@@ -457,23 +783,25 @@ function DynamicFileNodeView({ node, selected, updateAttributes }: ReactNodeView
 }
 
 function ToolbarButton({
-  active = false,
   children,
   disabled = false,
   label,
   onClick,
 }: {
-  active?: boolean;
   children: ReactNode;
   disabled?: boolean;
   label: string;
   onClick: () => void;
 }) {
   return (
-    <button className={active ? 'markdown-tool-button active' : 'markdown-tool-button'} disabled={disabled} title={label} type="button" aria-label={label} onClick={onClick}>
+    <button className="markdown-tool-button" disabled={disabled} title={label} type="button" aria-label={label} onMouseDown={preserveToolbarSelection} onClick={onClick}>
       {children}
     </button>
   );
+}
+
+function preserveToolbarSelection(event: MouseEvent<HTMLElement>) {
+  event.preventDefault();
 }
 
 function setLink(editor: NonNullable<ReturnType<typeof useEditor>>, fallbackLabel: string) {

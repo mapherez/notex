@@ -339,6 +339,16 @@ pub fn notex_dynamic_file_copy_to(
 }
 
 #[tauri::command]
+pub fn notex_dynamic_file_delete(app: AppHandle, relative_path: String) -> Result<(), String> {
+    let relative = safe_relative_files_path(&relative_path)?;
+    let source = files_directory(&app)?.join(relative);
+    if source.is_file() {
+        fs::remove_file(source).map_err(to_string)?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub fn notex_sqlite_replace_database_from_file(
     app: AppHandle,
     source_path: String,

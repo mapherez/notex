@@ -1,10 +1,12 @@
-import { ArchiveRestore, Copy, Folder, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { ArchiveRestore, Copy, Folder, GripVertical, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
+import { useRef, useState, type PointerEventHandler } from 'react';
 import { Link } from 'react-router-dom';
 import type { Collection, DynamicNote, PreferredLayout, Tag } from '../../core/models/models';
+import { richTextToPlainText } from '../../core/utils/richText';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useAppStore } from '../../store/useAppStore';
 import { useDynamicNotesStore } from '../../store/useDynamicNotesStore';
 import { useToastStore } from '../../store/useToastStore';
 import { NoteThumbnail } from '../ui/NoteThumbnail';
@@ -15,6 +17,16 @@ export function DynamicNoteRow({
   layout = 'list',
   note,
   onPermanentDelete,
+  onPinnedDragPointerDown,
+  onPinnedDragPointerEnter,
+  onPinnedDragPointerMove,
+  onPinnedDragPointerUp,
+  onSelectionChange,
+  pinnedDragActive = false,
+  selectable = false,
+  selected = false,
+  showPinIndicator = false,
+  showPinnedDragHandle = false,
   tags,
   timeValue,
 }: {
@@ -22,6 +34,16 @@ export function DynamicNoteRow({
   layout?: PreferredLayout;
   note: DynamicNote;
   onPermanentDelete?: (noteId: string) => void;
+  onPinnedDragPointerDown?: PointerEventHandler<HTMLButtonElement>;
+  onPinnedDragPointerEnter?: PointerEventHandler<HTMLElement>;
+  onPinnedDragPointerMove?: PointerEventHandler<HTMLElement>;
+  onPinnedDragPointerUp?: PointerEventHandler<HTMLElement>;
+  onSelectionChange?: (noteId: string, selected: boolean) => void;
+  pinnedDragActive?: boolean;
+  selectable?: boolean;
+  selected?: boolean;
+  showPinIndicator?: boolean;
+  showPinnedDragHandle?: boolean;
   tags: Tag[];
   timeValue?: string | null;
 }) {
@@ -30,22 +52,40 @@ export function DynamicNoteRow({
   const [menuOpen, setMenuOpen] = useState(false);
   const toggleFavorite = useDynamicNotesStore((state) => state.toggleDynamicFavorite);
   const togglePinned = useDynamicNotesStore((state) => state.toggleDynamicPinned);
+  const setPinnedNoteState = useAppStore((state) => state.setPinnedNoteState);
   const moveToTrash = useDynamicNotesStore((state) => state.moveDynamicNoteToTrash);
   const restoreNote = useDynamicNotesStore((state) => state.restoreDynamicNote);
   const createDynamicNote = useDynamicNotesStore((state) => state.createDynamicNote);
   const pushToast = useToastStore((state) => state.pushToast);
   const noteTags = sortTagsByName(tags.filter((tag) => note.tagIds.includes(tag.id)));
   const collection = collections.find((item) => item.id === note.collectionId);
-  const title = note.title.trim() || t('dynamicNotes.untitled');
-  const preview = note.subtitle || note.blocks?.map((block) => [block.title, block.contentText].filter(Boolean).join(' ')).filter(Boolean).join(' ') || t('dynamicNotes.emptyPreview');
+  const title = richTextToPlainText(note.title).trim() || t('dynamicNotes.untitled');
+  const preview =
+    richTextToPlainText(note.subtitle).trim() ||
+    note.blocks
+      ?.map((block) => [richTextToPlainText(block.title), block.contentText].filter(Boolean).join(' '))
+      .filter(Boolean)
+      .join(' ') ||
+    t('dynamicNotes.emptyPreview');
 
   useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
 
   async function handleDuplicate() {
     const duplicate = await createDynamicNote({ collectionId: note.collectionId, title: `${title} (${t('common.copy')})` });
-    await useDynamicNotesStore.getState().updateDynamicNoteHeader(duplicate.id, {
-      subtitle: note.subtitle,
-    });
+    const dynamicNotesStore = useDynamicNotesStore.getState();
+    await dynamicNotesStore.updateDynamicNoteHeader(duplicate.id, { subtitle: note.subtitle });
+    await dynamicNotesStore.updateDynamicNoteTags(duplicate.id, note.tagIds);
+    if (note.thumbnail) {
+      await dynamicNotesStore.updateDynamicNoteThumbnail(duplicate.id, note.thumbnail);
+    }
+    for (const block of note.blocks ?? []) {
+      await dynamicNotesStore.addDynamicBlock(duplicate.id, {
+        contentJson: block.contentJson,
+        contentText: block.contentText,
+        kind: block.kind,
+        title: block.title,
+      });
+    }
     pushToast(t('notes.duplicated'), 'success');
     setMenuOpen(false);
   }
@@ -60,19 +100,59 @@ export function DynamicNoteRow({
     setMenuOpen(false);
   }
 
+  async function handlePin() {
+    await togglePinned(note.id);
+    await setPinnedNoteState(note.id, !note.isPinned);
+    pushToast(t('notes.pinChanged'), 'success');
+    setMenuOpen(false);
+  }
+
   return (
-    <article className="note-row dynamic-note-row">
+    <article
+      className={getNoteRowClassName({
+        dragActive: pinnedDragActive,
+        dragHandle: showPinnedDragHandle,
+        pinIndicator: showPinIndicator,
+        selectable,
+      })}
+      onPointerEnter={onPinnedDragPointerEnter}
+      onPointerMove={onPinnedDragPointerMove}
+      onPointerUp={onPinnedDragPointerUp}
+    >
       <Link className="note-row__link-overlay" to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${title}`} />
-      <div className="note-row__status-stack">
+      {showPinnedDragHandle ? (
         <button
-          className={note.isPinned ? 'note-row__status-button note-row__pin-indicator is-pinned' : 'note-row__status-button note-row__pin-indicator'}
+          className="note-row__drag-handle"
           type="button"
-          aria-label={note.isPinned ? t('common.unpin') : t('common.pin')}
-          title={note.isPinned ? t('common.unpin') : t('common.pin')}
-          onClick={() => void togglePinned(note.id)}
+          aria-label={t('notes.reorderPinned')}
+          title={t('notes.reorderPinned')}
+          onPointerDown={onPinnedDragPointerDown}
         >
-          <Pin />
+          <GripVertical />
         </button>
+      ) : null}
+      {selectable ? (
+        <label className="note-select-control">
+          <input
+            type="checkbox"
+            checked={selected}
+            aria-label={t('notes.bulk.selectNote', { title })}
+            onChange={(event) => onSelectionChange?.(note.id, event.currentTarget.checked)}
+          />
+        </label>
+      ) : null}
+      <div className="note-row__status-stack">
+        {showPinIndicator ? (
+          <button
+            className={note.isPinned ? 'note-row__status-button note-row__pin-indicator is-pinned' : 'note-row__status-button note-row__pin-indicator'}
+            type="button"
+            aria-label={note.isPinned ? t('common.unpin') : t('common.pin')}
+            title={note.isPinned ? t('common.unpin') : t('common.pin')}
+            onClick={() => void handlePin()}
+          >
+            <Pin />
+          </button>
+        ) : null}
         <button
           className={note.isFavorite ? 'note-row__status-button note-row__favorite-toggle is-favorite' : 'note-row__status-button note-row__favorite-toggle'}
           type="button"
@@ -102,7 +182,12 @@ export function DynamicNoteRow({
             <Folder strokeWidth={1.9} />
             <span>{collection.name}</span>
           </Link>
-        ) : null}
+        ) : (
+          <Link className="collection-chip neutral collection-chip--empty" to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${title}`}>
+            <Folder strokeWidth={1.9} />
+            <span>{t('noteDetail.noCollection')}</span>
+          </Link>
+        )}
         {noteTags.length ? (
           <span className="note-row__tag-chain">
             {noteTags.map((tag) => (
@@ -148,6 +233,29 @@ export function DynamicNoteRow({
       </div>
     </article>
   );
+}
+
+function getNoteRowClassName({
+  dragActive,
+  dragHandle,
+  pinIndicator,
+  selectable,
+}: {
+  dragActive: boolean;
+  dragHandle: boolean;
+  pinIndicator: boolean;
+  selectable: boolean;
+}) {
+  return [
+    'note-row',
+    'dynamic-note-row',
+    selectable ? 'selectable' : '',
+    pinIndicator ? 'with-pin-indicator' : '',
+    dragHandle ? 'with-drag-handle' : '',
+    dragActive ? 'is-dragging' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 function formatDisplayTime(value: string, today: string, yesterday: string) {

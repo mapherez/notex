@@ -58,6 +58,10 @@ export function openDynamicAttachment(relativePath: string) {
   return invoke<void>('notex_dynamic_file_open', { relativePath });
 }
 
+export function deleteDynamicAttachment(relativePath: string) {
+  return invoke<void>('notex_dynamic_file_delete', { relativePath });
+}
+
 export async function exportDynamicAttachment(file: DynamicNoteFile) {
   const destinationPath = await save({
     defaultPath: file.originalName,

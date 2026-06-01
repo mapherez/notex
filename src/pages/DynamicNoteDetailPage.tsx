@@ -1,18 +1,30 @@
 import {
   ChevronLeft,
-  EyeOff,
+  Check,
+  ExternalLink,
   FileText,
   Folder,
   GripVertical,
   Image as ImageIcon,
   Pencil,
+  Plus,
+  Download,
   Star,
   Tag as TagIcon,
   Trash2,
+  X,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { DynamicTiptapEditor, DynamicTiptapToolbar, type DynamicTiptapToolbarTarget } from '../components/dynamic/DynamicTiptapEditor';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { InlineFormattedText } from '../components/editing/InlineFormattedText';
+import { StyledTextField } from '../components/editing/TextStyleToolbar';
+import {
+  DynamicInlineTiptapEditor,
+  DynamicTiptapEditor,
+  DynamicTiptapToolbar,
+  type DynamicTiptapInsertTextRequest,
+  type DynamicTiptapToolbarTarget,
+} from '../components/dynamic/DynamicTiptapEditor';
 import { ColorPicker } from '../components/ui/ColorPicker';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
@@ -21,10 +33,19 @@ import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
 import { SortableTagList } from '../components/ui/SortableTagList';
 import { TagChip } from '../components/ui/TagChip';
-import { defaultNewTagColor, defaultNoteThumbnailVariant, thumbnailOptions } from '../config/appSettings';
+import { appLimits, defaultNewTagColor, defaultNoteThumbnailVariant, thumbnailOptions } from '../config/appSettings';
 import type { Collection, DynamicNote, DynamicNoteBlock, DynamicNoteFile, NoteThumbnail as NoteThumbnailModel, Tag, TagColor, TiptapDocument } from '../core/models/models';
-import { chooseDynamicAttachment } from '../core/services/dynamicFiles';
+import { chooseDynamicAttachment, exportDynamicAttachment, openDynamicAttachment } from '../core/services/dynamicFiles';
+import { openExternalUrl } from '../core/services/externalLinks';
+import { stripInlineFormatting } from '../core/utils/inlineFormatting';
+import {
+  isEditableShortcutTarget,
+  isPlainLetterShortcut,
+} from '../core/utils/keyboardShortcuts';
+import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
+import { richTextToPlainText } from '../core/utils/richText';
 import { useClickOutside } from '../core/utils/useClickOutside';
+import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { sortTagsByFavoriteOrder } from '../core/utils/tagSorting';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
@@ -37,7 +58,17 @@ type DeleteBlockState = null | {
   title: string;
 };
 
-const sidePanels = ['metadata', 'tags', 'files'] as const;
+type HeaderTypingRequest = {
+  field: 'subtitle' | 'title';
+  nonce: number;
+  text: string;
+};
+
+type DynamicTocEntry = {
+  id: string;
+  label: string;
+  level: 1 | 2 | 3;
+};
 
 export function DynamicNoteDetailPage() {
   const { id } = useParams();
@@ -59,19 +90,41 @@ export function DynamicNoteDetailPage() {
   const deleteBlock = useDynamicNotesStore((state) => state.deleteDynamicBlock);
   const moveToTrash = useDynamicNotesStore((state) => state.moveDynamicNoteToTrash);
   const importFileForBlock = useDynamicNotesStore((state) => state.importFileForBlock);
+  const deleteDynamicFile = useDynamicNotesStore((state) => state.deleteDynamicFile);
+  const updateLinkedNotes = useDynamicNotesStore((state) => state.updateDynamicNoteLinkedNotes);
+  const addAdditionalExample = useDynamicNotesStore((state) => state.addDynamicAdditionalExample);
+  const updateAdditionalExample = useDynamicNotesStore((state) => state.updateDynamicAdditionalExample);
+  const deleteAdditionalExample = useDynamicNotesStore((state) => state.deleteDynamicAdditionalExample);
+  const addRelatedLink = useDynamicNotesStore((state) => state.addDynamicRelatedLink);
+  const deleteRelatedLink = useDynamicNotesStore((state) => state.deleteDynamicRelatedLink);
   const notes = useKnowledgeStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const createTag = useKnowledgeStore((state) => state.createTag);
+  const user = useKnowledgeStore((state) => state.user);
   const settings = useAppStore((state) => state.settings);
-  const setPanelHidden = useAppStore((state) => state.setDynamicNotePanelHidden);
   const favoriteTagIds = useAppStore((state) => state.settings.favoriteTagIds);
   const pushToast = useToastStore((state) => state.pushToast);
+  const linkInputRef = useRef<HTMLInputElement>(null);
   const [deleteBlockState, setDeleteBlockState] = useState<DeleteBlockState>(null);
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
   const [dragBlockIds, setDragBlockIds] = useState<string[] | null>(null);
+  const [headerTypingRequest, setHeaderTypingRequest] = useState<HeaderTypingRequest | null>(null);
+  const [firstBlockTypingRequest, setFirstBlockTypingRequest] = useState<DynamicTiptapInsertTextRequest | null>(null);
+  const [tocEntries, setTocEntries] = useState<DynamicTocEntry[]>([]);
+  const [activeTocId, setActiveTocId] = useState<string | null>(null);
+  const [exampleOpen, setExampleOpen] = useState(false);
+  const [exampleText, setExampleText] = useState('');
+  const [editingExampleIndex, setEditingExampleIndex] = useState<number | null>(null);
+  const [editingExampleText, setEditingExampleText] = useState('');
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkInput, setLinkInput] = useState('');
+  const [selectedLinkedNoteId, setSelectedLinkedNoteId] = useState<string | null>(null);
   const dragBlockIdsRef = useRef<string[] | null>(null);
   const draggedBlockIdRef = useRef<string | null>(null);
+  const typingRequestNonceRef = useRef(0);
+  const tocEntriesRef = useRef<DynamicTocEntry[]>([]);
+  const tocRefreshFrameRef = useRef<number | null>(null);
   const [toolbarTarget, setToolbarTarget] = useState<DynamicTiptapToolbarTarget | null>(null);
   const note = isNewNote ? undefined : dynamicNotes.find((item) => item.id === id);
   const classicNote = !isNewNote && !note ? notes.find((item) => item.id === id) : undefined;
@@ -98,11 +151,16 @@ export function DynamicNoteDetailPage() {
     }
   }, [isNewNote, markOpened, note?.id]);
 
+  useEffect(() => {
+    if (linkOpen) {
+      requestAnimationFrame(() => linkInputRef.current?.focus());
+    }
+  }, [linkOpen]);
+
   const noteTags = useMemo(() => {
     const tagById = new Map(tags.map((tag) => [tag.id, tag]));
     return note ? note.tagIds.flatMap((tagId) => tagById.get(tagId) ?? []) : [];
   }, [note, tags]);
-  const hiddenPanels = new Set(settings.dynamicNoteHiddenPanelIds ?? []);
   const visibleBlocks = useMemo(() => {
     const blocks = note?.blocks ?? [];
     if (!dragBlockIds) {
@@ -114,15 +172,127 @@ export function DynamicNoteDetailPage() {
     const orderedIds = new Set(ordered.map((block) => block.id));
     return [...ordered, ...blocks.filter((block) => !orderedIds.has(block.id))];
   }, [dragBlockIds, note?.blocks]);
+  const firstBlockId = (note?.blocks ?? [])[0]?.id ?? null;
+  const linkedDynamicNotes = useMemo(
+    () => note?.linkedNoteIds.flatMap((linkedId) => dynamicNotes.find((item) => item.id === linkedId && !item.isTrashed) ?? []) ?? [],
+    [dynamicNotes, note?.linkedNoteIds],
+  );
+  const backlinkDynamicNotes = useMemo(
+    () => (note ? dynamicNotes.filter((item) => item.id !== note.id && item.linkedNoteIds.includes(note.id)) : []),
+    [dynamicNotes, note],
+  );
+  const linkSearchActive = linkInput.trim().startsWith('/');
+  const linkSearchQuery = linkSearchActive ? linkInput.trim().slice(1).toLowerCase() : '';
+  const linkableDynamicNotes = dynamicNotes
+    .filter((item) => item.id !== note?.id && !item.isTrashed && !note?.linkedNoteIds.includes(item.id))
+    .filter((item) => !linkSearchQuery || richTextToPlainText(stripInlineFormatting(item.title)).toLowerCase().includes(linkSearchQuery))
+    .slice(0, appLimits.linkedNoteSuggestions);
+  const linkableNoteNavigation = useKeyboardListNavigation({
+    enabled: linkOpen && linkSearchActive,
+    itemCount: linkableDynamicNotes.length,
+    onEscape: () => setLinkOpen(false),
+    onSelect: (index) => {
+      const linkableNote = linkableDynamicNotes[index];
+      if (linkableNote) {
+        selectLinkedNote(linkableNote.id);
+      }
+    },
+  });
+
+  const refreshTocEntries = useCallback(() => {
+    if (tocRefreshFrameRef.current) {
+      window.cancelAnimationFrame(tocRefreshFrameRef.current);
+    }
+
+    tocRefreshFrameRef.current = window.requestAnimationFrame(() => {
+      tocRefreshFrameRef.current = null;
+      const nextEntries = collectDynamicTocEntries();
+      tocEntriesRef.current = nextEntries;
+      setTocEntries((currentEntries) => (sameTocEntries(currentEntries, nextEntries) ? currentEntries : nextEntries));
+      setActiveTocId(findActiveTocEntryId(nextEntries));
+    });
+  }, []);
 
   useEffect(() => {
     if (!toolbarTarget || !note) {
       return;
     }
-    if (!(note.blocks ?? []).some((block) => block.id === toolbarTarget.blockId)) {
+    if (toolbarTarget.blockId && !(note.blocks ?? []).some((block) => block.id === toolbarTarget.blockId)) {
       setToolbarTarget(null);
     }
   }, [note, toolbarTarget]);
+
+  useEffect(() => {
+    refreshTocEntries();
+  }, [refreshTocEntries, note?.id, visibleBlocks]);
+
+  useEffect(() => {
+    const blockList = document.querySelector('.dynamic-block-list');
+    if (!blockList) {
+      return undefined;
+    }
+
+    const observer = new MutationObserver(refreshTocEntries);
+    observer.observe(blockList, {
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
+
+    return () => observer.disconnect();
+  }, [refreshTocEntries, note?.id]);
+
+  useEffect(() => {
+    function updateActiveTocEntry() {
+      setActiveTocId(findActiveTocEntryId(tocEntriesRef.current));
+    }
+
+    window.addEventListener('scroll', updateActiveTocEntry, { passive: true });
+    window.addEventListener('resize', updateActiveTocEntry);
+
+    return () => {
+      window.removeEventListener('scroll', updateActiveTocEntry);
+      window.removeEventListener('resize', updateActiveTocEntry);
+      if (tocRefreshFrameRef.current) {
+        window.cancelAnimationFrame(tocRefreshFrameRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleInitialTyping(event: globalThis.KeyboardEvent) {
+      if (
+        !note ||
+        deleteBlockState ||
+        draggedBlockId ||
+        !isPlainTypingShortcut(event) ||
+        isEditableShortcutTarget(event.target)
+      ) {
+        return;
+      }
+
+      const request = { nonce: ++typingRequestNonceRef.current, text: event.key };
+      if (!richTextToPlainText(note.title).trim()) {
+        event.preventDefault();
+        setHeaderTypingRequest({ ...request, field: 'title' });
+        return;
+      }
+
+      if (!richTextToPlainText(note.subtitle).trim()) {
+        event.preventDefault();
+        setHeaderTypingRequest({ ...request, field: 'subtitle' });
+        return;
+      }
+
+      if (firstBlockId) {
+        event.preventDefault();
+        setFirstBlockTypingRequest(request);
+      }
+    }
+
+    window.addEventListener('keydown', handleInitialTyping);
+    return () => window.removeEventListener('keydown', handleInitialTyping);
+  }, [deleteBlockState, draggedBlockId, firstBlockId, note]);
 
   useEffect(() => {
     if (!draggedBlockId) {
@@ -194,6 +364,59 @@ export function DynamicNoteDetailPage() {
     await deleteBlock(note.id, deleteBlockState.blockId);
     setDeleteBlockState(null);
     pushToast(t('dynamicNotes.blockDeleted'), 'warning');
+  }
+
+  function startExampleEdit(index: number, example: string) {
+    setEditingExampleIndex(index);
+    setEditingExampleText(example);
+  }
+
+  function cancelExampleEdit() {
+    setEditingExampleIndex(null);
+    setEditingExampleText('');
+  }
+
+  async function saveExampleEdit(index: number) {
+    if (!note) {
+      return;
+    }
+
+    await updateAdditionalExample(note.id, index, editingExampleText);
+    cancelExampleEdit();
+    pushToast(t('noteDetail.exampleUpdated'), 'success');
+  }
+
+  function selectLinkedNote(linkedNoteId: string) {
+    const selected = dynamicNotes.find((item) => item.id === linkedNoteId);
+    if (!selected) {
+      return;
+    }
+
+    setSelectedLinkedNoteId(selected.id);
+    setLinkInput(richTextToPlainText(stripInlineFormatting(selected.title)) || t('dynamicNotes.untitled'));
+  }
+
+  async function saveRelatedLink() {
+    if (!note) {
+      return;
+    }
+
+    if (selectedLinkedNoteId) {
+      await updateLinkedNotes(note.id, [...note.linkedNoteIds, selectedLinkedNoteId]);
+    } else {
+      const href = normalizeExternalHref(linkInput);
+      const title = titleFromExternalHref(linkInput);
+      if (!href || !title) {
+        pushToast(t('noteDetail.linkUrlRequired'), 'warning');
+        return;
+      }
+      await addRelatedLink(note.id, title, href);
+    }
+
+    setLinkInput('');
+    setSelectedLinkedNoteId(null);
+    setLinkOpen(false);
+    pushToast(t('noteDetail.linkAdded'), 'success');
   }
 
   function startBlockDrag(event: PointerEvent<HTMLButtonElement>, blockId: string) {
@@ -289,30 +512,50 @@ export function DynamicNoteDetailPage() {
 
       <div className="dynamic-global-toolbar-shell">
         <DynamicTiptapToolbar
-          disabled={!toolbarTarget}
-          editor={toolbarTarget?.editor ?? null}
-          onInsertFile={() => {
-            void toolbarTarget?.insertFile();
-          }}
+          target={toolbarTarget}
           t={t}
         />
       </div>
 
       <div className="dynamic-document-shell">
-        <aside className="dynamic-toc">
-          <span className="dynamic-toc-title">{t('dynamicNotes.tableOfContents')}</span>
-          {(note.blocks ?? []).length ? (
-            <nav>
-              {(note.blocks ?? []).map((block, index) => (
-                <a key={block.id} href={`#block-${block.id}`}>
-                  <span>{index + 1}</span>
-                  {block.title.trim() || t('dynamicNotes.untitledBlock')}
-                </a>
-              ))}
-            </nav>
-          ) : (
-            <span className="dynamic-toc-empty">{t('dynamicNotes.emptyToc')}</span>
-          )}
+        <aside className="dynamic-toc" aria-label={t('dynamicNotes.tableOfContents')}>
+          <div className="dynamic-toc-dashes" aria-hidden="true">
+            {tocEntries.map((entry) => (
+              <span
+                className={[
+                  'dynamic-toc-dash',
+                  `dynamic-toc-dash--level-${entry.level}`,
+                  activeTocId === entry.id && 'is-active',
+                ].filter(Boolean).join(' ')}
+                key={entry.id}
+              />
+            ))}
+          </div>
+          <div className="dynamic-toc-content">
+            {tocEntries.length ? (
+              <nav>
+                {tocEntries.map((entry) => (
+                  <button
+                    className={[
+                      'dynamic-toc-link',
+                      `dynamic-toc-link--level-${entry.level}`,
+                      activeTocId === entry.id && 'is-active',
+                    ].filter(Boolean).join(' ')}
+                    key={entry.id}
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget.blur();
+                      scrollToTocEntry(entry.id);
+                    }}
+                  >
+                    {entry.label}
+                  </button>
+                ))}
+              </nav>
+            ) : (
+              <span className="dynamic-toc-empty">{t('dynamicNotes.emptyToc')}</span>
+            )}
+          </div>
         </aside>
 
         <main className="dynamic-document-main">
@@ -323,17 +566,20 @@ export function DynamicNoteDetailPage() {
             onChange={(input) => void updateHeader(note.id, input)}
             onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
             onThumbnailChange={(thumbnail) => void updateThumbnail(note.id, thumbnail)}
+            onToolbarTargetChange={setToolbarTarget}
             t={t}
+            typingRequest={headerTypingRequest}
           />
 
           <section className={draggedBlockId ? 'dynamic-block-list is-reordering' : 'dynamic-block-list'}>
             {visibleBlocks.map((block) => (
               <DynamicBlockEditor
                 block={block}
+                contentTypingRequest={block.id === firstBlockId ? firstBlockTypingRequest : null}
                 dragged={draggedBlockId === block.id}
                 key={block.id}
                 noteId={note.id}
-                onDelete={() => setDeleteBlockState({ blockId: block.id, title: block.title.trim() || t('dynamicNotes.untitledBlock') })}
+                onDelete={() => setDeleteBlockState({ blockId: block.id, title: richTextToPlainText(block.title).trim() || t('dynamicNotes.untitledBlock') })}
                 onDragStart={(event) => startBlockDrag(event, block.id)}
                 onRequestFileUpload={async () => {
                   const sourcePath = await chooseDynamicAttachment();
@@ -347,6 +593,7 @@ export function DynamicNoteDetailPage() {
                   return file;
                 }}
                 onToolbarTargetChange={setToolbarTarget}
+                onTocChange={refreshTocEntries}
               />
             ))}
           </section>
@@ -359,69 +606,219 @@ export function DynamicNoteDetailPage() {
         </main>
 
         <aside className="document-aside dynamic-document-aside">
-          <Panel title={t('dynamicNotes.panels.title')}>
-            <div className="dynamic-panel-toggle-list">
-              {sidePanels.map((panelId) => (
-                <label key={panelId}>
-                  <input
-                    type="checkbox"
-                    checked={!hiddenPanels.has(panelId)}
-                    onChange={(event) => void setPanelHidden(panelId, !event.currentTarget.checked)}
-                  />
-                  <span>{t(`dynamicNotes.panels.${panelId}`)}</span>
-                </label>
-              ))}
+          <Panel title={t('noteDetail.metadata')}>
+            <div className="meta-list">
+              <div className="meta-row">
+                <span>{t('noteDetail.createdAt')}</span>
+                <span className="meta-value">{formatDate(note.createdAt, locale)}</span>
+              </div>
+              <div className="meta-row">
+                <span>{t('noteDetail.updatedAt')}</span>
+                <span className="meta-value">{formatDate(note.updatedAt, locale)}</span>
+              </div>
+              <div className="meta-row">
+                <span>{t('noteDetail.collectionLabel')}</span>
+                <span className="meta-value">{collections.find((collection) => collection.id === note.collectionId)?.name ?? t('noteDetail.noCollection')}</span>
+              </div>
+              <div className="meta-row">
+                <span>{t('noteDetail.author')}</span>
+                <span className="meta-value">{user?.name || note.authorId || 'Local user'}</span>
+              </div>
             </div>
           </Panel>
 
-          {!hiddenPanels.has('metadata') ? (
-            <HideablePanel panelId="metadata" title={t('noteDetail.metadata')} onHide={() => void setPanelHidden('metadata', true)}>
-              <div className="meta-list">
-                <div className="meta-row">
-                  <span>{t('noteDetail.createdAt')}</span>
-                  <span className="meta-value">{formatDate(note.createdAt, locale)}</span>
-                </div>
-                <div className="meta-row">
-                  <span>{t('noteDetail.updatedAt')}</span>
-                  <span className="meta-value">{formatDate(note.updatedAt, locale)}</span>
-                </div>
-                <div className="meta-row">
-                  <span>{t('noteDetail.words')}</span>
-                  <span className="meta-value">{note.stats.wordCount}</span>
+          <Panel title={t('noteDetail.tags')}>
+            <DynamicTagEditor
+              favoriteTagIds={favoriteTagIds}
+              note={note}
+              noteTags={noteTags}
+              onCreateTag={createTag}
+              onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
+              tags={tags}
+            />
+          </Panel>
+
+          <Panel title={t('noteDetail.additionalExamples')}>
+            <ul className="side-list">
+              {note.additionalExamples?.map((example, index) => (
+                <li className="side-edit-row" key={`${example}-${index}`}>
+                  {editingExampleIndex === index ? (
+                    <span className="side-edit-form">
+                      <StyledTextField
+                        className="side-styled-field"
+                        controlClassName="side-styled-field__control"
+                        multiline
+                        value={editingExampleText}
+                        onChange={setEditingExampleText}
+                      />
+                      <span className="side-row-actions">
+                        <button className="icon-button" type="button" aria-label={t('editor.accept')} onClick={() => void saveExampleEdit(index)}>
+                          <Check />
+                        </button>
+                        <button className="icon-button" type="button" aria-label={t('common.cancel')} onClick={cancelExampleEdit}>
+                          <X />
+                        </button>
+                      </span>
+                    </span>
+                  ) : (
+                    <>
+                      <span>
+                        <InlineFormattedText value={example} />
+                      </span>
+                      <span className="side-row-actions">
+                        <button className="icon-button" type="button" aria-label={t('editor.edit')} onClick={() => startExampleEdit(index, example)}>
+                          <Pencil />
+                        </button>
+                        <button
+                          className="icon-button danger"
+                          type="button"
+                          aria-label={t('common.remove')}
+                          onClick={() => void deleteAdditionalExample(note.id, index).then(() => pushToast(t('noteDetail.exampleDeleted'), 'warning'))}
+                        >
+                          <Trash2 />
+                        </button>
+                      </span>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <button className="nav-item nav-item--spaced" type="button" onClick={() => setExampleOpen((value) => !value)}>
+              <Plus />
+              {t('noteDetail.addExample')}
+            </button>
+            {exampleOpen ? (
+              <form
+                className="inline-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void addAdditionalExample(note.id, exampleText).then(() => {
+                    setExampleText('');
+                    setExampleOpen(false);
+                    pushToast(t('noteDetail.exampleAdded'), 'success');
+                  });
+                }}
+              >
+                <StyledTextField
+                  className="side-styled-field"
+                  controlClassName="side-styled-field__control"
+                  multiline
+                  value={exampleText}
+                  onChange={setExampleText}
+                  placeholder={t('noteDetail.examplePlaceholder')}
+                />
+                <button type="submit">{t('common.save')}</button>
+              </form>
+            ) : null}
+          </Panel>
+
+          <Panel title={t('noteDetail.relatedLinks')}>
+            <div className="side-list">
+              {linkedDynamicNotes.map((linkedNote) => (
+                <DynamicLinkedNoteRow
+                  key={linkedNote.id}
+                  noteId={linkedNote.id}
+                  title={linkedNote.title}
+                  onRemove={() => void updateLinkedNotes(note.id, note.linkedNoteIds.filter((linkedId) => linkedId !== linkedNote.id)).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'))}
+                />
+              ))}
+              {note.relatedLinks?.map((link) => (
+                <DynamicRelatedLinkRow
+                  key={link.id}
+                  href={link.href}
+                  title={link.title}
+                  onRemove={() => void deleteRelatedLink(note.id, link.id).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'))}
+                />
+              ))}
+            </div>
+            <button className="nav-item nav-item--spaced" type="button" onClick={() => setLinkOpen((value) => !value)}>
+              <Plus />
+              {t('noteDetail.addLink')}
+            </button>
+            {linkOpen ? (
+              <form
+                className="inline-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void saveRelatedLink();
+                }}
+              >
+                <input
+                  ref={linkInputRef}
+                  value={linkInput}
+                  onChange={(event) => {
+                    setLinkInput(event.target.value);
+                    setSelectedLinkedNoteId(null);
+                  }}
+                  onKeyDown={linkSearchActive ? linkableNoteNavigation.onKeyDown : undefined}
+                  placeholder={t('noteDetail.linkInputPlaceholder')}
+                  title={t('noteDetail.linkInputPlaceholder')}
+                />
+                {linkSearchActive ? (
+                  <div className="note-link-picker">
+                    {linkableDynamicNotes.length ? (
+                      linkableDynamicNotes.map((linkableNote, linkIndex) => (
+                        <button
+                          className={linkIndex === linkableNoteNavigation.activeIndex ? 'active' : undefined}
+                          key={linkableNote.id}
+                          type="button"
+                          onClick={() => selectLinkedNote(linkableNote.id)}
+                          onMouseEnter={() => linkableNoteNavigation.setActiveIndex(linkIndex)}
+                        >
+                          <FileText />
+                          <InlineFormattedText value={richTextToPlainText(stripInlineFormatting(linkableNote.title))} />
+                        </button>
+                      ))
+                    ) : (
+                      <span>{t('noteDetail.noLinkableNotes')}</span>
+                    )}
+                  </div>
+                ) : null}
+                <button type="submit">{t('common.save')}</button>
+              </form>
+            ) : null}
+            {backlinkDynamicNotes.length ? (
+              <div className="backlink-section">
+                <h3>{t('noteDetail.backlinks')}</h3>
+                <div className="side-list">
+                  {backlinkDynamicNotes.map((backlink) => (
+                    <DynamicLinkedNoteRow key={backlink.id} noteId={backlink.id} title={backlink.title} />
+                  ))}
                 </div>
               </div>
-            </HideablePanel>
-          ) : null}
+            ) : null}
+          </Panel>
 
-          {!hiddenPanels.has('tags') ? (
-            <HideablePanel panelId="tags" title={t('noteDetail.tags')} onHide={() => void setPanelHidden('tags', true)}>
-              <DynamicTagEditor
-                favoriteTagIds={favoriteTagIds}
-                note={note}
-                noteTags={noteTags}
-                onCreateTag={createTag}
-                onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
-                tags={tags}
-              />
-            </HideablePanel>
-          ) : null}
-
-          {!hiddenPanels.has('files') ? (
-            <HideablePanel panelId="files" title={t('dynamicNotes.files')} onHide={() => void setPanelHidden('files', true)}>
-              {note.files?.length ? (
-                <ul className="side-list dynamic-file-side-list">
-                  {note.files.map((file) => (
-                    <li key={file.id}>
-                      {file.kind === 'image' ? <ImageIcon /> : <FileText />}
-                      <span>{file.originalName}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="inline-help">{t('dynamicNotes.noFiles')}</p>
-              )}
-            </HideablePanel>
-          ) : null}
+          <Panel title={t('dynamicNotes.files')}>
+            {note.files?.length ? (
+              <ul className="side-list dynamic-file-side-list">
+                {note.files.map((file) => (
+                  <li key={file.id}>
+                    {file.kind === 'image' ? <ImageIcon /> : <FileText />}
+                    <span>{file.originalName}</span>
+                    <span className="side-list-actions">
+                      <button className="icon-button" type="button" aria-label={t('common.open')} onClick={() => void openDynamicAttachment(file.relativePath)}>
+                        <FileText />
+                      </button>
+                      <button className="icon-button" type="button" aria-label={t('common.export')} onClick={() => void exportDynamicAttachment(file)}>
+                        <Download />
+                      </button>
+                      <button
+                        className="icon-button danger"
+                        type="button"
+                        aria-label={t('common.delete')}
+                        onClick={() => void deleteDynamicFile(note.id, file.id).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'))}
+                      >
+                        <Trash2 />
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="inline-help">{t('dynamicNotes.noFiles')}</p>
+            )}
+          </Panel>
         </aside>
       </div>
 
@@ -446,7 +843,9 @@ function DynamicNoteHeader({
   onChange,
   onTagsChange,
   onThumbnailChange,
+  onToolbarTargetChange,
   t,
+  typingRequest,
 }: {
   collections: Collection[];
   note: DynamicNote;
@@ -454,7 +853,9 @@ function DynamicNoteHeader({
   onChange: (input: { collectionId?: string | null; subtitle?: string; title?: string }) => void;
   onTagsChange: (tagIds: string[]) => void;
   onThumbnailChange: (thumbnail: NoteThumbnailModel) => void;
+  onToolbarTargetChange: (target: DynamicTiptapToolbarTarget) => void;
   t: ReturnType<typeof useI18n>['t'];
+  typingRequest?: HeaderTypingRequest | null;
 }) {
   const [title, setTitle] = useState(note.title);
   const [subtitle, setSubtitle] = useState(note.subtitle);
@@ -510,9 +911,12 @@ function DynamicNoteHeader({
 
       <div className="document-title-row">
         <div className="document-title-stack">
-          <AutoResizeTextarea
+          <DynamicInlineTiptapEditor
             className="document-title-input dynamic-title-input"
-            onChange={setTitle}
+            id={`dynamic-note-title-${note.id}`}
+            insertTextRequest={typingRequest?.field === 'title' ? typingRequest : null}
+            onChange={(nextTitle) => setTitle(nextTitle)}
+            onToolbarTargetChange={onToolbarTargetChange}
             placeholder={t('noteDetail.titlePlaceholder')}
             value={title}
           />
@@ -530,9 +934,12 @@ function DynamicNoteHeader({
         />
       ) : null}
 
-      <AutoResizeTextarea
+      <DynamicInlineTiptapEditor
         className="document-intro-input dynamic-subtitle-input"
-        onChange={setSubtitle}
+        id={`dynamic-note-subtitle-${note.id}`}
+        insertTextRequest={typingRequest?.field === 'subtitle' ? typingRequest : null}
+        onChange={(nextSubtitle) => setSubtitle(nextSubtitle)}
+        onToolbarTargetChange={onToolbarTargetChange}
         placeholder={t('dynamicNotes.subtitlePlaceholder')}
         value={subtitle}
       />
@@ -597,19 +1004,23 @@ function DynamicThumbnailPicker({
 
 function DynamicBlockEditor({
   block,
+  contentTypingRequest,
   dragged,
   noteId,
   onDelete,
   onDragStart,
   onRequestFileUpload,
+  onTocChange,
   onToolbarTargetChange,
 }: {
   block: DynamicNoteBlock;
+  contentTypingRequest?: DynamicTiptapInsertTextRequest | null;
   dragged: boolean;
   noteId: string;
   onDelete: () => void;
   onDragStart: (event: PointerEvent<HTMLButtonElement>) => void;
   onRequestFileUpload: () => Promise<DynamicNoteFile | null>;
+  onTocChange: () => void;
   onToolbarTargetChange: (target: DynamicTiptapToolbarTarget) => void;
 }) {
   const { t } = useI18n();
@@ -617,13 +1028,31 @@ function DynamicBlockEditor({
   const [title, setTitle] = useState(block.title);
   const [contentJson, setContentJson] = useState<TiptapDocument | null>(block.contentJson);
   const [contentText, setContentText] = useState(block.contentText);
+  const [titleActive, setTitleActive] = useState(false);
+  const [contentActive, setContentActive] = useState(false);
   const saveTimeoutRef = useRef<number | null>(null);
+  const lastTypingNonceRef = useRef<number | null>(null);
+  const titleHasContent = richTextToPlainText(title).trim().length > 0;
+  const contentHasContent = hasTiptapContent(contentJson, contentText);
+  const titleVisible = titleHasContent || titleActive;
+  const contentVisible = contentHasContent || contentActive;
+  const blockIsEmpty = !titleVisible && !contentVisible;
 
   useEffect(() => {
     setTitle(block.title);
     setContentJson(block.contentJson);
     setContentText(block.contentText);
   }, [block.id, block.title, block.contentJson, block.contentText]);
+
+  useEffect(() => {
+    if (!contentTypingRequest || lastTypingNonceRef.current === contentTypingRequest.nonce) {
+      return;
+    }
+
+    lastTypingNonceRef.current = contentTypingRequest.nonce;
+    setContentJson((current) => current ?? emptyTiptapDocument);
+    setContentActive(true);
+  }, [contentTypingRequest]);
 
   useEffect(() => {
     const contentChanged = JSON.stringify(contentJson) !== JSON.stringify(block.contentJson);
@@ -635,6 +1064,7 @@ function DynamicBlockEditor({
     }
     saveTimeoutRef.current = window.setTimeout(() => {
       void updateBlock(noteId, block.id, {
+        kind: contentHasContent || contentJson ? 'content' : block.kind,
         title,
         contentJson,
         contentText,
@@ -645,13 +1075,14 @@ function DynamicBlockEditor({
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [block.contentJson, block.contentText, block.id, block.title, contentJson, contentText, noteId, title, updateBlock]);
+  }, [block.contentJson, block.contentText, block.id, block.kind, block.title, contentHasContent, contentJson, contentText, noteId, title, updateBlock]);
 
   return (
     <article
       className={dragged ? 'dynamic-block is-dragging' : 'dynamic-block'}
       data-dynamic-block-id={block.id}
       id={`block-${block.id}`}
+      data-empty={blockIsEmpty ? 'true' : undefined}
     >
       <button
         className="dynamic-block-handle"
@@ -664,20 +1095,70 @@ function DynamicBlockEditor({
         <GripVertical />
       </button>
       <div className="dynamic-block-body">
-        <input className="dynamic-block-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t('dynamicNotes.blockTitlePlaceholder')} />
-        {block.kind === 'content' ? (
-          <DynamicTiptapEditor
+        {titleVisible ? (
+          <DynamicInlineTiptapEditor
+            autoFocus={titleActive && !titleHasContent}
             blockId={block.id}
+            className="dynamic-block-title"
+            id={`dynamic-block-title-${block.id}`}
+            onBlur={() => {
+              if (!richTextToPlainText(title).trim()) {
+                setTitleActive(false);
+              }
+            }}
+            onChange={(nextTitle) => {
+              setTitle(nextTitle);
+              onTocChange();
+            }}
+            onToolbarTargetChange={onToolbarTargetChange}
+            placeholder=""
+            value={title}
+          />
+        ) : (
+          <button
+            className="dynamic-block-zone-add dynamic-block-zone-add-title"
+            type="button"
+            aria-label={t('dynamicNotes.addTitleBlock')}
+            title={t('dynamicNotes.addTitleBlock')}
+            onClick={() => setTitleActive(true)}
+          >
+            <Plus />
+          </button>
+        )}
+        {contentVisible ? (
+          <DynamicTiptapEditor
+            autoFocus={contentActive && !contentHasContent}
+            blockId={block.id}
+            insertTextRequest={contentTypingRequest}
+            onBlur={() => {
+              if (!hasTiptapContent(contentJson, contentText)) {
+                setContentActive(false);
+              }
+            }}
             onChange={(nextJson, nextText) => {
               setContentJson(nextJson);
               setContentText(nextText);
+              onTocChange();
             }}
+            onFocus={() => setContentActive(true)}
             onRequestFileUpload={onRequestFileUpload}
             onToolbarTargetChange={onToolbarTargetChange}
-            placeholder={t('dynamicNotes.blockContentPlaceholder')}
             value={contentJson ?? emptyTiptapDocument}
           />
-        ) : null}
+        ) : (
+          <button
+            className="dynamic-block-zone-add dynamic-block-zone-add-content"
+            type="button"
+            aria-label={t('dynamicNotes.addContentBlock')}
+            title={t('dynamicNotes.addContentBlock')}
+            onClick={() => {
+              setContentJson((current) => current ?? emptyTiptapDocument);
+              setContentActive(true);
+            }}
+          >
+            <Plus />
+          </button>
+        )}
       </div>
       <button className="dynamic-block-delete" type="button" aria-label={t('common.delete')} title={t('common.delete')} onClick={onDelete}>
         <Trash2 />
@@ -702,6 +1183,7 @@ function DynamicTagEditor({
   tags: ReturnType<typeof sortTagsByFavoriteOrder>;
 }) {
   const { t } = useI18n();
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState<TagColor>(defaultNewTagColor);
   const availableTags = sortTagsByFavoriteOrder(tags.filter((tag) => !note.tagIds.includes(tag.id)), favoriteTagIds);
@@ -714,10 +1196,11 @@ function DynamicTagEditor({
     onTagsChange([...note.tagIds, created.id]);
     setNewTagName('');
     setNewTagColor(defaultNewTagColor);
+    setTagPickerOpen(false);
   }
 
   return (
-    <div className="dynamic-tags-editor">
+    <>
       <SortableTagList
         ariaLabel={t('noteDetail.tags')}
         className="tag-row"
@@ -726,52 +1209,105 @@ function DynamicTagEditor({
         removable
         tags={noteTags}
       />
-      {availableTags.length ? (
-        <div className="inline-picker dynamic-tag-picker">
-          {availableTags.map((tag) => (
-            <button key={tag.id} type="button" onClick={() => onTagsChange([...note.tagIds, tag.id])}>
-              <TagChip tag={tag} />
-            </button>
-          ))}
+      <button className="nav-item nav-item--spaced" type="button" onClick={() => setTagPickerOpen((value) => !value)}>
+        <Plus />
+        {t('noteDetail.addTag')}
+      </button>
+      {tagPickerOpen ? (
+        <div className="note-tag-picker">
+          {availableTags.length ? (
+            <div className="inline-picker dynamic-tag-picker">
+              {availableTags.map((tag) => (
+                <button key={tag.id} type="button" onClick={() => onTagsChange([...note.tagIds, tag.id])}>
+                  <TagChip tag={tag} />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="inline-help">{t('noteDetail.noTagsAvailable')}</p>
+          )}
+          <form
+            className="inline-form tag-create-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void createAndAttachTag();
+            }}
+          >
+            <input value={newTagName} onChange={(event) => setNewTagName(event.target.value)} placeholder={t('noteDetail.newTagPlaceholder')} />
+            <ColorPicker ariaLabel={t('profile.labels.color')} onChange={setNewTagColor} value={newTagColor} />
+            <button type="submit">{t('noteDetail.createAndAddTag')}</button>
+          </form>
         </div>
       ) : null}
-      <form
-        className="inline-form tag-create-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void createAndAttachTag();
-        }}
-      >
-        <TagIcon />
-        <input value={newTagName} onChange={(event) => setNewTagName(event.target.value)} placeholder={t('noteDetail.newTagPlaceholder')} />
-        <ColorPicker ariaLabel={t('profile.labels.color')} onChange={setNewTagColor} value={newTagColor} />
-        <button type="submit">{t('noteDetail.createAndAddTag')}</button>
-      </form>
-    </div>
+    </>
   );
 }
 
-function HideablePanel({
-  children,
-  onHide,
-  title,
-}: {
-  children: ReactNode;
-  onHide: () => void;
-  panelId: string;
-  title: string;
-}) {
+function DynamicLinkedNoteRow({ noteId, onRemove, title }: { noteId: string; onRemove?: () => void; title: string }) {
+  const plainTitle = richTextToPlainText(stripInlineFormatting(title));
+
   return (
-    <Panel
-      title={title}
-      action={
-        <button className="icon-button" type="button" aria-label={title} onClick={onHide}>
-          <EyeOff />
+    <span className="linked-row-shell">
+      <Link className="linked-row" to={`/notes/${noteId}`}>
+        <span className="inline-actions">
+          <FileText />
+          <InlineFormattedText value={plainTitle} />
+        </span>
+        <ExternalLink />
+      </Link>
+      {onRemove ? (
+        <button className="icon-button danger" type="button" aria-label={plainTitle} onClick={onRemove}>
+          <Trash2 />
         </button>
-      }
-    >
-      {children}
-    </Panel>
+      ) : null}
+    </span>
+  );
+}
+
+function DynamicRelatedLinkRow({ href, onRemove, title }: { href: string; onRemove?: () => void; title: string }) {
+  const content = (
+    <>
+      <span className="inline-actions">
+        <FileText />
+        {title}
+      </span>
+      <ExternalLink />
+    </>
+  );
+
+  if (href.startsWith('/')) {
+    return (
+      <span className="linked-row-shell">
+        <Link className="linked-row" to={href}>
+          {content}
+        </Link>
+        {onRemove ? (
+          <button className="icon-button danger" type="button" aria-label={title} onClick={onRemove}>
+            <Trash2 />
+          </button>
+        ) : null}
+      </span>
+    );
+  }
+
+  return (
+    <span className="linked-row-shell">
+      <a
+        className="linked-row"
+        href={href}
+        onClick={(event) => {
+          event.preventDefault();
+          void openExternalUrl(href);
+        }}
+      >
+        {content}
+      </a>
+      {onRemove ? (
+        <button className="icon-button danger" type="button" aria-label={title} onClick={onRemove}>
+          <Trash2 />
+        </button>
+      ) : null}
+    </span>
   );
 }
 
@@ -789,36 +1325,124 @@ function arraysEqual(left: string[], right: string[]) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
-function AutoResizeTextarea({
-  className,
-  onChange,
-  placeholder,
-  value,
-}: {
-  className: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  value: string;
-}) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+function collectDynamicTocEntries() {
+  const entries: DynamicTocEntry[] = [];
+  const blockElements = Array.from(document.querySelectorAll<HTMLElement>('.dynamic-block-list [data-dynamic-block-id]'));
 
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
+  blockElements.forEach((blockElement) => {
+    const blockId = blockElement.dataset.dynamicBlockId;
+    if (!blockId) {
       return;
     }
-    textarea.style.height = '0';
-    textarea.style.height = `${textarea.scrollHeight}px`;
-  }, [value]);
 
+    const titleElement = blockElement.querySelector<HTMLElement>('.dynamic-block-title');
+    const title = titleElement?.textContent?.trim();
+    if (title && titleElement) {
+      const id = `block-title-${blockId}`;
+      titleElement.dataset.dynamicTocId = id;
+      entries.push({ id, label: title, level: 1 });
+    }
+
+    const headings = Array.from(blockElement.querySelectorAll<HTMLHeadingElement>('.dynamic-tiptap-prosemirror h1, .dynamic-tiptap-prosemirror h2, .dynamic-tiptap-prosemirror h3'));
+    headings.forEach((heading, index) => {
+      const label = heading.textContent?.trim();
+      if (!label) {
+        return;
+      }
+
+      const level = Number(heading.tagName.slice(1)) as 1 | 2 | 3;
+      const id = `heading-${blockId}-${index}`;
+      heading.dataset.dynamicTocId = id;
+      entries.push({ id, label, level });
+    });
+  });
+
+  return entries;
+}
+
+function sameTocEntries(left: DynamicTocEntry[], right: DynamicTocEntry[]) {
   return (
-    <textarea
-      className={className}
-      ref={textareaRef}
-      rows={1}
-      value={value}
-      onChange={(event) => onChange(event.currentTarget.value)}
-      placeholder={placeholder}
-    />
+    left.length === right.length &&
+    left.every((entry, index) => {
+      const other = right[index];
+      return entry.id === other.id && entry.label === other.label && entry.level === other.level;
+    })
   );
+}
+
+function findActiveTocEntryId(entries: DynamicTocEntry[]) {
+  if (!entries.length) {
+    return null;
+  }
+
+  const triggerY = window.innerHeight / 2;
+  let activeId = entries[0].id;
+
+  entries.forEach((entry) => {
+    const element = findTocTarget(entry.id);
+    if (!element) {
+      return;
+    }
+
+    if (element.getBoundingClientRect().top <= triggerY) {
+      activeId = entry.id;
+    }
+  });
+
+  return activeId;
+}
+
+function scrollToTocEntry(entryId: string) {
+  const element = findTocTarget(entryId);
+  if (!element) {
+    return;
+  }
+
+  const toolbar = document.querySelector<HTMLElement>('.dynamic-global-toolbar-shell');
+  const stickyBottom = toolbar?.getBoundingClientRect().bottom ?? 0;
+  const targetTop = window.scrollY + element.getBoundingClientRect().top - stickyBottom - 16;
+  window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+}
+
+function findTocTarget(entryId: string) {
+  return document.querySelector<HTMLElement>(`[data-dynamic-toc-id="${entryId}"]`);
+}
+
+function isPlainTypingShortcut(event: globalThis.KeyboardEvent) {
+  return (
+    isPlainLetterShortcut(event) ||
+    (!event.repeat &&
+      !event.isComposing &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      event.key.length === 1)
+  );
+}
+
+function hasTiptapContent(document: TiptapDocument | null, contentText: string) {
+  if (contentText.trim()) {
+    return true;
+  }
+
+  const content = document?.content as TiptapNodeLike[] | undefined;
+  return Boolean(content?.some(hasMeaningfulTiptapNode));
+}
+
+type TiptapNodeLike = {
+  content?: TiptapNodeLike[];
+  text?: string;
+  type?: string;
+};
+
+function hasMeaningfulTiptapNode(node: TiptapNodeLike): boolean {
+  if (node.type === 'text') {
+    return Boolean(node.text?.trim());
+  }
+
+  if (node.type === 'dynamicFile' || node.type === 'dynamicTip' || node.type === 'image' || node.type === 'table') {
+    return true;
+  }
+
+  return Boolean(node.content?.some((child) => hasMeaningfulTiptapNode(child)));
 }

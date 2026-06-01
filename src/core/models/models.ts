@@ -110,6 +110,8 @@ export type DynamicNote = {
   collectionId: string | null;
   tagIds: string[];
   linkedNoteIds: string[];
+  additionalExamples?: string[];
+  relatedLinks?: RelatedLink[];
   isFavorite: boolean;
   isPinned: boolean;
   isArchived: boolean;

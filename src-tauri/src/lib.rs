@@ -23,6 +23,7 @@ pub fn run() {
             sqlite_storage::notex_dynamic_file_absolute_path,
             sqlite_storage::notex_dynamic_file_open,
             sqlite_storage::notex_dynamic_file_copy_to,
+            sqlite_storage::notex_dynamic_file_delete,
             sqlite_storage::notex_sqlite_get,
             sqlite_storage::notex_sqlite_read_table,
             sqlite_storage::notex_sqlite_count,
