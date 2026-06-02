@@ -147,7 +147,37 @@
     "favoriteChanged": "Favorito atualizado",
     "trashChanged": "Lixeira atualizada",
     "deletedForever": "Nota apagada permanentemente",
-    "duplicated": "Nota duplicada"
+    "duplicated": "Nota duplicada",
+    "untitled": "Nota sem título",
+    "untitledBlock": "Bloco sem título",
+    "subtitlePlaceholder": "Adiciona um subtítulo ou descrição curta...",
+    "blockTitlePlaceholder": "Título do bloco",
+    "blockContentPlaceholder": "Escreve qualquer coisa...",
+    "addContentBlock": "Adicionar bloco de conteúdo",
+    "addTitleBlock": "Adicionar bloco de título",
+    "reorderBlock": "Reordenar bloco",
+    "blockDeleted": "Bloco apagado",
+    "deleteBlockTitle": "Apagar bloco?",
+    "deleteBlockDescription": "Apagar “{{title}}”? Esta ação não pode ser desfeita.",
+    "tableOfContents": "Conteúdo",
+    "emptyToc": "Adiciona blocos para criar o índice.",
+    "files": "Ficheiros",
+    "noFiles": "Ainda não há ficheiros anexados.",
+    "fileAdded": "Ficheiro adicionado",
+    "panels": {
+      "title": "Painéis laterais",
+      "metadata": "Informação",
+      "tags": "Tags",
+      "examples": "Exemplos",
+      "linked": "Ligada a",
+      "files": "Ficheiros"
+    },
+    "editor": {
+      "addImage": "Adicionar imagem",
+      "addFile": "Anexar ficheiro",
+      "wrapLeft": "Texto à esquerda",
+      "wrapRight": "Texto à direita"
+    }
   },
   "tags": {
     "colors": {
@@ -258,40 +288,6 @@
     "copiedLink": "Ligação copiada",
     "words": "palavras",
     "characters": "caracteres"
-  },
-  "notes": {
-    "title": "Notas",
-    "subtitle": "Todas as tuas notas ativas, organizadas por atualização.",
-    "untitled": "Nota sem título",
-    "untitledBlock": "Bloco sem título",
-    "subtitlePlaceholder": "Adiciona um subtítulo ou descrição curta...",
-    "blockTitlePlaceholder": "Título do bloco",
-    "blockContentPlaceholder": "Escreve qualquer coisa...",
-    "addContentBlock": "Adicionar bloco de conteúdo",
-    "addTitleBlock": "Adicionar bloco de título",
-    "reorderBlock": "Reordenar bloco",
-    "blockDeleted": "Bloco apagado",
-    "deleteBlockTitle": "Apagar bloco?",
-    "deleteBlockDescription": "Apagar “{{title}}”? Esta ação não pode ser desfeita.",
-    "tableOfContents": "Conteúdo",
-    "emptyToc": "Adiciona blocos para criar o índice.",
-    "files": "Ficheiros",
-    "noFiles": "Ainda não há ficheiros anexados.",
-    "fileAdded": "Ficheiro adicionado",
-    "panels": {
-      "title": "Painéis laterais",
-      "metadata": "Informação",
-      "tags": "Tags",
-      "examples": "Exemplos",
-      "linked": "Ligada a",
-      "files": "Ficheiros"
-    },
-    "editor": {
-      "addImage": "Adicionar imagem",
-      "addFile": "Anexar ficheiro",
-      "wrapLeft": "Texto à esquerda",
-      "wrapRight": "Texto à direita"
-    }
   },
   "editor": {
     "accept": "Aceitar",
@@ -528,12 +524,30 @@
   },
   "mock": {
     "tags": [
-      { "id": "tag-grammar", "name": "gramática", "color": "red" },
-      { "id": "tag-doubt", "name": "duvida", "color": "neutral" }
+      {
+        "id": "tag-grammar",
+        "name": "gramática",
+        "color": "red"
+      },
+      {
+        "id": "tag-doubt",
+        "name": "duvida",
+        "color": "neutral"
+      }
     ],
     "collections": [
-      { "id": "collection-work", "name": "Trabalho", "color": "blue", "icon": "folder" },
-      { "id": "collection-personal", "name": "Pessoal", "color": "pink", "icon": "folder" }
+      {
+        "id": "collection-work",
+        "name": "Trabalho",
+        "color": "blue",
+        "icon": "folder"
+      },
+      {
+        "id": "collection-personal",
+        "name": "Pessoal",
+        "color": "pink",
+        "icon": "folder"
+      }
     ],
     "notes": {
       "linguistic": {
@@ -573,7 +587,11 @@
       }
     },
     "activities": [
-      { "noteId": "note-linguistic", "label": "Nota “Dúvida linguística: “a ver” ou “haver”?” editada", "time": "Hoje, 10:24" }
+      {
+        "noteId": "note-linguistic",
+        "label": "Nota “Dúvida linguística: “a ver” ou “haver”?” editada",
+        "time": "Hoje, 10:24"
+      }
     ]
   }
 }

@@ -147,7 +147,37 @@
     "favoriteChanged": "Favorite updated",
     "trashChanged": "Trash updated",
     "deletedForever": "Note deleted permanently",
-    "duplicated": "Note duplicated"
+    "duplicated": "Note duplicated",
+    "untitled": "Untitled note",
+    "untitledBlock": "Untitled block",
+    "subtitlePlaceholder": "Add a subtitle or short description...",
+    "blockTitlePlaceholder": "Block title",
+    "blockContentPlaceholder": "Write anything...",
+    "addContentBlock": "Add content block",
+    "addTitleBlock": "Add title block",
+    "reorderBlock": "Reorder block",
+    "blockDeleted": "Block deleted",
+    "deleteBlockTitle": "Delete block?",
+    "deleteBlockDescription": "Delete “{{title}}”? This cannot be undone.",
+    "tableOfContents": "Contents",
+    "emptyToc": "Add blocks to build the table of contents.",
+    "files": "Files",
+    "noFiles": "No files attached yet.",
+    "fileAdded": "File added",
+    "panels": {
+      "title": "Side panels",
+      "metadata": "Information",
+      "tags": "Tags",
+      "examples": "Examples",
+      "linked": "Linked to",
+      "files": "Files"
+    },
+    "editor": {
+      "addImage": "Add image",
+      "addFile": "Attach file",
+      "wrapLeft": "Wrap left",
+      "wrapRight": "Wrap right"
+    }
   },
   "tags": {
     "colors": {
@@ -258,40 +288,6 @@
     "copiedLink": "Link copied",
     "words": "words",
     "characters": "characters"
-  },
-  "notes": {
-    "title": "Notes",
-    "subtitle": "All your active notes, sorted by update.",
-    "untitled": "Untitled note",
-    "untitledBlock": "Untitled block",
-    "subtitlePlaceholder": "Add a subtitle or short description...",
-    "blockTitlePlaceholder": "Block title",
-    "blockContentPlaceholder": "Write anything...",
-    "addContentBlock": "Add content block",
-    "addTitleBlock": "Add title block",
-    "reorderBlock": "Reorder block",
-    "blockDeleted": "Block deleted",
-    "deleteBlockTitle": "Delete block?",
-    "deleteBlockDescription": "Delete “{{title}}”? This cannot be undone.",
-    "tableOfContents": "Contents",
-    "emptyToc": "Add blocks to build the table of contents.",
-    "files": "Files",
-    "noFiles": "No files attached yet.",
-    "fileAdded": "File added",
-    "panels": {
-      "title": "Side panels",
-      "metadata": "Information",
-      "tags": "Tags",
-      "examples": "Examples",
-      "linked": "Linked to",
-      "files": "Files"
-    },
-    "editor": {
-      "addImage": "Add image",
-      "addFile": "Attach file",
-      "wrapLeft": "Wrap left",
-      "wrapRight": "Wrap right"
-    }
   },
   "editor": {
     "accept": "Accept",
@@ -528,12 +524,30 @@
   },
   "mock": {
     "tags": [
-      { "id": "tag-grammar", "name": "grammar", "color": "red" },
-      { "id": "tag-doubt", "name": "doubt", "color": "neutral" }
+      {
+        "id": "tag-grammar",
+        "name": "grammar",
+        "color": "red"
+      },
+      {
+        "id": "tag-doubt",
+        "name": "doubt",
+        "color": "neutral"
+      }
     ],
     "collections": [
-      { "id": "collection-work", "name": "Work", "color": "blue", "icon": "folder" },
-      { "id": "collection-personal", "name": "Personal", "color": "pink", "icon": "folder" }
+      {
+        "id": "collection-work",
+        "name": "Work",
+        "color": "blue",
+        "icon": "folder"
+      },
+      {
+        "id": "collection-personal",
+        "name": "Personal",
+        "color": "pink",
+        "icon": "folder"
+      }
     ],
     "notes": {
       "linguistic": {
@@ -573,7 +587,11 @@
       }
     },
     "activities": [
-      { "noteId": "note-linguistic", "label": "Note “Language note: “a ver” or “haver”?” edited", "time": "Today, 10:24" }
+      {
+        "noteId": "note-linguistic",
+        "label": "Note “Language note: “a ver” or “haver”?” edited",
+        "time": "Today, 10:24"
+      }
     ]
   }
 }
