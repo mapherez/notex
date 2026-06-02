@@ -472,6 +472,12 @@ export function NoteDetailPage() {
           <ChevronLeft />
           {t('common.back')}
         </button>
+        <div className="document-top-toolbar">
+          <NoteTiptapToolbar
+            target={toolbarTarget}
+            t={t}
+          />
+        </div>
         <div className="document-actions">
           <button
             className={note.isFavorite ? 'icon-button document-actions__favorite is-active' : 'icon-button document-actions__favorite'}
@@ -501,13 +507,6 @@ export function NoteDetailPage() {
           </button>
         </div>
       </header>
-
-      <div className="note-global-toolbar-shell">
-        <NoteTiptapToolbar
-          target={toolbarTarget}
-          t={t}
-        />
-      </div>
 
       <div className="note-document-shell">
         <aside className="note-toc" aria-label={t('notes.tableOfContents')}>
@@ -1419,8 +1418,8 @@ function scrollToTocEntry(entryId: string) {
     return;
   }
 
-  const toolbar = document.querySelector<HTMLElement>('.note-global-toolbar-shell');
-  const stickyBottom = toolbar?.getBoundingClientRect().bottom ?? 0;
+  const documentTop = document.querySelector<HTMLElement>('.document-top');
+  const stickyBottom = documentTop?.getBoundingClientRect().bottom ?? 0;
   const targetTop = window.scrollY + element.getBoundingClientRect().top - stickyBottom - 16;
   window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
 }

@@ -22,6 +22,7 @@ import { Panel } from "../components/ui/Panel";
 import { appLimits } from "../config/appSettings";
 import {
   openSqliteDatabaseFolder,
+  openSqliteFilesFolder,
   openSqliteLocalDataFolder,
   readSqliteDatabaseInfo,
   type SqliteDatabaseInfo,
@@ -193,6 +194,19 @@ export function ProfilePage() {
     }
   }
 
+  async function handleOpenFilesFolder() {
+    try {
+      await openSqliteFilesFolder();
+    } catch (error) {
+      pushToast(
+        error instanceof Error
+          ? error.message
+          : t("profile.dataManagement.openFolderFailed"),
+        "warning",
+      );
+    }
+  }
+
   return (
     <div className="page-content list-page-grid">
       <header>
@@ -340,12 +354,12 @@ export function ProfilePage() {
               <DatabasePathRow
                 databasePath={
                   databaseInfo?.filesDirectory ??
-                  t("profile.databaseManagement.localDataPathLoading")
+                  t("profile.databaseManagement.filesPathLoading")
                 }
                 icon={Folder}
                 label={t("profile.databaseManagement.filesPath")}
-                onOpen={handleOpenLocalDataFolder}
-                openLabel={t("profile.databaseManagement.openLocalDataFolder")}
+                onOpen={handleOpenFilesFolder}
+                openLabel={t("profile.databaseManagement.openFilesFolder")}
               />
             </div>
           </section>
@@ -733,7 +747,7 @@ function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
       title: t("profile.shortcuts.groups.global"),
       items: [
         {
-          keys: ["Ctrl / ⌘ + U"],
+          keys: ["Ctrl / ⌘ + P"],
           description: t("profile.shortcuts.items.openProfile"),
         },
         {

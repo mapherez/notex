@@ -419,6 +419,13 @@ pub fn notex_sqlite_open_local_data_folder(app: AppHandle) -> Result<(), String>
 }
 
 #[tauri::command]
+pub fn notex_sqlite_open_files_folder(app: AppHandle) -> Result<(), String> {
+    let folder = files_directory(&app)?;
+    fs::create_dir_all(&folder).map_err(to_string)?;
+    open_folder(&folder)
+}
+
+#[tauri::command]
 pub fn notex_sqlite_get(
     app: AppHandle,
     table: String,

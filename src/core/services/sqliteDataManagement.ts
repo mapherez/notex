@@ -67,3 +67,7 @@ export function openSqliteDatabaseFolder() {
 export function openSqliteLocalDataFolder() {
   return invoke<void>('notex_sqlite_open_local_data_folder');
 }
+
+export function openSqliteFilesFolder() {
+  return invoke<void>('notex_sqlite_open_files_folder');
+}

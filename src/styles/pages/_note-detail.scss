@@ -42,6 +42,7 @@
   flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: var(--nx-space-1);
   transition: opacity 160ms ease;
 }
@@ -65,12 +66,29 @@
 
 .document-top {
   display: flex;
+  position: sticky;
+  top: calc(var(--nx-topbar-height) + 1.5rem);
+  z-index: 70;
   align-items: center;
   justify-content: space-between;
   gap: var(--nx-space-4);
-  min-height: 3.4rem;
+  min-height: 3.8rem;
   border-bottom: 1px solid var(--nx-color-border);
-  padding: 0 var(--nx-page-gutter);
+  background: color-mix(in srgb, var(--nx-color-canvas) 94%, transparent);
+  padding: var(--nx-space-2) var(--nx-page-gutter);
+  backdrop-filter: blur(18px);
+}
+
+.document-top-toolbar {
+  display: flex;
+  min-width: 12rem;
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.document-top-toolbar .note-tiptap-toolbar {
+  width: 100%;
+  box-shadow: none;
 }
 
 .document-actions,
@@ -82,6 +100,7 @@
 
 .document-actions {
   position: relative;
+  flex: 0 0 auto;
 }
 
 .document-actions__favorite {
@@ -95,6 +114,7 @@
 .back-button {
   appearance: none;
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: var(--nx-space-2);
   border: 0;

@@ -9,8 +9,7 @@
 
 .note-toc,
 .note-document-aside {
-  position: sticky;
-  top: calc(var(--nx-topbar-height) + var(--nx-space-6) + var(--nx-space-12));
+  top: calc(var(--nx-topbar-height) + var(--nx-space-6) + var(--nx-space-13));
   align-self: start;
 }
 
@@ -138,17 +137,6 @@
 .note-document-main {
   min-width: 0;
   padding: 2rem;
-}
-
-.note-global-toolbar-shell {
-  position: sticky;
-  top: calc(var(--nx-topbar-height) + var(--nx-space-6));
-    z-index: 80;
-    width: min(100%, var(--nx-content-max));
-    margin: 0 auto;
-    padding: 0 var(--nx-space-8) var(--nx-space-2);
-    background: color-mix(in srgb, var(--nx-color-canvas) 94%, transparent);
-    backdrop-filter: blur(18px);
 }
 
 .note-document-heading {

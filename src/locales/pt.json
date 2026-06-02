@@ -472,7 +472,9 @@
       "localDataPath": "Dados locais da aplicação",
       "filesPath": "Pasta de ficheiros",
       "localDataPathLoading": "A carregar caminho dos dados locais...",
-      "openLocalDataFolder": "Abrir pasta dos dados locais"
+      "filesPathLoading": "A carregar caminho da pasta de ficheiros...",
+      "openLocalDataFolder": "Abrir pasta dos dados locais",
+      "openFilesFolder": "Abrir pasta de ficheiros"
     },
     "values": {
       "noActivity": "Ainda sem atividade"

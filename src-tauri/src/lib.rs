@@ -16,6 +16,7 @@ pub fn run() {
             sqlite_storage::notex_sqlite_replace_database_from_file,
             sqlite_storage::notex_sqlite_open_database_folder,
             sqlite_storage::notex_sqlite_open_local_data_folder,
+            sqlite_storage::notex_sqlite_open_files_folder,
             sqlite_storage::notex_package_create_temp_export,
             sqlite_storage::notex_package_copy_export_to,
             sqlite_storage::notex_package_replace_from_file,

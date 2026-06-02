@@ -15,9 +15,9 @@ export function AppShell() {
         navigate('/notes/new');
       }
 
-      if (isPrimaryShortcut(event, "u")) {
+      if (isPrimaryShortcut(event, 'p')) {
         event.preventDefault();
-        navigate("/profile");
+        navigate('/profile');
       }
     }
 

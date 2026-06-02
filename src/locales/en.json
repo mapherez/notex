@@ -472,7 +472,9 @@
       "localDataPath": "Local app data",
       "filesPath": "Files folder",
       "localDataPathLoading": "Loading local app data path...",
-      "openLocalDataFolder": "Open local app data folder"
+      "filesPathLoading": "Loading files folder path...",
+      "openLocalDataFolder": "Open local app data folder",
+      "openFilesFolder": "Open files folder"
     },
     "values": {
       "noActivity": "No activity yet"
