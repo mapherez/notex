@@ -8,6 +8,7 @@ import {
   ArrowUp,
   Bold,
   Code,
+  Delete,
   FileUp,
   Heading1,
   Heading2,
@@ -21,12 +22,23 @@ import {
   ListChecks,
   ListOrdered,
   Quote,
+  SquareCode,
   Strikethrough,
   Table2,
+  TableColumnsSplit,
+  TableRowsSplit,
   Trash2,
   Underline,
-} from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+} from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from "react";
 import { Node, mergeAttributes, type Editor, type JSONContent } from '@tiptap/core';
 import { EditorContent, NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type ReactNodeViewProps } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
@@ -46,6 +58,7 @@ import { TextStyleToolbar } from '../editing/TextStyleToolbar';
 import type { InlineStyleColor, InlineStyleKind } from '../../core/utils/inlineFormatting';
 import type { NoteFile, TiptapDocument } from '../../core/models/models';
 import { exportNoteAttachment, openNoteAttachment, resolveNoteFileSrc } from '../../core/services/noteFiles';
+import { openExternalUrl } from "../../core/services/externalLinks";
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { richTextToTiptapContent } from '../../core/utils/richText';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -59,6 +72,7 @@ type NoteTiptapEditorProps = {
   onBlur?: () => void;
   onChange: (contentJson: TiptapDocument, contentText: string) => void;
   onFocus?: () => void;
+  onPendingFileInsertChange?: (pending: boolean) => void;
   onRequestFileUpload: () => Promise<NoteFile | null>;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
   value: TiptapDocument | null;
@@ -211,12 +225,17 @@ export function NoteTiptapEditor({
   onBlur,
   onChange,
   onFocus,
+  onPendingFileInsertChange,
   onRequestFileUpload,
   onToolbarTargetChange,
   value,
 }: NoteTiptapEditorProps) {
   const { t } = useI18n();
-  const [contentKey, setContentKey] = useState(() => JSON.stringify(value ?? emptyTiptapDocument));
+  const editorShellRef = useRef<HTMLDivElement>(null);
+  const [contentKey, setContentKey] = useState(() =>
+    JSON.stringify(value ?? emptyTiptapDocument),
+  );
+  const [bubbleMenuSuppressed, setBubbleMenuSuppressed] = useState(false);
   const lastInsertTextNonceRef = useRef<number | null>(null);
   const editor = useEditor(
     {
@@ -227,13 +246,14 @@ export function NoteTiptapEditor({
       onUpdate: ({ editor }) => {
         const json = editor.getJSON() as TiptapDocument;
         setContentKey(JSON.stringify(json));
-        onChange(json, editor.getText({ blockSeparator: '\n' }));
+        onChange(json, editor.getText({ blockSeparator: "\n" }));
       },
       onBlur,
       onFocus,
       editorProps: {
+        handleClick: (_view, _pos, event) => handleEditorLinkClick(event),
         attributes: {
-          class: 'note-tiptap-prosemirror',
+          class: "note-tiptap-prosemirror",
         },
       },
     },
@@ -241,24 +261,32 @@ export function NoteTiptapEditor({
   );
 
   const insertUploadedFile = useCallback(async () => {
-    const file = await onRequestFileUpload();
-    if (!file || !editor) {
-      return;
+    onPendingFileInsertChange?.(true);
+    try {
+      const file = await onRequestFileUpload();
+      if (!file || !editor) {
+        return;
+      }
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: "noteFile",
+          attrs: {
+            ...file,
+            align: "center",
+            width: file.kind === "image" ? 420 : 0,
+            wrap: "none",
+          },
+        })
+        .run();
+      const json = editor.getJSON() as TiptapDocument;
+      setContentKey(JSON.stringify(json));
+      onChange(json, editor.getText({ blockSeparator: "\n" }));
+    } finally {
+      requestAnimationFrame(() => onPendingFileInsertChange?.(false));
     }
-    editor
-      .chain()
-      .focus()
-      .insertContent({
-        type: 'noteFile',
-        attrs: {
-          ...file,
-          align: 'center',
-          width: file.kind === 'image' ? 420 : 0,
-          wrap: 'none',
-        },
-      })
-      .run();
-  }, [editor, onRequestFileUpload]);
+  }, [editor, onChange, onPendingFileInsertChange, onRequestFileUpload]);
 
   useEffect(() => {
     editor?.setEditable(!disabled);
@@ -266,18 +294,22 @@ export function NoteTiptapEditor({
 
   useEffect(() => {
     if (autoFocus && editor) {
-      requestAnimationFrame(() => editor.chain().focus('end').run());
+      requestAnimationFrame(() => editor.chain().focus("end").run());
     }
   }, [autoFocus, editor]);
 
   useEffect(() => {
-    if (!editor || !insertTextRequest || lastInsertTextNonceRef.current === insertTextRequest.nonce) {
+    if (
+      !editor ||
+      !insertTextRequest ||
+      lastInsertTextNonceRef.current === insertTextRequest.nonce
+    ) {
       return;
     }
 
     lastInsertTextNonceRef.current = insertTextRequest.nonce;
     requestAnimationFrame(() => {
-      editor.chain().focus('end').insertContent(insertTextRequest.text).run();
+      editor.chain().focus("end").insertContent(insertTextRequest.text).run();
     });
   }, [editor, insertTextRequest]);
 
@@ -288,10 +320,54 @@ export function NoteTiptapEditor({
 
     const nextKey = JSON.stringify(value ?? emptyTiptapDocument);
     if (nextKey !== contentKey) {
-      editor.commands.setContent((value ?? emptyTiptapDocument) as JSONContent, { emitUpdate: false });
+      editor.commands.setContent(
+        (value ?? emptyTiptapDocument) as JSONContent,
+        { emitUpdate: false },
+      );
       setContentKey(nextKey);
     }
   }, [contentKey, editor, value]);
+
+  useEffect(() => {
+    function handleOutsidePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof globalThis.Node)) {
+        return;
+      }
+      if (editorShellRef.current?.contains(target)) {
+        return;
+      }
+      if (target instanceof Element && target.closest(".note-bubble-toolbar")) {
+        return;
+      }
+
+      setBubbleMenuSuppressed(true);
+    }
+
+    document.addEventListener("pointerdown", handleOutsidePointerDown);
+    return () =>
+      document.removeEventListener("pointerdown", handleOutsidePointerDown);
+  }, []);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    const showBubbleOnSelection = () => {
+      if (!editor.state.selection.empty) {
+        setBubbleMenuSuppressed(false);
+      }
+    };
+
+    editor.on("focus", showBubbleOnSelection);
+    editor.on("selectionUpdate", showBubbleOnSelection);
+
+    return () => {
+      editor.off("focus", showBubbleOnSelection);
+      editor.off("selectionUpdate", showBubbleOnSelection);
+    };
+  }, [editor]);
 
   useEffect(() => {
     if (!editor) {
@@ -303,32 +379,54 @@ export function NoteTiptapEditor({
         blockId,
         editor,
         insertFile: insertUploadedFile,
-        kind: 'content',
+        kind: "content",
       });
     };
 
-    editor.on('focus', publishTarget);
-    editor.on('selectionUpdate', publishTarget);
-    editor.on('update', publishTarget);
+    editor.on("focus", publishTarget);
+    editor.on("selectionUpdate", publishTarget);
+    editor.on("update", publishTarget);
 
     return () => {
-      editor.off('focus', publishTarget);
-      editor.off('selectionUpdate', publishTarget);
-      editor.off('update', publishTarget);
+      editor.off("focus", publishTarget);
+      editor.off("selectionUpdate", publishTarget);
+      editor.off("update", publishTarget);
     };
   }, [blockId, editor, insertUploadedFile, onToolbarTargetChange]);
 
   return (
-    <div className="note-tiptap-editor">
+    <div className="note-tiptap-editor" ref={editorShellRef}>
       {editor ? (
-        <BubbleMenu className="note-bubble-toolbar" editor={editor}>
-          <ToolbarButton disabled={disabled} label={t('editor.bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
+        <BubbleMenu
+          className="note-bubble-toolbar"
+          editor={editor}
+          shouldShow={({ editor, state }) =>
+            !bubbleMenuSuppressed &&
+            editor.isFocused &&
+            !state.selection.empty &&
+            !isNoteFileSelection(state.selection)
+          }
+          updateDelay={0}
+        >
+          <ToolbarButton
+            disabled={disabled}
+            label={t("editor.bold")}
+            onClick={() => editor.chain().focus().toggleBold().run()}
+          >
             <Bold />
           </ToolbarButton>
-          <ToolbarButton disabled={disabled} label={t('editor.italic')} onClick={() => editor.chain().focus().toggleItalic().run()}>
+          <ToolbarButton
+            disabled={disabled}
+            label={t("editor.italic")}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+          >
             <Italic />
           </ToolbarButton>
-          <ToolbarButton disabled={disabled} label={t('editor.link')} onClick={() => setLink(editor, t('editor.linkText'))}>
+          <ToolbarButton
+            disabled={disabled}
+            label={t("editor.link")}
+            onClick={() => setLink(editor, t("editor.linkText"))}
+          >
             <Link2 />
           </ToolbarButton>
         </BubbleMenu>
@@ -383,14 +481,15 @@ export function NoteInlineTiptapEditor({
       content: richTextToTiptapContent(value),
       immediatelyRender: false,
       onUpdate: ({ editor }) => {
-        const plainText = editor.getText({ blockSeparator: '\n' });
-        const nextValue = plainText.trim() ? editor.getHTML() : '';
+        const plainText = editor.getText({ blockSeparator: "\n" });
+        const nextValue = plainText.trim() ? editor.getHTML() : "";
         setContentKey(nextValue);
         onChange(nextValue, plainText);
       },
       onBlur,
       onFocus,
       editorProps: {
+        handleClick: (_view, _pos, event) => handleEditorLinkClick(event),
         attributes: {
           class: `${className} note-inline-prosemirror`,
         },
@@ -530,54 +629,121 @@ export function NoteTiptapToolbar({
   }
 
   return (
-    <div className="note-edit-toolbar note-tiptap-toolbar" aria-label={t('editor.toolbar')}>
-      <div className={unavailable ? 'note-edit-toolbar__tools note-edit-toolbar__tools--disabled' : 'note-edit-toolbar__tools'}>
-        <ToolbarButton disabled={unavailable} label={t('editor.bold')} onClick={() => editor?.chain().focus().toggleBold().run()}>
+    <div
+      className="note-edit-toolbar note-tiptap-toolbar"
+      aria-label={t("editor.toolbar")}
+    >
+      <div
+        className={
+          unavailable
+            ? "note-edit-toolbar__tools note-edit-toolbar__tools--disabled"
+            : "note-edit-toolbar__tools"
+        }
+      >
+        <ToolbarButton
+          disabled={unavailable}
+          label={t("editor.bold")}
+          onClick={() => editor?.chain().focus().toggleBold().run()}
+        >
           <Bold />
         </ToolbarButton>
-        <ToolbarButton disabled={unavailable} label={t('editor.italic')} onClick={() => editor?.chain().focus().toggleItalic().run()}>
+        <ToolbarButton
+          disabled={unavailable}
+          label={t("editor.italic")}
+          onClick={() => editor?.chain().focus().toggleItalic().run()}
+        >
           <Italic />
         </ToolbarButton>
-        <ToolbarButton disabled={unavailable} label={t('editor.underline')} onClick={() => editor?.chain().focus().toggleUnderline().run()}>
+        <ToolbarButton
+          disabled={unavailable}
+          label={t("editor.underline")}
+          onClick={() => editor?.chain().focus().toggleUnderline().run()}
+        >
           <Underline />
         </ToolbarButton>
-        <ToolbarButton disabled={unavailable} label={t('editor.strikethrough')} onClick={() => editor?.chain().focus().toggleStrike().run()}>
+        <ToolbarButton
+          disabled={unavailable}
+          label={t("editor.strikethrough")}
+          onClick={() => editor?.chain().focus().toggleStrike().run()}
+        >
           <Strikethrough />
         </ToolbarButton>
-        <TextStyleToolbar compact disabled={unavailable} onSelect={applyTextStyle} />
+        <TextStyleToolbar
+          compact
+          disabled={unavailable}
+          onSelect={applyTextStyle}
+        />
 
         <span className="toolbar-divider" />
 
-        <ToolbarButton disabled={contentUnavailable} label={t('editor.heading1')} onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}>
+        <ToolbarButton
+          disabled={contentUnavailable}
+          label={t("editor.heading1")}
+          onClick={() =>
+            editor?.chain().focus().toggleHeading({ level: 1 }).run()
+          }
+        >
           <Heading1 />
         </ToolbarButton>
-        <ToolbarButton disabled={contentUnavailable} label={t('editor.heading2')} onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}>
+        <ToolbarButton
+          disabled={contentUnavailable}
+          label={t("editor.heading2")}
+          onClick={() =>
+            editor?.chain().focus().toggleHeading({ level: 2 }).run()
+          }
+        >
           <Heading2 />
         </ToolbarButton>
-        <ToolbarButton disabled={contentUnavailable} label={t('editor.heading3')} onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}>
+        <ToolbarButton
+          disabled={contentUnavailable}
+          label={t("editor.heading3")}
+          onClick={() =>
+            editor?.chain().focus().toggleHeading({ level: 3 }).run()
+          }
+        >
           <Heading3 />
         </ToolbarButton>
-        <ToolbarButton disabled={contentUnavailable} label={t('editor.bulletList')} onClick={() => editor?.chain().focus().toggleBulletList().run()}>
+        <ToolbarButton
+          disabled={contentUnavailable}
+          label={t("editor.bulletList")}
+          onClick={() => editor?.chain().focus().toggleBulletList().run()}
+        >
           <List />
         </ToolbarButton>
-        <ToolbarButton disabled={contentUnavailable} label={t('editor.numberedList')} onClick={() => editor?.chain().focus().toggleOrderedList().run()}>
+        <ToolbarButton
+          disabled={contentUnavailable}
+          label={t("editor.numberedList")}
+          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+        >
           <ListOrdered />
         </ToolbarButton>
-        <ToolbarButton disabled={contentUnavailable} label={t('editor.checkList')} onClick={() => editor?.chain().focus().toggleTaskList().run()}>
+        <ToolbarButton
+          disabled={contentUnavailable}
+          label={t("editor.checkList")}
+          onClick={() => editor?.chain().focus().toggleTaskList().run()}
+        >
           <ListChecks />
         </ToolbarButton>
-        <ToolbarButton disabled={contentUnavailable} label={t('editor.quote')} onClick={() => editor?.chain().focus().toggleBlockquote().run()}>
+        <ToolbarButton
+          disabled={contentUnavailable}
+          label={t("editor.quote")}
+          onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+        >
           <Quote />
         </ToolbarButton>
         <ToolbarButton
           disabled={contentUnavailable}
-          label={t('noteDetail.tip')}
+          label={t("noteDetail.tip")}
           onClick={() =>
-            editor?.chain().focus().insertContent({
-              type: 'noteTip',
-              attrs: { title: t('noteDetail.tip') },
-              content: [{ type: 'paragraph' }],
-            }).run()
+            editor
+              ?.chain()
+              .focus()
+              .insertContent({
+                type: "noteTip",
+                attrs: { title: t("noteDetail.tip") },
+                content: [{ type: "paragraph" }],
+              })
+              .run()
           }
         >
           <Lightbulb />
@@ -585,13 +751,25 @@ export function NoteTiptapToolbar({
 
         <span className="toolbar-divider" />
 
-        <ToolbarButton disabled={unavailable} label={t('editor.inlineCode')} onClick={() => editor?.chain().focus().toggleCode().run()}>
+        <ToolbarButton
+          disabled={unavailable}
+          label={t("editor.inlineCode")}
+          onClick={() => editor?.chain().focus().toggleCode().run()}
+        >
           <Code />
         </ToolbarButton>
-        <ToolbarButton disabled={contentUnavailable} label={t('editor.codeBlock')} onClick={() => editor?.chain().focus().toggleCodeBlock().run()}>
-          <Code />
+        <ToolbarButton
+          disabled={contentUnavailable}
+          label={t("editor.codeBlock")}
+          onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
+        >
+          <SquareCode />
         </ToolbarButton>
-        <ToolbarButton disabled={unavailable} label={t('editor.link')} onClick={() => editor && setLink(editor, t('editor.linkText'))}>
+        <ToolbarButton
+          disabled={unavailable}
+          label={t("editor.link")}
+          onClick={() => editor && setLink(editor, t("editor.linkText"))}
+        >
           <Link2 />
         </ToolbarButton>
         <div className="table-tool" ref={tableToolRef}>
@@ -600,7 +778,7 @@ export function NoteTiptapToolbar({
             type="button"
             disabled={tableDisabled}
             aria-expanded={tableMenuOpen}
-            aria-label={t('editor.tableMenu')}
+            aria-label={t("editor.tableMenu")}
             onMouseDown={preserveToolbarSelection}
             onClick={() => setTableMenuOpen((open) => !open)}
           >
@@ -609,29 +787,61 @@ export function NoteTiptapToolbar({
           </button>
           {tableMenuOpen ? (
             <div className="markdown-table-menu">
-              <ToolbarButton disabled={tableDisabled} label={t('editor.insertTable')} onClick={() => applyTableAction('insert-table')}>
+              <ToolbarButton
+                disabled={tableDisabled}
+                label={t("editor.insertTable")}
+                onClick={() => applyTableAction("insert-table")}
+              >
                 <Table2 />
               </ToolbarButton>
-              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.addRowAbove')} onClick={() => applyTableAction('row-above')}>
+              <ToolbarButton
+                disabled={tableDisabled || !canEditCurrentTable}
+                label={t("editor.addRowAbove")}
+                onClick={() => applyTableAction("row-above")}
+              >
                 <ArrowUp />
               </ToolbarButton>
-              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.addRowBelow')} onClick={() => applyTableAction('row-below')}>
+              <ToolbarButton
+                disabled={tableDisabled || !canEditCurrentTable}
+                label={t("editor.addRowBelow")}
+                onClick={() => applyTableAction("row-below")}
+              >
                 <ArrowDown />
               </ToolbarButton>
-              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.addColumnLeft')} onClick={() => applyTableAction('column-left')}>
+              <ToolbarButton
+                disabled={tableDisabled || !canEditCurrentTable}
+                label={t("editor.addColumnLeft")}
+                onClick={() => applyTableAction("column-left")}
+              >
                 <ArrowLeft />
               </ToolbarButton>
-              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.addColumnRight')} onClick={() => applyTableAction('column-right')}>
+              <ToolbarButton
+                disabled={tableDisabled || !canEditCurrentTable}
+                label={t("editor.addColumnRight")}
+                onClick={() => applyTableAction("column-right")}
+              >
                 <ArrowRight />
               </ToolbarButton>
-              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.deleteRow')} onClick={() => applyTableAction('row-delete')}>
-                <Trash2 />
+              <ToolbarButton
+                disabled={tableDisabled || !canEditCurrentTable}
+                label={t("editor.deleteRow")}
+                onClick={() => applyTableAction("row-delete")}
+              >
+                <TableRowsSplit />
               </ToolbarButton>
-              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.deleteColumn')} onClick={() => applyTableAction('column-delete')}>
-                <Trash2 />
+              <ToolbarButton
+                disabled={tableDisabled || !canEditCurrentTable}
+                label={t("editor.deleteColumn")}
+                onClick={() => applyTableAction("column-delete")}
+              >
+                <TableColumnsSplit />
               </ToolbarButton>
-              <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t('editor.deleteTable')} onClick={() => applyTableAction('table-delete')}>
-                <Trash2 />
+              <ToolbarButton
+                disabled={tableDisabled || !canEditCurrentTable}
+                label={t("editor.deleteTable")}
+                onClick={() => applyTableAction("table-delete")}
+              >
+                <Delete />
               </ToolbarButton>
             </div>
           ) : null}
@@ -639,10 +849,18 @@ export function NoteTiptapToolbar({
 
         <span className="toolbar-divider" />
 
-        <ToolbarButton disabled={contentUnavailable} label={t('notes.editor.addImage')} onClick={() => void contentTarget?.insertFile()}>
+        <ToolbarButton
+          disabled={contentUnavailable}
+          label={t("notes.editor.addImage")}
+          onClick={() => void contentTarget?.insertFile()}
+        >
           <ImageIcon />
         </ToolbarButton>
-        <ToolbarButton disabled={contentUnavailable} label={t('notes.editor.addFile')} onClick={() => void contentTarget?.insertFile()}>
+        <ToolbarButton
+          disabled={contentUnavailable}
+          label={t("notes.editor.addFile")}
+          onClick={() => void contentTarget?.insertFile()}
+        >
           <FileUp />
         </ToolbarButton>
       </div>
@@ -678,23 +896,30 @@ function TipNodeView({ deleteNode, node }: ReactNodeViewProps) {
   );
 }
 
-function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) {
+function FileNodeView({ editor, node, selected, updateAttributes }: ReactNodeViewProps) {
   const { t } = useI18n();
   const attrs = node.attrs as FileAttrs;
+  const imageNodeRef = useRef<HTMLDivElement>(null);
   const [src, setSrc] = useState<string | null>(null);
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
+  const [editorFocused, setEditorFocused] = useState(editor.isFocused);
+  const [controlsFocused, setControlsFocused] = useState(false);
   const [wrapLines, setWrapLines] = useState(1);
   const isImage = attrs.kind === 'image';
   const imageWidth = quantizeImageWidth(Number(attrs.width ?? 420));
+  const showImageControls = selected && (editorFocused || controlsFocused);
 
   useEffect(() => {
     let cancelled = false;
     if (!isImage || !attrs.relativePath) {
       setSrc(null);
+      setImageLoadFailed(false);
       return;
     }
 
     void resolveNoteFileSrc(attrs.relativePath).then((nextSrc) => {
       if (!cancelled) {
+        setImageLoadFailed(false);
         setSrc(nextSrc);
       }
     });
@@ -703,6 +928,20 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
       cancelled = true;
     };
   }, [attrs.relativePath, isImage]);
+
+  useEffect(() => {
+    const updateFocused = () => setEditorFocused(editor.isFocused);
+
+    editor.on('focus', updateFocused);
+    editor.on('blur', updateFocused);
+    editor.on('selectionUpdate', updateFocused);
+
+    return () => {
+      editor.off('focus', updateFocused);
+      editor.off('blur', updateFocused);
+      editor.off('selectionUpdate', updateFocused);
+    };
+  }, [editor]);
 
   useEffect(() => {
     if (!isImage) {
@@ -736,48 +975,103 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
 
   return (
     <NodeViewWrapper
+      ref={imageNodeRef}
       className={[
-        'note-image-node',
-        selected && 'is-selected',
-        attrs.wrap === 'left' && 'wrap-left',
-        attrs.wrap === 'right' && 'wrap-right',
-        attrs.align === 'left' && 'align-left',
-        attrs.align === 'right' && 'align-right',
-        attrs.align === 'center' && 'align-center',
+        "note-image-node",
+        selected && "is-selected",
+        attrs.wrap === "left" && "wrap-left",
+        attrs.wrap === "right" && "wrap-right",
+        attrs.align === "left" && "align-left",
+        attrs.align === "right" && "align-right",
+        attrs.align === "center" && "align-center",
         `note-image-size-${imageWidth}`,
-      ].filter(Boolean).join(' ')}
+      ]
+        .filter(Boolean)
+        .join(" ")}
       data-drag-handle
       data-wrap-lines={wrapLines}
     >
       <figure>
-        {src ? <img src={src} alt={attrs.originalName} draggable={false} /> : <span className="note-image-placeholder">{attrs.originalName}</span>}
-        <figcaption>{attrs.originalName}</figcaption>
+        {src && !imageLoadFailed ? (
+          <img
+            src={src}
+            alt={attrs.originalName}
+            draggable={false}
+            onError={() => setImageLoadFailed(true)}
+          />
+        ) : (
+          <span className="note-image-placeholder">{attrs.originalName}</span>
+        )}
       </figure>
-      <div className="note-image-controls" contentEditable={false}>
-        <button type="button" onClick={() => updateAttributes({ align: 'left', wrap: 'none' })}>
-          <AlignLeft />
-        </button>
-        <button type="button" onClick={() => updateAttributes({ align: 'center', wrap: 'none' })}>
-          <AlignCenter />
-        </button>
-        <button type="button" onClick={() => updateAttributes({ align: 'right', wrap: 'none' })}>
-          <AlignRight />
-        </button>
-        <button type="button" onClick={() => updateAttributes({ wrap: attrs.wrap === 'left' ? 'none' : 'left', align: 'left' })}>
-          {t('notes.editor.wrapLeft')}
-        </button>
-        <button type="button" onClick={() => updateAttributes({ wrap: attrs.wrap === 'right' ? 'none' : 'right', align: 'right' })}>
-          {t('notes.editor.wrapRight')}
-        </button>
-        <input
-          type="range"
-          min={160}
-          max={760}
-          step={40}
-          value={imageWidth}
-          onChange={(event) => updateAttributes({ width: Number(event.currentTarget.value) })}
-        />
-      </div>
+      {showImageControls ? (
+        <div
+          className="note-image-controls"
+          contentEditable={false}
+          onBlurCapture={(event) => {
+            if (!imageNodeRef.current?.contains(event.relatedTarget)) {
+              setControlsFocused(false);
+            }
+          }}
+          onFocusCapture={() => setControlsFocused(true)}
+          onPointerDownCapture={() => setControlsFocused(true)}
+        >
+          <button
+            type="button"
+            onMouseDown={preserveToolbarSelection}
+            onClick={() => updateAttributes({ align: "left", wrap: "none" })}
+          >
+            <AlignLeft />
+          </button>
+          <button
+            type="button"
+            onMouseDown={preserveToolbarSelection}
+            onClick={() => updateAttributes({ align: "center", wrap: "none" })}
+          >
+            <AlignCenter />
+          </button>
+          <button
+            type="button"
+            onMouseDown={preserveToolbarSelection}
+            onClick={() => updateAttributes({ align: "right", wrap: "none" })}
+          >
+            <AlignRight />
+          </button>
+          <button
+            type="button"
+            onMouseDown={preserveToolbarSelection}
+            onClick={() =>
+              updateAttributes({
+                wrap: attrs.wrap === "left" ? "none" : "left",
+                align: "left",
+              })
+            }
+          >
+            {t("notes.editor.wrapLeft")}
+          </button>
+          <button
+            type="button"
+            onMouseDown={preserveToolbarSelection}
+            onClick={() =>
+              updateAttributes({
+                wrap: attrs.wrap === "right" ? "none" : "right",
+                align: "right",
+              })
+            }
+          >
+            {t("notes.editor.wrapRight")}
+          </button>
+          <input
+            type="range"
+            min={160}
+            max={760}
+            step={40}
+            value={imageWidth}
+            onChange={(event) =>
+              updateAttributes({ width: Number(event.currentTarget.value) })
+            }
+          />
+        </div>
+      ) : null}
     </NodeViewWrapper>
   );
 }
@@ -800,8 +1094,52 @@ function ToolbarButton({
   );
 }
 
-function preserveToolbarSelection(event: MouseEvent<HTMLElement>) {
+function preserveToolbarSelection(event: ReactMouseEvent<HTMLElement>) {
   event.preventDefault();
+}
+
+function isNoteFileSelection(selection: unknown) {
+  const selectedNode = (selection as { node?: { type?: { name?: string } } }).node;
+  return selectedNode?.type?.name === 'noteFile';
+}
+
+function handleEditorLinkClick(event: globalThis.MouseEvent) {
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return false;
+  }
+
+  const link = target.closest("a[href]");
+  if (
+    !(link instanceof HTMLAnchorElement) ||
+    !isClickInLinkLaunchZone(link, event)
+  ) {
+    return false;
+  }
+
+  const href = link.href || link.getAttribute("href") || "";
+  if (!href || href === "#") {
+    return false;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  void openExternalUrl(href);
+  return true;
+}
+
+function isClickInLinkLaunchZone(
+  link: HTMLAnchorElement,
+  event: globalThis.MouseEvent,
+) {
+  const launchZoneWidth = 20;
+  return Array.from(link.getClientRects()).some(
+    (rect) =>
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom &&
+      event.clientX >= rect.right - launchZoneWidth &&
+      event.clientX <= rect.right + 4,
+  );
 }
 
 function setLink(editor: NonNullable<ReturnType<typeof useEditor>>, fallbackLabel: string) {

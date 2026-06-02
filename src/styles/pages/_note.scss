@@ -296,6 +296,29 @@
   margin: 0;
 }
 
+.note-inline-prosemirror a,
+.note-tiptap-prosemirror a {
+  color: color-mix(in srgb, var(--nx-color-accent) 86%, var(--nx-color-text));
+  font-weight: 700;
+  text-decoration-line: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
+.note-inline-prosemirror a::after,
+.note-tiptap-prosemirror a::after {
+  content: "";
+  display: inline-block;
+  width: 0.82em;
+  height: 0.82em;
+  margin-left: 0.24em;
+  background: currentColor;
+  cursor: pointer;
+  opacity: 0.76;
+  transform: translateY(0.08em);
+  mask: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20fill='none'%20stroke='black'%20stroke-linecap='round'%20stroke-linejoin='round'%20stroke-width='2'%20d='M15%203h6v6M10%2014%2021%203M18%2013v6a2%202%200%200%201-2%202H5a2%202%200%200%201-2-2V8a2%202%200%200%201%202-2h6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
 .note-inline-prosemirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
@@ -413,6 +436,34 @@
   margin: 0.4rem 0;
 }
 
+.note-inline-prosemirror code,
+.note-tiptap-prosemirror code {
+  border: 1px solid var(--nx-color-border);
+  border-radius: 0.22rem;
+  background: var(--nx-color-surface-subtle);
+  color: var(--nx-color-text);
+  padding: 0.12rem 0.34rem;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.92em;
+}
+
+.note-tiptap-prosemirror pre {
+  overflow: auto;
+  margin: var(--nx-space-3) 0;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-surface-subtle);
+  padding: var(--nx-space-4);
+}
+
+.note-tiptap-prosemirror pre code {
+  display: block;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
 .note-tiptap-prosemirror h1,
 .note-tiptap-prosemirror h2,
 .note-tiptap-prosemirror h3 {
@@ -425,6 +476,71 @@
   margin: var(--nx-space-4) 0;
   padding-left: var(--nx-space-4);
   color: var(--nx-color-text-muted);
+}
+
+.note-tiptap-prosemirror ul[data-type="taskList"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.4rem 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.note-tiptap-prosemirror ul[data-type="taskList"]>li,
+.note-tiptap-prosemirror li[data-type="taskItem"],
+.note-tiptap-prosemirror li[data-checked] {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nx-space-2);
+  min-height: 1.75rem;
+  list-style: none;
+}
+
+.note-tiptap-prosemirror ul[data-type="taskList"]>li::marker,
+.note-tiptap-prosemirror li[data-type="taskItem"]::marker,
+.note-tiptap-prosemirror li[data-checked]::marker {
+  content: "";
+}
+
+.note-tiptap-prosemirror ul[data-type="taskList"]>li>label,
+.note-tiptap-prosemirror li[data-type="taskItem"]>label,
+.note-tiptap-prosemirror li[data-checked]>label {
+  display: inline-flex;
+  flex: 0 0 1rem;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1.75rem;
+  margin: 0;
+}
+
+.note-tiptap-prosemirror ul[data-type="taskList"]>li>label input,
+.note-tiptap-prosemirror li[data-type="taskItem"]>label input,
+.note-tiptap-prosemirror li[data-checked]>label input {
+  width: 0.92rem;
+  height: 0.92rem;
+  margin: 0;
+  accent-color: var(--nx-color-accent);
+}
+
+.note-tiptap-prosemirror ul[data-type="taskList"]>li>label span,
+.note-tiptap-prosemirror li[data-type="taskItem"]>label span,
+.note-tiptap-prosemirror li[data-checked]>label span {
+  display: none;
+}
+
+.note-tiptap-prosemirror ul[data-type="taskList"]>li>div,
+.note-tiptap-prosemirror li[data-type="taskItem"]>div,
+.note-tiptap-prosemirror li[data-checked]>div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.note-tiptap-prosemirror ul[data-type="taskList"]>li>div>p,
+.note-tiptap-prosemirror li[data-type="taskItem"]>div>p,
+.note-tiptap-prosemirror li[data-checked]>div>p {
+  margin: 0;
 }
 
 .note-tip-box {
@@ -545,9 +661,16 @@
   border-radius: var(--nx-radius-sm);
 }
 
-.note-image-node figcaption {
+.note-image-placeholder {
+  display: grid;
+  min-height: 8rem;
+  align-items: center;
+  border: 1px dashed var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-surface);
   color: var(--nx-color-text-muted);
-  font-size: 0.78rem;
+  padding: var(--nx-space-4);
+  text-align: center;
 }
 
 .note-image-controls {

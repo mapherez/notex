@@ -1024,6 +1024,9 @@ function BlockEditor({
   const [contentActive, setContentActive] = useState(false);
   const saveTimeoutRef = useRef<number | null>(null);
   const lastTypingNonceRef = useRef<number | null>(null);
+  const contentJsonRef = useRef<TiptapDocument | null>(contentJson);
+  const contentTextRef = useRef(contentText);
+  const fileInsertPendingRef = useRef(false);
   const titleHasContent = richTextToPlainText(title).trim().length > 0;
   const contentHasContent = hasTiptapContent(contentJson, contentText);
   const titleVisible = titleHasContent || titleActive;
@@ -1035,6 +1038,11 @@ function BlockEditor({
     setContentJson(block.contentJson);
     setContentText(block.contentText);
   }, [block.id, block.title, block.contentJson, block.contentText]);
+
+  useEffect(() => {
+    contentJsonRef.current = contentJson;
+    contentTextRef.current = contentText;
+  }, [contentJson, contentText]);
 
   useEffect(() => {
     if (!contentTypingRequest || lastTypingNonceRef.current === contentTypingRequest.nonce) {
@@ -1068,6 +1076,21 @@ function BlockEditor({
       }
     };
   }, [block.contentJson, block.contentText, block.id, block.kind, block.title, contentHasContent, contentJson, contentText, noteId, title, updateBlock]);
+
+  function setFileInsertPending(pending: boolean) {
+    fileInsertPendingRef.current = pending;
+    if (pending) {
+      setContentJson((current) => current ?? emptyTiptapDocument);
+      setContentActive(true);
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      if (!hasTiptapContent(contentJsonRef.current, contentTextRef.current)) {
+        setContentActive(false);
+      }
+    });
+  }
 
   return (
     <article
@@ -1123,16 +1146,22 @@ function BlockEditor({
             blockId={block.id}
             insertTextRequest={contentTypingRequest}
             onBlur={() => {
+              if (fileInsertPendingRef.current) {
+                return;
+              }
               if (!hasTiptapContent(contentJson, contentText)) {
                 setContentActive(false);
               }
             }}
             onChange={(nextJson, nextText) => {
+              contentJsonRef.current = nextJson;
+              contentTextRef.current = nextText;
               setContentJson(nextJson);
               setContentText(nextText);
               onTocChange();
             }}
             onFocus={() => setContentActive(true)}
+            onPendingFileInsertChange={setFileInsertPending}
             onRequestFileUpload={onRequestFileUpload}
             onToolbarTargetChange={onToolbarTargetChange}
             value={contentJson ?? emptyTiptapDocument}
