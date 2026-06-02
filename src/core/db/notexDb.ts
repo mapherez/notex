@@ -2,13 +2,9 @@ import { invoke } from '@tauri-apps/api/core';
 import type {
   ActivityItem,
   Collection,
-  DeviceSession,
-  DynamicNote,
-  DynamicNoteBlock,
-  DynamicNoteFile,
+  NoteBlock,
+  NoteFile,
   Note,
-  SyncItem,
-  SyncState,
   Tag,
   User,
   UserSettings,
@@ -17,17 +13,13 @@ import type { MockDataBundle } from '../data/createMockData';
 
 type TableName =
   | 'notes'
-  | 'dynamicNotes'
-  | 'dynamicNoteBlocks'
-  | 'dynamicNoteFiles'
+  | 'noteBlocks'
+  | 'noteFiles'
   | 'tags'
   | 'collections'
   | 'users'
   | 'activities'
-  | 'userSettings'
-  | 'syncState'
-  | 'syncItems'
-  | 'deviceSessions';
+  | 'userSettings';
 
 type WhereQuery<T> = {
   delete: () => Promise<unknown>;
@@ -54,17 +46,13 @@ export type StorageTable<T> = {
 
 type NoteXStorageDatabase = {
   notes: StorageTable<Note>;
-  dynamicNotes: StorageTable<DynamicNote>;
-  dynamicNoteBlocks: StorageTable<DynamicNoteBlock>;
-  dynamicNoteFiles: StorageTable<DynamicNoteFile>;
+  noteBlocks: StorageTable<NoteBlock>;
+  noteFiles: StorageTable<NoteFile>;
   tags: StorageTable<Tag>;
   collections: StorageTable<Collection>;
   users: StorageTable<User>;
   activities: StorageTable<ActivityItem>;
   userSettings: StorageTable<UserSettings>;
-  syncState: StorageTable<SyncState>;
-  syncItems: StorageTable<SyncItem>;
-  deviceSessions: StorageTable<DeviceSession>;
   transaction: <T>(mode: string, tables: unknown[], scope: () => Promise<T>) => Promise<T>;
 };
 
@@ -84,17 +72,13 @@ let sqliteTransactionContext: SqliteTransactionContext | null = null;
 
 class SqliteStorageAdapter implements NoteXStorageDatabase {
   notes = new SqliteTable<Note>('notes');
-  dynamicNotes = new SqliteTable<DynamicNote>('dynamicNotes');
-  dynamicNoteBlocks = new SqliteTable<DynamicNoteBlock>('dynamicNoteBlocks');
-  dynamicNoteFiles = new SqliteTable<DynamicNoteFile>('dynamicNoteFiles');
+  noteBlocks = new SqliteTable<NoteBlock>('noteBlocks');
+  noteFiles = new SqliteTable<NoteFile>('noteFiles');
   tags = new SqliteTable<Tag>('tags');
   collections = new SqliteTable<Collection>('collections');
   users = new SqliteTable<User>('users');
   activities = new SqliteTable<ActivityItem>('activities');
   userSettings = new SqliteTable<UserSettings>('userSettings');
-  syncState = new SqliteTable<SyncState>('syncState');
-  syncItems = new SqliteTable<SyncItem>('syncItems');
-  deviceSessions = new SqliteTable<DeviceSession>('deviceSessions');
 
   async transaction<T>(_mode: string, _tables: unknown[], scope: () => Promise<T>) {
     if (sqliteTransactionContext) {
@@ -247,8 +231,10 @@ export async function seedDatabaseIfEmpty(bundle: MockDataBundle, settings: User
     return;
   }
 
-  await db.transaction('rw', [db.notes, db.tags, db.collections, db.users, db.activities, db.userSettings], async () => {
-    await db.notes.bulkPut(bundle.notes);
+  await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles, db.tags, db.collections, db.users, db.activities, db.userSettings], async () => {
+    await db.notes.bulkPut(bundle.notes.map(stripNoteRelations));
+    await db.noteBlocks.bulkPut(bundle.noteBlocks);
+    await db.noteFiles.bulkPut(bundle.noteFiles);
     await db.tags.bulkPut(bundle.tags);
     await db.collections.bulkPut(bundle.collections);
     await db.users.put(bundle.user);
@@ -258,8 +244,7 @@ export async function seedDatabaseIfEmpty(bundle: MockDataBundle, settings: User
 }
 
 export async function readAllKnowledge() {
-  const [notes, tags, collections, users, activities] = await Promise.all([
-    db.notes.toArray(),
+  const [tags, collections, users, activities] = await Promise.all([
     db.tags.toArray(),
     db.collections.toArray(),
     db.users.toArray(),
@@ -267,7 +252,6 @@ export async function readAllKnowledge() {
   ]);
 
   return {
-    notes,
     tags,
     collections,
     user: users[0],
@@ -283,57 +267,7 @@ export async function writeUserSettings(settings: UserSettings) {
   await db.userSettings.put(settings);
 }
 
-export async function readSyncState() {
-  return db.syncState.get('google-drive');
-}
-
-export async function writeSyncState(state: SyncState) {
-  await db.syncState.put(state);
-}
-
-export async function readSyncItems() {
-  return db.syncItems.toArray();
-}
-
-export async function readDeviceSessions() {
-  return db.deviceSessions.toArray();
-}
-
-export async function replaceKnowledge({
-  notes,
-  tags,
-  collections,
-  userSettings,
-}: {
-  notes: Note[];
-  tags: Tag[];
-  collections: Collection[];
-  userSettings: UserSettings;
-}) {
-  await db.transaction('rw', [db.notes, db.tags, db.collections, db.userSettings], async () => {
-    await db.notes.clear();
-    await db.tags.clear();
-    await db.collections.clear();
-    await db.notes.bulkPut(notes);
-    await db.tags.bulkPut(tags);
-    await db.collections.bulkPut(collections);
-    await db.userSettings.put(userSettings);
-  });
-}
-
-export async function resetKnowledge(bundle: MockDataBundle, settings: UserSettings) {
-  await db.transaction('rw', [db.notes, db.tags, db.collections, db.users, db.activities, db.userSettings], async () => {
-    await db.notes.clear();
-    await db.tags.clear();
-    await db.collections.clear();
-    await db.users.clear();
-    await db.activities.clear();
-    await db.userSettings.clear();
-    await db.notes.bulkPut(bundle.notes);
-    await db.tags.bulkPut(bundle.tags);
-    await db.collections.bulkPut(bundle.collections);
-    await db.users.put(bundle.user);
-    await db.activities.bulkPut(bundle.activities);
-    await db.userSettings.put(settings);
-  });
+function stripNoteRelations(note: Note): Note {
+  const { blocks: _blocks, files: _files, ...baseNote } = note;
+  return baseNote;
 }

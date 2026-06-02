@@ -9,15 +9,16 @@ import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../../core/utils/useKeyboardListNavigation';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useI18n } from '../../i18n/I18nProvider';
-import { useDynamicNotesStore } from '../../store/useDynamicNotesStore';
+import { useNotesStore } from '../../store/useNotesStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
+import { InlineFormattedText } from '../editing/InlineFormattedText';
 import { NoteThumbnail } from './NoteThumbnail';
-import type { Collection, DynamicNote, Tag } from '../../core/models/models';
+import type { Collection, Note, Tag } from '../../core/models/models';
 
 type SearchResult = {
   collectionName?: string;
   matchType: 'collection' | 'tag' | 'title';
-  note: DynamicNote;
+  note: Note;
   tagNames: string[];
 };
 
@@ -29,7 +30,7 @@ export function SearchBox({ className }: { className?: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [resultsOpen, setResultsOpen] = useState(false);
-  const notes = useDynamicNotesStore((state) => state.dynamicNotes);
+  const notes = useNotesStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const normalizedQuery = normalizeSearchValue(query);
@@ -124,7 +125,7 @@ export function SearchBox({ className }: { className?: string }) {
                 <NoteThumbnail thumbnail={result.note.thumbnail} />
                 <span className="search-result-copy">
                   <strong>
-                    {richTextToPlainText(result.note.title).trim() || t('dynamicNotes.untitled')}
+                    {richTextToPlainText(result.note.title).trim() ? <InlineFormattedText value={result.note.title} /> : t('notes.untitled')}
                   </strong>
                   <span className="search-result-meta">
                     <span className="search-result-match">{t(`topbar.searchMatch.${result.matchType}`)}</span>
@@ -153,7 +154,7 @@ function buildSearchResults({
 }: {
   collections: Collection[];
   normalizedQuery: string;
-  notes: DynamicNote[];
+  notes: Note[];
   tags: Tag[];
 }): SearchResult[] {
   if (!normalizedQuery) {

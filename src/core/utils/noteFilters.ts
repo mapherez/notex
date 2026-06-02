@@ -1,6 +1,6 @@
 import { noteSettings } from '../../config/appSettings';
 import type { Note } from '../models/models';
-import { stripInlineFormatting } from './inlineFormatting';
+import { richTextToPlainText } from './richText';
 
 export type NotesSortOrder = 'nameAsc' | 'nameDesc' | 'updatedAsc' | 'updatedDesc';
 
@@ -26,7 +26,6 @@ export function normalizeNotesSortOrder(value?: string | null): NotesSortOrder {
 
 export function filterNotes(notes: Note[], filter: NotesFilter) {
   const query = filter.query?.trim().toLowerCase();
-  const sortOrder = filter.sortOrder ?? null;
 
   return notes
     .filter((note) => {
@@ -49,14 +48,25 @@ export function filterNotes(notes: Note[], filter: NotesFilter) {
         return true;
       }
 
-      return stripInlineFormatting([note.title, note.content.intro, ...(note.content.summary?.map((block) => block.text) ?? [])].join(' '))
+      return [
+        richTextToPlainText(note.title),
+        richTextToPlainText(note.subtitle),
+        ...(note.blocks?.flatMap((block) => [richTextToPlainText(block.title), block.contentText]) ?? []),
+      ]
+        .join(' ')
         .toLowerCase()
         .includes(query);
     })
-    .sort((a, b) => compareNotes(a, b, filter.mode, sortOrder, Boolean(filter.pinnedFirst)));
+    .sort((a, b) => compareNotes(a, b, filter.mode, filter.sortOrder ?? null, Boolean(filter.pinnedFirst)));
 }
 
-function compareNotes(a: Note, b: Note, mode: NotesFilter['mode'], sortOrder: NotesSortOrder | null, pinnedFirst: boolean) {
+function compareNotes(
+  a: Note,
+  b: Note,
+  mode: NotesFilter['mode'],
+  sortOrder: NotesSortOrder | null,
+  pinnedFirst: boolean,
+) {
   if (pinnedFirst && a.isPinned !== b.isPinned) {
     return a.isPinned ? -1 : 1;
   }
@@ -79,5 +89,5 @@ function compareNotes(a: Note, b: Note, mode: NotesFilter['mode'], sortOrder: No
 }
 
 function compareNoteTitles(a: Pick<Note, 'title'>, b: Pick<Note, 'title'>) {
-  return stripInlineFormatting(a.title).localeCompare(stripInlineFormatting(b.title), undefined, { numeric: true, sensitivity: 'base' });
+  return richTextToPlainText(a.title).localeCompare(richTextToPlainText(b.title), undefined, { numeric: true, sensitivity: 'base' });
 }

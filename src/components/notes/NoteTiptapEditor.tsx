@@ -44,27 +44,27 @@ import TaskItem from '@tiptap/extension-task-item';
 import { layout, prepare } from '@chenglou/pretext';
 import { TextStyleToolbar } from '../editing/TextStyleToolbar';
 import type { InlineStyleColor, InlineStyleKind } from '../../core/utils/inlineFormatting';
-import type { DynamicNoteFile, TiptapDocument } from '../../core/models/models';
-import { exportDynamicAttachment, openDynamicAttachment, resolveDynamicFileSrc } from '../../core/services/dynamicFiles';
+import type { NoteFile, TiptapDocument } from '../../core/models/models';
+import { exportNoteAttachment, openNoteAttachment, resolveNoteFileSrc } from '../../core/services/noteFiles';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { richTextToTiptapContent } from '../../core/utils/richText';
 import { useI18n } from '../../i18n/I18nProvider';
-import { emptyTiptapDocument } from '../../store/useDynamicNotesStore';
+import { emptyTiptapDocument } from '../../store/useNotesStore';
 
-type DynamicTiptapEditorProps = {
+type NoteTiptapEditorProps = {
   autoFocus?: boolean;
   blockId: string;
   disabled?: boolean;
-  insertTextRequest?: DynamicTiptapInsertTextRequest | null;
+  insertTextRequest?: NoteTiptapInsertTextRequest | null;
   onBlur?: () => void;
   onChange: (contentJson: TiptapDocument, contentText: string) => void;
   onFocus?: () => void;
-  onRequestFileUpload: () => Promise<DynamicNoteFile | null>;
-  onToolbarTargetChange: (target: DynamicTiptapToolbarTarget) => void;
+  onRequestFileUpload: () => Promise<NoteFile | null>;
+  onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
   value: TiptapDocument | null;
 };
 
-export type DynamicTiptapToolbarTarget =
+export type NoteTiptapToolbarTarget =
   | {
       blockId: string;
       editor: Editor;
@@ -78,19 +78,19 @@ export type DynamicTiptapToolbarTarget =
       kind: 'inline';
     };
 
-export type DynamicTiptapInsertTextRequest = {
+export type NoteTiptapInsertTextRequest = {
   nonce: number;
   text: string;
 };
 
-type DynamicFileAttrs = DynamicNoteFile & {
+type FileAttrs = NoteFile & {
   align?: 'center' | 'left' | 'right';
   width?: number;
   wrap?: 'none' | 'left' | 'right';
 };
 
-const DynamicFileNode = Node.create({
-  name: 'dynamicFile',
+const FileNode = Node.create({
+  name: 'noteFile',
   group: 'block',
   atom: true,
   draggable: true,
@@ -122,12 +122,12 @@ const DynamicFileNode = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(DynamicFileNodeView);
+    return ReactNodeViewRenderer(FileNodeView);
   },
 });
 
-const DynamicTipNode = Node.create({
-  name: 'dynamicTip',
+const TipNode = Node.create({
+  name: 'noteTip',
   group: 'block',
   content: 'block+',
   defining: true,
@@ -148,7 +148,7 @@ const DynamicTipNode = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(DynamicTipNodeView);
+    return ReactNodeViewRenderer(TipNodeView);
   },
 });
 
@@ -177,8 +177,8 @@ const extensions = [
   TableCell,
   TaskList,
   TaskItem.configure({ nested: true }),
-  DynamicTipNode,
-  DynamicFileNode,
+  TipNode,
+  FileNode,
 ];
 
 const inlineExtensions = [
@@ -203,7 +203,7 @@ const inlineExtensions = [
   Highlight.configure({ multicolor: true }),
 ];
 
-export function DynamicTiptapEditor({
+export function NoteTiptapEditor({
   autoFocus = false,
   blockId,
   disabled = false,
@@ -214,7 +214,7 @@ export function DynamicTiptapEditor({
   onRequestFileUpload,
   onToolbarTargetChange,
   value,
-}: DynamicTiptapEditorProps) {
+}: NoteTiptapEditorProps) {
   const { t } = useI18n();
   const [contentKey, setContentKey] = useState(() => JSON.stringify(value ?? emptyTiptapDocument));
   const lastInsertTextNonceRef = useRef<number | null>(null);
@@ -233,7 +233,7 @@ export function DynamicTiptapEditor({
       onFocus,
       editorProps: {
         attributes: {
-          class: 'dynamic-tiptap-prosemirror',
+          class: 'note-tiptap-prosemirror',
         },
       },
     },
@@ -249,7 +249,7 @@ export function DynamicTiptapEditor({
       .chain()
       .focus()
       .insertContent({
-        type: 'dynamicFile',
+        type: 'noteFile',
         attrs: {
           ...file,
           align: 'center',
@@ -319,9 +319,9 @@ export function DynamicTiptapEditor({
   }, [blockId, editor, insertUploadedFile, onToolbarTargetChange]);
 
   return (
-    <div className="dynamic-tiptap-editor">
+    <div className="note-tiptap-editor">
       {editor ? (
-        <BubbleMenu className="dynamic-bubble-toolbar" editor={editor}>
+        <BubbleMenu className="note-bubble-toolbar" editor={editor}>
           <ToolbarButton disabled={disabled} label={t('editor.bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
             <Bold />
           </ToolbarButton>
@@ -338,7 +338,7 @@ export function DynamicTiptapEditor({
   );
 }
 
-export function DynamicInlineTiptapEditor({
+export function NoteInlineTiptapEditor({
   autoFocus = false,
   blockId,
   className,
@@ -357,11 +357,11 @@ export function DynamicInlineTiptapEditor({
   className: string;
   disabled?: boolean;
   id: string;
-  insertTextRequest?: DynamicTiptapInsertTextRequest | null;
+  insertTextRequest?: NoteTiptapInsertTextRequest | null;
   onBlur?: () => void;
   onChange: (value: string, plainText: string) => void;
   onFocus?: () => void;
-  onToolbarTargetChange: (target: DynamicTiptapToolbarTarget) => void;
+  onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
   placeholder: string;
   value: string;
 }) {
@@ -392,7 +392,7 @@ export function DynamicInlineTiptapEditor({
       onFocus,
       editorProps: {
         attributes: {
-          class: `${className} dynamic-inline-prosemirror`,
+          class: `${className} note-inline-prosemirror`,
         },
       },
     },
@@ -457,17 +457,17 @@ export function DynamicInlineTiptapEditor({
   }, [blockId, editor, id, onToolbarTargetChange]);
 
   return (
-    <div className="dynamic-inline-editor">
+    <div className="note-inline-editor">
       <EditorContent editor={editor} />
     </div>
   );
 }
 
-export function DynamicTiptapToolbar({
+export function NoteTiptapToolbar({
   target,
   t,
 }: {
-  target: DynamicTiptapToolbarTarget | null;
+  target: NoteTiptapToolbarTarget | null;
   t: ReturnType<typeof useI18n>['t'];
 }) {
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
@@ -530,7 +530,7 @@ export function DynamicTiptapToolbar({
   }
 
   return (
-    <div className="note-edit-toolbar dynamic-tiptap-toolbar" aria-label={t('editor.toolbar')}>
+    <div className="note-edit-toolbar note-tiptap-toolbar" aria-label={t('editor.toolbar')}>
       <div className={unavailable ? 'note-edit-toolbar__tools note-edit-toolbar__tools--disabled' : 'note-edit-toolbar__tools'}>
         <ToolbarButton disabled={unavailable} label={t('editor.bold')} onClick={() => editor?.chain().focus().toggleBold().run()}>
           <Bold />
@@ -574,7 +574,7 @@ export function DynamicTiptapToolbar({
           label={t('noteDetail.tip')}
           onClick={() =>
             editor?.chain().focus().insertContent({
-              type: 'dynamicTip',
+              type: 'noteTip',
               attrs: { title: t('noteDetail.tip') },
               content: [{ type: 'paragraph' }],
             }).run()
@@ -639,10 +639,10 @@ export function DynamicTiptapToolbar({
 
         <span className="toolbar-divider" />
 
-        <ToolbarButton disabled={contentUnavailable} label={t('dynamicNotes.editor.addImage')} onClick={() => void contentTarget?.insertFile()}>
+        <ToolbarButton disabled={contentUnavailable} label={t('notes.editor.addImage')} onClick={() => void contentTarget?.insertFile()}>
           <ImageIcon />
         </ToolbarButton>
-        <ToolbarButton disabled={contentUnavailable} label={t('dynamicNotes.editor.addFile')} onClick={() => void contentTarget?.insertFile()}>
+        <ToolbarButton disabled={contentUnavailable} label={t('notes.editor.addFile')} onClick={() => void contentTarget?.insertFile()}>
           <FileUp />
         </ToolbarButton>
       </div>
@@ -650,21 +650,21 @@ export function DynamicTiptapToolbar({
   );
 }
 
-function DynamicTipNodeView({ deleteNode, node }: ReactNodeViewProps) {
+function TipNodeView({ deleteNode, node }: ReactNodeViewProps) {
   const { t } = useI18n();
   const title = typeof node.attrs.title === 'string' && node.attrs.title.trim() ? node.attrs.title : t('noteDetail.tip');
 
   return (
-    <NodeViewWrapper className="tip-box dynamic-tip-box" data-drag-handle>
+    <NodeViewWrapper className="tip-box note-tip-box" data-drag-handle>
       <Lightbulb />
       <div>
         <h2 className="section-title" contentEditable={false}>
           {title}
         </h2>
-        <NodeViewContent className="dynamic-tip-content" />
+        <NodeViewContent className="note-tip-content" />
       </div>
       <button
-        className="dynamic-tip-delete icon-button danger"
+        className="note-tip-delete icon-button danger"
         type="button"
         contentEditable={false}
         aria-label={t('common.delete')}
@@ -678,9 +678,9 @@ function DynamicTipNodeView({ deleteNode, node }: ReactNodeViewProps) {
   );
 }
 
-function DynamicFileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) {
+function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) {
   const { t } = useI18n();
-  const attrs = node.attrs as DynamicFileAttrs;
+  const attrs = node.attrs as FileAttrs;
   const [src, setSrc] = useState<string | null>(null);
   const [wrapLines, setWrapLines] = useState(1);
   const isImage = attrs.kind === 'image';
@@ -693,7 +693,7 @@ function DynamicFileNodeView({ node, selected, updateAttributes }: ReactNodeView
       return;
     }
 
-    void resolveDynamicFileSrc(attrs.relativePath).then((nextSrc) => {
+    void resolveNoteFileSrc(attrs.relativePath).then((nextSrc) => {
       if (!cancelled) {
         setSrc(nextSrc);
       }
@@ -718,16 +718,16 @@ function DynamicFileNodeView({ node, selected, updateAttributes }: ReactNodeView
 
   if (!isImage) {
     return (
-      <NodeViewWrapper className={selected ? 'dynamic-file-card is-selected' : 'dynamic-file-card'} data-drag-handle>
+      <NodeViewWrapper className={selected ? 'note-file-card is-selected' : 'note-file-card'} data-drag-handle>
         <FileUp />
         <span>
           <strong>{attrs.originalName}</strong>
           <small>{formatFileSize(attrs.sizeBytes)}</small>
         </span>
-        <button type="button" onClick={() => void openDynamicAttachment(attrs.relativePath)}>
+        <button type="button" onClick={() => void openNoteAttachment(attrs.relativePath)}>
           {t('common.open')}
         </button>
-        <button type="button" onClick={() => void exportDynamicAttachment(attrs)}>
+        <button type="button" onClick={() => void exportNoteAttachment(attrs)}>
           {t('common.export')}
         </button>
       </NodeViewWrapper>
@@ -737,23 +737,23 @@ function DynamicFileNodeView({ node, selected, updateAttributes }: ReactNodeView
   return (
     <NodeViewWrapper
       className={[
-        'dynamic-image-node',
+        'note-image-node',
         selected && 'is-selected',
         attrs.wrap === 'left' && 'wrap-left',
         attrs.wrap === 'right' && 'wrap-right',
         attrs.align === 'left' && 'align-left',
         attrs.align === 'right' && 'align-right',
         attrs.align === 'center' && 'align-center',
-        `dynamic-image-size-${imageWidth}`,
+        `note-image-size-${imageWidth}`,
       ].filter(Boolean).join(' ')}
       data-drag-handle
       data-wrap-lines={wrapLines}
     >
       <figure>
-        {src ? <img src={src} alt={attrs.originalName} draggable={false} /> : <span className="dynamic-image-placeholder">{attrs.originalName}</span>}
+        {src ? <img src={src} alt={attrs.originalName} draggable={false} /> : <span className="note-image-placeholder">{attrs.originalName}</span>}
         <figcaption>{attrs.originalName}</figcaption>
       </figure>
-      <div className="dynamic-image-controls" contentEditable={false}>
+      <div className="note-image-controls" contentEditable={false}>
         <button type="button" onClick={() => updateAttributes({ align: 'left', wrap: 'none' })}>
           <AlignLeft />
         </button>
@@ -764,10 +764,10 @@ function DynamicFileNodeView({ node, selected, updateAttributes }: ReactNodeView
           <AlignRight />
         </button>
         <button type="button" onClick={() => updateAttributes({ wrap: attrs.wrap === 'left' ? 'none' : 'left', align: 'left' })}>
-          {t('dynamicNotes.editor.wrapLeft')}
+          {t('notes.editor.wrapLeft')}
         </button>
         <button type="button" onClick={() => updateAttributes({ wrap: attrs.wrap === 'right' ? 'none' : 'right', align: 'right' })}>
-          {t('dynamicNotes.editor.wrapRight')}
+          {t('notes.editor.wrapRight')}
         </button>
         <input
           type="range"

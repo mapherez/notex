@@ -287,48 +287,6 @@ button.security-row:hover {
   font-size: 0.82rem;
 }
 
-.sync-devices-panel {
-  display: grid;
-  gap: var(--nx-space-3);
-  border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
-  background: var(--nx-color-surface-subtle);
-  padding: var(--nx-space-4);
-}
-
-.sync-devices-panel p {
-  margin: 0;
-  color: var(--nx-color-text-muted);
-  font-size: 0.84rem;
-  line-height: 1.45;
-}
-
-.sync-device-list {
-  display: grid;
-  gap: var(--nx-space-2);
-}
-
-.sync-device-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--nx-space-3);
-  border-radius: var(--nx-radius-sm);
-  background: var(--nx-color-surface);
-  padding: var(--nx-space-3);
-}
-
-.sync-device-badge {
-  display: inline-flex;
-  margin-left: var(--nx-space-2);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--nx-color-success) 16%, transparent);
-  color: var(--nx-color-success);
-  padding: 0.1rem 0.45rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
 .plan-card {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--nx-color-accent) 24%, var(--nx-color-border));

@@ -1,26 +1,24 @@
 import { ArchiveRestore, Copy, Folder, GripVertical, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
 import { useRef, useState, type PointerEventHandler } from 'react';
 import { Link } from 'react-router-dom';
-import type { Collection, DynamicNote, PreferredLayout, Tag } from '../../core/models/models';
+import type { Collection, Note, PreferredLayout, Tag } from '../../core/models/models';
 import { richTextToPlainText } from '../../core/utils/richText';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
-import { useDynamicNotesStore } from '../../store/useDynamicNotesStore';
+import { useNotesStore } from '../../store/useNotesStore';
 import { useToastStore } from '../../store/useToastStore';
+import { InlineFormattedText } from '../editing/InlineFormattedText';
 import { NoteThumbnail } from '../ui/NoteThumbnail';
 import { TagChip } from '../ui/TagChip';
 
-export function DynamicNoteRow({
+export function NoteRow({
   collections,
   layout = 'list',
   note,
   onPermanentDelete,
   onPinnedDragPointerDown,
-  onPinnedDragPointerEnter,
-  onPinnedDragPointerMove,
-  onPinnedDragPointerUp,
   onSelectionChange,
   pinnedDragActive = false,
   selectable = false,
@@ -32,12 +30,9 @@ export function DynamicNoteRow({
 }: {
   collections: Collection[];
   layout?: PreferredLayout;
-  note: DynamicNote;
+  note: Note;
   onPermanentDelete?: (noteId: string) => void;
   onPinnedDragPointerDown?: PointerEventHandler<HTMLButtonElement>;
-  onPinnedDragPointerEnter?: PointerEventHandler<HTMLElement>;
-  onPinnedDragPointerMove?: PointerEventHandler<HTMLElement>;
-  onPinnedDragPointerUp?: PointerEventHandler<HTMLElement>;
   onSelectionChange?: (noteId: string, selected: boolean) => void;
   pinnedDragActive?: boolean;
   selectable?: boolean;
@@ -50,36 +45,31 @@ export function DynamicNoteRow({
   const { t } = useI18n();
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const toggleFavorite = useDynamicNotesStore((state) => state.toggleDynamicFavorite);
-  const togglePinned = useDynamicNotesStore((state) => state.toggleDynamicPinned);
+  const toggleFavorite = useNotesStore((state) => state.toggleFavorite);
+  const togglePinned = useNotesStore((state) => state.togglePinned);
   const setPinnedNoteState = useAppStore((state) => state.setPinnedNoteState);
-  const moveToTrash = useDynamicNotesStore((state) => state.moveDynamicNoteToTrash);
-  const restoreNote = useDynamicNotesStore((state) => state.restoreDynamicNote);
-  const createDynamicNote = useDynamicNotesStore((state) => state.createDynamicNote);
+  const moveToTrash = useNotesStore((state) => state.moveNoteToTrash);
+  const restoreNote = useNotesStore((state) => state.restoreNote);
+  const createNote = useNotesStore((state) => state.createNote);
   const pushToast = useToastStore((state) => state.pushToast);
   const noteTags = sortTagsByName(tags.filter((tag) => note.tagIds.includes(tag.id)));
   const collection = collections.find((item) => item.id === note.collectionId);
-  const title = richTextToPlainText(note.title).trim() || t('dynamicNotes.untitled');
-  const preview =
-    richTextToPlainText(note.subtitle).trim() ||
-    note.blocks
-      ?.map((block) => [richTextToPlainText(block.title), block.contentText].filter(Boolean).join(' '))
-      .filter(Boolean)
-      .join(' ') ||
-    t('dynamicNotes.emptyPreview');
+  const titlePlain = richTextToPlainText(note.title).trim();
+  const title = titlePlain || t('notes.untitled');
+  const subtitlePlain = richTextToPlainText(note.subtitle).trim();
 
   useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
 
   async function handleDuplicate() {
-    const duplicate = await createDynamicNote({ collectionId: note.collectionId, title: `${title} (${t('common.copy')})` });
-    const dynamicNotesStore = useDynamicNotesStore.getState();
-    await dynamicNotesStore.updateDynamicNoteHeader(duplicate.id, { subtitle: note.subtitle });
-    await dynamicNotesStore.updateDynamicNoteTags(duplicate.id, note.tagIds);
+    const duplicate = await createNote({ collectionId: note.collectionId, title: `${title} (${t('common.copy')})` });
+    const notesStore = useNotesStore.getState();
+    await notesStore.updateNoteHeader(duplicate.id, { subtitle: note.subtitle });
+    await notesStore.updateNoteTags(duplicate.id, note.tagIds);
     if (note.thumbnail) {
-      await dynamicNotesStore.updateDynamicNoteThumbnail(duplicate.id, note.thumbnail);
+      await notesStore.updateNoteThumbnail(duplicate.id, note.thumbnail);
     }
     for (const block of note.blocks ?? []) {
-      await dynamicNotesStore.addDynamicBlock(duplicate.id, {
+      await notesStore.addBlock(duplicate.id, {
         contentJson: block.contentJson,
         contentText: block.contentText,
         kind: block.kind,
@@ -115,9 +105,7 @@ export function DynamicNoteRow({
         pinIndicator: showPinIndicator,
         selectable,
       })}
-      onPointerEnter={onPinnedDragPointerEnter}
-      onPointerMove={onPinnedDragPointerMove}
-      onPointerUp={onPinnedDragPointerUp}
+      data-note-id={note.id}
     >
       <Link className="note-row__link-overlay" to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${title}`} />
       {showPinnedDragHandle ? (
@@ -168,13 +156,21 @@ export function DynamicNoteRow({
       </div>
       <div className="note-row__content">
         <div className="note-row__title-line">
-          <span className="note-row__title">{title}</span>
+          <span className="note-row__title">
+            {titlePlain ? <InlineFormattedText value={note.title} /> : title}
+          </span>
         </div>
-        {layout === 'grid' ? (
-          <p className="note-row__summary-preview">{preview}</p>
-        ) : (
-          <p className="note-row__intro">{preview}</p>
-        )}
+        {subtitlePlain ? (
+          layout === 'grid' ? (
+            <p className="note-row__summary-preview">
+              <InlineFormattedText value={note.subtitle} />
+            </p>
+          ) : (
+            <p className="note-row__intro">
+              <InlineFormattedText value={note.subtitle} />
+            </p>
+          )
+        ) : null}
       </div>
       <div className="note-row__badges">
         {collection ? (
@@ -248,7 +244,6 @@ function getNoteRowClassName({
 }) {
   return [
     'note-row',
-    'dynamic-note-row',
     selectable ? 'selectable' : '',
     pinIndicator ? 'with-pin-indicator' : '',
     dragHandle ? 'with-drag-handle' : '',

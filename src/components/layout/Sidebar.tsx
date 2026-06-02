@@ -1,15 +1,12 @@
 import { getVersion } from '@tauri-apps/api/app';
 import { isTauri } from '@tauri-apps/api/core';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Cloud,
-  ChevronDown,
   Clock3,
   FileText,
   Folder,
   Home,
-  AlertTriangle,
   Plus,
   Star,
   Tag,
@@ -17,15 +14,12 @@ import {
   Trash2,
 } from 'lucide-react';
 import clsx from 'clsx';
-import { appSettings, cloudSyncEnabled, defaultNewNoteType, navigationSettings } from '../../config/appSettings';
-import { useClickOutside } from '../../core/utils/useClickOutside';
+import { appSettings, navigationSettings } from '../../config/appSettings';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
+import { useNotesStore } from '../../store/useNotesStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
-import { useSyncStore } from '../../store/useSyncStore';
-import { useToastStore } from '../../store/useToastStore';
 import { latestPatchNoteVersion, PatchNotesModal } from '../ui/PatchNotesModal';
-import type { NoteType } from '../../core/models/models';
 
 const navIcons = {
   clock: Clock3,
@@ -38,28 +32,15 @@ const navIcons = {
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
-  const [newNoteOpen, setNewNoteOpen] = useState(false);
   const [appVersion, setAppVersion] = useState(latestPatchNoteVersion);
   const [patchNotesOpen, setPatchNotesOpen] = useState(false);
-  const newNoteRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
   const settings = useAppStore((state) => state.settings);
   const collections = useKnowledgeStore((state) => state.collections);
-  const hasTrashedNotes = useKnowledgeStore((state) => state.notes.some((note) => note.isTrashed));
-  const syncState = useSyncStore((state) => state.syncState);
-  const pendingCount = useSyncStore((state) => state.pendingCount);
-  const conflictCount = useSyncStore((state) => state.conflictCount);
-  const isConnecting = useSyncStore((state) => state.isConnecting);
-  const isSyncing = useSyncStore((state) => state.isSyncing);
-  const connectGoogle = useSyncStore((state) => state.connectGoogle);
-  const openConflictReview = useSyncStore((state) => state.openConflictReview);
-  const syncNow = useSyncStore((state) => state.syncNow);
-  const pushToast = useToastStore((state) => state.pushToast);
+  const hasTrashedNotes = useNotesStore((state) => state.notes.some((note) => note.isTrashed));
   const activeCollectionId = searchParams.get('collection');
-
-  useClickOutside(newNoteRef, newNoteOpen, () => setNewNoteOpen(false));
 
   useEffect(() => {
     if (!isTauri()) {
@@ -71,34 +52,9 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       .catch(() => setAppVersion(latestPatchNoteVersion));
   }, []);
 
-  function createDynamicNote() {
-    setNewNoteOpen(false);
+  function createNote() {
     onClose();
     navigate(`/notes/new?collection=${settings.primaryCollectionId}`);
-  }
-
-  function createClassicNote(type: NoteType = defaultNewNoteType) {
-    setNewNoteOpen(false);
-    onClose();
-    navigate(`/classic-notes/new?type=${type}&collection=${settings.primaryCollectionId}`);
-  }
-
-  function handleSyncClick() {
-    if (conflictCount) {
-      openConflictReview();
-      return;
-    }
-
-    if (syncState?.connected) {
-      void syncNow()
-        .then(() => pushToast(t('sync.synced'), 'success'))
-        .catch((error) => pushToast(error instanceof Error ? error.message : t('sync.failed'), 'warning'));
-      return;
-    }
-
-    void connectGoogle()
-      .then(() => pushToast(t('sync.connected'), 'success'))
-      .catch((error) => pushToast(error instanceof Error ? error.message : t('sync.failed'), 'warning'));
   }
 
   return (
@@ -123,32 +79,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <button
             className="primary-action-main"
             type="button"
-            onClick={createDynamicNote}
+            onClick={createNote}
           >
             <Plus />
             {t("navigation.newNote")}
           </button>
-          <button
-            className="primary-action-side"
-            type="button"
-            aria-label={t("navigation.expand")}
-            aria-expanded={newNoteOpen}
-            onClick={() => setNewNoteOpen((open) => !open)}
-          >
-            <ChevronDown />
-          </button>
-          {newNoteOpen ? (
-            <div className="floating-menu new-note-menu" ref={newNoteRef}>
-              <button type="button" onClick={createDynamicNote}>
-                <FileText />
-                {t("navigation.dynamicNote")}
-              </button>
-              <button type="button" onClick={() => createClassicNote("standard")}>
-                <FileText />
-                {t("navigation.classicNote")}
-              </button>
-            </div>
-          ) : null}
         </div>
 
         <nav className="sidebar-section" aria-label={t("navigation.notes")}>
@@ -170,14 +105,6 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               </NavLink>
             );
           })}
-          <NavLink
-            to="/classic-notes"
-            className={({ isActive }) => clsx("nav-item", isActive && "active")}
-            onClick={onClose}
-          >
-            <FileText strokeWidth={1.8} />
-            <span>{t("navigation.classicNotes")}</span>
-          </NavLink>
         </nav>
 
         <div className="sidebar-section">
@@ -213,18 +140,6 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         </div>
 
         <div className="sidebar-spacer" />
-        {cloudSyncEnabled ? (
-          <button className="sidebar-sync-button" type="button" onClick={handleSyncClick}>
-            <span className="sidebar-sync-icon">
-              {conflictCount ? <AlertTriangle /> : <Cloud />}
-              {pendingCount || conflictCount ? <span className="sidebar-sync-badge">{conflictCount || pendingCount}</span> : null}
-            </span>
-            <span>
-              <span>{conflictCount ? t('sync.conflictReview') : syncState?.connected ? (isSyncing ? t('sync.syncing') : t('sync.syncNow')) : isConnecting ? t('sync.connecting') : t('sync.connect')}</span>
-              <span className="sidebar-sync-sub">{conflictCount ? t('sync.conflictCount', { count: conflictCount }) : pendingCount ? t('sync.pendingCount', { count: pendingCount }) : syncState?.connected ? t('sync.upToDate') : t('sync.localOnly')}</span>
-            </span>
-          </button>
-        ) : null}
         <nav className="sidebar-legal-links" aria-label={t('legal.navigationLabel')}>
           {navigationSettings.legalLinks.map((link) => (
             <NavLink className="sidebar-legal-link" key={link.to} to={link.to} onClick={onClose}>

@@ -1,23 +1,23 @@
 import { ChevronDown, Tag as TagIcon, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { DynamicNoteRow } from '../components/dynamic/DynamicNoteRow';
+import { NoteRow } from '../components/notes/NoteRow';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { EmptyState } from '../components/ui/EmptyState';
 import { NotesFilterRow } from '../components/ui/NotesFilterRow';
-import type { Collection, DynamicNote, PreferredLayout, Tag as TagModel } from '../core/models/models';
+import type { Collection, Note, PreferredLayout, Tag as TagModel } from '../core/models/models';
 import {
-  defaultDynamicNotesSortOrder,
-  filterDynamicNotes,
-  recentDynamicNotesSortOrder,
-} from '../core/utils/dynamicNoteFilters';
+  defaultNotesSortOrder,
+  filterNotes,
+  recentNotesSortOrder,
+} from '../core/utils/noteFilters';
 import { normalizeNotesSortOrder, type NotesSortOrder } from '../core/utils/noteFilters';
 import { richTextToPlainText } from '../core/utils/richText';
 import { sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
-import { useDynamicNotesStore } from '../store/useDynamicNotesStore';
+import { useNotesStore } from '../store/useNotesStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
 
@@ -27,15 +27,15 @@ type TrashConfirmState =
   | { kind: 'clear' }
   | { kind: 'delete'; noteIds: string[]; title?: string };
 
-export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
+export function NotesListViewPage({ mode }: { mode: ListMode }) {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
-  const dynamicNotes = useDynamicNotesStore((state) => state.dynamicNotes);
-  const clearTrash = useDynamicNotesStore((state) => state.clearDynamicTrash);
-  const deleteNotesPermanently = useDynamicNotesStore((state) => state.deleteDynamicNotesPermanently);
-  const bulkUpdateDynamicNoteCollection = useDynamicNotesStore((state) => state.bulkUpdateDynamicNoteCollection);
-  const bulkUpdateDynamicNoteTag = useDynamicNotesStore((state) => state.bulkUpdateDynamicNoteTag);
-  const moveDynamicNoteToTrash = useDynamicNotesStore((state) => state.moveDynamicNoteToTrash);
+  const notes = useNotesStore((state) => state.notes);
+  const clearTrash = useNotesStore((state) => state.clearTrash);
+  const deleteNotesPermanently = useNotesStore((state) => state.deleteNotesPermanently);
+  const bulkUpdateNoteCollection = useNotesStore((state) => state.bulkUpdateNoteCollection);
+  const bulkUpdateNoteTag = useNotesStore((state) => state.bulkUpdateNoteTag);
+  const moveNoteToTrash = useNotesStore((state) => state.moveNoteToTrash);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const preferredLayout = useAppStore((state) => state.settings.preferredLayout);
@@ -53,7 +53,7 @@ export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
   const pinnedDragMovedRef = useRef(false);
   const tagParam = searchParams.get('tag');
   const collectionParam = searchParams.get('collection');
-  const defaultSortOrder: NotesSortOrder = mode === 'recent' ? recentDynamicNotesSortOrder : defaultDynamicNotesSortOrder;
+  const defaultSortOrder: NotesSortOrder = mode === 'recent' ? recentNotesSortOrder : defaultNotesSortOrder;
   const sortOrder = mode === 'recent' ? defaultSortOrder : normalizeNotesSortOrder(searchParams.get('sort'));
   const activeTag = tags.find((tag) => tag.id === tagParam);
   const activeCollection = collections.find((collection) => collection.id === collectionParam);
@@ -64,7 +64,7 @@ export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
   const pinOrderingEnabled = pinActionsEnabled && !hasActiveFilter;
 
   const copy = {
-    all: { title: t('dynamicNotes.title'), subtitle: t('dynamicNotes.subtitle') },
+    all: { title: t('notes.title'), subtitle: t('notes.subtitle') },
     favorites: { title: t('notes.favoritesTitle'), subtitle: t('notes.favoritesSubtitle') },
     recent: { title: t('notes.recentTitle'), subtitle: t('notes.recentSubtitle') },
     trash: { title: t('notes.trashTitle'), subtitle: t('notes.trashSubtitle') },
@@ -72,14 +72,14 @@ export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
 
   const filtered = useMemo(
     () =>
-      filterDynamicNotes(dynamicNotes, {
+      filterNotes(notes, {
         mode,
         tagId,
         collectionId,
         pinnedFirst: pinOrderingEnabled,
         sortOrder,
       }),
-    [collectionId, dynamicNotes, mode, pinOrderingEnabled, sortOrder, tagId],
+    [collectionId, notes, mode, pinOrderingEnabled, sortOrder, tagId],
   );
   const selectionEnabled = mode === 'all';
   const visibleNoteIdsKey = filtered.map((note) => note.id).join('|');
@@ -103,7 +103,7 @@ export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
   );
   const regularNotes = splitPinnedLists ? filtered.filter((note) => !note.isPinned) : filtered;
   const showBulkActions = selectionEnabled && selectedNotes.length > 0;
-  const trashCount = dynamicNotes.filter((note) => note.isTrashed).length;
+  const trashCount = notes.filter((note) => note.isTrashed).length;
   const listContextKey = `${mode}|${tagId ?? ''}|${collectionId ?? ''}|${sortOrder}`;
 
   useEffect(() => {
@@ -142,6 +142,10 @@ export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
       return undefined;
     }
 
+    function handlePointerMove(event: globalThis.PointerEvent) {
+      trackPinnedNoteReorderAt(event.clientX, event.clientY);
+    }
+
     function handlePointerUp() {
       finishPinnedNoteReorder();
     }
@@ -152,10 +156,12 @@ export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
       }
     }
 
+    window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('keydown', handleKeyDown);
     };
@@ -214,7 +220,7 @@ export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
       return;
     }
 
-    await bulkUpdateDynamicNoteCollection(selectedNoteIds, nextCollectionId);
+    await bulkUpdateNoteCollection(selectedNoteIds, nextCollectionId);
     pushToast(t('notes.bulk.collectionUpdated'), 'success');
   }
 
@@ -223,7 +229,7 @@ export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
       return;
     }
 
-    await bulkUpdateDynamicNoteTag(selectedNoteIds, tagId, assigned);
+    await bulkUpdateNoteTag(selectedNoteIds, tagId, assigned);
     pushToast(t(assigned ? 'notes.bulk.tagsAssigned' : 'notes.bulk.tagsRemoved'), 'success');
   }
 
@@ -232,7 +238,7 @@ export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
       return;
     }
 
-    await Promise.all(selectedNoteIds.map((noteId) => moveDynamicNoteToTrash(noteId)));
+    await Promise.all(selectedNoteIds.map((noteId) => moveNoteToTrash(noteId)));
     setSelectedNoteIds([]);
     pushToast(t('notes.bulk.deleted'), 'warning');
   }
@@ -245,24 +251,30 @@ export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
     activePinnedDragIdRef.current = noteId;
     pinnedDragStartRef.current = { x: event.clientX, y: event.clientY };
     pinnedDragMovedRef.current = false;
+    updateOrderedPinnedDragIds(persistedPinnedNotes.map((note) => note.id));
     setActivePinnedDragId(noteId);
   }
 
-  function trackPinnedNoteReorder(event: PointerEvent<HTMLElement>) {
-    if (!activePinnedDragIdRef.current || pinnedDragMovedRef.current) {
+  function trackPinnedNoteReorderAt(clientX: number, clientY: number) {
+    const draggedId = activePinnedDragIdRef.current;
+    if (!draggedId) {
       return;
     }
 
-    const deltaX = Math.abs(event.clientX - pinnedDragStartRef.current.x);
-    const deltaY = Math.abs(event.clientY - pinnedDragStartRef.current.y);
-    if (deltaX > 4 || deltaY > 4) {
+    const deltaX = Math.abs(clientX - pinnedDragStartRef.current.x);
+    const deltaY = Math.abs(clientY - pinnedDragStartRef.current.y);
+    if (!pinnedDragMovedRef.current && (deltaX > 4 || deltaY > 4)) {
       pinnedDragMovedRef.current = true;
     }
-  }
 
-  function previewPinnedNoteReorder(overId: string) {
-    const draggedId = activePinnedDragIdRef.current;
-    if (!draggedId || draggedId === overId || !pinnedDragMovedRef.current) {
+    if (!pinnedDragMovedRef.current) {
+      return;
+    }
+
+    const target = document.elementFromPoint(clientX, clientY);
+    const row = target instanceof HTMLElement ? target.closest<HTMLElement>('[data-note-id]') : null;
+    const overId = row?.dataset.noteId;
+    if (!overId || draggedId === overId || !orderedPinnedDragIdsRef.current.includes(overId)) {
       return;
     }
 
@@ -303,9 +315,9 @@ export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
     });
   }
 
-  function renderNoteRows(noteItems: DynamicNote[], pinnedList = false) {
+  function renderNoteRows(noteItems: Note[], pinnedList = false) {
     return noteItems.map((note) => (
-      <DynamicNoteRow
+      <NoteRow
         key={note.id}
         collections={collections}
         layout={preferredLayout}
@@ -313,15 +325,12 @@ export function DynamicNotesListPage({ mode }: { mode: ListMode }) {
         onPermanentDelete={
           mode === 'trash'
             ? (noteId) => {
-                const trashedNote = dynamicNotes.find((item) => item.id === noteId);
+                const trashedNote = notes.find((item) => item.id === noteId);
                 setTrashConfirm({ kind: 'delete', noteIds: [noteId], title: richTextToPlainText(trashedNote?.title).trim() });
               }
             : undefined
         }
         onPinnedDragPointerDown={pinOrderingEnabled && pinnedList ? (event) => beginPinnedNoteReorder(event, note.id) : undefined}
-        onPinnedDragPointerEnter={pinOrderingEnabled && pinnedList ? () => previewPinnedNoteReorder(note.id) : undefined}
-        onPinnedDragPointerMove={pinOrderingEnabled && pinnedList ? trackPinnedNoteReorder : undefined}
-        onPinnedDragPointerUp={pinOrderingEnabled && pinnedList ? finishPinnedNoteReorder : undefined}
         onSelectionChange={updateNoteSelection}
         pinnedDragActive={activePinnedDragId === note.id}
         selectable={selectionEnabled}
@@ -429,7 +438,7 @@ function BulkNoteActionsRow({
   onMoveCollection: (collectionId: string) => void;
   onToggleTag: (tagId: string, assigned: boolean) => void;
   selectedCount: number;
-  selectedNotes: DynamicNote[];
+  selectedNotes: Note[];
   tags: TagModel[];
   totalCount: number;
 }) {
@@ -536,7 +545,7 @@ function TrashConfirmModal({
   const description =
     confirmState.kind === 'clear'
       ? t('notes.clearTrashConfirm')
-      : t('notes.deleteForeverConfirm', { title: confirmState.title ?? t('dynamicNotes.untitled') });
+      : t('notes.deleteForeverConfirm', { title: confirmState.title ?? t('notes.untitled') });
 
   return (
     <div className="modal-backdrop">
@@ -564,7 +573,7 @@ function BulkTagCheckbox({
   tag,
 }: {
   onToggle: (tagId: string, assigned: boolean) => void;
-  selectedNotes: DynamicNote[];
+  selectedNotes: Note[];
   tag: TagModel;
 }) {
   const checkboxRef = useRef<HTMLInputElement>(null);
@@ -592,7 +601,7 @@ function BulkTagCheckbox({
   );
 }
 
-function orderPinnedNotes(notes: DynamicNote[], orderedIds: string[]) {
+function orderPinnedNotes(notes: Note[], orderedIds: string[]) {
   const noteById = new Map(notes.map((note) => [note.id, note]));
   const usedIds = new Set<string>();
   const orderedNotes = orderedIds.flatMap((noteId) => {

@@ -1,8 +1,5 @@
 {
   "productName": "NoteX",
-  "features": {
-    "cloudSync": false
-  },
   "themes": {
     "default": "dark",
     "available": [
@@ -32,7 +29,7 @@
       "favoriteTagIds": ["tag-grammar", "tag-doubt"],
       "pinnedNoteIds": ["note-linguistic"],
       "quickPinNoteIds": ["note-linguistic"],
-      "dynamicNoteHiddenPanelIds": []
+      "noteHiddenPanelIds": []
     }
   },
   "limits": {
@@ -68,7 +65,6 @@
       "slate",
       "neutral"
     ],
-    "noteTypes": ["standard", "linguistic_doubt", "reference", "snippet"],
     "thumbnailVariants": [
       {
         "id": "purple",
@@ -152,8 +148,7 @@
   },
   "notes": {
     "defaultSortOrder": "nameAsc",
-    "recentSortOrder": "updatedDesc",
-    "defaultNewNoteType": "standard"
+    "recentSortOrder": "updatedDesc"
   },
   "editor": {
     "defaultTable": {
@@ -161,7 +156,7 @@
       "rows": 1
     },
     "readingWordsPerMinute": 180,
-    "dynamicTools": [
+    "noteTools": [
       { "id": "bold", "shortcut": "Mod+B" },
       { "id": "italic", "shortcut": "Mod+I" },
       { "id": "underline", "shortcut": "Mod+U" },

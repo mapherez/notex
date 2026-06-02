@@ -8,50 +8,7 @@ export type PreferredLayout = 'list' | 'grid';
 
 export type StartupPage = '/' | '/notes' | '/favorites' | '/recent' | '/tags' | '/collections' | '/profile';
 
-export type NoteType = 'standard' | 'linguistic_doubt' | 'reference' | 'snippet';
-
 export type SaveState = 'saved' | 'draft';
-
-export type SyncStatus = 'local' | 'pending' | 'synced' | 'conflict';
-
-export type SyncProvider = 'google-drive';
-
-export type SyncEntityType = 'note' | 'workspace' | 'manifest';
-
-export type SyncItemStatus = 'pending' | 'synced' | 'conflict' | 'deleted';
-
-export type SyncConflictPayload = {
-  detectedAt: string;
-  baseHash?: string;
-  localHash?: string;
-  remoteHash?: string;
-  localSnapshot?: Note | CloudWorkspaceFile | null;
-  remoteSnapshot?: Note | CloudWorkspaceFile | null;
-};
-
-export type SyncConflictResolution = 'local' | 'remote' | 'duplicate' | 'manual';
-
-export type RichTextBlock = {
-  id: string;
-  text: string;
-};
-
-export type UsageExample = {
-  id: string;
-  expression: string;
-  meaning: string;
-  example: string;
-};
-
-export type UsageExampleSection = {
-  rows: UsageExample[];
-};
-
-export type CalloutBlock = {
-  id: string;
-  title: string;
-  body: string;
-};
 
 export type RelatedLink = {
   id: string;
@@ -74,27 +31,27 @@ export type TiptapDocument = {
   content?: unknown[];
 };
 
-export type DynamicNoteBlockKind = 'title' | 'content';
+export type NoteBlockKind = 'title' | 'content';
 
-export type DynamicNoteBlock = {
+export type NoteBlock = {
   id: string;
   noteId: string;
   sortOrder: number;
   title: string;
-  kind: DynamicNoteBlockKind;
+  kind: NoteBlockKind;
   contentJson: TiptapDocument | null;
   contentText: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export type DynamicNoteFileKind = 'image' | 'attachment';
+export type NoteFileKind = 'image' | 'attachment';
 
-export type DynamicNoteFile = {
+export type NoteFile = {
   id: string;
   noteId: string;
   blockId?: string | null;
-  kind: DynamicNoteFileKind;
+  kind: NoteFileKind;
   originalName: string;
   mimeType: string;
   sizeBytes: number;
@@ -103,7 +60,7 @@ export type DynamicNoteFile = {
   createdAt: string;
 };
 
-export type DynamicNote = {
+export type Note = {
   id: string;
   title: string;
   subtitle: string;
@@ -124,40 +81,8 @@ export type DynamicNote = {
   stats: NoteStats;
   thumbnail?: NoteThumbnail;
   version: number;
-  syncStatus: SyncStatus;
-  blocks?: DynamicNoteBlock[];
-  files?: DynamicNoteFile[];
-};
-
-export type Note = {
-  id: string;
-  type: NoteType;
-  title: string;
-  collectionId: string | null;
-  tagIds: string[];
-  linkedNoteIds: string[];
-  isFavorite: boolean;
-  isPinned: boolean;
-  isArchived: boolean;
-  isTrashed: boolean;
-  saveState: SaveState;
-  authorId?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  lastOpenedAt?: string | null;
-  content: {
-    intro?: string;
-    summary?: RichTextBlock[];
-    explanation?: RichTextBlock[];
-    usageExamples?: UsageExampleSection | null;
-    tip?: CalloutBlock | null;
-    additionalExamples?: string[];
-  };
-  stats: NoteStats;
-  relatedLinks?: RelatedLink[];
-  thumbnail?: NoteThumbnail;
-  version: number;
-  syncStatus: SyncStatus;
+  blocks?: NoteBlock[];
+  files?: NoteFile[];
 };
 
 export type TagColor =
@@ -203,8 +128,6 @@ export type User = {
   email?: string;
   avatarUrl?: string;
   handle?: string;
-  googleSub?: string;
-  provider?: 'local' | 'google';
   lastLoginAt?: string;
 };
 
@@ -219,7 +142,7 @@ export type UserSettings = {
   favoriteTagIds: string[];
   pinnedNoteIds: string[];
   quickPinNoteIds: string[];
-  dynamicNoteHiddenPanelIds?: string[];
+  noteHiddenPanelIds?: string[];
   updatedAt: string;
 };
 
@@ -229,94 +152,4 @@ export type ActivityItem = {
   label: string;
   time: string;
   createdAt: string;
-};
-
-export type DeviceSession = {
-  id: string;
-  name: string;
-  lastSeenAt: string;
-  userAgent?: string;
-};
-
-export type SyncState = {
-  id: SyncProvider;
-  provider: SyncProvider;
-  connected: boolean;
-  googleSub?: string;
-  email?: string;
-  fullName?: string;
-  firstName?: string;
-  handle?: string;
-  avatarUrl?: string;
-  lastLoginAt?: string;
-  lastSyncAt?: string;
-  lastSyncStartedAt?: string;
-  lastError?: string;
-  deviceId: string;
-  workspaceFileId?: string;
-  manifestFileId?: string;
-  updatedAt: string;
-};
-
-export type SyncItem = {
-  entityKey: string;
-  entityType: SyncEntityType;
-  entityId: string;
-  driveFileId?: string;
-  baseHash?: string;
-  localHash?: string;
-  remoteHash?: string;
-  remoteModifiedTime?: string;
-  remoteVersion?: string;
-  status: SyncItemStatus;
-  conflict?: SyncConflictPayload;
-  error?: string;
-  deletedAt?: string;
-  lastSyncedAt?: string;
-  updatedAt: string;
-};
-
-export type CloudNoteFile = {
-  schemaVersion: 1;
-  exportedAt: string;
-  note: Note;
-};
-
-export type CloudWorkspaceFile = {
-  schemaVersion: 1;
-  exportedAt: string;
-  user?: User | null;
-  userSettings: UserSettings;
-  tags: Tag[];
-  collections: Collection[];
-  activities: ActivityItem[];
-  sessions: DeviceSession[];
-};
-
-export type CloudManifestNote = {
-  id: string;
-  fileId?: string;
-  hash: string;
-  version: number;
-  updatedAt: string;
-  deletedAt?: string;
-};
-
-export type CloudManifestFile = {
-  schemaVersion: 1;
-  exportedAt: string;
-  workspace?: {
-    fileId: string;
-    hash: string;
-    updatedAt: string;
-  };
-  notes: CloudManifestNote[];
-};
-
-export type NewNoteInput = {
-  type?: NoteType;
-  title: string;
-  intro: string;
-  collectionId?: string | null;
-  tagIds?: string[];
 };

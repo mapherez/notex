@@ -12,7 +12,7 @@ use tauri::{AppHandle, Manager};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
-const SCHEMA_VERSION: &str = "1";
+const SCHEMA_VERSION: &str = "3";
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,7 +35,7 @@ pub struct SqliteExportInfo {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct DynamicFileImportInfo {
+pub struct FileImportInfo {
     id: String,
     note_id: String,
     block_id: Option<String>,
@@ -259,12 +259,12 @@ pub fn notex_package_replace_from_file(app: AppHandle, source_path: String) -> R
 }
 
 #[tauri::command]
-pub fn notex_dynamic_file_import(
+pub fn notex_note_file_import(
     app: AppHandle,
     source_path: String,
     note_id: String,
     block_id: Option<String>,
-) -> Result<DynamicFileImportInfo, String> {
+) -> Result<FileImportInfo, String> {
     let source = PathBuf::from(source_path);
     if !source.is_file() {
         return Err("Selected file was not found".to_string());
@@ -292,7 +292,7 @@ pub fn notex_dynamic_file_import(
 
     let mime_type = infer_mime_type(&source);
     let kind = if mime_type.starts_with("image/") { "image" } else { "attachment" }.to_string();
-    Ok(DynamicFileImportInfo {
+    Ok(FileImportInfo {
         id,
         note_id,
         block_id,
@@ -308,19 +308,19 @@ pub fn notex_dynamic_file_import(
 }
 
 #[tauri::command]
-pub fn notex_dynamic_file_absolute_path(app: AppHandle, relative_path: String) -> Result<String, String> {
+pub fn notex_note_file_absolute_path(app: AppHandle, relative_path: String) -> Result<String, String> {
     let relative = safe_relative_files_path(&relative_path)?;
     Ok(files_directory(&app)?.join(relative).to_string_lossy().to_string())
 }
 
 #[tauri::command]
-pub fn notex_dynamic_file_open(app: AppHandle, relative_path: String) -> Result<(), String> {
+pub fn notex_note_file_open(app: AppHandle, relative_path: String) -> Result<(), String> {
     let relative = safe_relative_files_path(&relative_path)?;
     open_file(&files_directory(&app)?.join(relative))
 }
 
 #[tauri::command]
-pub fn notex_dynamic_file_copy_to(
+pub fn notex_note_file_copy_to(
     app: AppHandle,
     relative_path: String,
     destination_path: String,
@@ -339,7 +339,7 @@ pub fn notex_dynamic_file_copy_to(
 }
 
 #[tauri::command]
-pub fn notex_dynamic_file_delete(app: AppHandle, relative_path: String) -> Result<(), String> {
+pub fn notex_note_file_delete(app: AppHandle, relative_path: String) -> Result<(), String> {
     let relative = safe_relative_files_path(&relative_path)?;
     let source = files_directory(&app)?.join(relative);
     if source.is_file() {
@@ -555,44 +555,14 @@ fn temp_directory(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 fn ensure_schema(conn: &Connection) -> Result<(), String> {
+    ensure_metadata_table(conn)?;
+    if read_metadata(conn, "sqlite_schema_version")?.as_deref() != Some(SCHEMA_VERSION) {
+        reset_storage_schema(conn)?;
+    }
+
     conn.execute_batch(
         r#"
         CREATE TABLE IF NOT EXISTS notes (
-          id TEXT PRIMARY KEY,
-          type TEXT NOT NULL,
-          title TEXT NOT NULL,
-          collection_id TEXT,
-          tag_ids TEXT NOT NULL,
-          linked_note_ids TEXT NOT NULL,
-          is_favorite INTEGER NOT NULL DEFAULT 0,
-          is_pinned INTEGER NOT NULL DEFAULT 0,
-          is_archived INTEGER NOT NULL DEFAULT 0,
-          is_trashed INTEGER NOT NULL DEFAULT 0,
-          save_state TEXT NOT NULL DEFAULT 'saved',
-          author_id TEXT,
-          created_at TEXT NOT NULL,
-          updated_at TEXT NOT NULL,
-          last_opened_at TEXT,
-          content TEXT NOT NULL,
-          stats TEXT NOT NULL,
-          related_links TEXT,
-          thumbnail TEXT,
-          version INTEGER NOT NULL DEFAULT 1,
-          sync_status TEXT NOT NULL DEFAULT 'local',
-          payload TEXT NOT NULL
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_notes_type ON notes(type);
-        CREATE INDEX IF NOT EXISTS idx_notes_collection_id ON notes(collection_id);
-        CREATE INDEX IF NOT EXISTS idx_notes_is_favorite ON notes(is_favorite);
-        CREATE INDEX IF NOT EXISTS idx_notes_is_pinned ON notes(is_pinned);
-        CREATE INDEX IF NOT EXISTS idx_notes_is_archived ON notes(is_archived);
-        CREATE INDEX IF NOT EXISTS idx_notes_is_trashed ON notes(is_trashed);
-        CREATE INDEX IF NOT EXISTS idx_notes_updated_at ON notes(updated_at);
-        CREATE INDEX IF NOT EXISTS idx_notes_last_opened_at ON notes(last_opened_at);
-        CREATE INDEX IF NOT EXISTS idx_notes_sync_status ON notes(sync_status);
-
-        CREATE TABLE IF NOT EXISTS dynamic_notes (
           id TEXT PRIMARY KEY,
           title TEXT NOT NULL,
           subtitle TEXT NOT NULL,
@@ -611,19 +581,18 @@ fn ensure_schema(conn: &Connection) -> Result<(), String> {
           stats TEXT NOT NULL,
           thumbnail TEXT,
           version INTEGER NOT NULL DEFAULT 1,
-          sync_status TEXT NOT NULL DEFAULT 'local',
           payload TEXT NOT NULL
         );
-        CREATE INDEX IF NOT EXISTS idx_dynamic_notes_collection_id ON dynamic_notes(collection_id);
-        CREATE INDEX IF NOT EXISTS idx_dynamic_notes_is_favorite ON dynamic_notes(is_favorite);
-        CREATE INDEX IF NOT EXISTS idx_dynamic_notes_is_pinned ON dynamic_notes(is_pinned);
-        CREATE INDEX IF NOT EXISTS idx_dynamic_notes_is_archived ON dynamic_notes(is_archived);
-        CREATE INDEX IF NOT EXISTS idx_dynamic_notes_is_trashed ON dynamic_notes(is_trashed);
-        CREATE INDEX IF NOT EXISTS idx_dynamic_notes_updated_at ON dynamic_notes(updated_at);
-        CREATE INDEX IF NOT EXISTS idx_dynamic_notes_last_opened_at ON dynamic_notes(last_opened_at);
-        CREATE INDEX IF NOT EXISTS idx_dynamic_notes_sync_status ON dynamic_notes(sync_status);
 
-        CREATE TABLE IF NOT EXISTS dynamic_note_blocks (
+        CREATE INDEX IF NOT EXISTS idx_notes_collection_id ON notes(collection_id);
+        CREATE INDEX IF NOT EXISTS idx_notes_is_favorite ON notes(is_favorite);
+        CREATE INDEX IF NOT EXISTS idx_notes_is_pinned ON notes(is_pinned);
+        CREATE INDEX IF NOT EXISTS idx_notes_is_archived ON notes(is_archived);
+        CREATE INDEX IF NOT EXISTS idx_notes_is_trashed ON notes(is_trashed);
+        CREATE INDEX IF NOT EXISTS idx_notes_updated_at ON notes(updated_at);
+        CREATE INDEX IF NOT EXISTS idx_notes_last_opened_at ON notes(last_opened_at);
+
+        CREATE TABLE IF NOT EXISTS note_blocks (
           id TEXT PRIMARY KEY,
           note_id TEXT NOT NULL,
           sort_order INTEGER NOT NULL,
@@ -635,11 +604,11 @@ fn ensure_schema(conn: &Connection) -> Result<(), String> {
           updated_at TEXT NOT NULL,
           payload TEXT NOT NULL
         );
-        CREATE INDEX IF NOT EXISTS idx_dynamic_note_blocks_note_id ON dynamic_note_blocks(note_id);
-        CREATE INDEX IF NOT EXISTS idx_dynamic_note_blocks_sort_order ON dynamic_note_blocks(sort_order);
-        CREATE INDEX IF NOT EXISTS idx_dynamic_note_blocks_updated_at ON dynamic_note_blocks(updated_at);
+        CREATE INDEX IF NOT EXISTS idx_note_blocks_note_id ON note_blocks(note_id);
+        CREATE INDEX IF NOT EXISTS idx_note_blocks_sort_order ON note_blocks(sort_order);
+        CREATE INDEX IF NOT EXISTS idx_note_blocks_updated_at ON note_blocks(updated_at);
 
-        CREATE TABLE IF NOT EXISTS dynamic_note_files (
+        CREATE TABLE IF NOT EXISTS note_files (
           id TEXT PRIMARY KEY,
           note_id TEXT NOT NULL,
           block_id TEXT,
@@ -652,9 +621,9 @@ fn ensure_schema(conn: &Connection) -> Result<(), String> {
           created_at TEXT NOT NULL,
           payload TEXT NOT NULL
         );
-        CREATE INDEX IF NOT EXISTS idx_dynamic_note_files_note_id ON dynamic_note_files(note_id);
-        CREATE INDEX IF NOT EXISTS idx_dynamic_note_files_block_id ON dynamic_note_files(block_id);
-        CREATE INDEX IF NOT EXISTS idx_dynamic_note_files_kind ON dynamic_note_files(kind);
+        CREATE INDEX IF NOT EXISTS idx_note_files_note_id ON note_files(note_id);
+        CREATE INDEX IF NOT EXISTS idx_note_files_block_id ON note_files(block_id);
+        CREATE INDEX IF NOT EXISTS idx_note_files_kind ON note_files(kind);
 
         CREATE TABLE IF NOT EXISTS tags (
           id TEXT PRIMARY KEY,
@@ -681,13 +650,10 @@ fn ensure_schema(conn: &Connection) -> Result<(), String> {
           email TEXT,
           avatar_url TEXT,
           handle TEXT,
-          google_sub TEXT,
-          provider TEXT,
           last_login_at TEXT,
           payload TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-        CREATE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub);
 
         CREATE TABLE IF NOT EXISTS activities (
           id TEXT PRIMARY KEY,
@@ -717,64 +683,6 @@ fn ensure_schema(conn: &Connection) -> Result<(), String> {
         CREATE INDEX IF NOT EXISTS idx_user_settings_theme ON user_settings(theme);
         CREATE INDEX IF NOT EXISTS idx_user_settings_updated_at ON user_settings(updated_at);
 
-        CREATE TABLE IF NOT EXISTS sync_state (
-          id TEXT PRIMARY KEY,
-          provider TEXT NOT NULL,
-          connected INTEGER NOT NULL DEFAULT 0,
-          google_sub TEXT,
-          email TEXT,
-          full_name TEXT,
-          first_name TEXT,
-          handle TEXT,
-          avatar_url TEXT,
-          last_login_at TEXT,
-          last_sync_at TEXT,
-          last_sync_started_at TEXT,
-          last_error TEXT,
-          device_id TEXT NOT NULL,
-          workspace_file_id TEXT,
-          manifest_file_id TEXT,
-          updated_at TEXT NOT NULL,
-          payload TEXT NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS idx_sync_state_provider ON sync_state(provider);
-        CREATE INDEX IF NOT EXISTS idx_sync_state_connected ON sync_state(connected);
-        CREATE INDEX IF NOT EXISTS idx_sync_state_email ON sync_state(email);
-        CREATE INDEX IF NOT EXISTS idx_sync_state_updated_at ON sync_state(updated_at);
-        CREATE INDEX IF NOT EXISTS idx_sync_state_last_sync_at ON sync_state(last_sync_at);
-
-        CREATE TABLE IF NOT EXISTS sync_items (
-          entity_key TEXT PRIMARY KEY,
-          entity_type TEXT NOT NULL,
-          entity_id TEXT NOT NULL,
-          drive_file_id TEXT,
-          base_hash TEXT,
-          local_hash TEXT,
-          remote_hash TEXT,
-          remote_modified_time TEXT,
-          remote_version TEXT,
-          status TEXT NOT NULL,
-          conflict TEXT,
-          error TEXT,
-          deleted_at TEXT,
-          last_synced_at TEXT,
-          updated_at TEXT NOT NULL,
-          payload TEXT NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS idx_sync_items_entity_type ON sync_items(entity_type);
-        CREATE INDEX IF NOT EXISTS idx_sync_items_entity_id ON sync_items(entity_id);
-        CREATE INDEX IF NOT EXISTS idx_sync_items_status ON sync_items(status);
-        CREATE INDEX IF NOT EXISTS idx_sync_items_updated_at ON sync_items(updated_at);
-
-        CREATE TABLE IF NOT EXISTS device_sessions (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          last_seen_at TEXT NOT NULL,
-          user_agent TEXT,
-          payload TEXT NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS idx_device_sessions_last_seen_at ON device_sessions(last_seen_at);
-
         CREATE TABLE IF NOT EXISTS app_metadata (
           key TEXT PRIMARY KEY,
           value TEXT NOT NULL,
@@ -785,6 +693,41 @@ fn ensure_schema(conn: &Connection) -> Result<(), String> {
     .map_err(to_string)?;
 
     write_metadata(conn, "sqlite_schema_version", SCHEMA_VERSION)?;
+    Ok(())
+}
+
+fn ensure_metadata_table(conn: &Connection) -> Result<(), String> {
+    conn.execute_batch(
+        r#"
+        CREATE TABLE IF NOT EXISTS app_metadata (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+        "#,
+    )
+    .map_err(to_string)?;
+    Ok(())
+}
+
+fn reset_storage_schema(conn: &Connection) -> Result<(), String> {
+    conn.execute_batch(
+        r#"
+        DROP TABLE IF EXISTS notes;
+        DROP TABLE IF EXISTS note_blocks;
+        DROP TABLE IF EXISTS note_files;
+        DROP TABLE IF EXISTS tags;
+        DROP TABLE IF EXISTS collections;
+        DROP TABLE IF EXISTS users;
+        DROP TABLE IF EXISTS activities;
+        DROP TABLE IF EXISTS user_settings;
+        DROP TABLE IF EXISTS sync_state;
+        DROP TABLE IF EXISTS sync_items;
+        DROP TABLE IF EXISTS device_sessions;
+        DROP TABLE IF EXISTS app_metadata;
+        "#,
+    )
+    .map_err(to_string)?;
     Ok(())
 }
 
@@ -858,17 +801,13 @@ fn apply_operation(tx: &Transaction<'_>, operation: SqliteOperation) -> Result<(
 fn insert_payload(tx: &Transaction<'_>, table: &str, value: &JsonValue) -> Result<(), String> {
     match table {
         "notes" => insert_note(tx, value),
-        "dynamicNotes" => insert_dynamic_note(tx, value),
-        "dynamicNoteBlocks" => insert_dynamic_note_block(tx, value),
-        "dynamicNoteFiles" => insert_dynamic_note_file(tx, value),
+        "noteBlocks" => insert_note_block(tx, value),
+        "noteFiles" => insert_note_file(tx, value),
         "tags" => insert_tag(tx, value),
         "collections" => insert_collection(tx, value),
         "users" => insert_user(tx, value),
         "activities" => insert_activity(tx, value),
         "userSettings" => insert_user_settings(tx, value),
-        "syncState" => insert_sync_state(tx, value),
-        "syncItems" => insert_sync_item(tx, value),
-        "deviceSessions" => insert_device_session(tx, value),
         _ => Err(format!("Unknown SQLite table: {}", table)),
     }
 }
@@ -876,69 +815,10 @@ fn insert_payload(tx: &Transaction<'_>, table: &str, value: &JsonValue) -> Resul
 fn insert_note(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), String> {
     tx.execute(
         "INSERT INTO notes (
-          id, type, title, collection_id, tag_ids, linked_note_ids, is_favorite,
-          is_pinned, is_archived, is_trashed, save_state, author_id, created_at,
-          updated_at, last_opened_at, content, stats, related_links, thumbnail,
-          version, sync_status, payload
-        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)
-        ON CONFLICT(id) DO UPDATE SET
-          type = excluded.type,
-          title = excluded.title,
-          collection_id = excluded.collection_id,
-          tag_ids = excluded.tag_ids,
-          linked_note_ids = excluded.linked_note_ids,
-          is_favorite = excluded.is_favorite,
-          is_pinned = excluded.is_pinned,
-          is_archived = excluded.is_archived,
-          is_trashed = excluded.is_trashed,
-          save_state = excluded.save_state,
-          author_id = excluded.author_id,
-          created_at = excluded.created_at,
-          updated_at = excluded.updated_at,
-          last_opened_at = excluded.last_opened_at,
-          content = excluded.content,
-          stats = excluded.stats,
-          related_links = excluded.related_links,
-          thumbnail = excluded.thumbnail,
-          version = excluded.version,
-          sync_status = excluded.sync_status,
-          payload = excluded.payload",
-        params![
-            text(value, "id", "")?,
-            text(value, "type", "standard")?,
-            text(value, "title", "")?,
-            opt_text(value, "collectionId"),
-            json_field(value, "tagIds", JsonValue::Array(vec![]))?,
-            json_field(value, "linkedNoteIds", JsonValue::Array(vec![]))?,
-            bool_i64(value, "isFavorite"),
-            bool_i64(value, "isPinned"),
-            bool_i64(value, "isArchived"),
-            bool_i64(value, "isTrashed"),
-            text(value, "saveState", "saved")?,
-            opt_text(value, "authorId"),
-            text(value, "createdAt", "")?,
-            text(value, "updatedAt", "")?,
-            opt_text(value, "lastOpenedAt"),
-            json_field(value, "content", JsonValue::Object(Default::default()))?,
-            json_field(value, "stats", JsonValue::Object(Default::default()))?,
-            optional_json_field(value, "relatedLinks")?,
-            optional_json_field(value, "thumbnail")?,
-            i64_field(value, "version", 1),
-            text(value, "syncStatus", "local")?,
-            payload_text(value)?,
-        ],
-    )
-    .map_err(to_string)?;
-    Ok(())
-}
-
-fn insert_dynamic_note(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), String> {
-    tx.execute(
-        "INSERT INTO dynamic_notes (
           id, title, subtitle, collection_id, tag_ids, linked_note_ids, is_favorite,
           is_pinned, is_archived, is_trashed, save_state, author_id, created_at,
-          updated_at, last_opened_at, stats, thumbnail, version, sync_status, payload
-        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
+          updated_at, last_opened_at, stats, thumbnail, version, payload
+        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)
         ON CONFLICT(id) DO UPDATE SET
           title = excluded.title,
           subtitle = excluded.subtitle,
@@ -957,7 +837,6 @@ fn insert_dynamic_note(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), St
           stats = excluded.stats,
           thumbnail = excluded.thumbnail,
           version = excluded.version,
-          sync_status = excluded.sync_status,
           payload = excluded.payload",
         params![
             text(value, "id", "")?,
@@ -978,7 +857,6 @@ fn insert_dynamic_note(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), St
             json_field(value, "stats", JsonValue::Object(Default::default()))?,
             optional_json_field(value, "thumbnail")?,
             i64_field(value, "version", 1),
-            text(value, "syncStatus", "local")?,
             payload_text(value)?,
         ],
     )
@@ -986,9 +864,9 @@ fn insert_dynamic_note(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), St
     Ok(())
 }
 
-fn insert_dynamic_note_block(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), String> {
+fn insert_note_block(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), String> {
     tx.execute(
-        "INSERT INTO dynamic_note_blocks (
+        "INSERT INTO note_blocks (
           id, note_id, sort_order, title, kind, content_json, content_text, created_at, updated_at, payload
         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
         ON CONFLICT(id) DO UPDATE SET
@@ -1018,9 +896,9 @@ fn insert_dynamic_note_block(tx: &Transaction<'_>, value: &JsonValue) -> Result<
     Ok(())
 }
 
-fn insert_dynamic_note_file(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), String> {
+fn insert_note_file(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), String> {
     tx.execute(
-        "INSERT INTO dynamic_note_files (
+        "INSERT INTO note_files (
           id, note_id, block_id, kind, original_name, mime_type, size_bytes, checksum, relative_path, created_at, payload
         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
         ON CONFLICT(id) DO UPDATE SET
@@ -1088,16 +966,14 @@ fn insert_collection(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), Stri
 
 fn insert_user(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), String> {
     tx.execute(
-        "INSERT INTO users (id, name, first_name, email, avatar_url, handle, google_sub, provider, last_login_at, payload)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+        "INSERT INTO users (id, name, first_name, email, avatar_url, handle, last_login_at, payload)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
          ON CONFLICT(id) DO UPDATE SET
           name = excluded.name,
           first_name = excluded.first_name,
           email = excluded.email,
           avatar_url = excluded.avatar_url,
           handle = excluded.handle,
-          google_sub = excluded.google_sub,
-          provider = excluded.provider,
           last_login_at = excluded.last_login_at,
           payload = excluded.payload",
         params![
@@ -1107,8 +983,6 @@ fn insert_user(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), String> {
             opt_text(value, "email"),
             opt_text(value, "avatarUrl"),
             opt_text(value, "handle"),
-            opt_text(value, "googleSub"),
-            opt_text(value, "provider"),
             opt_text(value, "lastLoginAt"),
             payload_text(value)?,
         ],
@@ -1168,123 +1042,6 @@ fn insert_user_settings(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), S
             json_field(value, "favoriteTagIds", JsonValue::Array(vec![]))?,
             json_field(value, "quickPinNoteIds", JsonValue::Array(vec![]))?,
             text(value, "updatedAt", "")?,
-            payload_text(value)?,
-        ],
-    )
-    .map_err(to_string)?;
-    Ok(())
-}
-
-fn insert_sync_state(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), String> {
-    tx.execute(
-        "INSERT INTO sync_state (
-          id, provider, connected, google_sub, email, full_name, first_name,
-          handle, avatar_url, last_login_at, last_sync_at, last_sync_started_at,
-          last_error, device_id, workspace_file_id, manifest_file_id, updated_at, payload
-        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)
-        ON CONFLICT(id) DO UPDATE SET
-          provider = excluded.provider,
-          connected = excluded.connected,
-          google_sub = excluded.google_sub,
-          email = excluded.email,
-          full_name = excluded.full_name,
-          first_name = excluded.first_name,
-          handle = excluded.handle,
-          avatar_url = excluded.avatar_url,
-          last_login_at = excluded.last_login_at,
-          last_sync_at = excluded.last_sync_at,
-          last_sync_started_at = excluded.last_sync_started_at,
-          last_error = excluded.last_error,
-          device_id = excluded.device_id,
-          workspace_file_id = excluded.workspace_file_id,
-          manifest_file_id = excluded.manifest_file_id,
-          updated_at = excluded.updated_at,
-          payload = excluded.payload",
-        params![
-            text(value, "id", "google-drive")?,
-            text(value, "provider", "google-drive")?,
-            bool_i64(value, "connected"),
-            opt_text(value, "googleSub"),
-            opt_text(value, "email"),
-            opt_text(value, "fullName"),
-            opt_text(value, "firstName"),
-            opt_text(value, "handle"),
-            opt_text(value, "avatarUrl"),
-            opt_text(value, "lastLoginAt"),
-            opt_text(value, "lastSyncAt"),
-            opt_text(value, "lastSyncStartedAt"),
-            opt_text(value, "lastError"),
-            text(value, "deviceId", "")?,
-            opt_text(value, "workspaceFileId"),
-            opt_text(value, "manifestFileId"),
-            text(value, "updatedAt", "")?,
-            payload_text(value)?,
-        ],
-    )
-    .map_err(to_string)?;
-    Ok(())
-}
-
-fn insert_sync_item(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), String> {
-    tx.execute(
-        "INSERT INTO sync_items (
-          entity_key, entity_type, entity_id, drive_file_id, base_hash, local_hash,
-          remote_hash, remote_modified_time, remote_version, status, conflict,
-          error, deleted_at, last_synced_at, updated_at, payload
-        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)
-        ON CONFLICT(entity_key) DO UPDATE SET
-          entity_type = excluded.entity_type,
-          entity_id = excluded.entity_id,
-          drive_file_id = excluded.drive_file_id,
-          base_hash = excluded.base_hash,
-          local_hash = excluded.local_hash,
-          remote_hash = excluded.remote_hash,
-          remote_modified_time = excluded.remote_modified_time,
-          remote_version = excluded.remote_version,
-          status = excluded.status,
-          conflict = excluded.conflict,
-          error = excluded.error,
-          deleted_at = excluded.deleted_at,
-          last_synced_at = excluded.last_synced_at,
-          updated_at = excluded.updated_at,
-          payload = excluded.payload",
-        params![
-            text(value, "entityKey", "")?,
-            text(value, "entityType", "")?,
-            text(value, "entityId", "")?,
-            opt_text(value, "driveFileId"),
-            opt_text(value, "baseHash"),
-            opt_text(value, "localHash"),
-            opt_text(value, "remoteHash"),
-            opt_text(value, "remoteModifiedTime"),
-            opt_text(value, "remoteVersion"),
-            text(value, "status", "pending")?,
-            optional_json_field(value, "conflict")?,
-            opt_text(value, "error"),
-            opt_text(value, "deletedAt"),
-            opt_text(value, "lastSyncedAt"),
-            text(value, "updatedAt", "")?,
-            payload_text(value)?,
-        ],
-    )
-    .map_err(to_string)?;
-    Ok(())
-}
-
-fn insert_device_session(tx: &Transaction<'_>, value: &JsonValue) -> Result<(), String> {
-    tx.execute(
-        "INSERT INTO device_sessions (id, name, last_seen_at, user_agent, payload)
-         VALUES (?1, ?2, ?3, ?4, ?5)
-         ON CONFLICT(id) DO UPDATE SET
-          name = excluded.name,
-          last_seen_at = excluded.last_seen_at,
-          user_agent = excluded.user_agent,
-          payload = excluded.payload",
-        params![
-            text(value, "id", "")?,
-            text(value, "name", "")?,
-            text(value, "lastSeenAt", "")?,
-            opt_text(value, "userAgent"),
             payload_text(value)?,
         ],
     )
@@ -1367,16 +1124,12 @@ fn table_info(table: &str) -> Result<TableInfo, String> {
             sql_name: "notes",
             key_column: "id",
         }),
-        "dynamicNotes" => Ok(TableInfo {
-            sql_name: "dynamic_notes",
+        "noteBlocks" => Ok(TableInfo {
+            sql_name: "note_blocks",
             key_column: "id",
         }),
-        "dynamicNoteBlocks" => Ok(TableInfo {
-            sql_name: "dynamic_note_blocks",
-            key_column: "id",
-        }),
-        "dynamicNoteFiles" => Ok(TableInfo {
-            sql_name: "dynamic_note_files",
+        "noteFiles" => Ok(TableInfo {
+            sql_name: "note_files",
             key_column: "id",
         }),
         "tags" => Ok(TableInfo {
@@ -1399,18 +1152,6 @@ fn table_info(table: &str) -> Result<TableInfo, String> {
             sql_name: "user_settings",
             key_column: "id",
         }),
-        "syncState" => Ok(TableInfo {
-            sql_name: "sync_state",
-            key_column: "id",
-        }),
-        "syncItems" => Ok(TableInfo {
-            sql_name: "sync_items",
-            key_column: "entity_key",
-        }),
-        "deviceSessions" => Ok(TableInfo {
-            sql_name: "device_sessions",
-            key_column: "id",
-        }),
         _ => Err(format!("Unknown SQLite table: {}", table)),
     }
 }
@@ -1418,7 +1159,6 @@ fn table_info(table: &str) -> Result<TableInfo, String> {
 fn index_column(table: &str, index: &str) -> Result<&'static str, String> {
     match (table, index) {
         ("notes", "id") => Ok("id"),
-        ("notes", "type") => Ok("type"),
         ("notes", "collectionId") => Ok("collection_id"),
         ("notes", "isFavorite") => Ok("is_favorite"),
         ("notes", "isPinned") => Ok("is_pinned"),
@@ -1426,31 +1166,20 @@ fn index_column(table: &str, index: &str) -> Result<&'static str, String> {
         ("notes", "isTrashed") => Ok("is_trashed"),
         ("notes", "updatedAt") => Ok("updated_at"),
         ("notes", "lastOpenedAt") => Ok("last_opened_at"),
-        ("notes", "syncStatus") => Ok("sync_status"),
-        ("dynamicNotes", "id") => Ok("id"),
-        ("dynamicNotes", "collectionId") => Ok("collection_id"),
-        ("dynamicNotes", "isFavorite") => Ok("is_favorite"),
-        ("dynamicNotes", "isPinned") => Ok("is_pinned"),
-        ("dynamicNotes", "isArchived") => Ok("is_archived"),
-        ("dynamicNotes", "isTrashed") => Ok("is_trashed"),
-        ("dynamicNotes", "updatedAt") => Ok("updated_at"),
-        ("dynamicNotes", "lastOpenedAt") => Ok("last_opened_at"),
-        ("dynamicNotes", "syncStatus") => Ok("sync_status"),
-        ("dynamicNoteBlocks", "id") => Ok("id"),
-        ("dynamicNoteBlocks", "noteId") => Ok("note_id"),
-        ("dynamicNoteBlocks", "sortOrder") => Ok("sort_order"),
-        ("dynamicNoteBlocks", "updatedAt") => Ok("updated_at"),
-        ("dynamicNoteFiles", "id") => Ok("id"),
-        ("dynamicNoteFiles", "noteId") => Ok("note_id"),
-        ("dynamicNoteFiles", "blockId") => Ok("block_id"),
-        ("dynamicNoteFiles", "kind") => Ok("kind"),
+        ("noteBlocks", "id") => Ok("id"),
+        ("noteBlocks", "noteId") => Ok("note_id"),
+        ("noteBlocks", "sortOrder") => Ok("sort_order"),
+        ("noteBlocks", "updatedAt") => Ok("updated_at"),
+        ("noteFiles", "id") => Ok("id"),
+        ("noteFiles", "noteId") => Ok("note_id"),
+        ("noteFiles", "blockId") => Ok("block_id"),
+        ("noteFiles", "kind") => Ok("kind"),
         ("tags", "id") => Ok("id"),
         ("tags", "name") => Ok("name"),
         ("collections", "id") => Ok("id"),
         ("collections", "name") => Ok("name"),
         ("users", "id") => Ok("id"),
         ("users", "email") => Ok("email"),
-        ("users", "googleSub") => Ok("google_sub"),
         ("activities", "id") => Ok("id"),
         ("activities", "noteId") => Ok("note_id"),
         ("activities", "createdAt") => Ok("created_at"),
@@ -1458,19 +1187,6 @@ fn index_column(table: &str, index: &str) -> Result<&'static str, String> {
         ("userSettings", "language") => Ok("language"),
         ("userSettings", "theme") => Ok("theme"),
         ("userSettings", "updatedAt") => Ok("updated_at"),
-        ("syncState", "id") => Ok("id"),
-        ("syncState", "provider") => Ok("provider"),
-        ("syncState", "connected") => Ok("connected"),
-        ("syncState", "email") => Ok("email"),
-        ("syncState", "updatedAt") => Ok("updated_at"),
-        ("syncState", "lastSyncAt") => Ok("last_sync_at"),
-        ("syncItems", "entityKey") => Ok("entity_key"),
-        ("syncItems", "entityType") => Ok("entity_type"),
-        ("syncItems", "entityId") => Ok("entity_id"),
-        ("syncItems", "status") => Ok("status"),
-        ("syncItems", "updatedAt") => Ok("updated_at"),
-        ("deviceSessions", "id") => Ok("id"),
-        ("deviceSessions", "lastSeenAt") => Ok("last_seen_at"),
         _ => Err(format!("Unsupported SQLite index {}.{}", table, index)),
     }
 }
@@ -1576,8 +1292,12 @@ fn validate_sqlite_database(path: &Path) -> Result<(), String> {
         Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).map_err(to_string)?;
     for table in [
         "notes",
+        "note_blocks",
+        "note_files",
         "tags",
         "collections",
+        "users",
+        "activities",
         "user_settings",
         "app_metadata",
     ] {

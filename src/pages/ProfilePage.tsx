@@ -1,7 +1,6 @@
 import {
   CalendarClock,
   ChevronRight,
-  Cloud,
   Database,
   Download,
   FileText,
@@ -20,7 +19,7 @@ import { useEffect, useState } from "react";
 import { CustomSelect } from "../components/ui/CustomSelect";
 import { IconBadge } from "../components/ui/IconBadge";
 import { Panel } from "../components/ui/Panel";
-import { appLimits, cloudSyncEnabled } from "../config/appSettings";
+import { appLimits } from "../config/appSettings";
 import {
   openSqliteDatabaseFolder,
   openSqliteLocalDataFolder,
@@ -35,14 +34,13 @@ import {
   replaceFromNotexPackage,
 } from "../core/services/notexPackage";
 import { themeRegistry } from "../core/theme/themeRegistry";
-import { filterDynamicNotes } from "../core/utils/dynamicNoteFilters";
+import { filterNotes } from "../core/utils/noteFilters";
 import { useI18n } from "../i18n/I18nProvider";
 import { useAppStore } from "../store/useAppStore";
-import { useDynamicNotesStore } from "../store/useDynamicNotesStore";
+import { useNotesStore } from "../store/useNotesStore";
 import { useKnowledgeStore } from "../store/useKnowledgeStore";
-import { useSyncStore } from "../store/useSyncStore";
 import { useToastStore } from "../store/useToastStore";
-import type { DynamicNote, Locale, ThemePreference } from "../core/models/models";
+import type { Note, Locale, ThemePreference } from "../core/models/models";
 
 type ExportModalState =
   | null
@@ -63,16 +61,15 @@ export function ProfilePage() {
   const hydrateSettings = useAppStore((state) => state.hydrateSettings);
   const setTheme = useAppStore((state) => state.setTheme);
   const setLanguage = useAppStore((state) => state.setLanguage);
-  const notes = useDynamicNotesStore((state) => state.dynamicNotes);
+  const notes = useNotesStore((state) => state.notes);
   const collections = useKnowledgeStore((state) => state.collections);
   const user = useKnowledgeStore((state) => state.user);
   const refreshKnowledge = useKnowledgeStore((state) => state.refreshKnowledge);
-  const refreshDynamicNotes = useDynamicNotesStore((state) => state.refreshDynamicNotes);
-  const syncState = useSyncStore((state) => state.syncState);
+  const refreshNotes = useNotesStore((state) => state.refreshNotes);
   const pushToast = useToastStore((state) => state.pushToast);
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const favoriteNotes = activeNotes.filter((note) => note.isFavorite);
-  const mostRecentNote = filterDynamicNotes(notes, { mode: "recent" })[0];
+  const mostRecentNote = filterNotes(notes, { mode: "recent" })[0];
   const lastActivityValue = mostRecentNote
     ? formatRecentActivityTimestamp(
         getRecentTimestamp(mostRecentNote),
@@ -80,7 +77,6 @@ export function ProfilePage() {
         t,
       )
     : t("profile.values.noActivity");
-  const accountConnected = cloudSyncEnabled && Boolean(syncState?.connected);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,7 +149,7 @@ export function ProfilePage() {
       await replaceFromNotexPackage(sourcePath);
       await Promise.all([
         refreshKnowledge(),
-        refreshDynamicNotes(),
+        refreshNotes(),
         hydrateSettings(),
         readSqliteDatabaseInfo().then(setDatabaseInfo),
       ]);
@@ -209,32 +205,25 @@ export function ProfilePage() {
           <article className="profile-card">
             <div
               className={
-                accountConnected && user?.avatarUrl
+                user?.avatarUrl
                   ? "profile-avatar"
                   : "profile-avatar profile-card__avatar--placeholder"
               }
             >
-              {accountConnected && user?.avatarUrl ? (
+              {user?.avatarUrl ? (
                 <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
               ) : (
                 <UserRound strokeWidth={1.6} />
               )}
             </div>
             <h2 className="panel-title">
-              {accountConnected ? user?.name : t("profile.localUser")}
+              {user?.name ?? t("profile.localUser")}
             </h2>
-            {accountConnected && user?.handle ? (
+            {user?.handle ? (
               <div className="handle">{user.handle}</div>
             ) : null}
             <div className="connected">
-              {accountConnected ? (
-                <>
-                  <span className="logo-mark logo-mark--google">G</span>
-                  {t("profile.connectedWith")}
-                </>
-              ) : (
-                t("profile.localAccount")
-              )}
+              {t("profile.localAccount")}
             </div>
           </article>
 
@@ -568,15 +557,6 @@ function ExportDatabaseModal({
               {modal.exportInfo.tempPath}
             </div>
             <div className="choice-modal-actions">
-              <button type="button" disabled>
-                <Cloud />
-                <span>
-                  <span>{t("profile.dataManagement.exportToGoogleDrive")}</span>
-                  <span>
-                    {t("profile.dataManagement.exportToGoogleDrivePlaceholder")}
-                  </span>
-                </span>
-              </button>
               <button type="button" onClick={() => onSave(modal.exportInfo)}>
                 <FolderOpen />
                 <span>
@@ -889,7 +869,7 @@ function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
   ];
 }
 
-function getRecentTimestamp(note: DynamicNote) {
+function getRecentTimestamp(note: Note) {
   return note.lastOpenedAt ?? note.updatedAt;
 }
 
