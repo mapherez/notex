@@ -180,14 +180,14 @@
 
 .database-management-grid .database-path-row {
   padding: 0 var(--nx-space-5);
-  }
-  
-  .database-management-grid .database-path-row:first-child {
-    padding-left: 0;
-  }
-  
-  .database-management-grid .database-path-row:last-child {
-    padding-right: 0;
+}
+
+.database-management-grid .database-path-row:first-child {
+  padding-left: 0;
+}
+
+.database-management-grid .database-path-row:last-child {
+  padding-right: 0;
 }
 
 .database-management-grid .database-path-row + .database-path-row {
@@ -211,6 +211,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .mini-note-shell {
   position: relative;
   display: inline-block;
@@ -293,7 +294,8 @@ button.security-row:hover {
 
 .plan-card {
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--nx-color-accent) 24%, var(--nx-color-border));
+  border: 1px solid
+    color-mix(in srgb, var(--nx-color-accent) 24%, var(--nx-color-border));
   border-radius: var(--nx-radius-card);
   background:
     linear-gradient(135deg, rgba(109, 76, 255, 0.24), transparent 70%),
@@ -377,7 +379,8 @@ button.security-row:hover {
   align-items: center;
   justify-content: center;
   gap: var(--nx-space-2);
-  border: 1px solid color-mix(in srgb, var(--nx-color-danger) 48%, var(--nx-color-border));
+  border: 1px solid
+    color-mix(in srgb, var(--nx-color-danger) 48%, var(--nx-color-border));
   border-radius: var(--nx-radius-sm);
   background: color-mix(in srgb, var(--nx-color-danger) 12%, transparent);
   color: var(--nx-color-danger);
@@ -420,7 +423,10 @@ button.security-row:hover {
   border-radius: var(--nx-radius-card);
   background: var(--nx-color-surface);
   padding: var(--nx-space-4);
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .collection-card:hover {
