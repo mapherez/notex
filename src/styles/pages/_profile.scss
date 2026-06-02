@@ -179,15 +179,38 @@
 }
 
 .database-management-grid .database-path-row {
-  padding: 0 var(--nx-space-5) 0 0;
+  padding: 0 var(--nx-space-5);
+  }
+  
+  .database-management-grid .database-path-row:first-child {
+    padding-left: 0;
+  }
+  
+  .database-management-grid .database-path-row:last-child {
+    padding-right: 0;
 }
 
 .database-management-grid .database-path-row + .database-path-row {
   border-left: 1px solid var(--nx-color-border);
-  padding-right: 0;
-  padding-left: var(--nx-space-5);
 }
 
+.database-path-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--nx-space-4);
+}
+
+.database-path-value {
+  display: block;
+  overflow: hidden;
+  margin-top: var(--nx-space-1);
+  color: var(--nx-color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .mini-note-shell {
   position: relative;
   display: inline-block;
@@ -258,25 +281,6 @@ button.security-row:hover {
 
 .security-row.danger {
   color: var(--nx-color-danger);
-}
-
-.database-path-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--nx-space-4);
-  padding: var(--nx-space-3) 0;
-}
-
-.database-path-value {
-  display: block;
-  overflow: hidden;
-  margin-top: var(--nx-space-1);
-  color: var(--nx-color-text-muted);
-  font-size: 0.78rem;
-  line-height: 1.45;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .security-sub,
