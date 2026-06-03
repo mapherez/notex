@@ -21,6 +21,7 @@ export function NoteRow({
   onPinnedDragPointerDown,
   onSelectionChange,
   pinnedDragActive = false,
+  pinnedDragEnabled = false,
   selectable = false,
   selected = false,
   showPinIndicator = false,
@@ -35,6 +36,7 @@ export function NoteRow({
   onPinnedDragPointerDown?: PointerEventHandler<HTMLButtonElement>;
   onSelectionChange?: (noteId: string, selected: boolean) => void;
   pinnedDragActive?: boolean;
+  pinnedDragEnabled?: boolean;
   selectable?: boolean;
   selected?: boolean;
   showPinIndicator?: boolean;
@@ -110,11 +112,12 @@ export function NoteRow({
       <Link className="note-row__link-overlay" to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${title}`} />
       {showPinnedDragHandle ? (
         <button
-          className="note-row__drag-handle"
+          className={pinnedDragEnabled ? 'note-row__drag-handle' : 'note-row__drag-handle is-disabled'}
           type="button"
           aria-label={t('notes.reorderPinned')}
+          disabled={!pinnedDragEnabled}
           title={t('notes.reorderPinned')}
-          onPointerDown={onPinnedDragPointerDown}
+          onPointerDown={pinnedDragEnabled ? onPinnedDragPointerDown : undefined}
         >
           <GripVertical />
         </button>

@@ -315,7 +315,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
     });
   }
 
-  function renderNoteRows(noteItems: Note[], pinnedList = false) {
+  function renderNoteRows(noteItems: Note[]) {
     return noteItems.map((note) => (
       <NoteRow
         key={note.id}
@@ -330,13 +330,14 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
               }
             : undefined
         }
-        onPinnedDragPointerDown={pinOrderingEnabled && pinnedList ? (event) => beginPinnedNoteReorder(event, note.id) : undefined}
+        onPinnedDragPointerDown={pinOrderingEnabled && note.isPinned ? (event) => beginPinnedNoteReorder(event, note.id) : undefined}
         onSelectionChange={updateNoteSelection}
         pinnedDragActive={activePinnedDragId === note.id}
+        pinnedDragEnabled={pinOrderingEnabled && note.isPinned}
         selectable={selectionEnabled}
         selected={selectedNoteIdSet.has(note.id)}
         showPinIndicator={pinActionsEnabled}
-        showPinnedDragHandle={pinOrderingEnabled && pinnedList}
+        showPinnedDragHandle={pinActionsEnabled}
         tags={tags}
         timeValue={mode === 'recent' ? note.lastOpenedAt ?? note.updatedAt : undefined}
       />
@@ -394,7 +395,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
         <div className={splitPinnedLists ? 'note-list-stack' : undefined}>
           {splitPinnedLists ? (
             <div className={['note-list', 'pin-list', preferredLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
-              {renderNoteRows(pinnedNotes, true)}
+              {renderNoteRows(pinnedNotes)}
             </div>
           ) : null}
 

@@ -125,13 +125,22 @@
   cursor: grab;
 }
 
-.note-row__drag-handle:hover,
-.note-row__drag-handle:focus-visible,
+.note-row__drag-handle:not(:disabled):hover,
+.note-row__drag-handle:not(:disabled):focus-visible,
 .note-row__status-button:hover,
 .note-row__status-button:focus-visible {
   background: var(--nx-color-hover);
   color: var(--nx-color-text);
   outline: none;
+}
+
+.note-row__drag-handle:disabled {
+  color: color-mix(in srgb, var(--nx-color-text-soft) 38%, transparent);
+  cursor: default;
+}
+
+.note-row__drag-handle:disabled svg {
+  opacity: 0.62;
 }
 
 .note-row.is-dragging {
