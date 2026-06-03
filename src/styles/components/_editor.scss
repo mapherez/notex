@@ -159,7 +159,9 @@ div.usage-styled-field__control {
 }
 
 .markdown-tool-button:hover,
-.markdown-tool-button:focus-visible {
+.markdown-tool-button:focus-visible,
+.markdown-tool-button.is-active,
+.markdown-tool-button[aria-pressed="true"] {
   background: var(--nx-color-hover);
   color: var(--nx-color-text);
   outline: none;

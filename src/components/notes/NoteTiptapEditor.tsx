@@ -1,5 +1,6 @@
 import {
   AlignCenter,
+  AlignJustify,
   AlignLeft,
   AlignRight,
   ArrowDown,
@@ -39,7 +40,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
-import { Node, mergeAttributes, type Editor, type JSONContent } from '@tiptap/core';
+import { Node, mergeAttributes, wrappingInputRule, type Editor, type JSONContent } from '@tiptap/core';
 import { EditorContent, NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type ReactNodeViewProps } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
@@ -53,6 +54,8 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
+import { BulletList, OrderedList, bulletListInputRegex, orderedListInputRegex } from '@tiptap/extension-list';
+import type { Node as ProseMirrorNode, NodeType } from '@tiptap/pm/model';
 import { layout, prepare } from '@chenglou/pretext';
 import { TextStyleToolbar } from '../editing/TextStyleToolbar';
 import type { InlineStyleColor, InlineStyleKind } from '../../core/utils/inlineFormatting';
@@ -63,6 +66,7 @@ import { useClickOutside } from '../../core/utils/useClickOutside';
 import { richTextToTiptapContent } from '../../core/utils/richText';
 import { useI18n } from '../../i18n/I18nProvider';
 import { emptyTiptapDocument } from '../../store/useNotesStore';
+import { editorSettings } from '../../config/appSettings';
 
 type NoteTiptapEditorProps = {
   autoFocus?: boolean;
@@ -102,6 +106,79 @@ type FileAttrs = NoteFile & {
   width?: number;
   wrap?: 'none' | 'left' | 'right';
 };
+
+type ToolbarActionId =
+  | 'alignCenter'
+  | 'alignJustify'
+  | 'alignLeft'
+  | 'alignRight'
+  | 'bold'
+  | 'bulletList'
+  | 'codeBlock'
+  | 'file'
+  | 'header'
+  | 'image'
+  | 'inlineCode'
+  | 'italic'
+  | 'link'
+  | 'orderedList'
+  | 'quote'
+  | 'strike'
+  | 'table'
+  | 'taskList'
+  | 'tip'
+  | 'underline';
+
+type ShortcutBinding = {
+  alt: boolean;
+  key: string;
+  mod: boolean;
+  shift: boolean;
+};
+
+type TableAction =
+  | 'column-delete'
+  | 'column-left'
+  | 'column-right'
+  | 'insert-table'
+  | 'row-above'
+  | 'row-below'
+  | 'row-delete'
+  | 'table-delete';
+
+type TextAlignment = 'center' | 'justify' | 'left' | 'right';
+
+const toolbarShortcutBindings = new Map<ToolbarActionId, ShortcutBinding>();
+const configuredShortcutSignatures = new Set<string>();
+
+for (const tool of editorSettings.noteTools) {
+  const binding = parseShortcut(tool.shortcut);
+  if (binding && isToolbarActionId(tool.id)) {
+    toolbarShortcutBindings.set(tool.id, binding);
+    configuredShortcutSignatures.add(shortcutSignature(binding));
+  }
+}
+
+const suppressedDefaultShortcutBindings = [
+  'Mod+Alt+0',
+  'Mod+Alt+1',
+  'Mod+Alt+2',
+  'Mod+Alt+3',
+  'Mod+Alt+4',
+  'Mod+Alt+5',
+  'Mod+Alt+6',
+  'Mod+Alt+C',
+  'Mod+E',
+  'Mod+Shift+7',
+  'Mod+Shift+8',
+  'Mod+Shift+9',
+  'Mod+Shift+E',
+  'Mod+Shift+H',
+  'Mod+Shift+J',
+  'Mod+Shift+R',
+  'Mod+Shift+S',
+].map(parseShortcut).filter((binding): binding is ShortcutBinding => Boolean(binding))
+  .filter((binding) => !configuredShortcutSignatures.has(shortcutSignature(binding)));
 
 const FileNode = Node.create({
   name: 'noteFile',
@@ -166,9 +243,73 @@ const TipNode = Node.create({
   },
 });
 
+const dotBulletListInputRegex = /^\s*(\.)\s$/;
+const numberSpaceOrderedListInputRegex = /^(\d+)\s$/;
+
+const ShortcutBulletList = BulletList.extend({
+  addKeyboardShortcuts() {
+    return {};
+  },
+
+  addInputRules() {
+    return [
+      wrappingInputRule({
+        find: bulletListInputRegex,
+        type: this.type,
+      }),
+      wrappingInputRule({
+        find: dotBulletListInputRegex,
+        type: this.type,
+      }),
+    ];
+  },
+});
+
+const ShortcutOrderedList = OrderedList.extend({
+  addKeyboardShortcuts() {
+    return {};
+  },
+
+  addInputRules() {
+    return [
+      createOrderedListInputRule(orderedListInputRegex, this.type),
+      createOrderedListInputRule(numberSpaceOrderedListInputRegex, this.type),
+    ];
+  },
+});
+
+const ShortcutTaskList = TaskList.extend({
+  addKeyboardShortcuts() {
+    return {};
+  },
+});
+
+const ShortcutTaskItem = TaskItem.extend({
+  addInputRules() {
+    return [];
+  },
+});
+
+const ShortcutTextAlign = TextAlign.extend({
+  addKeyboardShortcuts() {
+    return {};
+  },
+});
+
+function createOrderedListInputRule(find: RegExp, type: NodeType) {
+  return wrappingInputRule({
+    find,
+    type,
+    getAttributes: (match) => ({ start: Number(match[1]) }),
+    joinPredicate: (match, node: ProseMirrorNode) => node.childCount + node.attrs.start === Number(match[1]),
+  });
+}
+
 const extensions = [
   StarterKit.configure({
+    bulletList: false,
     link: false,
+    orderedList: false,
   }),
   Placeholder.configure({
     placeholder: '',
@@ -179,7 +320,7 @@ const extensions = [
     autolink: true,
     defaultProtocol: 'https',
   }),
-  TextAlign.configure({
+  ShortcutTextAlign.configure({
     types: ['heading', 'paragraph'],
   }),
   TextStyle,
@@ -189,8 +330,10 @@ const extensions = [
   TableRow,
   TableHeader,
   TableCell,
-  TaskList,
-  TaskItem.configure({ nested: true }),
+  ShortcutBulletList,
+  ShortcutOrderedList,
+  ShortcutTaskList,
+  ShortcutTaskItem.configure({ nested: true }),
   TipNode,
   FileNode,
 ];
@@ -570,15 +713,84 @@ export function NoteTiptapToolbar({
   t: ReturnType<typeof useI18n>['t'];
 }) {
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
+  const [toolbarStateVersion, setToolbarStateVersion] = useState(0);
   const tableToolRef = useRef<HTMLDivElement>(null);
+  const tableModeRef = useRef(false);
   const editor = target?.editor ?? null;
   const contentTarget = target?.kind === 'content' ? target : null;
   const unavailable = !target || !editor;
   const contentUnavailable = unavailable || !contentTarget;
   const tableDisabled = contentUnavailable;
   const canEditCurrentTable = Boolean(editor?.isActive('table'));
+  void toolbarStateVersion;
 
   useClickOutside(tableToolRef, tableMenuOpen, () => setTableMenuOpen(false));
+
+  useEffect(() => {
+    if (!editor) {
+      return undefined;
+    }
+
+    const refreshToolbarState = () => setToolbarStateVersion((version) => version + 1);
+
+    editor.on('focus', refreshToolbarState);
+    editor.on('blur', refreshToolbarState);
+    editor.on('selectionUpdate', refreshToolbarState);
+    editor.on('update', refreshToolbarState);
+
+    refreshToolbarState();
+
+    return () => {
+      editor.off('focus', refreshToolbarState);
+      editor.off('blur', refreshToolbarState);
+      editor.off('selectionUpdate', refreshToolbarState);
+      editor.off('update', refreshToolbarState);
+    };
+  }, [editor]);
+
+  useEffect(() => {
+    tableModeRef.current = false;
+  }, [editor, target]);
+
+  useEffect(() => {
+    function handleToolbarShortcut(event: KeyboardEvent) {
+      if (!editor || !target || !editor.isFocused) {
+        tableModeRef.current = false;
+        return;
+      }
+
+      if (tableModeRef.current) {
+        const tableAction = getTableModeAction(event);
+        tableModeRef.current = false;
+        if (tableAction) {
+          event.preventDefault();
+          event.stopPropagation();
+          applyTableAction(tableAction);
+        }
+        return;
+      }
+
+      if (event.repeat) {
+        return;
+      }
+
+      const actionId = getToolbarActionForShortcut(event);
+      if (actionId) {
+        event.preventDefault();
+        event.stopPropagation();
+        void executeToolbarAction(actionId);
+        return;
+      }
+
+      if (matchesSuppressedDefaultShortcut(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+
+    document.addEventListener('keydown', handleToolbarShortcut, true);
+    return () => document.removeEventListener('keydown', handleToolbarShortcut, true);
+  });
 
   function applyTextStyle(kind: InlineStyleKind, color: InlineStyleColor | null) {
     if (!editor || unavailable) {
@@ -602,7 +814,7 @@ export function NoteTiptapToolbar({
     }
   }
 
-  function applyTableAction(action: 'column-delete' | 'column-left' | 'column-right' | 'insert-table' | 'row-above' | 'row-below' | 'row-delete' | 'table-delete') {
+  function applyTableAction(action: TableAction) {
     if (!editor || contentUnavailable) {
       return;
     }
@@ -628,6 +840,128 @@ export function NoteTiptapToolbar({
     setTableMenuOpen(false);
   }
 
+  async function executeToolbarAction(actionId: ToolbarActionId) {
+    if (!editor || unavailable) {
+      return false;
+    }
+
+    if (isContentOnlyAction(actionId) && contentUnavailable) {
+      return true;
+    }
+
+    if (actionId === 'bold') {
+      return editor.chain().focus().toggleBold().run();
+    }
+    if (actionId === 'italic') {
+      return editor.chain().focus().toggleItalic().run();
+    }
+    if (actionId === 'underline') {
+      return editor.chain().focus().toggleUnderline().run();
+    }
+    if (actionId === 'strike') {
+      return editor.chain().focus().toggleStrike().run();
+    }
+    if (actionId === 'inlineCode') {
+      return editor.chain().focus().toggleCode().run();
+    }
+    if (actionId === 'link') {
+      setLink(editor, t('editor.linkText'));
+      return true;
+    }
+    if (actionId === 'alignLeft') {
+      return setTextAlignment(editor, 'left');
+    }
+    if (actionId === 'alignCenter') {
+      return setTextAlignment(editor, 'center');
+    }
+    if (actionId === 'alignRight') {
+      return setTextAlignment(editor, 'right');
+    }
+    if (actionId === 'alignJustify') {
+      return setTextAlignment(editor, 'justify');
+    }
+    if (actionId === 'header') {
+      return cycleHeading(editor);
+    }
+    if (actionId === 'bulletList') {
+      return editor.chain().focus().toggleBulletList().run();
+    }
+    if (actionId === 'orderedList') {
+      return editor.chain().focus().toggleOrderedList().run();
+    }
+    if (actionId === 'taskList') {
+      return editor.chain().focus().toggleTaskList().run();
+    }
+    if (actionId === 'quote') {
+      return editor.chain().focus().toggleBlockquote().run();
+    }
+    if (actionId === 'tip') {
+      return insertTip(editor, t('noteDetail.tip'));
+    }
+    if (actionId === 'codeBlock') {
+      return editor.chain().focus().toggleCodeBlock().run();
+    }
+    if (actionId === 'table') {
+      if (editor.isActive('table')) {
+        tableModeRef.current = true;
+      } else {
+        applyTableAction('insert-table');
+      }
+      return true;
+    }
+    if (actionId === 'image' || actionId === 'file') {
+      await contentTarget?.insertFile();
+      return true;
+    }
+
+    return false;
+  }
+
+  function isToolbarActionActive(actionId: ToolbarActionId) {
+    if (!editor) {
+      return false;
+    }
+
+    if (actionId === 'bold') {
+      return editor.isActive('bold');
+    }
+    if (actionId === 'italic') {
+      return editor.isActive('italic');
+    }
+    if (actionId === 'underline') {
+      return editor.isActive('underline');
+    }
+    if (actionId === 'strike') {
+      return editor.isActive('strike');
+    }
+    if (actionId === 'alignLeft') {
+      return editor.isActive({ textAlign: 'left' });
+    }
+    if (actionId === 'alignCenter') {
+      return editor.isActive({ textAlign: 'center' });
+    }
+    if (actionId === 'alignRight') {
+      return editor.isActive({ textAlign: 'right' });
+    }
+    if (actionId === 'alignJustify') {
+      return editor.isActive({ textAlign: 'justify' });
+    }
+    if (actionId === 'bulletList') {
+      return editor.isActive('bulletList');
+    }
+    if (actionId === 'orderedList') {
+      return editor.isActive('orderedList');
+    }
+    if (actionId === 'taskList') {
+      return editor.isActive('taskList');
+    }
+
+    return false;
+  }
+
+  const activeTextColor = Boolean(editor?.getAttributes('textStyle').color);
+  const activeHighlightColor = Boolean(editor?.getAttributes('highlight').color);
+
   return (
     <div
       className="note-edit-toolbar note-tiptap-toolbar"
@@ -641,34 +975,40 @@ export function NoteTiptapToolbar({
         }
       >
         <ToolbarButton
+          active={isToolbarActionActive('bold')}
           disabled={unavailable}
           label={t("editor.bold")}
-          onClick={() => editor?.chain().focus().toggleBold().run()}
+          onClick={() => void executeToolbarAction('bold')}
         >
           <Bold />
         </ToolbarButton>
         <ToolbarButton
+          active={isToolbarActionActive('italic')}
           disabled={unavailable}
           label={t("editor.italic")}
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
+          onClick={() => void executeToolbarAction('italic')}
         >
           <Italic />
         </ToolbarButton>
         <ToolbarButton
+          active={isToolbarActionActive('underline')}
           disabled={unavailable}
           label={t("editor.underline")}
-          onClick={() => editor?.chain().focus().toggleUnderline().run()}
+          onClick={() => void executeToolbarAction('underline')}
         >
           <Underline />
         </ToolbarButton>
         <ToolbarButton
+          active={isToolbarActionActive('strike')}
           disabled={unavailable}
           label={t("editor.strikethrough")}
-          onClick={() => editor?.chain().focus().toggleStrike().run()}
+          onClick={() => void executeToolbarAction('strike')}
         >
           <Strikethrough />
         </ToolbarButton>
         <TextStyleToolbar
+          activeBackground={activeHighlightColor}
+          activeColor={activeTextColor}
           compact
           disabled={unavailable}
           onSelect={applyTextStyle}
@@ -677,74 +1017,99 @@ export function NoteTiptapToolbar({
         <span className="toolbar-divider" />
 
         <ToolbarButton
+          active={isToolbarActionActive('alignLeft')}
+          disabled={contentUnavailable}
+          label={t("editor.alignLeft")}
+          onClick={() => void executeToolbarAction('alignLeft')}
+        >
+          <AlignLeft />
+        </ToolbarButton>
+        <ToolbarButton
+          active={isToolbarActionActive('alignCenter')}
+          disabled={contentUnavailable}
+          label={t("editor.alignCenter")}
+          onClick={() => void executeToolbarAction('alignCenter')}
+        >
+          <AlignCenter />
+        </ToolbarButton>
+        <ToolbarButton
+          active={isToolbarActionActive('alignRight')}
+          disabled={contentUnavailable}
+          label={t("editor.alignRight")}
+          onClick={() => void executeToolbarAction('alignRight')}
+        >
+          <AlignRight />
+        </ToolbarButton>
+        <ToolbarButton
+          active={isToolbarActionActive('alignJustify')}
+          disabled={contentUnavailable}
+          label={t("editor.alignJustify")}
+          onClick={() => void executeToolbarAction('alignJustify')}
+        >
+          <AlignJustify />
+        </ToolbarButton>
+
+        <span className="toolbar-divider" />
+
+        <ToolbarButton
+          active={Boolean(editor?.isActive('heading', { level: 1 }))}
           disabled={contentUnavailable}
           label={t("editor.heading1")}
-          onClick={() =>
-            editor?.chain().focus().toggleHeading({ level: 1 }).run()
-          }
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
         >
           <Heading1 />
         </ToolbarButton>
         <ToolbarButton
+          active={Boolean(editor?.isActive('heading', { level: 2 }))}
           disabled={contentUnavailable}
           label={t("editor.heading2")}
-          onClick={() =>
-            editor?.chain().focus().toggleHeading({ level: 2 }).run()
-          }
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
         >
           <Heading2 />
         </ToolbarButton>
         <ToolbarButton
+          active={Boolean(editor?.isActive('heading', { level: 3 }))}
           disabled={contentUnavailable}
           label={t("editor.heading3")}
-          onClick={() =>
-            editor?.chain().focus().toggleHeading({ level: 3 }).run()
-          }
+          onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
         >
           <Heading3 />
         </ToolbarButton>
         <ToolbarButton
+          active={isToolbarActionActive('bulletList')}
           disabled={contentUnavailable}
           label={t("editor.bulletList")}
-          onClick={() => editor?.chain().focus().toggleBulletList().run()}
+          onClick={() => void executeToolbarAction('bulletList')}
         >
           <List />
         </ToolbarButton>
         <ToolbarButton
+          active={isToolbarActionActive('orderedList')}
           disabled={contentUnavailable}
           label={t("editor.numberedList")}
-          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+          onClick={() => void executeToolbarAction('orderedList')}
         >
           <ListOrdered />
         </ToolbarButton>
         <ToolbarButton
+          active={isToolbarActionActive('taskList')}
           disabled={contentUnavailable}
           label={t("editor.checkList")}
-          onClick={() => editor?.chain().focus().toggleTaskList().run()}
+          onClick={() => void executeToolbarAction('taskList')}
         >
           <ListChecks />
         </ToolbarButton>
         <ToolbarButton
           disabled={contentUnavailable}
           label={t("editor.quote")}
-          onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+          onClick={() => void executeToolbarAction('quote')}
         >
           <Quote />
         </ToolbarButton>
         <ToolbarButton
           disabled={contentUnavailable}
           label={t("noteDetail.tip")}
-          onClick={() =>
-            editor
-              ?.chain()
-              .focus()
-              .insertContent({
-                type: "noteTip",
-                attrs: { title: t("noteDetail.tip") },
-                content: [{ type: "paragraph" }],
-              })
-              .run()
-          }
+          onClick={() => void executeToolbarAction('tip')}
         >
           <Lightbulb />
         </ToolbarButton>
@@ -754,21 +1119,21 @@ export function NoteTiptapToolbar({
         <ToolbarButton
           disabled={unavailable}
           label={t("editor.inlineCode")}
-          onClick={() => editor?.chain().focus().toggleCode().run()}
+          onClick={() => void executeToolbarAction('inlineCode')}
         >
           <Code />
         </ToolbarButton>
         <ToolbarButton
           disabled={contentUnavailable}
           label={t("editor.codeBlock")}
-          onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
+          onClick={() => void executeToolbarAction('codeBlock')}
         >
           <SquareCode />
         </ToolbarButton>
         <ToolbarButton
           disabled={unavailable}
           label={t("editor.link")}
-          onClick={() => editor && setLink(editor, t("editor.linkText"))}
+          onClick={() => void executeToolbarAction('link')}
         >
           <Link2 />
         </ToolbarButton>
@@ -852,14 +1217,14 @@ export function NoteTiptapToolbar({
         <ToolbarButton
           disabled={contentUnavailable}
           label={t("notes.editor.addImage")}
-          onClick={() => void contentTarget?.insertFile()}
+          onClick={() => void executeToolbarAction('image')}
         >
           <ImageIcon />
         </ToolbarButton>
         <ToolbarButton
           disabled={contentUnavailable}
           label={t("notes.editor.addFile")}
-          onClick={() => void contentTarget?.insertFile()}
+          onClick={() => void executeToolbarAction('file')}
         >
           <FileUp />
         </ToolbarButton>
@@ -1077,18 +1442,29 @@ function FileNodeView({ editor, node, selected, updateAttributes }: ReactNodeVie
 }
 
 function ToolbarButton({
+  active,
   children,
   disabled = false,
   label,
   onClick,
 }: {
+  active?: boolean;
   children: ReactNode;
   disabled?: boolean;
   label: string;
   onClick: () => void;
 }) {
   return (
-    <button className="markdown-tool-button" disabled={disabled} title={label} type="button" aria-label={label} onMouseDown={preserveToolbarSelection} onClick={onClick}>
+    <button
+      className={active ? 'markdown-tool-button is-active' : 'markdown-tool-button'}
+      disabled={disabled}
+      title={label}
+      type="button"
+      aria-label={label}
+      aria-pressed={active}
+      onMouseDown={preserveToolbarSelection}
+      onClick={onClick}
+    >
       {children}
     </button>
   );
@@ -1096,6 +1472,168 @@ function ToolbarButton({
 
 function preserveToolbarSelection(event: ReactMouseEvent<HTMLElement>) {
   event.preventDefault();
+}
+
+function cycleHeading(editor: Editor) {
+  if (editor.isActive('heading', { level: 1 })) {
+    return editor.chain().focus().toggleHeading({ level: 2 }).run();
+  }
+  if (editor.isActive('heading', { level: 2 })) {
+    return editor.chain().focus().toggleHeading({ level: 3 }).run();
+  }
+  if (editor.isActive('heading', { level: 3 })) {
+    return editor.chain().focus().setParagraph().run();
+  }
+
+  return editor.chain().focus().toggleHeading({ level: 1 }).run();
+}
+
+function getTableModeAction(event: KeyboardEvent): TableAction | null {
+  if (event.key === 'ArrowLeft') {
+    return 'column-left';
+  }
+  if (event.key === 'ArrowRight') {
+    return 'column-right';
+  }
+  if (event.key === 'ArrowUp') {
+    return 'row-above';
+  }
+  if (event.key === 'ArrowDown') {
+    return 'row-below';
+  }
+
+  return null;
+}
+
+function getToolbarActionForShortcut(event: KeyboardEvent) {
+  for (const [actionId, binding] of toolbarShortcutBindings) {
+    if (matchesShortcut(event, binding)) {
+      return actionId;
+    }
+  }
+
+  return null;
+}
+
+function insertTip(editor: Editor, title: string) {
+  return editor
+    .chain()
+    .focus()
+    .insertContent({
+      type: 'noteTip',
+      attrs: { title },
+      content: [{ type: 'paragraph' }],
+    })
+    .run();
+}
+
+function isContentOnlyAction(actionId: ToolbarActionId) {
+  return (
+    actionId === 'alignCenter' ||
+    actionId === 'alignJustify' ||
+    actionId === 'alignLeft' ||
+    actionId === 'alignRight' ||
+    actionId === 'bulletList' ||
+    actionId === 'codeBlock' ||
+    actionId === 'file' ||
+    actionId === 'header' ||
+    actionId === 'image' ||
+    actionId === 'orderedList' ||
+    actionId === 'quote' ||
+    actionId === 'table' ||
+    actionId === 'taskList' ||
+    actionId === 'tip'
+  );
+}
+
+function isToolbarActionId(value: string): value is ToolbarActionId {
+  return (
+    value === 'alignCenter' ||
+    value === 'alignJustify' ||
+    value === 'alignLeft' ||
+    value === 'alignRight' ||
+    value === 'bold' ||
+    value === 'bulletList' ||
+    value === 'codeBlock' ||
+    value === 'file' ||
+    value === 'header' ||
+    value === 'image' ||
+    value === 'inlineCode' ||
+    value === 'italic' ||
+    value === 'link' ||
+    value === 'orderedList' ||
+    value === 'quote' ||
+    value === 'strike' ||
+    value === 'table' ||
+    value === 'taskList' ||
+    value === 'tip' ||
+    value === 'underline'
+  );
+}
+
+function matchesShortcut(event: KeyboardEvent, binding: ShortcutBinding) {
+  const modPressed = event.ctrlKey || event.metaKey;
+  return (
+    binding.mod === modPressed &&
+    binding.alt === event.altKey &&
+    binding.shift === event.shiftKey &&
+    normalizeShortcutKey(event.key) === binding.key
+  );
+}
+
+function matchesSuppressedDefaultShortcut(event: KeyboardEvent) {
+  return suppressedDefaultShortcutBindings.some((binding) => matchesShortcut(event, binding));
+}
+
+function parseShortcut(shortcut: string): ShortcutBinding | null {
+  const parts = shortcut.split('+').map((part) => part.trim()).filter(Boolean);
+  const binding: ShortcutBinding = {
+    alt: false,
+    key: '',
+    mod: false,
+    shift: false,
+  };
+
+  for (const part of parts) {
+    const normalizedPart = part.toLowerCase();
+    if (normalizedPart === 'mod') {
+      binding.mod = true;
+    } else if (normalizedPart === 'alt' || normalizedPart === 'option') {
+      binding.alt = true;
+    } else if (normalizedPart === 'shift') {
+      binding.shift = true;
+    } else {
+      binding.key = normalizeShortcutKey(part);
+    }
+  }
+
+  return binding.key ? binding : null;
+}
+
+function setTextAlignment(editor: Editor, alignment: TextAlignment) {
+  return editor.chain().focus().setTextAlign(alignment).run();
+}
+
+function shortcutSignature(binding: ShortcutBinding) {
+  return `${binding.mod ? 'mod+' : ''}${binding.alt ? 'alt+' : ''}${binding.shift ? 'shift+' : ''}${binding.key}`;
+}
+
+function normalizeShortcutKey(key: string) {
+  const normalized = key.trim().toLowerCase();
+  if (normalized === 'arrowleft' || normalized === 'left') {
+    return 'arrowleft';
+  }
+  if (normalized === 'arrowright' || normalized === 'right') {
+    return 'arrowright';
+  }
+  if (normalized === 'arrowup' || normalized === 'up' || normalized === 'top') {
+    return 'arrowup';
+  }
+  if (normalized === 'arrowdown' || normalized === 'down') {
+    return 'arrowdown';
+  }
+
+  return normalized;
 }
 
 function isNoteFileSelection(selection: unknown) {

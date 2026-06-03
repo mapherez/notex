@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
 import { CustomSelect } from "../components/ui/CustomSelect";
 import { IconBadge } from "../components/ui/IconBadge";
 import { Panel } from "../components/ui/Panel";
-import { appLimits } from "../config/appSettings";
+import { appLimits, editorSettings } from "../config/appSettings";
 import {
   openSqliteDatabaseFolder,
   openSqliteFilesFolder,
@@ -742,6 +742,8 @@ function ShortcutHelpModal({
 }
 
 function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
+  const toolbarShortcutItems = buildToolbarShortcutItems(t);
+
   return [
     {
       title: t("profile.shortcuts.groups.global"),
@@ -805,20 +807,8 @@ function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
       title: t("profile.shortcuts.groups.notes"),
       items: [
         {
-          keys: ["Ctrl / ⌘ + E"],
-          description: t("profile.shortcuts.items.editNote"),
-        },
-        {
-          keys: ["Ctrl / ⌘ + S"],
-          description: t("profile.shortcuts.items.saveNote"),
-        },
-        {
-          keys: ["Esc"],
-          description: t("profile.shortcuts.items.cancelNoteEdit"),
-        },
-        {
-          keys: ["/"],
-          description: t("profile.shortcuts.items.searchLinkedNotes"),
+          keys: [t("profile.shortcuts.keys.letter")],
+          description: t("profile.shortcuts.items.startNoteTyping"),
         },
         {
           keys: ["Enter", "Space"],
@@ -827,6 +817,28 @@ function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
         {
           keys: ["Ctrl / ⌘ / Alt + ← / →"],
           description: t("profile.shortcuts.items.reorderTags"),
+        },
+      ],
+    },
+    {
+      title: t("profile.shortcuts.groups.noteToolbar"),
+      items: [
+        ...toolbarShortcutItems,
+        {
+          keys: [formatShortcutForHelp("Mod+T"), "← / ↑ / ↓ / →"],
+          description: t("profile.shortcuts.items.tableMode"),
+        },
+        {
+          keys: ["1", "Space"],
+          description: t("profile.shortcuts.items.orderedListTrigger"),
+        },
+        {
+          keys: [".", "Space"],
+          description: t("profile.shortcuts.items.bulletListTrigger"),
+        },
+        {
+          keys: ["Enter"],
+          description: t("profile.shortcuts.items.continueOrExitList"),
         },
       ],
     },
@@ -881,6 +893,66 @@ function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
       ],
     },
   ];
+}
+
+function buildToolbarShortcutItems(t: ReturnType<typeof useI18n>["t"]) {
+  const items = [];
+  let imageFileAdded = false;
+
+  for (const tool of editorSettings.noteTools) {
+    if (tool.id === "image" || tool.id === "file") {
+      if (imageFileAdded) {
+        continue;
+      }
+      imageFileAdded = true;
+      items.push({
+        keys: [formatShortcutForHelp(tool.shortcut)],
+        description: t("profile.shortcuts.items.toolbar.imageFile"),
+      });
+      continue;
+    }
+
+    items.push({
+      keys: [formatShortcutForHelp(tool.shortcut)],
+      description: t(`profile.shortcuts.items.toolbar.${tool.id}`),
+    });
+  }
+
+  return items;
+}
+
+function formatShortcutForHelp(shortcut: string) {
+  return shortcut
+    .split("+")
+    .map((part) => {
+      const token = part.trim();
+      const normalized = token.toLowerCase();
+
+      if (normalized === "mod") {
+        return "Ctrl / ⌘";
+      }
+      if (normalized === "alt") {
+        return "Alt";
+      }
+      if (normalized === "shift") {
+        return "Shift";
+      }
+      if (normalized === "arrowleft") {
+        return "←";
+      }
+      if (normalized === "arrowup") {
+        return "↑";
+      }
+      if (normalized === "arrowright") {
+        return "→";
+      }
+      if (normalized === "arrowdown") {
+        return "↓";
+      }
+
+      return token.length === 1 ? token.toUpperCase() : token;
+    })
+    .join(" + ");
 }
 
 function getRecentTimestamp(note: Note) {

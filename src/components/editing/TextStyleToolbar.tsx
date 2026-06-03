@@ -13,10 +13,14 @@ import { useI18n } from '../../i18n/I18nProvider';
 type TextControlElement = HTMLInputElement | HTMLTextAreaElement;
 
 export function TextStyleToolbar({
+  activeBackground = false,
+  activeColor = false,
   compact = false,
   disabled = false,
   onSelect,
 }: {
+  activeBackground?: boolean;
+  activeColor?: boolean;
   compact?: boolean;
   disabled?: boolean;
   onSelect: (kind: InlineStyleKind, color: InlineStyleColor | null) => void;
@@ -25,8 +29,8 @@ export function TextStyleToolbar({
 
   return (
     <div className={clsx('text-style-toolbar', compact && 'text-style-toolbar--compact')} aria-label={t('editor.textStyleToolbar')}>
-      <TextStylePicker disabled={disabled} kind="color" label={t('editor.textColor')} onSelect={onSelect} />
-      <TextStylePicker disabled={disabled} kind="bg" label={t('editor.highlightColor')} onSelect={onSelect} />
+      <TextStylePicker active={activeColor} disabled={disabled} kind="color" label={t('editor.textColor')} onSelect={onSelect} />
+      <TextStylePicker active={activeBackground} disabled={disabled} kind="bg" label={t('editor.highlightColor')} onSelect={onSelect} />
     </div>
   );
 }
@@ -69,11 +73,13 @@ export function StyledTextField({
 }
 
 function TextStylePicker({
+  active,
   disabled,
   kind,
   label,
   onSelect,
 }: {
+  active: boolean;
   disabled: boolean;
   kind: InlineStyleKind;
   label: string;
@@ -89,12 +95,13 @@ function TextStylePicker({
   return (
     <div className="text-style-picker" ref={pickerRef}>
       <button
-        className="markdown-tool-button text-style-picker__trigger"
+        className={clsx('markdown-tool-button text-style-picker__trigger', active && 'is-active')}
         disabled={disabled}
         type="button"
         title={label}
         aria-label={label}
         aria-expanded={open}
+        aria-pressed={active}
         onMouseDown={preserveEditorSelection}
         onClick={() => setOpen((value) => !value)}
       >
