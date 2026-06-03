@@ -1,8 +1,6 @@
 import settings from './settings.json';
 import type {
-  NewNoteInput,
   NoteThumbnail,
-  NoteType,
   StartupPage,
   TagColor,
   UserSettings,
@@ -11,7 +9,6 @@ import type {
 export type AppSettings = typeof settings;
 
 export const appSettings: AppSettings = settings;
-export const cloudSyncEnabled = settings.features.cloudSync;
 export const appDefaults = settings.defaults;
 export const themeSettings = settings.themes;
 export const appLimits = settings.limits;
@@ -23,13 +20,11 @@ export const uiSettings = settings.ui;
 export const updaterSettings = settings.updater;
 
 export const tagColorOptions = settings.options.tagColors as TagColor[];
-export const noteTypeOptions = settings.options.noteTypes as NoteType[];
 export const thumbnailOptions = settings.options.thumbnailVariants as Array<{
   asset: string;
   id: NoteThumbnail['variant'];
 }>;
 
-export const defaultNewNoteType = noteSettings.defaultNewNoteType as NonNullable<NewNoteInput['type']>;
 export const defaultNewTagColor = settings.defaults.newTagColor as TagColor;
 export const defaultNewCollectionColor = settings.defaults.newCollectionColor as TagColor;
 export const defaultNoteThumbnailVariant = settings.defaults.noteThumbnailVariant as NoteThumbnail['variant'];
@@ -47,5 +42,6 @@ export const defaultUserSettings: UserSettings = {
   favoriteTagIds: userSettingsDefaults.favoriteTagIds,
   pinnedNoteIds: userSettingsDefaults.pinnedNoteIds,
   quickPinNoteIds: userSettingsDefaults.quickPinNoteIds,
+  noteHiddenPanelIds: userSettingsDefaults.noteHiddenPanelIds,
   updatedAt: new Date().toISOString(),
 };

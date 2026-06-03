@@ -1,8 +1,5 @@
 {
   "productName": "NoteX",
-  "features": {
-    "cloudSync": false
-  },
   "themes": {
     "default": "dark",
     "available": [
@@ -29,9 +26,17 @@
       "startupPage": "/",
       "preferredLayout": "list",
       "primaryCollectionId": "collection-work",
-      "favoriteTagIds": ["tag-grammar", "tag-doubt"],
-      "pinnedNoteIds": ["note-linguistic"],
-      "quickPinNoteIds": ["note-linguistic"]
+      "favoriteTagIds": [
+        "tag-grammar",
+        "tag-doubt"
+      ],
+      "pinnedNoteIds": [
+        "note-linguistic"
+      ],
+      "quickPinNoteIds": [
+        "note-linguistic"
+      ],
+      "noteHiddenPanelIds": []
     }
   },
   "limits": {
@@ -67,7 +72,6 @@
       "slate",
       "neutral"
     ],
-    "noteTypes": ["standard", "linguistic_doubt", "reference", "snippet"],
     "thumbnailVariants": [
       {
         "id": "purple",
@@ -102,7 +106,10 @@
         "asset": "/assets/thumb-wrong.svg"
       }
     ],
-    "layouts": ["list", "grid"]
+    "layouts": [
+      "list",
+      "grid"
+    ]
   },
   "navigation": {
     "sidebarItems": [
@@ -137,7 +144,16 @@
         "icon": "trash"
       }
     ],
-    "searchEnabledRoutes": ["/", "/notes", "/favorites", "/recent", "/trash", "/collections", "/tags", "/profile"],
+    "searchEnabledRoutes": [
+      "/",
+      "/notes",
+      "/favorites",
+      "/recent",
+      "/trash",
+      "/collections",
+      "/tags",
+      "/profile"
+    ],
     "legalLinks": [
       {
         "to": "/privacy",
@@ -151,22 +167,117 @@
   },
   "notes": {
     "defaultSortOrder": "nameAsc",
-    "recentSortOrder": "updatedDesc",
-    "defaultNewNoteType": "standard"
+    "recentSortOrder": "updatedDesc"
   },
   "editor": {
     "defaultTable": {
-      "columns": ["Column 1", "Column 2"],
+      "columns": [
+        "Column 1",
+        "Column 2"
+      ],
       "rows": 1
     },
-    "readingWordsPerMinute": 180
+    "readingWordsPerMinute": 180,
+    "noteTools": [
+      {
+        "id": "bold",
+        "shortcut": "Mod+B"
+      },
+      {
+        "id": "italic",
+        "shortcut": "Mod+I"
+      },
+      {
+        "id": "underline",
+        "shortcut": "Mod+U"
+      },
+      {
+        "id": "strike",
+        "shortcut": "Mod+Shift+X"
+      },
+      {
+        "id": "alignLeft",
+        "shortcut": "Mod+Alt+ArrowLeft"
+      },
+      {
+        "id": "alignCenter",
+        "shortcut": "Mod+Alt+ArrowUp"
+      },
+      {
+        "id": "alignRight",
+        "shortcut": "Mod+Alt+ArrowRight"
+      },
+      {
+        "id": "alignJustify",
+        "shortcut": "Mod+Alt+ArrowDown"
+      },
+      {
+        "id": "header",
+        "shortcut": "Mod+H"
+      },
+      {
+        "id": "bulletList",
+        "shortcut": "Mod+Shift+L"
+      },
+      {
+        "id": "orderedList",
+        "shortcut": "Mod+ALT+L"
+      },
+      {
+        "id": "taskList",
+        "shortcut": "Mod+,"
+      },
+      {
+        "id": "quote",
+        "shortcut": "Mod+Shift+Q"
+      },
+      {
+        "id": "tip",
+        "shortcut": "Mod+Shift+T"
+      },
+      {
+        "id": "inlineCode",
+        "shortcut": "Mod+Shift+B"
+      },
+      {
+        "id": "codeBlock",
+        "shortcut": "Mod+Alt+Shift+B"
+      },
+      {
+        "id": "link",
+        "shortcut": "Mod+L"
+      },
+      {
+        "id": "table",
+        "shortcut": "Mod+T"
+      },
+      {
+        "id": "image",
+        "shortcut": "Mod+Alt+F"
+      },
+      {
+        "id": "file",
+        "shortcut": "Mod+Alt+F"
+      }
+    ]
   },
   "demo": {
     "enabled": true,
-    "demoNoteIds": ["note-linguistic"],
-    "defaultTagIds": ["tag-grammar", "tag-doubt"],
-    "defaultCollectionIds": ["collection-work", "collection-personal"],
-    "collectionOrder": ["collection-work", "collection-personal"]
+    "demoNoteIds": [
+      "note-linguistic"
+    ],
+    "defaultTagIds": [
+      "tag-grammar",
+      "tag-doubt"
+    ],
+    "defaultCollectionIds": [
+      "collection-work",
+      "collection-personal"
+    ],
+    "collectionOrder": [
+      "collection-work",
+      "collection-personal"
+    ]
   },
   "ui": {
     "toastMaxVisible": 4,

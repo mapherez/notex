@@ -1,16 +1,13 @@
-import { ChevronDown, LogOut, Menu, Moon, Sun, UserRound } from 'lucide-react';
+import { ChevronDown, Menu, Moon, Sun, UserRound } from 'lucide-react';
 import clsx from 'clsx';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SearchBox } from '../ui/SearchBox';
-import { cloudSyncEnabled } from '../../config/appSettings';
 import { getNextTheme, getThemeIcon } from '../../core/theme/themeRegistry';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
-import { useSyncStore } from '../../store/useSyncStore';
-import { useToastStore } from '../../store/useToastStore';
 
 export function TopBar({
   showSearch,
@@ -26,10 +23,6 @@ export function TopBar({
   const user = useKnowledgeStore((state) => state.user);
   const theme = useAppStore((state) => state.settings.theme);
   const setTheme = useAppStore((state) => state.setTheme);
-  const syncState = useSyncStore((state) => state.syncState);
-  const disconnectGoogle = useSyncStore((state) => state.disconnectGoogle);
-  const pushToast = useToastStore((state) => state.pushToast);
-  const accountConnected = cloudSyncEnabled && Boolean(syncState?.connected);
   const ThemeIcon = getThemeIcon(theme) === 'sun' ? Sun : Moon;
 
   useClickOutside(actionsRef, accountOpen, () => {
@@ -69,8 +62,8 @@ export function TopBar({
             setAccountOpen((value) => !value);
           }}
         >
-          <span className={accountConnected && user?.avatarUrl ? 'avatar' : 'avatar avatar-placeholder'}>
-            {accountConnected && user?.avatarUrl ? (
+          <span className={user?.avatarUrl ? 'avatar' : 'avatar avatar-placeholder'}>
+            {user?.avatarUrl ? (
               <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
             ) : (
               <UserRound strokeWidth={1.8} />
@@ -80,10 +73,10 @@ export function TopBar({
         </button>
         {accountOpen ? (
           <div className="floating-menu topbar-menu account-menu">
-            {accountConnected ? (
+            {user ? (
               <>
                 <strong>{user?.name}</strong>
-                <span className="menu-muted">{syncState?.email ?? user?.email}</span>
+                <span className="menu-muted">{user?.email ?? t('profile.localAccount')}</span>
               </>
             ) : (
               <span className="menu-muted">{t('profile.localUser')}</span>
@@ -97,18 +90,6 @@ export function TopBar({
             >
               {t('topbar.profile')}
             </button>
-            {accountConnected ? (
-              <button
-                type="button"
-                onClick={() => {
-                  void disconnectGoogle().then(() => pushToast(t('sync.disconnected'), 'warning'));
-                  setAccountOpen(false);
-                }}
-              >
-                <LogOut />
-                {t('profile.security.logout')}
-              </button>
-            ) : null}
           </div>
         ) : null}
       </div>

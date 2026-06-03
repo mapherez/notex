@@ -1,18 +1,17 @@
 # NoteX
 
-Offline-first knowledge management app built around structured notes, tags, collections, quick pins, and SQLite persistence.
+Offline-first knowledge management app built around block-based notes, tags, collections, quick pins, file attachments, and SQLite persistence.
 
 Current scope:
 
 - Local-first editing backed by SQLite in the Tauri desktop app
-- Structured note sections with Markdown fields and editable usage-example tables
+- Block-based notes with Tiptap content, inline images, file attachments, and `.notex` package export/import
 - Tags, collections, favorites, trash, quick capture, and quick pins
-- Cloud sync is disabled
 - Static landing page deployment is separate from the desktop app
 
 Operational notes:
 
-- The app must remain usable without a Google account.
+- The app must remain usable without an account.
 - The desktop app uses SQLite as the official storage layer.
 - SQLite is the primary working store.
 - Runtime SQLite data lives in the Tauri app data directory and must not be committed.

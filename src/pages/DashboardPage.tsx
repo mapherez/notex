@@ -3,9 +3,9 @@ import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent }
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { IconBadge } from '../components/ui/IconBadge';
-import { InlineFormattedText } from '../components/editing/InlineFormattedText';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
-import { NoteRow } from '../components/ui/NoteRow';
+import { NoteRow } from '../components/notes/NoteRow';
+import { InlineFormattedText } from '../components/editing/InlineFormattedText';
 import { Panel } from "../components/ui/Panel";
 import { appLimits, demoSettings } from '../config/appSettings';
 import { stripInlineFormatting } from '../core/utils/inlineFormatting';
@@ -18,13 +18,15 @@ import {
   isPrimaryShortcut,
 } from '../core/utils/keyboardShortcuts';
 import { filterNotes } from '../core/utils/noteFilters';
+import { richTextToPlainText, textToTiptapDocument } from '../core/utils/richText';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
+import { useNotesStore } from '../store/useNotesStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
-import type { Collection, Note, Tag as TagModel, TagColor } from '../core/models/models';
+import type { Collection, Note, Tag as TagModel, TagColor, TiptapDocument } from '../core/models/models';
 
 type CaptureForm = {
   capture: string;
@@ -40,10 +42,11 @@ export function DashboardPage() {
   const [quickPinQuery, setQuickPinQuery] = useState('');
   const settings = useAppStore((state) => state.settings);
   const setQuickPinAt = useAppStore((state) => state.setQuickPinAt);
-  const notes = useKnowledgeStore((state) => state.notes);
+  const notes = useNotesStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
-  const createQuickNote = useKnowledgeStore((state) => state.createQuickNote);
+  const createNote = useNotesStore((state) => state.createNote);
+  const addBlock = useNotesStore((state) => state.addBlock);
   const pushToast = useToastStore((state) => state.pushToast);
   const { getValues, handleSubmit, register, reset, setFocus, setValue } = useForm<CaptureForm>({
     defaultValues: { capture: '' },
@@ -58,8 +61,8 @@ export function DashboardPage() {
   const activeQuickPinNote = activeQuickPinIndex === null ? null : quickPinSlots[activeQuickPinIndex];
   const quickPinOptions = activeNotes
     .filter((note) => note.id === activeQuickPinNote?.id || !pinnedNoteIds.has(note.id))
-    .filter((note) => !quickPinQuery.trim() || normalizeSearchValue(note.title).includes(normalizeSearchValue(quickPinQuery)))
-    .sort((a, b) => stripInlineFormatting(a.title).localeCompare(stripInlineFormatting(b.title), undefined, { numeric: true, sensitivity: 'base' }))
+    .filter((note) => !quickPinQuery.trim() || normalizeSearchValue(richTextToPlainText(note.title)).includes(normalizeSearchValue(quickPinQuery)))
+    .sort((a, b) => richTextToPlainText(a.title).localeCompare(richTextToPlainText(b.title), undefined, { numeric: true, sensitivity: 'base' }))
     .slice(0, appLimits.quickPinSuggestions);
   const trashedNotes = notes.filter((note) => note.isTrashed);
   const recentNoteFeed = filterNotes(notes, { mode: 'recent' });
@@ -207,14 +210,23 @@ export function DashboardPage() {
 
   const captureField = register('capture');
   const submitQuickCapture = handleSubmit(async ({ capture }) => {
-    const note = await createQuickNote(
-      capture,
-      t("dashboard.quickCapture.title"),
-    );
-    if (note) {
-      pushToast(t("notes.draftCreated"), "success");
-      navigate(`/notes/${note.id}`);
+    const trimmed = capture.trim();
+    if (!trimmed) {
+      return;
     }
+
+    const note = await createNote({
+      collectionId: settings.primaryCollectionId,
+      title: t("dashboard.quickCapture.title"),
+    });
+    await addBlock(note.id, {
+      contentJson: textToTiptapDocument(trimmed) as TiptapDocument,
+      contentText: trimmed,
+      kind: 'content',
+      title: '',
+    });
+    pushToast(t("notes.draftCreated"), "success");
+    navigate(`/notes/${note.id}`);
     reset({ capture: '' });
   });
 
@@ -263,9 +275,9 @@ export function DashboardPage() {
                     className={note ? "quick-pin-card" : "quick-pin-card empty"}
                     type="button"
                     aria-label={
-                      note ? stripInlineFormatting(note.title) : t("dashboard.quickPins.add")
+                      note ? richTextToPlainText(note.title) : t("dashboard.quickPins.add")
                     }
-                    title={stripInlineFormatting(note?.title)}
+                    title={richTextToPlainText(note?.title)}
                     onClick={() => {
                       if (note) {
                         navigate(`/notes/${note.id}`);
@@ -279,11 +291,9 @@ export function DashboardPage() {
                       <>
                         <NoteThumbnail thumbnail={note.thumbnail} />
                         <span className="quick-pin-copy">
-                          <strong>
-                            <InlineFormattedText value={note.title} />
-                          </strong>
+                          <strong>{richTextToPlainText(note.title).trim() ? <InlineFormattedText value={note.title} /> : t('notes.untitled')}</strong>
                           <span>
-                            {note.content.intro ? <InlineFormattedText value={note.content.intro} /> : t("dashboard.quickPins.noteFallback")}
+                            {getNotePreview(note) ? <InlineFormattedText value={note.subtitle} /> : t("dashboard.quickPins.noteFallback")}
                           </span>
                         </span>
                       </>
@@ -335,12 +345,8 @@ export function DashboardPage() {
                             >
                               <NoteThumbnail thumbnail={option.thumbnail} />
                               <span>
-                                <strong>
-                                  <InlineFormattedText value={option.title} />
-                                </strong>
-                                <span>
-                                  {option.content.intro ? <InlineFormattedText value={option.content.intro} /> : t("dashboard.quickPins.noteFallback")}
-                                </span>
+                                <strong>{richTextToPlainText(option.title).trim() ? <InlineFormattedText value={option.title} /> : t('notes.untitled')}</strong>
+                                <span>{getNotePreview(option) ? <InlineFormattedText value={option.subtitle} /> : t("dashboard.quickPins.noteFallback")}</span>
                               </span>
                             </button>
                           ))
@@ -449,9 +455,7 @@ export function DashboardPage() {
                 >
                   <Timer />
                   <span className="activity-copy">
-                    <span>
-                      <InlineFormattedText value={note.title} />
-                    </span>
+                    <span>{richTextToPlainText(note.title).trim() ? <InlineFormattedText value={note.title} /> : t('notes.untitled')}</span>
                     <span>
                       {formatRecentTimestamp(
                         getRecentTimestamp(note),
@@ -558,6 +562,10 @@ function PopularTagRow({ tag }: { tag: TagModel }) {
   );
 }
 
+function getNotePreview(note: Note) {
+  return richTextToPlainText(note.subtitle).trim();
+}
+
 function normalizeSearchValue(value: string) {
   return stripInlineFormatting(value)
     .trim()
@@ -565,4 +573,3 @@ function normalizeSearchValue(value: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 }
-

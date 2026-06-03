@@ -18,6 +18,7 @@ import { useClickOutside } from '../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
+import { useNotesStore } from '../store/useNotesStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
 
@@ -45,7 +46,7 @@ export function TagsPage() {
   const favoritePickerRef = useRef<HTMLDivElement>(null);
   const favoriteSearchRef = useRef<HTMLInputElement>(null);
   const tags = useKnowledgeStore((state) => state.tags);
-  const notes = useKnowledgeStore((state) => state.notes);
+  const notes = useNotesStore((state) => state.notes);
   const createTag = useKnowledgeStore((state) => state.createTag);
   const updateTag = useKnowledgeStore((state) => state.updateTag);
   const deleteTag = useKnowledgeStore((state) => state.deleteTag);

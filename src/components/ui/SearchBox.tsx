@@ -4,10 +4,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { appLimits } from '../../config/appSettings';
 import { stripInlineFormatting } from '../../core/utils/inlineFormatting';
 import { isPrimaryShortcut } from '../../core/utils/keyboardShortcuts';
+import { richTextToPlainText } from '../../core/utils/richText';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../../core/utils/useKeyboardListNavigation';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useNotesStore } from '../../store/useNotesStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { InlineFormattedText } from '../editing/InlineFormattedText';
 import { NoteThumbnail } from './NoteThumbnail';
@@ -28,7 +30,7 @@ export function SearchBox({ className }: { className?: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [resultsOpen, setResultsOpen] = useState(false);
-  const notes = useKnowledgeStore((state) => state.notes);
+  const notes = useNotesStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const normalizedQuery = normalizeSearchValue(query);
@@ -123,7 +125,7 @@ export function SearchBox({ className }: { className?: string }) {
                 <NoteThumbnail thumbnail={result.note.thumbnail} />
                 <span className="search-result-copy">
                   <strong>
-                    <InlineFormattedText value={result.note.title} />
+                    {richTextToPlainText(result.note.title).trim() ? <InlineFormattedText value={result.note.title} /> : t('notes.untitled')}
                   </strong>
                   <span className="search-result-meta">
                     <span className="search-result-match">{t(`topbar.searchMatch.${result.matchType}`)}</span>
@@ -170,7 +172,13 @@ function buildSearchResults({
 
       const noteTags = sortTagsByName(note.tagIds.flatMap((tagId) => tagById.get(tagId) ?? []));
       const collection = note.collectionId ? collectionById.get(note.collectionId) : undefined;
-      const titleMatches = normalizeSearchValue(note.title).includes(normalizedQuery);
+      const titleMatches = normalizeSearchValue(
+        [
+          richTextToPlainText(note.title),
+          richTextToPlainText(note.subtitle),
+          ...(note.blocks?.map((block) => `${richTextToPlainText(block.title)} ${block.contentText}`) ?? []),
+        ].join(' '),
+      ).includes(normalizedQuery);
       const matchedTags = sortTagsByName(noteTags.filter((tag) => normalizeSearchValue(tag.name).includes(normalizedQuery)));
       const collectionMatches = collection ? normalizeSearchValue(collection.name).includes(normalizedQuery) : false;
 
@@ -202,10 +210,9 @@ function searchResultScore(result: SearchResult) {
 }
 
 function normalizeSearchValue(value: string) {
-  return stripInlineFormatting(value)
+  return richTextToPlainText(stripInlineFormatting(value))
     .trim()
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 }
-

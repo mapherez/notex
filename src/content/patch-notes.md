@@ -1,4 +1,21 @@
-<!-- markdownlint-disable MD025 -->
+# 2.0.0
+
+## What's New in NoteX
+
+This release makes block-based Notes the default NoteX experience.
+
+### Highlights
+
+- Replaced the old note system with the new block-based Notes editor.
+- Added flexible note blocks with autosave, drag reorder, delete confirmation, and table of contents.
+- Added rich editing with toolbar shortcuts, active formatting states, tables, checklists, links, tips, images, and file attachments.
+- Updated Notes, search, dashboard, favorites, recent, trash, tags, and collections to use the new Notes model.
+- Added `.notex` package export/import for local backups with database and files.
+- Improved startup and editor loading with route splitting, async editor chunks, and loading indicators.
+- Polished Notes list behavior, pinned note reordering, menus, tooltips, and New Note handling.
+
+---
+
 # 1.3.1
 
 - Implemented global shortcut for navigating to the profile page using "Ctrl / ⌘ + U".

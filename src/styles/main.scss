@@ -12,9 +12,11 @@
 @use "components/custom-select";
 @use "components/color-picker";
 @use "components/sortable-tags";
+@use "components/loading";
 @use "pages/dashboard";
 @use "components/notes";
 @use "pages/note-detail";
+@use "pages/note";
 @use "pages/profile";
 @use "components/filters";
 @use "components/menus";

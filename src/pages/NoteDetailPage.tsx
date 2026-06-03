@@ -1,135 +1,147 @@
 import {
-  Check,
   ChevronLeft,
-  Copy,
+  Check,
   ExternalLink,
   FileText,
   Folder,
-  Lightbulb,
-  MoreVertical,
+  GripVertical,
+  Image as ImageIcon,
   Pencil,
-  Pin,
   Plus,
+  Download,
   Star,
+  Tag as TagIcon,
   Trash2,
   X,
 } from 'lucide-react';
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { EditableUsageExamplesTable } from '../components/editing/EditableUsageExamplesTable';
-import { EditorToolbarProvider, type EditorToolbarMode } from '../components/editing/EditorToolbarContext';
-import { GlobalEditorToolbar } from '../components/editing/GlobalEditorToolbar';
 import { InlineFormattedText } from '../components/editing/InlineFormattedText';
-import { MarkdownEditor } from '../components/editing/MarkdownEditor';
-import { MarkdownPreview } from '../components/editing/MarkdownPreview';
 import { StyledTextField } from '../components/editing/TextStyleToolbar';
+import {
+  NoteInlineTiptapEditor,
+  NoteTiptapEditor,
+  NoteTiptapToolbar,
+  type NoteTiptapInsertTextRequest,
+  type NoteTiptapToolbarTarget,
+} from '../components/notes/NoteTiptapEditor';
 import { ColorPicker } from '../components/ui/ColorPicker';
 import { CustomSelect } from '../components/ui/CustomSelect';
+import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
 import { EmptyState } from '../components/ui/EmptyState';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
 import { SortableTagList } from '../components/ui/SortableTagList';
 import { TagChip } from '../components/ui/TagChip';
-import {
-  appLimits,
-  cloudSyncEnabled,
-  defaultNewNoteType,
-  defaultNewTagColor,
-  defaultNoteThumbnailVariant,
-  noteTypeOptions,
-  thumbnailOptions,
-} from '../config/appSettings';
-import type { Collection, Note, NoteThumbnail as NoteThumbnailModel, NoteType, RichTextBlock, TagColor } from '../core/models/models';
+import { appLimits, defaultNewTagColor, defaultNoteThumbnailVariant, thumbnailOptions } from '../config/appSettings';
+import type { Collection, Note, NoteBlock, NoteFile, NoteThumbnail as NoteThumbnailModel, Tag, TagColor, TiptapDocument } from '../core/models/models';
+import { chooseNoteAttachment, exportNoteAttachment, openNoteAttachment } from '../core/services/noteFiles';
 import { openExternalUrl } from '../core/services/externalLinks';
-import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
 import { stripInlineFormatting } from '../core/utils/inlineFormatting';
-import { isPrimaryShortcut } from '../core/utils/keyboardShortcuts';
-import { sortTagsByFavoriteOrder } from '../core/utils/tagSorting';
+import {
+  isEditableShortcutTarget,
+  isPlainLetterShortcut,
+} from '../core/utils/keyboardShortcuts';
+import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
+import { richTextToPlainText } from '../core/utils/richText';
 import { useClickOutside } from '../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
+import { sortTagsByFavoriteOrder } from '../core/utils/tagSorting';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
-import { useKnowledgeStore, type NoteEditDraft } from '../store/useKnowledgeStore';
-import { useSyncStore } from '../store/useSyncStore';
+import { useNotesStore, emptyTiptapDocument } from '../store/useNotesStore';
+import { useKnowledgeStore } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
+
+type DeleteBlockState = null | {
+  blockId: string;
+  title: string;
+};
+
+type HeaderTypingRequest = {
+  field: 'subtitle' | 'title';
+  nonce: number;
+  text: string;
+};
+
+type TocEntry = {
+  id: string;
+  label: string;
+  level: 1 | 2 | 3;
+};
 
 export function NoteDetailPage() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { t, locale } = useI18n();
+  const { locale, t } = useI18n();
+  const createStartedRef = useRef(false);
   const isNewNote = id === 'new';
-  const initialType = parseNoteType(searchParams.get('type'));
-  const initialCollectionId = searchParams.get('collection') || null;
-  const linkInputRef = useRef<HTMLInputElement>(null);
-  const documentActionsRef = useRef<HTMLDivElement>(null);
-  const thumbnailPickerRef = useRef<HTMLDivElement>(null);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [tagPickerOpen, setTagPickerOpen] = useState(false);
-  const [thumbnailPickerOpen, setThumbnailPickerOpen] = useState(false);
-  const [exampleOpen, setExampleOpen] = useState(false);
-  const [linkOpen, setLinkOpen] = useState(false);
-  const [exampleText, setExampleText] = useState('');
-  const [linkInput, setLinkInput] = useState('');
-  const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState<TagColor>(defaultNewTagColor);
-  const [editingExampleIndex, setEditingExampleIndex] = useState<number | null>(null);
-  const [editingExampleText, setEditingExampleText] = useState('');
-  const [selectedLinkedNoteId, setSelectedLinkedNoteId] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(isNewNote);
-  const [editorMode, setEditorMode] = useState<EditorToolbarMode>('text');
-  const [savingPage, setSavingPage] = useState(false);
-  const [draft, setDraft] = useState<NoteEditDraft>(() => buildEmptyDraft(initialType, initialCollectionId, t('noteDetail.tip')));
-  const favoriteTagIds = useAppStore((state) => state.settings.favoriteTagIds);
-  const setPinnedNoteState = useAppStore((state) => state.setPinnedNoteState);
-  const notes = useKnowledgeStore((state) => state.notes);
+  const notes = useNotesStore((state) => state.notes);
+  const notesReady = useNotesStore((state) => state.isReady);
+  const createNote = useNotesStore((state) => state.createNote);
+  const markOpened = useNotesStore((state) => state.markNoteOpened);
+  const updateHeader = useNotesStore((state) => state.updateNoteHeader);
+  const updateTags = useNotesStore((state) => state.updateNoteTags);
+  const updateThumbnail = useNotesStore((state) => state.updateNoteThumbnail);
+  const toggleFavorite = useNotesStore((state) => state.toggleFavorite);
+  const addBlock = useNotesStore((state) => state.addBlock);
+  const reorderBlocks = useNotesStore((state) => state.reorderBlocks);
+  const deleteBlock = useNotesStore((state) => state.deleteBlock);
+  const moveToTrash = useNotesStore((state) => state.moveNoteToTrash);
+  const importFileForBlock = useNotesStore((state) => state.importFileForBlock);
+  const deleteFile = useNotesStore((state) => state.deleteFile);
+  const updateLinkedNotes = useNotesStore((state) => state.updateNoteLinkedNotes);
+  const addAdditionalExample = useNotesStore((state) => state.addAdditionalExample);
+  const updateAdditionalExample = useNotesStore((state) => state.updateAdditionalExample);
+  const deleteAdditionalExample = useNotesStore((state) => state.deleteAdditionalExample);
+  const addRelatedLink = useNotesStore((state) => state.addRelatedLink);
+  const deleteRelatedLink = useNotesStore((state) => state.deleteRelatedLink);
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
-  const user = useKnowledgeStore((state) => state.user);
-  const syncConnected = useSyncStore((state) => Boolean(state.syncState?.connected));
-  const accountConnected = cloudSyncEnabled && syncConnected;
-  const isReady = useKnowledgeStore((state) => state.isReady);
-  const toggleFavorite = useKnowledgeStore((state) => state.toggleFavorite);
-  const togglePinned = useKnowledgeStore((state) => state.togglePinned);
-  const moveToTrash = useKnowledgeStore((state) => state.moveToTrash);
-  const duplicateNote = useKnowledgeStore((state) => state.duplicateNote);
-  const markNoteOpened = useKnowledgeStore((state) => state.markNoteOpened);
-  const saveNoteDraft = useKnowledgeStore((state) => state.saveNoteDraft);
-  const createNoteFromDraft = useKnowledgeStore((state) => state.createNoteFromDraft);
-  const updateNoteTags = useKnowledgeStore((state) => state.updateNoteTags);
-  const updateNoteThumbnail = useKnowledgeStore((state) => state.updateNoteThumbnail);
   const createTag = useKnowledgeStore((state) => state.createTag);
-  const addAdditionalExample = useKnowledgeStore((state) => state.addAdditionalExample);
-  const updateAdditionalExample = useKnowledgeStore((state) => state.updateAdditionalExample);
-  const deleteAdditionalExample = useKnowledgeStore((state) => state.deleteAdditionalExample);
-  const addRelatedLink = useKnowledgeStore((state) => state.addRelatedLink);
-  const deleteRelatedLink = useKnowledgeStore((state) => state.deleteRelatedLink);
-  const addLinkedNote = useKnowledgeStore((state) => state.addLinkedNote);
-  const deleteLinkedNote = useKnowledgeStore((state) => state.deleteLinkedNote);
+  const user = useKnowledgeStore((state) => state.user);
+  const settings = useAppStore((state) => state.settings);
+  const favoriteTagIds = useAppStore((state) => state.settings.favoriteTagIds);
   const pushToast = useToastStore((state) => state.pushToast);
+  const linkInputRef = useRef<HTMLInputElement>(null);
+  const [deleteBlockState, setDeleteBlockState] = useState<DeleteBlockState>(null);
+  const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
+  const [dragBlockIds, setDragBlockIds] = useState<string[] | null>(null);
+  const [headerTypingRequest, setHeaderTypingRequest] = useState<HeaderTypingRequest | null>(null);
+  const [firstBlockTypingRequest, setFirstBlockTypingRequest] = useState<NoteTiptapInsertTextRequest | null>(null);
+  const [tocEntries, setTocEntries] = useState<TocEntry[]>([]);
+  const [activeTocId, setActiveTocId] = useState<string | null>(null);
+  const [exampleOpen, setExampleOpen] = useState(false);
+  const [exampleText, setExampleText] = useState('');
+  const [editingExampleIndex, setEditingExampleIndex] = useState<number | null>(null);
+  const [editingExampleText, setEditingExampleText] = useState('');
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkInput, setLinkInput] = useState('');
+  const [selectedLinkedNoteId, setSelectedLinkedNoteId] = useState<string | null>(null);
+  const dragBlockIdsRef = useRef<string[] | null>(null);
+  const draggedBlockIdRef = useRef<string | null>(null);
+  const typingRequestNonceRef = useRef(0);
+  const tocEntriesRef = useRef<TocEntry[]>([]);
+  const tocRefreshFrameRef = useRef<number | null>(null);
+  const [toolbarTarget, setToolbarTarget] = useState<NoteTiptapToolbarTarget | null>(null);
   const note = isNewNote ? undefined : notes.find((item) => item.id === id);
 
-  useClickOutside(documentActionsRef, moreOpen, () => setMoreOpen(false));
-  useClickOutside(thumbnailPickerRef, thumbnailPickerOpen, () => setThumbnailPickerOpen(false));
-
   useEffect(() => {
-    if (isReady && note && !isNewNote) {
-      void markNoteOpened(note.id);
-    }
-  }, [isNewNote, isReady, markNoteOpened, note?.id]);
-
-  useEffect(() => {
-    if (isNewNote) {
-      setIsEditing(true);
-      setEditorMode('text');
-      setDraft(buildEmptyDraft(initialType, initialCollectionId, t('noteDetail.tip')));
+    if (!notesReady || !isNewNote || createStartedRef.current) {
       return;
     }
+    createStartedRef.current = true;
+    void createNote({
+      collectionId: searchParams.get('collection') || settings.primaryCollectionId,
+    }).then((created) => navigate(`/notes/${created.id}`, { replace: true }));
+  }, [createNote, notesReady, isNewNote, navigate, searchParams, settings.primaryCollectionId]);
 
-    if (note && !isEditing) {
-      setDraft(buildDraftFromNote(note, t('noteDetail.tip')));
+  useEffect(() => {
+    if (note && !isNewNote) {
+      void markOpened(note.id);
     }
-  }, [initialCollectionId, initialType, isEditing, isNewNote, note, t]);
+  }, [isNewNote, markOpened, note?.id]);
 
   useEffect(() => {
     if (linkOpen) {
@@ -137,19 +149,35 @@ export function NoteDetailPage() {
     }
   }, [linkOpen]);
 
-  const tagById = new Map(tags.map((tag) => [tag.id, tag]));
-  const noteTags = note ? note.tagIds.flatMap((tagId) => tagById.get(tagId) ?? []) : [];
-  const collectionId = isEditing ? draft.collectionId : note?.collectionId ?? null;
-  const collection = collections.find((item) => item.id === collectionId);
-  const savedCollection = note ? collections.find((item) => item.id === note.collectionId) : undefined;
-  const availableTags = note ? sortTagsByFavoriteOrder(tags.filter((tag) => !note.tagIds.includes(tag.id)), favoriteTagIds) : [];
-  const linkedNotes = note ? note.linkedNoteIds.flatMap((linkedId) => notes.find((item) => item.id === linkedId) ?? []) : [];
-  const backlinkNotes = note ? notes.filter((item) => item.id !== note.id && item.linkedNoteIds.includes(note.id)) : [];
+  const noteTags = useMemo(() => {
+    const tagById = new Map(tags.map((tag) => [tag.id, tag]));
+    return note ? note.tagIds.flatMap((tagId) => tagById.get(tagId) ?? []) : [];
+  }, [note, tags]);
+  const visibleBlocks = useMemo(() => {
+    const blocks = note?.blocks ?? [];
+    if (!dragBlockIds) {
+      return blocks;
+    }
+
+    const blockMap = new Map(blocks.map((block) => [block.id, block]));
+    const ordered = dragBlockIds.flatMap((blockId) => blockMap.get(blockId) ?? []);
+    const orderedIds = new Set(ordered.map((block) => block.id));
+    return [...ordered, ...blocks.filter((block) => !orderedIds.has(block.id))];
+  }, [dragBlockIds, note?.blocks]);
+  const firstBlockId = (note?.blocks ?? [])[0]?.id ?? null;
+  const linkedNotes = useMemo(
+    () => note?.linkedNoteIds.flatMap((linkedId) => notes.find((item) => item.id === linkedId && !item.isTrashed) ?? []) ?? [],
+    [notes, note?.linkedNoteIds],
+  );
+  const backlinkNotes = useMemo(
+    () => (note ? notes.filter((item) => item.id !== note.id && item.linkedNoteIds.includes(note.id)) : []),
+    [notes, note],
+  );
   const linkSearchActive = linkInput.trim().startsWith('/');
   const linkSearchQuery = linkSearchActive ? linkInput.trim().slice(1).toLowerCase() : '';
   const linkableNotes = notes
     .filter((item) => item.id !== note?.id && !item.isTrashed && !note?.linkedNoteIds.includes(item.id))
-    .filter((item) => !linkSearchQuery || stripInlineFormatting(item.title).toLowerCase().includes(linkSearchQuery))
+    .filter((item) => !linkSearchQuery || richTextToPlainText(stripInlineFormatting(item.title)).toLowerCase().includes(linkSearchQuery))
     .slice(0, appLimits.linkedNoteSuggestions);
   const linkableNoteNavigation = useKeyboardListNavigation({
     enabled: linkOpen && linkSearchActive,
@@ -162,55 +190,141 @@ export function NoteDetailPage() {
       }
     },
   });
-  const saveStatusLabel = getSaveStatusLabel({ isEditing, isNewNote, note, saving: savingPage, t });
+
+  const refreshTocEntries = useCallback(() => {
+    if (tocRefreshFrameRef.current) {
+      window.cancelAnimationFrame(tocRefreshFrameRef.current);
+    }
+
+    tocRefreshFrameRef.current = window.requestAnimationFrame(() => {
+      tocRefreshFrameRef.current = null;
+      const nextEntries = collectNoteTocEntries();
+      tocEntriesRef.current = nextEntries;
+      setTocEntries((currentEntries) => (sameTocEntries(currentEntries, nextEntries) ? currentEntries : nextEntries));
+      setActiveTocId(findActiveTocEntryId(nextEntries));
+    });
+  }, []);
 
   useEffect(() => {
-    function handleNoteShortcut(event: KeyboardEvent) {
-      if (!isReady) {
-        return;
-      }
+    if (!toolbarTarget || !note) {
+      return;
+    }
+    if (toolbarTarget.blockId && !(note.blocks ?? []).some((block) => block.id === toolbarTarget.blockId)) {
+      setToolbarTarget(null);
+    }
+  }, [note, toolbarTarget]);
 
-      if (!isEditing && !isNewNote && note && isPrimaryShortcut(event, 'e')) {
-        event.preventDefault();
-        beginPageEdit();
-        return;
-      }
+  useEffect(() => {
+    refreshTocEntries();
+  }, [refreshTocEntries, note?.id, visibleBlocks]);
 
-      if (isEditing && isPrimaryShortcut(event, 's')) {
-        event.preventDefault();
-        if (!savingPage) {
-          void savePageEdit();
-        }
-        return;
-      }
+  useEffect(() => {
+    const blockList = document.querySelector('.note-block-list');
+    if (!blockList) {
+      return undefined;
+    }
 
+    const observer = new MutationObserver(refreshTocEntries);
+    observer.observe(blockList, {
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
+
+    return () => observer.disconnect();
+  }, [refreshTocEntries, note?.id]);
+
+  useEffect(() => {
+    function updateActiveTocEntry() {
+      setActiveTocId(findActiveTocEntryId(tocEntriesRef.current));
+    }
+
+    window.addEventListener('scroll', updateActiveTocEntry, { passive: true });
+    window.addEventListener('resize', updateActiveTocEntry);
+
+    return () => {
+      window.removeEventListener('scroll', updateActiveTocEntry);
+      window.removeEventListener('resize', updateActiveTocEntry);
+      if (tocRefreshFrameRef.current) {
+        window.cancelAnimationFrame(tocRefreshFrameRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleInitialTyping(event: globalThis.KeyboardEvent) {
       if (
-        isEditing &&
-        event.key === 'Escape' &&
-        !event.altKey &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        !event.shiftKey &&
-        !moreOpen &&
-        !tagPickerOpen &&
-        !thumbnailPickerOpen &&
-        !exampleOpen &&
-        !linkOpen
+        !note ||
+        deleteBlockState ||
+        draggedBlockId ||
+        !isPlainTypingShortcut(event) ||
+        isEditableShortcutTarget(event.target)
       ) {
+        return;
+      }
+
+      const request = { nonce: ++typingRequestNonceRef.current, text: event.key };
+      if (!richTextToPlainText(note.title).trim()) {
         event.preventDefault();
-        cancelPageEdit();
+        setHeaderTypingRequest({ ...request, field: 'title' });
+        return;
+      }
+
+      if (!richTextToPlainText(note.subtitle).trim()) {
+        event.preventDefault();
+        setHeaderTypingRequest({ ...request, field: 'subtitle' });
+        return;
+      }
+
+      if (firstBlockId) {
+        event.preventDefault();
+        setFirstBlockTypingRequest(request);
       }
     }
 
-    window.addEventListener('keydown', handleNoteShortcut);
-    return () => window.removeEventListener('keydown', handleNoteShortcut);
-  });
+    window.addEventListener('keydown', handleInitialTyping);
+    return () => window.removeEventListener('keydown', handleInitialTyping);
+  }, [deleteBlockState, draggedBlockId, firstBlockId, note]);
 
-  if (!isReady) {
+  useEffect(() => {
+    if (!draggedBlockId) {
+      return undefined;
+    }
+
+    function handlePointerMove(event: globalThis.PointerEvent) {
+      event.preventDefault();
+      const blockList = document.querySelector('.note-block-list');
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-note-block-id]');
+      if (!blockList || !target || !blockList.contains(target)) {
+        return;
+      }
+
+      const overBlockId = target.dataset.noteBlockId;
+      if (overBlockId) {
+        previewBlockReorder(overBlockId);
+      }
+    }
+
+    function handlePointerEnd() {
+      finishBlockDrag();
+    }
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerEnd);
+    window.addEventListener('pointercancel', handlePointerEnd);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerEnd);
+      window.removeEventListener('pointercancel', handlePointerEnd);
+    };
+  }, [draggedBlockId]);
+
+  if (!notesReady || isNewNote) {
     return null;
   }
 
-  if (!isNewNote && !note) {
+  if (!note) {
     return (
       <div className="page-content list-page-grid">
         <button className="back-button" type="button" onClick={() => navigate(-1)}>
@@ -222,124 +336,26 @@ export function NoteDetailPage() {
     );
   }
 
-  function updateDraft(input: Partial<NoteEditDraft>) {
-    setDraft((current) => ({ ...current, ...input }));
-  }
-
-  function beginPageEdit() {
+  async function addContentBlock(kind: NoteBlock['kind']) {
     if (!note) {
       return;
     }
-
-    setDraft(buildDraftFromNote(note, t('noteDetail.tip')));
-    setEditorMode('text');
-    setIsEditing(true);
-  }
-
-  function cancelPageEdit() {
-    if (isNewNote) {
-      navigate(-1);
-      return;
-    }
-
-    if (note) {
-      setDraft(buildDraftFromNote(note, t('noteDetail.tip')));
-    }
-    setEditorMode('text');
-    setIsEditing(false);
-  }
-
-  async function savePageEdit() {
-    if (!draft.title.trim()) {
-      pushToast(t('noteDetail.titleRequired'), 'warning');
-      return;
-    }
-
-    setSavingPage(true);
-    try {
-      if (isNewNote) {
-        const created = await createNoteFromDraft(draft);
-        if (!created) {
-          pushToast(t('noteDetail.titleRequired'), 'warning');
-          return;
-        }
-
-        pushToast(t('noteDetail.noteCreated'), 'success');
-        setIsEditing(false);
-        navigate(`/notes/${created.id}`, { replace: true });
-        return;
-      }
-
-      if (!note) {
-        return;
-      }
-
-      const updated = await saveNoteDraft(note.id, draft);
-      if (!updated) {
-        pushToast(t('noteDetail.titleRequired'), 'warning');
-        return;
-      }
-
-      setDraft(buildDraftFromNote(updated, t('noteDetail.tip')));
-      setIsEditing(false);
-      pushToast(t('noteDetail.noteSaved'), 'success');
-    } finally {
-      setSavingPage(false);
+    const block = await addBlock(note.id, {
+      kind,
+      contentJson: kind === 'content' ? emptyTiptapDocument : null,
+    });
+    if (block) {
+      requestAnimationFrame(() => document.getElementById(`block-${block.id}`)?.scrollIntoView({ block: 'center' }));
     }
   }
 
-  async function removeTag(tagId: string) {
-    if (!note) {
+  async function confirmDeleteBlock() {
+    if (!note || !deleteBlockState) {
       return;
     }
-
-    await updateNoteTags(note.id, note.tagIds.filter((tag) => tag !== tagId));
-    pushToast(t('noteDetail.tagUpdated'), 'success');
-  }
-
-  async function addTag(tagId: string) {
-    if (!note) {
-      return;
-    }
-
-    await updateNoteTags(note.id, [...note.tagIds, tagId]);
-    setTagPickerOpen(false);
-    pushToast(t('noteDetail.tagUpdated'), 'success');
-  }
-
-  async function reorderNoteTags(tagIds: string[]) {
-    if (!note) {
-      return;
-    }
-
-    await updateNoteTags(note.id, tagIds);
-  }
-
-  async function createAndAddTag() {
-    if (!note) {
-      return;
-    }
-
-    const created = await createTag(newTagName, newTagColor);
-    if (!created) {
-      return;
-    }
-
-    await updateNoteTags(note.id, [...note.tagIds, created.id]);
-    setNewTagName('');
-    setNewTagColor(defaultNewTagColor);
-    setTagPickerOpen(false);
-    pushToast(t('noteDetail.tagCreated'), 'success');
-  }
-
-  async function selectThumbnail(variant: NoteThumbnailModel['variant']) {
-    if (!note) {
-      return;
-    }
-
-    await updateNoteThumbnail(note.id, { variant });
-    setThumbnailPickerOpen(false);
-    pushToast(t('noteDetail.thumbnailUpdated'), 'success');
+    await deleteBlock(note.id, deleteBlockState.blockId);
+    setDeleteBlockState(null);
+    pushToast(t('notes.blockDeleted'), 'warning');
   }
 
   function startExampleEdit(index: number, example: string) {
@@ -369,7 +385,7 @@ export function NoteDetailPage() {
     }
 
     setSelectedLinkedNoteId(selected.id);
-    setLinkInput(stripInlineFormatting(selected.title));
+    setLinkInput(richTextToPlainText(stripInlineFormatting(selected.title)) || t('notes.untitled'));
   }
 
   async function saveRelatedLink() {
@@ -378,7 +394,7 @@ export function NoteDetailPage() {
     }
 
     if (selectedLinkedNoteId) {
-      await addLinkedNote(note.id, selectedLinkedNoteId);
+      await updateLinkedNotes(note.id, [...note.linkedNoteIds, selectedLinkedNoteId]);
     } else {
       const href = normalizeExternalHref(linkInput);
       const title = titleFromExternalHref(linkInput);
@@ -395,617 +411,547 @@ export function NoteDetailPage() {
     pushToast(t('noteDetail.linkAdded'), 'success');
   }
 
+  function startBlockDrag(event: PointerEvent<HTMLButtonElement>, blockId: string) {
+    if (!note) {
+      return;
+    }
+    if (event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const blockIds = (note.blocks ?? []).map((block) => block.id);
+    dragBlockIdsRef.current = blockIds;
+    draggedBlockIdRef.current = blockId;
+    setDragBlockIds(blockIds);
+    setDraggedBlockId(blockId);
+  }
+
+  function previewBlockReorder(overBlockId: string) {
+    const activeBlockId = draggedBlockIdRef.current;
+    if (!note || !activeBlockId || activeBlockId === overBlockId) {
+      return;
+    }
+    setDragBlockIds((current) => {
+      const blockIds = current ?? (note.blocks ?? []).map((block) => block.id);
+      const fromIndex = blockIds.indexOf(activeBlockId);
+      const toIndex = blockIds.indexOf(overBlockId);
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+        return current;
+      }
+      const nextIds = [...blockIds];
+      const [moved] = nextIds.splice(fromIndex, 1);
+      nextIds.splice(toIndex, 0, moved);
+      dragBlockIdsRef.current = nextIds;
+      return nextIds;
+    });
+  }
+
+  function finishBlockDrag() {
+    if (!note) {
+      return;
+    }
+    const nextIds = dragBlockIdsRef.current;
+    const currentIds = (note.blocks ?? []).map((block) => block.id);
+    setDraggedBlockId(null);
+    dragBlockIdsRef.current = null;
+    draggedBlockIdRef.current = null;
+
+    if (!nextIds || arraysEqual(nextIds, currentIds)) {
+      setDragBlockIds(null);
+      return;
+    }
+
+    void reorderBlocks(note.id, nextIds).finally(() => setDragBlockIds(null));
+  }
+
   return (
-    <EditorToolbarProvider mode={editorMode} onModeChange={setEditorMode}>
-      {isEditing ? (
-        <GlobalEditorToolbar
-          saving={savingPage}
-          onCancel={cancelPageEdit}
-          onSave={savePageEdit}
-        />
-      ) : null}
+    <>
       <header className="document-top">
-        <button
-          className="back-button"
-          type="button"
-          onClick={() => navigate(-1)}
-        >
+        <button className="back-button" type="button" onClick={() => navigate(-1)}>
           <ChevronLeft />
-          {t("common.back")}
+          {t('common.back')}
         </button>
-        <div className="document-actions" ref={documentActionsRef}>
-          {note ? (
-            <button
-              className={
-                note.isFavorite
-                  ? "icon-button document-actions__favorite is-active"
-                  : "icon-button document-actions__favorite"
-              }
-              type="button"
-              aria-label={
-                note.isFavorite ? t("common.unfavorite") : t("common.favorite")
-              }
-              aria-pressed={note.isFavorite}
-              onClick={() => {
-                void toggleFavorite(note.id).then(() =>
-                  pushToast(t("notes.favoriteChanged"), "success"),
-                );
-              }}
-            >
-              <Star />
-            </button>
-          ) : null}
+        <div className="document-top-toolbar">
+          <NoteTiptapToolbar
+            target={toolbarTarget}
+            t={t}
+          />
+        </div>
+        <div className="document-actions">
+          <button
+            className={note.isFavorite ? 'icon-button document-actions__favorite is-active' : 'icon-button document-actions__favorite'}
+            type="button"
+            aria-label={note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
+            aria-pressed={note.isFavorite}
+            onClick={() => void toggleFavorite(note.id)}
+          >
+            <Star />
+          </button>
           <span className="inline-actions">
             <FileText />
-            {saveStatusLabel}
+            {t('noteDetail.savedLocal')}
           </span>
-          {note ? (
-            <>
-              <button
-                className="icon-button"
-                type="button"
-                aria-label={t("common.more")}
-                onClick={() => setMoreOpen((value) => !value)}
-              >
-                <MoreVertical />
-              </button>
-              {moreOpen ? (
-                <div className="floating-menu document-menu">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void togglePinned(note.id)
-                        .then(() => setPinnedNoteState(note.id, !note.isPinned))
-                        .then(() =>
-                          pushToast(t("notes.pinChanged"), "success"),
-                        );
-                      setMoreOpen(false);
-                    }}
-                  >
-                    <Pin />
-                    {note.isPinned ? t("common.unpin") : t("common.pin")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void duplicateNote(
-                        note.id,
-                        `${stripInlineFormatting(note.title)} (${t("common.copy")})`,
-                      ).then((created) => {
-                        pushToast(t("notes.duplicated"), "success");
-                        if (created) {
-                          navigate(`/notes/${created.id}`);
-                        }
-                      });
-                      setMoreOpen(false);
-                    }}
-                  >
-                    <Copy />
-                    {t("common.duplicate")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void moveToTrash(note.id).then(() => {
-                        pushToast(t("notes.trashChanged"), "warning");
-                        navigate("/trash");
-                      });
-                    }}
-                  >
-                    <Trash2 />
-                    {t("notes.moveToTrash")}
-                  </button>
-                </div>
-              ) : null}
-            </>
-          ) : null}
+          <button
+            className="icon-button danger"
+            type="button"
+            aria-label={t('notes.moveToTrash')}
+            onClick={() => {
+              void moveToTrash(note.id).then(() => {
+                pushToast(t('notes.trashChanged'), 'warning');
+                navigate('/trash');
+              });
+            }}
+          >
+            <Trash2 />
+          </button>
         </div>
       </header>
 
-      <div className={note ? "document-shell" : "document-shell single-column"}>
-        <article className="document-main">
-          <div className="document-heading">
-            <div className="document-meta-row">
-              {isEditing ? (
-                <CollectionSelect
-                  collections={collections}
-                  value={draft.collectionId}
-                  onChange={(collectionId) => updateDraft({ collectionId })}
-                />
-              ) : (
-                <CollectionBreadcrumb
-                  collection={collection}
-                  emptyText={t("noteDetail.noCollection")}
-                />
-              )}
-
-              {!isEditing ? (
-                <div className="document-edit-actions">
-                  <button
-                    className="editor-cancel-button"
-                    type="button"
-                    onClick={beginPageEdit}
-                  >
-                    <Pencil />
-                    {t("editor.edit")}
-                  </button>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="document-title-row">
-              <div className="document-title-stack">
-                {isEditing ? (
-                  <StyledTextField
-                    autoFocus
-                    className="document-title-styled-field"
-                    controlClassName="editable-control document-title-input"
-                    disabled={savingPage}
-                    multiline
-                    onChange={(title) => updateDraft({ title })}
-                    placeholder={t("noteDetail.titlePlaceholder")}
-                    rows={3}
-                    value={draft.title}
-                  />
-                ) : (
-                  <h1 className="document-title">
-                    <InlineFormattedText value={note?.title} />
-                  </h1>
-                )}
-              </div>
-
-              {note ? (
-                <ThumbnailPicker
-                  current={note.thumbnail}
-                  onOpenChange={setThumbnailPickerOpen}
-                  onSelect={(variant) => void selectThumbnail(variant)}
-                  open={thumbnailPickerOpen}
-                  pickerRef={thumbnailPickerRef}
-                  t={t}
-                />
-              ) : null}
-            </div>
-
-            {noteTags.length ? (
-              <div className="tag-row document-title-tags">
-                {noteTags.map((tag) => (
-                  <TagChip
-                    key={tag.id}
-                    tag={tag}
-                    href={`/notes?tag=${tag.id}`}
-                  />
-                ))}
-              </div>
-            ) : null}
-
-            {isEditing ? (
-              <StyledTextField
-                className="document-intro-styled-field"
-                controlClassName="editable-control document-intro-input"
-                disabled={savingPage}
-                multiline
-                onChange={(intro) => updateDraft({ intro })}
-                placeholder={t("noteDetail.introPlaceholder")}
-                value={draft.intro}
+      <div className="note-document-shell">
+        <aside className="note-toc" aria-label={t('notes.tableOfContents')}>
+          <div className="note-toc-dashes" aria-hidden="true">
+            {tocEntries.map((entry) => (
+              <span
+                className={[
+                  'note-toc-dash',
+                  `note-toc-dash--level-${entry.level}`,
+                  activeTocId === entry.id && 'is-active',
+                ].filter(Boolean).join(' ')}
+                key={entry.id}
               />
-            ) : (
-              <p className="document-intro">
-                <InlineFormattedText value={note?.content.intro} />
-              </p>
-            )}
+            ))}
           </div>
-
-          <section className="content-section">
-            <h2 className="section-title">{t("noteDetail.summary")}</h2>
-            {isEditing ? (
-              <MarkdownEditor
-                bare
-                label={t("noteDetail.summary")}
-                onChange={(summaryMarkdown) => updateDraft({ summaryMarkdown })}
-                placeholder={t("noteDetail.summaryPlaceholder")}
-                rows={8}
-                showActions={false}
-                showTabs={false}
-                showToolbar={false}
-                value={draft.summaryMarkdown}
-              />
-            ) : (
-              <MarkdownPreview
-                emptyText={t("noteDetail.emptySummary")}
-                value={blocksToMarkdown(note?.content.summary)}
-              />
-            )}
-          </section>
-
-          <section className="content-section">
-            <h2 className="section-title">{t("noteDetail.explanation")}</h2>
-            {isEditing ? (
-              <MarkdownEditor
-                bare
-                label={t("noteDetail.explanation")}
-                onChange={(explanationMarkdown) =>
-                  updateDraft({ explanationMarkdown })
-                }
-                placeholder={t("noteDetail.explanationPlaceholder")}
-                rows={10}
-                showActions={false}
-                showTabs={false}
-                showToolbar={false}
-                value={draft.explanationMarkdown}
-              />
-            ) : (
-              <MarkdownPreview
-                emptyText={t("noteDetail.emptyExplanation")}
-                value={blocksToMarkdown(note?.content.explanation)}
-              />
-            )}
-          </section>
-
-          <section className="content-section">
-            <h2 className="section-title">{t("noteDetail.usageExamples")}</h2>
-            <EditableUsageExamplesTable
-              controlledEditing={isEditing}
-              onRowsChange={(usageExamples) => updateDraft({ usageExamples })}
-              readOnly
-              rows={
-                isEditing
-                  ? draft.usageExamples
-                  : (note?.content.usageExamples?.rows ?? [])
-              }
-            />
-          </section>
-
-          {isEditing ? (
-            <EditableDraftTip
-              body={draft.tipBody}
-              onChange={(tipBody) =>
-                updateDraft({
-                  tipBody,
-                  tipTitle: draft.tipTitle || t("noteDetail.tip"),
-                })
-              }
-              title={draft.tipTitle || t("noteDetail.tip")}
-            />
-          ) : note?.content.tip ? (
-            <TipPreview
-              body={note.content.tip.body}
-              title={note.content.tip.title}
-            />
-          ) : null}
-
-          {note ? (
-            <footer className="document-footer-stats">
-              <span>
-                {note.stats.wordCount} {t("noteDetail.words")} •{" "}
-                {note.stats.characterCount} {t("noteDetail.characters")}
-              </span>
-              <span>
-                {t("noteDetail.updatedAt")}:{" "}
-                {formatDate(note.updatedAt, locale)}
-              </span>
-            </footer>
-          ) : null}
-        </article>
-
-        {note ? (
-          <aside className="document-aside">
-            <Panel title={t("noteDetail.metadata")}>
-              <div className="meta-list">
-                <div className="meta-row">
-                  <span>{t("noteDetail.createdAt")}</span>
-                  <span className="meta-value">
-                    {formatDate(note.createdAt, locale)}
-                  </span>
-                </div>
-                <div className="meta-row">
-                  <span>{t("noteDetail.updatedAt")}</span>
-                  <span className="meta-value">
-                    {formatDate(note.updatedAt, locale)}
-                  </span>
-                </div>
-                <div className="meta-row">
-                  <span>{t("noteDetail.collectionLabel")}</span>
-                  <span className="meta-value">{savedCollection?.name}</span>
-                </div>
-                <div className="meta-row">
-                  <span>{t("noteDetail.author")}</span>
-                  <span className="meta-value">
-                    {accountConnected ? user?.name : t("profile.localUser")}
-                  </span>
-                </div>
-              </div>
-            </Panel>
-
-            <Panel title={t("noteDetail.tags")}>
-              {noteTags.length ? (
-                <SortableTagList
-                  ariaLabel={t("noteDetail.reorderTags")}
-                  className="document-tag-sortable-list"
-                  getHref={(tag) => `/notes?tag=${tag.id}`}
-                  onRemove={(tagId) => void removeTag(tagId)}
-                  onReorder={(tagIds) => reorderNoteTags(tagIds)}
-                  removable
-                  tags={noteTags}
-                />
-              ) : null}
-              <button
-                className="nav-item nav-item--spaced"
-                type="button"
-                onClick={() => setTagPickerOpen((value) => !value)}
-              >
-                <Plus />
-                {t("noteDetail.addTag")}
-              </button>
-              {tagPickerOpen ? (
-                <div className="tag-picker-panel">
-                  {availableTags.length ? (
-                    <div className="inline-picker">
-                      {availableTags.map((tag) => (
-                        <button
-                          key={tag.id}
-                          type="button"
-                          onClick={() => void addTag(tag.id)}
-                        >
-                          <TagChip tag={tag} />
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="inline-help">
-                      {t("noteDetail.noTagsAvailable")}
-                    </p>
-                  )}
-                  <form
-                    className="inline-form tag-create-form"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      void createAndAddTag();
+          <div className="note-toc-content">
+            {tocEntries.length ? (
+              <nav>
+                {tocEntries.map((entry) => (
+                  <button
+                    className={[
+                      'note-toc-link',
+                      `note-toc-link--level-${entry.level}`,
+                      activeTocId === entry.id && 'is-active',
+                    ].filter(Boolean).join(' ')}
+                    key={entry.id}
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget.blur();
+                      scrollToTocEntry(entry.id);
                     }}
                   >
-                    <input
-                      value={newTagName}
-                      onChange={(event) => setNewTagName(event.target.value)}
-                      placeholder={t("noteDetail.newTagPlaceholder")}
-                    />
-                    <ColorPicker
-                      ariaLabel={t("profile.labels.color")}
-                      onChange={setNewTagColor}
-                      value={newTagColor}
-                    />
-                    <button type="submit">
-                      {t("noteDetail.createAndAddTag")}
-                    </button>
-                  </form>
-                </div>
-              ) : null}
-            </Panel>
+                    {entry.label}
+                  </button>
+                ))}
+              </nav>
+            ) : (
+              <span className="note-toc-empty">{t('notes.emptyToc')}</span>
+            )}
+          </div>
+        </aside>
 
-            <Panel title={t("noteDetail.additionalExamples")}>
-              <ul className="side-list">
-                {note.content.additionalExamples?.map((example, index) => (
-                  <li className="side-edit-row" key={`${example}-${index}`}>
-                    {editingExampleIndex === index ? (
-                      <span className="side-edit-form">
-                        <StyledTextField
-                          className="side-styled-field"
-                          controlClassName="side-styled-field__control"
-                          multiline
-                          value={editingExampleText}
-                          onChange={setEditingExampleText}
-                        />
-                        <span className="side-row-actions">
-                          <button
-                            className="icon-button"
-                            type="button"
-                            aria-label={t("editor.accept")}
-                            onClick={() => void saveExampleEdit(index)}
-                          >
-                            <Check />
-                          </button>
-                          <button
-                            className="icon-button"
-                            type="button"
-                            aria-label={t("common.cancel")}
-                            onClick={cancelExampleEdit}
-                          >
-                            <X />
-                          </button>
-                        </span>
+        <main className="note-document-main">
+          <NoteHeader
+            collections={collections}
+            note={note}
+            noteTags={noteTags}
+            onChange={(input) => void updateHeader(note.id, input)}
+            onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
+            onThumbnailChange={(thumbnail) => void updateThumbnail(note.id, thumbnail)}
+            onToolbarTargetChange={setToolbarTarget}
+            t={t}
+            typingRequest={headerTypingRequest}
+          />
+
+          <section className={draggedBlockId ? 'note-block-list is-reordering' : 'note-block-list'}>
+            {visibleBlocks.map((block) => (
+              <BlockEditor
+                block={block}
+                contentTypingRequest={block.id === firstBlockId ? firstBlockTypingRequest : null}
+                dragged={draggedBlockId === block.id}
+                key={block.id}
+                noteId={note.id}
+                onDelete={() => setDeleteBlockState({ blockId: block.id, title: richTextToPlainText(block.title).trim() || t('notes.untitledBlock') })}
+                onDragStart={(event) => startBlockDrag(event, block.id)}
+                onRequestFileUpload={async () => {
+                  const sourcePath = await chooseNoteAttachment();
+                  if (!sourcePath) {
+                    return null;
+                  }
+                  const file = await importFileForBlock(sourcePath, note.id, block.id);
+                  if (file) {
+                    pushToast(t('notes.fileAdded'), 'success');
+                  }
+                  return file;
+                }}
+                onToolbarTargetChange={setToolbarTarget}
+                onTocChange={refreshTocEntries}
+              />
+            ))}
+          </section>
+
+          <div className="note-add-block-row">
+            <button type="button" aria-label={t('notes.addContentBlock')} title={t('notes.addContentBlock')} onClick={() => void addContentBlock('content')}>
+              +
+            </button>
+          </div>
+        </main>
+
+        <aside className="document-aside note-document-aside">
+          <Panel title={t('noteDetail.metadata')}>
+            <div className="meta-list">
+              <div className="meta-row">
+                <span>{t('noteDetail.createdAt')}</span>
+                <span className="meta-value">{formatDate(note.createdAt, locale)}</span>
+              </div>
+              <div className="meta-row">
+                <span>{t('noteDetail.updatedAt')}</span>
+                <span className="meta-value">{formatDate(note.updatedAt, locale)}</span>
+              </div>
+              <div className="meta-row">
+                <span>{t('noteDetail.collectionLabel')}</span>
+                <span className="meta-value">{collections.find((collection) => collection.id === note.collectionId)?.name ?? t('noteDetail.noCollection')}</span>
+              </div>
+              <div className="meta-row">
+                <span>{t('noteDetail.author')}</span>
+                <span className="meta-value">{user?.name || note.authorId || 'Local user'}</span>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title={t('noteDetail.tags')}>
+            <TagEditor
+              favoriteTagIds={favoriteTagIds}
+              note={note}
+              noteTags={noteTags}
+              onCreateTag={createTag}
+              onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
+              tags={tags}
+            />
+          </Panel>
+
+          <Panel title={t('noteDetail.additionalExamples')}>
+            <ul className="side-list">
+              {note.additionalExamples?.map((example, index) => (
+                <li className="side-edit-row" key={`${example}-${index}`}>
+                  {editingExampleIndex === index ? (
+                    <span className="side-edit-form">
+                      <StyledTextField
+                        className="side-styled-field"
+                        controlClassName="side-styled-field__control"
+                        multiline
+                        value={editingExampleText}
+                        onChange={setEditingExampleText}
+                      />
+                      <span className="side-row-actions">
+                        <button className="icon-button" type="button" aria-label={t('editor.accept')} onClick={() => void saveExampleEdit(index)}>
+                          <Check />
+                        </button>
+                        <button className="icon-button" type="button" aria-label={t('common.cancel')} onClick={cancelExampleEdit}>
+                          <X />
+                        </button>
                       </span>
+                    </span>
+                  ) : (
+                    <>
+                      <span>
+                        <InlineFormattedText value={example} />
+                      </span>
+                      <span className="side-row-actions">
+                        <button className="icon-button" type="button" aria-label={t('editor.edit')} onClick={() => startExampleEdit(index, example)}>
+                          <Pencil />
+                        </button>
+                        <button
+                          className="icon-button danger"
+                          type="button"
+                          aria-label={t('common.remove')}
+                          onClick={() => void deleteAdditionalExample(note.id, index).then(() => pushToast(t('noteDetail.exampleDeleted'), 'warning'))}
+                        >
+                          <Trash2 />
+                        </button>
+                      </span>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <button className="nav-item nav-item--spaced" type="button" onClick={() => setExampleOpen((value) => !value)}>
+              <Plus />
+              {t('noteDetail.addExample')}
+            </button>
+            {exampleOpen ? (
+              <form
+                className="inline-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void addAdditionalExample(note.id, exampleText).then(() => {
+                    setExampleText('');
+                    setExampleOpen(false);
+                    pushToast(t('noteDetail.exampleAdded'), 'success');
+                  });
+                }}
+              >
+                <StyledTextField
+                  className="side-styled-field"
+                  controlClassName="side-styled-field__control"
+                  multiline
+                  value={exampleText}
+                  onChange={setExampleText}
+                  placeholder={t('noteDetail.examplePlaceholder')}
+                />
+                <button type="submit">{t('common.save')}</button>
+              </form>
+            ) : null}
+          </Panel>
+
+          <Panel title={t('noteDetail.relatedLinks')}>
+            <div className="side-list">
+              {linkedNotes.map((linkedNote) => (
+                <LinkedNoteRow
+                  key={linkedNote.id}
+                  noteId={linkedNote.id}
+                  title={linkedNote.title}
+                  onRemove={() => void updateLinkedNotes(note.id, note.linkedNoteIds.filter((linkedId) => linkedId !== linkedNote.id)).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'))}
+                />
+              ))}
+              {note.relatedLinks?.map((link) => (
+                <RelatedLinkRow
+                  key={link.id}
+                  href={link.href}
+                  title={link.title}
+                  onRemove={() => void deleteRelatedLink(note.id, link.id).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'))}
+                />
+              ))}
+            </div>
+            <button className="nav-item nav-item--spaced" type="button" onClick={() => setLinkOpen((value) => !value)}>
+              <Plus />
+              {t('noteDetail.addLink')}
+            </button>
+            {linkOpen ? (
+              <form
+                className="inline-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void saveRelatedLink();
+                }}
+              >
+                <input
+                  ref={linkInputRef}
+                  value={linkInput}
+                  onChange={(event) => {
+                    setLinkInput(event.target.value);
+                    setSelectedLinkedNoteId(null);
+                  }}
+                  onKeyDown={linkSearchActive ? linkableNoteNavigation.onKeyDown : undefined}
+                  placeholder={t('noteDetail.linkInputPlaceholder')}
+                  title={t('noteDetail.linkInputPlaceholder')}
+                />
+                {linkSearchActive ? (
+                  <div className="note-link-picker">
+                    {linkableNotes.length ? (
+                      linkableNotes.map((linkableNote, linkIndex) => (
+                        <button
+                          className={linkIndex === linkableNoteNavigation.activeIndex ? 'active' : undefined}
+                          key={linkableNote.id}
+                          type="button"
+                          onClick={() => selectLinkedNote(linkableNote.id)}
+                          onMouseEnter={() => linkableNoteNavigation.setActiveIndex(linkIndex)}
+                        >
+                          <FileText />
+                          {richTextToPlainText(linkableNote.title).trim() ? <InlineFormattedText value={linkableNote.title} /> : t('notes.untitled')}
+                        </button>
+                      ))
                     ) : (
-                      <>
-                        <span>
-                          <InlineFormattedText value={example} />
-                        </span>
-                        <span className="side-row-actions">
-                          <button
-                            className="icon-button"
-                            type="button"
-                            aria-label={t("editor.edit")}
-                            onClick={() => startExampleEdit(index, example)}
-                          >
-                            <Pencil />
-                          </button>
-                          <button
-                            className="icon-button danger"
-                            type="button"
-                            aria-label={t("common.remove")}
-                            onClick={() => {
-                              void deleteAdditionalExample(note.id, index).then(
-                                () =>
-                                  pushToast(
-                                    t("noteDetail.exampleDeleted"),
-                                    "warning",
-                                  ),
-                              );
-                            }}
-                          >
-                            <Trash2 />
-                          </button>
-                        </span>
-                      </>
+                      <span>{t('noteDetail.noLinkableNotes')}</span>
                     )}
+                  </div>
+                ) : null}
+                <button type="submit">{t('common.save')}</button>
+              </form>
+            ) : null}
+            {backlinkNotes.length ? (
+              <div className="backlink-section">
+                <h3>{t('noteDetail.backlinks')}</h3>
+                <div className="side-list">
+                  {backlinkNotes.map((backlink) => (
+                    <LinkedNoteRow key={backlink.id} noteId={backlink.id} title={backlink.title} />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </Panel>
+
+          <Panel title={t('notes.files')}>
+            {note.files?.length ? (
+              <ul className="side-list note-file-side-list">
+                {note.files.map((file) => (
+                  <li key={file.id}>
+                    {file.kind === 'image' ? <ImageIcon /> : <FileText />}
+                    <span>{file.originalName}</span>
+                    <span className="side-list-actions">
+                      <button className="icon-button" type="button" aria-label={t('common.open')} onClick={() => void openNoteAttachment(file.relativePath)}>
+                        <FileText />
+                      </button>
+                      <button className="icon-button" type="button" aria-label={t('common.export')} onClick={() => void exportNoteAttachment(file)}>
+                        <Download />
+                      </button>
+                      <button
+                        className="icon-button danger"
+                        type="button"
+                        aria-label={t('common.delete')}
+                        onClick={() => void deleteFile(note.id, file.id).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'))}
+                      >
+                        <Trash2 />
+                      </button>
+                    </span>
                   </li>
                 ))}
               </ul>
-              <button
-                className="nav-item nav-item--spaced"
-                type="button"
-                onClick={() => setExampleOpen((value) => !value)}
-              >
-                <Plus />
-                {t("noteDetail.addExample")}
-              </button>
-              {exampleOpen ? (
-                <form
-                  className="inline-form"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void addAdditionalExample(note.id, exampleText).then(() => {
-                      setExampleText("");
-                      setExampleOpen(false);
-                      pushToast(t("noteDetail.exampleAdded"), "success");
-                    });
-                  }}
-                >
-                  <StyledTextField
-                    className="side-styled-field"
-                    controlClassName="side-styled-field__control"
-                    multiline
-                    value={exampleText}
-                    onChange={setExampleText}
-                    placeholder={t("noteDetail.examplePlaceholder")}
-                  />
-                  <button type="submit">{t("common.save")}</button>
-                </form>
-              ) : null}
-            </Panel>
-
-            <Panel title={t("noteDetail.relatedLinks")}>
-              <div className="side-list">
-                {linkedNotes.map((linkedNote) => (
-                  <LinkedNoteRow
-                    key={linkedNote.id}
-                    noteId={linkedNote.id}
-                    title={linkedNote.title}
-                    onRemove={() => {
-                      void deleteLinkedNote(note.id, linkedNote.id).then(() =>
-                        pushToast(t("noteDetail.linkDeleted"), "warning"),
-                      );
-                    }}
-                  />
-                ))}
-                {note.relatedLinks?.map((link) => (
-                  <RelatedLinkRow
-                    key={link.id}
-                    href={link.href}
-                    title={link.title}
-                    onRemove={() => {
-                      void deleteRelatedLink(note.id, link.id).then(() =>
-                        pushToast(t("noteDetail.linkDeleted"), "warning"),
-                      );
-                    }}
-                  />
-                ))}
-              </div>
-              <button
-                className="nav-item nav-item--spaced"
-                type="button"
-                onClick={() => setLinkOpen((value) => !value)}
-              >
-                <Plus />
-                {t("noteDetail.addLink")}
-              </button>
-              {linkOpen ? (
-                <form
-                  className="inline-form"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void saveRelatedLink();
-                  }}
-                >
-                  <input
-                    ref={linkInputRef}
-                    value={linkInput}
-                    onChange={(event) => {
-                      setLinkInput(event.target.value);
-                      setSelectedLinkedNoteId(null);
-                    }}
-                    onKeyDown={
-                      linkSearchActive
-                        ? linkableNoteNavigation.onKeyDown
-                        : undefined
-                    }
-                    placeholder={t("noteDetail.linkInputPlaceholder")}
-                    title={t("noteDetail.linkInputPlaceholder")}
-                  />
-                  {linkSearchActive ? (
-                    <div className="note-link-picker">
-                      {linkableNotes.length ? (
-                        linkableNotes.map((linkableNote, linkIndex) => (
-                          <button
-                            className={
-                              linkIndex === linkableNoteNavigation.activeIndex
-                                ? "active"
-                                : undefined
-                            }
-                            key={linkableNote.id}
-                            type="button"
-                            onClick={() => selectLinkedNote(linkableNote.id)}
-                            onMouseEnter={() =>
-                              linkableNoteNavigation.setActiveIndex(linkIndex)
-                            }
-                          >
-                            <FileText />
-                            <InlineFormattedText value={linkableNote.title} />
-                          </button>
-                        ))
-                      ) : (
-                        <span>{t("noteDetail.noLinkableNotes")}</span>
-                      )}
-                    </div>
-                  ) : null}
-                  <button type="submit">{t("common.save")}</button>
-                </form>
-              ) : null}
-              {backlinkNotes.length ? (
-                <div className="backlink-section">
-                  <h3>{t("noteDetail.backlinks")}</h3>
-                  <div className="side-list">
-                    {backlinkNotes.map((backlink) => (
-                      <LinkedNoteRow
-                        key={backlink.id}
-                        noteId={backlink.id}
-                        title={backlink.title}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </Panel>
-          </aside>
-        ) : null}
+            ) : (
+              <p className="inline-help">{t('notes.noFiles')}</p>
+            )}
+          </Panel>
+        </aside>
       </div>
-    </EditorToolbarProvider>
+
+      {deleteBlockState ? (
+        <DeleteConfirmModal
+          cancelLabel={t('common.cancel')}
+          confirmLabel={t('common.delete')}
+          description={t('notes.deleteBlockDescription', { title: deleteBlockState.title })}
+          onCancel={() => setDeleteBlockState(null)}
+          onConfirm={() => void confirmDeleteBlock()}
+          title={t('notes.deleteBlockTitle')}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function NoteHeader({
+  collections,
+  note,
+  noteTags,
+  onChange,
+  onTagsChange,
+  onThumbnailChange,
+  onToolbarTargetChange,
+  t,
+  typingRequest,
+}: {
+  collections: Collection[];
+  note: Note;
+  noteTags: Tag[];
+  onChange: (input: { collectionId?: string | null; subtitle?: string; title?: string }) => void;
+  onTagsChange: (tagIds: string[]) => void;
+  onThumbnailChange: (thumbnail: NoteThumbnailModel) => void;
+  onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
+  t: ReturnType<typeof useI18n>['t'];
+  typingRequest?: HeaderTypingRequest | null;
+}) {
+  const [title, setTitle] = useState(note.title);
+  const [subtitle, setSubtitle] = useState(note.subtitle);
+  const [collectionId, setCollectionId] = useState(note.collectionId ?? '');
+  const saveTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setTitle(note.title);
+    setSubtitle(note.subtitle);
+    setCollectionId(note.collectionId ?? '');
+  }, [note.id, note.title, note.subtitle, note.collectionId]);
+
+  useEffect(() => {
+    if (title === note.title && subtitle === note.subtitle && collectionId === (note.collectionId ?? '')) {
+      return undefined;
+    }
+    if (saveTimeoutRef.current) {
+      window.clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = window.setTimeout(() => {
+      onChange({ title, subtitle, collectionId: collectionId || null });
+    }, 650);
+    return () => {
+      if (saveTimeoutRef.current) {
+        window.clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [collectionId, note.collectionId, note.subtitle, note.title, onChange, subtitle, title]);
+
+  const selectedCollection = collections.find((collection) => collection.id === collectionId);
+
+  return (
+    <section className="document-heading note-document-heading">
+      <div className="document-meta-row">
+        <div className={`editable-collection-field editing ${selectedCollection?.color ?? 'neutral'}`}>
+          <Folder />
+          <CustomSelect
+            ariaLabel={t('noteDetail.collectionLabel')}
+            emptyText={t('notes.filters.noCollections')}
+            onChange={setCollectionId}
+            options={[
+              { label: t('noteDetail.noCollection'), value: '' },
+              ...collections.map((collection) => ({
+                color: collection.color,
+                label: collection.name,
+                value: collection.id,
+              })),
+            ]}
+            value={collectionId}
+          />
+        </div>
+      </div>
+
+      <div className="document-title-row">
+        <div className="document-title-stack">
+          <NoteInlineTiptapEditor
+            className="document-title-input note-title-input"
+            id={`note-title-${note.id}`}
+            insertTextRequest={typingRequest?.field === 'title' ? typingRequest : null}
+            onChange={(nextTitle) => setTitle(nextTitle)}
+            onToolbarTargetChange={onToolbarTargetChange}
+            placeholder={t('noteDetail.titlePlaceholder')}
+            value={title}
+          />
+        </div>
+        <ThumbnailPicker current={note.thumbnail} onSelect={onThumbnailChange} t={t} />
+      </div>
+
+      {noteTags.length ? (
+        <SortableTagList
+          ariaLabel={t('noteDetail.tags')}
+          className="document-title-tags"
+          getHref={(tag) => `/notes?tag=${tag.id}`}
+          onReorder={onTagsChange}
+          tags={noteTags}
+        />
+      ) : null}
+
+      <NoteInlineTiptapEditor
+        className="document-intro-input note-subtitle-input"
+        id={`note-subtitle-${note.id}`}
+        insertTextRequest={typingRequest?.field === 'subtitle' ? typingRequest : null}
+        onChange={(nextSubtitle) => setSubtitle(nextSubtitle)}
+        onToolbarTargetChange={onToolbarTargetChange}
+        placeholder={t('notes.subtitlePlaceholder')}
+        value={subtitle}
+      />
+    </section>
   );
 }
 
 function ThumbnailPicker({
   current,
-  onOpenChange,
   onSelect,
-  open,
-  pickerRef,
   t,
 }: {
   current?: NoteThumbnailModel;
-  onOpenChange: (open: boolean) => void;
-  onSelect: (variant: NoteThumbnailModel['variant']) => void;
-  open: boolean;
-  pickerRef: RefObject<HTMLDivElement>;
-  t: (key: string) => string;
+  onSelect: (thumbnail: NoteThumbnailModel) => void;
+  t: ReturnType<typeof useI18n>['t'];
 }) {
+  const [open, setOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
   const currentThumbnail = current ?? { variant: defaultNoteThumbnailVariant };
+
+  useClickOutside(pickerRef, open, () => setOpen(false));
 
   return (
     <div className="thumbnail-picker" ref={pickerRef}>
@@ -1016,7 +962,7 @@ function ThumbnailPicker({
         aria-haspopup="menu"
         aria-label={t('noteDetail.changeThumbnail')}
         title={t('noteDetail.changeThumbnail')}
-        onClick={() => onOpenChange(!open)}
+        onClick={() => setOpen((value) => !value)}
       >
         <NoteThumbnail thumbnail={currentThumbnail} />
         <span className="thumbnail-picker-edit" aria-hidden="true">
@@ -1033,7 +979,10 @@ function ThumbnailPicker({
               role="menuitemradio"
               aria-checked={variant === currentThumbnail.variant}
               aria-label={`${t('noteDetail.changeThumbnail')}: ${variant}`}
-              onClick={() => onSelect(variant)}
+              onClick={() => {
+                onSelect({ variant });
+                setOpen(false);
+              }}
             >
               <NoteThumbnail thumbnail={{ variant }} />
             </button>
@@ -1044,209 +993,285 @@ function ThumbnailPicker({
   );
 }
 
-function buildEmptyDraft(type: NoteType, collectionId: string | null, tipTitle: string): NoteEditDraft {
-  return {
-    type,
-    title: '',
-    collectionId,
-    intro: '',
-    summaryMarkdown: '',
-    explanationMarkdown: '',
-    usageExamples: [emptyUsageRow()],
-    tipTitle,
-    tipBody: '',
-  };
-}
-
-function buildDraftFromNote(note: Note, fallbackTipTitle: string): NoteEditDraft {
-  return {
-    type: note.type,
-    title: note.title,
-    collectionId: note.collectionId,
-    intro: note.content.intro ?? '',
-    summaryMarkdown: blocksToMarkdown(note.content.summary),
-    explanationMarkdown: blocksToMarkdown(note.content.explanation),
-    usageExamples: note.content.usageExamples?.rows.length ? note.content.usageExamples.rows : [emptyUsageRow()],
-    tipTitle: note.content.tip?.title ?? fallbackTipTitle,
-    tipBody: note.content.tip?.body ?? '',
-    tagIds: note.tagIds,
-  };
-}
-
-function emptyUsageRow() {
-  return {
-    id: `usage-${crypto.randomUUID()}`,
-    expression: '',
-    meaning: '',
-    example: '',
-  };
-}
-
-function getSaveStatusLabel({
-  isEditing,
-  isNewNote,
-  note,
-  saving,
-  t,
+function BlockEditor({
+  block,
+  contentTypingRequest,
+  dragged,
+  noteId,
+  onDelete,
+  onDragStart,
+  onRequestFileUpload,
+  onTocChange,
+  onToolbarTargetChange,
 }: {
-  isEditing: boolean;
-  isNewNote: boolean;
-  note?: Note;
-  saving: boolean;
-  t: (key: string) => string;
-}) {
-  if (saving) {
-    return t('noteDetail.saving');
-  }
-
-  if (isNewNote) {
-    return t('noteDetail.unsavedDraft');
-  }
-
-  if (isEditing) {
-    return t('noteDetail.editingDraft');
-  }
-
-  if (note?.saveState === 'draft') {
-    return t('noteDetail.localDraft');
-  }
-
-  if (note?.syncStatus === 'local') {
-    return t('noteDetail.savedLocal');
-  }
-
-  return t('common.saved');
-}
-
-function CollectionBreadcrumb({ collection, emptyText }: { collection?: Collection; emptyText: string }) {
-  if (!collection) {
-    return (
-      <span className="breadcrumb neutral">
-        <Folder />
-        {emptyText}
-      </span>
-    );
-  }
-
-  return (
-    <Link
-      className={`breadcrumb ${collection.color ?? 'neutral'}`}
-      to={`/notes?collection=${collection.id}`}
-    >
-      <Folder />
-      {collection.name}
-    </Link>
-  );
-}
-
-function CollectionSelect({
-  collections,
-  onChange,
-  value,
-}: {
-  collections: Collection[];
-  onChange: (collectionId: string | null) => void;
-  value: string | null;
+  block: NoteBlock;
+  contentTypingRequest?: NoteTiptapInsertTextRequest | null;
+  dragged: boolean;
+  noteId: string;
+  onDelete: () => void;
+  onDragStart: (event: PointerEvent<HTMLButtonElement>) => void;
+  onRequestFileUpload: () => Promise<NoteFile | null>;
+  onTocChange: () => void;
+  onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
 }) {
   const { t } = useI18n();
-  const selectedCollection = collections.find(
-    (collection) => collection.id === value,
-  );
+  const updateBlock = useNotesStore((state) => state.updateBlock);
+  const [title, setTitle] = useState(block.title);
+  const [contentJson, setContentJson] = useState<TiptapDocument | null>(block.contentJson);
+  const [contentText, setContentText] = useState(block.contentText);
+  const [titleActive, setTitleActive] = useState(false);
+  const [contentActive, setContentActive] = useState(false);
+  const saveTimeoutRef = useRef<number | null>(null);
+  const lastTypingNonceRef = useRef<number | null>(null);
+  const contentJsonRef = useRef<TiptapDocument | null>(contentJson);
+  const contentTextRef = useRef(contentText);
+  const fileInsertPendingRef = useRef(false);
+  const titleHasContent = richTextToPlainText(title).trim().length > 0;
+  const contentHasContent = hasTiptapContent(contentJson, contentText);
+  const titleVisible = titleHasContent || titleActive;
+  const contentVisible = contentHasContent || contentActive;
+  const blockIsEmpty = !titleVisible && !contentVisible;
+
+  useEffect(() => {
+    setTitle(block.title);
+    setContentJson(block.contentJson);
+    setContentText(block.contentText);
+  }, [block.id, block.title, block.contentJson, block.contentText]);
+
+  useEffect(() => {
+    contentJsonRef.current = contentJson;
+    contentTextRef.current = contentText;
+  }, [contentJson, contentText]);
+
+  useEffect(() => {
+    if (!contentTypingRequest || lastTypingNonceRef.current === contentTypingRequest.nonce) {
+      return;
+    }
+
+    lastTypingNonceRef.current = contentTypingRequest.nonce;
+    setContentJson((current) => current ?? emptyTiptapDocument);
+    setContentActive(true);
+  }, [contentTypingRequest]);
+
+  useEffect(() => {
+    const contentChanged = JSON.stringify(contentJson) !== JSON.stringify(block.contentJson);
+    if (title === block.title && contentText === block.contentText && !contentChanged) {
+      return undefined;
+    }
+    if (saveTimeoutRef.current) {
+      window.clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = window.setTimeout(() => {
+      void updateBlock(noteId, block.id, {
+        kind: contentHasContent || contentJson ? 'content' : block.kind,
+        title,
+        contentJson,
+        contentText,
+      });
+    }, 700);
+    return () => {
+      if (saveTimeoutRef.current) {
+        window.clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [block.contentJson, block.contentText, block.id, block.kind, block.title, contentHasContent, contentJson, contentText, noteId, title, updateBlock]);
+
+  function setFileInsertPending(pending: boolean) {
+    fileInsertPendingRef.current = pending;
+    if (pending) {
+      setContentJson((current) => current ?? emptyTiptapDocument);
+      setContentActive(true);
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      if (!hasTiptapContent(contentJsonRef.current, contentTextRef.current)) {
+        setContentActive(false);
+      }
+    });
+  }
 
   return (
-    <div
-      className={`editable-collection-field editing ${selectedCollection?.color ?? 'neutral'}`}
+    <article
+      className={dragged ? 'note-block is-dragging' : 'note-block'}
+      data-note-block-id={block.id}
+      id={`block-${block.id}`}
+      data-empty={blockIsEmpty ? 'true' : undefined}
     >
-      <Folder />
-      <CustomSelect
-        ariaLabel={t('noteDetail.collectionLabel')}
-        emptyText={t('notes.filters.noCollections')}
-        onChange={(collectionId) => onChange(collectionId || null)}
-        options={[
-          {
-            label: t('noteDetail.noCollection'),
-            value: '',
-          },
-          ...collections.map((item) => ({
-            color: item.color,
-            label: item.name,
-            value: item.id,
-          })),
-        ]}
-        value={value ?? ''}
-      />
-    </div>
-  );
-}
-
-function EditableDraftTip({
-  body,
-  onChange,
-  title,
-}: {
-  body: string;
-  onChange: (body: string) => void;
-  title: string;
-}) {
-  const { t } = useI18n();
-
-  return (
-    <section className="content-section">
-      <div className="tip-box editable-tip-box">
-        <Lightbulb />
-        <div>
-          <h2 className="section-title">
-            <InlineFormattedText value={title} />
-          </h2>
-          <MarkdownEditor
-            bare
-            compact
-            label={t('noteDetail.tip')}
-            onChange={onChange}
-            placeholder={t('noteDetail.tipPlaceholder')}
-            rows={5}
-            showActions={false}
-            showTabs={false}
-            showToolbar={false}
-            value={body}
+      <button
+        className="note-block-handle"
+        type="button"
+        aria-label={t('notes.reorderBlock')}
+        aria-grabbed={dragged}
+        title={t('notes.reorderBlock')}
+        onPointerDown={onDragStart}
+      >
+        <GripVertical />
+      </button>
+      <div className="note-block-body">
+        {titleVisible ? (
+          <NoteInlineTiptapEditor
+            autoFocus={titleActive && !titleHasContent}
+            blockId={block.id}
+            className="note-block-title"
+            id={`note-block-title-${block.id}`}
+            onBlur={() => {
+              if (!richTextToPlainText(title).trim()) {
+                setTitleActive(false);
+              }
+            }}
+            onChange={(nextTitle) => {
+              setTitle(nextTitle);
+              onTocChange();
+            }}
+            onToolbarTargetChange={onToolbarTargetChange}
+            placeholder=""
+            value={title}
           />
-        </div>
+        ) : (
+          <button
+            className="note-block-zone-add note-block-zone-add-title"
+            type="button"
+            aria-label={t('notes.addTitleBlock')}
+            title={t('notes.addTitleBlock')}
+            onClick={() => setTitleActive(true)}
+          >
+            <Plus />
+          </button>
+        )}
+        {contentVisible ? (
+          <NoteTiptapEditor
+            autoFocus={contentActive && !contentHasContent}
+            blockId={block.id}
+            insertTextRequest={contentTypingRequest}
+            onBlur={() => {
+              if (fileInsertPendingRef.current) {
+                return;
+              }
+              if (!hasTiptapContent(contentJson, contentText)) {
+                setContentActive(false);
+              }
+            }}
+            onChange={(nextJson, nextText) => {
+              contentJsonRef.current = nextJson;
+              contentTextRef.current = nextText;
+              setContentJson(nextJson);
+              setContentText(nextText);
+              onTocChange();
+            }}
+            onFocus={() => setContentActive(true)}
+            onPendingFileInsertChange={setFileInsertPending}
+            onRequestFileUpload={onRequestFileUpload}
+            onToolbarTargetChange={onToolbarTargetChange}
+            value={contentJson ?? emptyTiptapDocument}
+          />
+        ) : (
+          <button
+            className="note-block-zone-add note-block-zone-add-content"
+            type="button"
+            aria-label={t('notes.addContentBlock')}
+            title={t('notes.addContentBlock')}
+            onClick={() => {
+              setContentJson((current) => current ?? emptyTiptapDocument);
+              setContentActive(true);
+            }}
+          >
+            <Plus />
+          </button>
+        )}
       </div>
-    </section>
+      <button className="note-block-delete" type="button" aria-label={t('common.delete')} title={t('common.delete')} onClick={onDelete}>
+        <Trash2 />
+      </button>
+    </article>
   );
 }
 
-function TipPreview({ body, title }: { body: string; title: string }) {
+function TagEditor({
+  favoriteTagIds,
+  note,
+  noteTags,
+  onCreateTag,
+  onTagsChange,
+  tags,
+}: {
+  favoriteTagIds: string[];
+  note: Note;
+  noteTags: ReturnType<typeof sortTagsByFavoriteOrder>;
+  onCreateTag: (name: string, color?: TagColor) => Promise<{ id: string } | null>;
+  onTagsChange: (tagIds: string[]) => void;
+  tags: ReturnType<typeof sortTagsByFavoriteOrder>;
+}) {
   const { t } = useI18n();
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
+  const [newTagName, setNewTagName] = useState('');
+  const [newTagColor, setNewTagColor] = useState<TagColor>(defaultNewTagColor);
+  const availableTags = sortTagsByFavoriteOrder(tags.filter((tag) => !note.tagIds.includes(tag.id)), favoriteTagIds);
+
+  async function createAndAttachTag() {
+    const created = await onCreateTag(newTagName, newTagColor);
+    if (!created) {
+      return;
+    }
+    onTagsChange([...note.tagIds, created.id]);
+    setNewTagName('');
+    setNewTagColor(defaultNewTagColor);
+    setTagPickerOpen(false);
+  }
 
   return (
-    <section className="content-section">
-      <div className="tip-box">
-        <Lightbulb />
-        <div>
-          <h2 className="section-title">
-            <InlineFormattedText value={title} />
-          </h2>
-          <MarkdownPreview emptyText={t('noteDetail.emptyTip')} value={body} />
+    <>
+      <SortableTagList
+        ariaLabel={t('noteDetail.tags')}
+        className="tag-row"
+        onRemove={(tagId) => onTagsChange(note.tagIds.filter((id) => id !== tagId))}
+        onReorder={onTagsChange}
+        removable
+        tags={noteTags}
+      />
+      <button className="nav-item nav-item--spaced" type="button" onClick={() => setTagPickerOpen((value) => !value)}>
+        <Plus />
+        {t('noteDetail.addTag')}
+      </button>
+      {tagPickerOpen ? (
+        <div className="note-tag-picker">
+          {availableTags.length ? (
+            <div className="inline-picker note-tag-picker">
+              {availableTags.map((tag) => (
+                <button key={tag.id} type="button" onClick={() => onTagsChange([...note.tagIds, tag.id])}>
+                  <TagChip tag={tag} />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="inline-help">{t('noteDetail.noTagsAvailable')}</p>
+          )}
+          <form
+            className="inline-form tag-create-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void createAndAttachTag();
+            }}
+          >
+            <input value={newTagName} onChange={(event) => setNewTagName(event.target.value)} placeholder={t('noteDetail.newTagPlaceholder')} />
+            <ColorPicker ariaLabel={t('profile.labels.color')} onChange={setNewTagColor} value={newTagColor} />
+            <button type="submit">{t('noteDetail.createAndAddTag')}</button>
+          </form>
         </div>
-      </div>
-    </section>
+      ) : null}
+    </>
   );
-}
-
-function blocksToMarkdown(blocks?: RichTextBlock[]) {
-  return blocks?.map((block) => block.text).filter(Boolean).join('\n\n') ?? '';
 }
 
 function LinkedNoteRow({ noteId, onRemove, title }: { noteId: string; onRemove?: () => void; title: string }) {
-  const plainTitle = stripInlineFormatting(title);
+  const plainTitle = richTextToPlainText(title).trim() || 'Untitled';
 
   return (
     <span className="linked-row-shell">
       <Link className="linked-row" to={`/notes/${noteId}`}>
         <span className="inline-actions">
           <FileText />
-          <InlineFormattedText value={title} />
+          {richTextToPlainText(title).trim() ? <InlineFormattedText value={title} /> : plainTitle}
         </span>
         <ExternalLink />
       </Link>
@@ -1306,10 +1331,6 @@ function RelatedLinkRow({ href, onRemove, title }: { href: string; onRemove?: ()
   );
 }
 
-function parseNoteType(value: string | null): NoteType {
-  return noteTypeOptions.includes(value as NoteType) ? (value as NoteType) : defaultNewNoteType;
-}
-
 function formatDate(value: string, locale: string) {
   return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
@@ -1318,4 +1339,130 @@ function formatDate(value: string, locale: string) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(value));
+}
+
+function arraysEqual(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function collectNoteTocEntries() {
+  const entries: TocEntry[] = [];
+  const blockElements = Array.from(document.querySelectorAll<HTMLElement>('.note-block-list [data-note-block-id]'));
+
+  blockElements.forEach((blockElement) => {
+    const blockId = blockElement.dataset.noteBlockId;
+    if (!blockId) {
+      return;
+    }
+
+    const titleElement = blockElement.querySelector<HTMLElement>('.note-block-title');
+    const title = titleElement?.textContent?.trim();
+    if (title && titleElement) {
+      const id = `block-title-${blockId}`;
+      titleElement.dataset.noteTocId = id;
+      entries.push({ id, label: title, level: 1 });
+    }
+
+    const headings = Array.from(blockElement.querySelectorAll<HTMLHeadingElement>('.note-tiptap-prosemirror h1, .note-tiptap-prosemirror h2, .note-tiptap-prosemirror h3'));
+    headings.forEach((heading, index) => {
+      const label = heading.textContent?.trim();
+      if (!label) {
+        return;
+      }
+
+      const level = Number(heading.tagName.slice(1)) as 1 | 2 | 3;
+      const id = `heading-${blockId}-${index}`;
+      heading.dataset.noteTocId = id;
+      entries.push({ id, label, level });
+    });
+  });
+
+  return entries;
+}
+
+function sameTocEntries(left: TocEntry[], right: TocEntry[]) {
+  return (
+    left.length === right.length &&
+    left.every((entry, index) => {
+      const other = right[index];
+      return entry.id === other.id && entry.label === other.label && entry.level === other.level;
+    })
+  );
+}
+
+function findActiveTocEntryId(entries: TocEntry[]) {
+  if (!entries.length) {
+    return null;
+  }
+
+  const triggerY = window.innerHeight / 2;
+  let activeId = entries[0].id;
+
+  entries.forEach((entry) => {
+    const element = findTocTarget(entry.id);
+    if (!element) {
+      return;
+    }
+
+    if (element.getBoundingClientRect().top <= triggerY) {
+      activeId = entry.id;
+    }
+  });
+
+  return activeId;
+}
+
+function scrollToTocEntry(entryId: string) {
+  const element = findTocTarget(entryId);
+  if (!element) {
+    return;
+  }
+
+  const documentTop = document.querySelector<HTMLElement>('.document-top');
+  const stickyBottom = documentTop?.getBoundingClientRect().bottom ?? 0;
+  const targetTop = window.scrollY + element.getBoundingClientRect().top - stickyBottom - 16;
+  window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+}
+
+function findTocTarget(entryId: string) {
+  return document.querySelector<HTMLElement>(`[data-note-toc-id="${entryId}"]`);
+}
+
+function isPlainTypingShortcut(event: globalThis.KeyboardEvent) {
+  return (
+    isPlainLetterShortcut(event) ||
+    (!event.repeat &&
+      !event.isComposing &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      event.key.length === 1)
+  );
+}
+
+function hasTiptapContent(document: TiptapDocument | null, contentText: string) {
+  if (contentText.trim()) {
+    return true;
+  }
+
+  const content = document?.content as TiptapNodeLike[] | undefined;
+  return Boolean(content?.some(hasMeaningfulTiptapNode));
+}
+
+type TiptapNodeLike = {
+  content?: TiptapNodeLike[];
+  text?: string;
+  type?: string;
+};
+
+function hasMeaningfulTiptapNode(node: TiptapNodeLike): boolean {
+  if (node.type === 'text') {
+    return Boolean(node.text?.trim());
+  }
+
+  if (node.type === 'noteFile' || node.type === 'noteTip' || node.type === 'image' || node.type === 'table') {
+    return true;
+  }
+
+  return Boolean(node.content?.some((child) => hasMeaningfulTiptapNode(child)));
 }

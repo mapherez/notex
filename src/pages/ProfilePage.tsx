@@ -1,7 +1,6 @@
 import {
   CalendarClock,
   ChevronRight,
-  Cloud,
   Database,
   Download,
   FileText,
@@ -20,26 +19,30 @@ import { useEffect, useState } from "react";
 import { CustomSelect } from "../components/ui/CustomSelect";
 import { IconBadge } from "../components/ui/IconBadge";
 import { Panel } from "../components/ui/Panel";
-import { appLimits, cloudSyncEnabled } from "../config/appSettings";
+import { appLimits, editorSettings } from "../config/appSettings";
 import {
-  chooseSqliteExportDestination,
-  chooseSqliteImportFile,
-  createSqliteTempExport,
   openSqliteDatabaseFolder,
+  openSqliteFilesFolder,
   openSqliteLocalDataFolder,
   readSqliteDatabaseInfo,
-  replaceSqliteDatabaseFromFile,
   type SqliteDatabaseInfo,
   type SqliteExportInfo,
 } from "../core/services/sqliteDataManagement";
+import {
+  chooseNotexPackageExportDestination,
+  chooseNotexPackageImportFile,
+  createNotexPackageTempExport,
+  replaceFromNotexPackage,
+} from "../core/services/notexPackage";
 import { themeRegistry } from "../core/theme/themeRegistry";
 import { filterNotes } from "../core/utils/noteFilters";
+import { formatShortcutForDisplay } from "../core/utils/shortcutFormatting";
 import { useI18n } from "../i18n/I18nProvider";
 import { useAppStore } from "../store/useAppStore";
+import { useNotesStore } from "../store/useNotesStore";
 import { useKnowledgeStore } from "../store/useKnowledgeStore";
-import { useSyncStore } from "../store/useSyncStore";
 import { useToastStore } from "../store/useToastStore";
-import type { Locale, Note, ThemePreference } from "../core/models/models";
+import type { Note, Locale, ThemePreference } from "../core/models/models";
 
 type ExportModalState =
   | null
@@ -60,11 +63,11 @@ export function ProfilePage() {
   const hydrateSettings = useAppStore((state) => state.hydrateSettings);
   const setTheme = useAppStore((state) => state.setTheme);
   const setLanguage = useAppStore((state) => state.setLanguage);
-  const notes = useKnowledgeStore((state) => state.notes);
+  const notes = useNotesStore((state) => state.notes);
   const collections = useKnowledgeStore((state) => state.collections);
   const user = useKnowledgeStore((state) => state.user);
   const refreshKnowledge = useKnowledgeStore((state) => state.refreshKnowledge);
-  const syncState = useSyncStore((state) => state.syncState);
+  const refreshNotes = useNotesStore((state) => state.refreshNotes);
   const pushToast = useToastStore((state) => state.pushToast);
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const favoriteNotes = activeNotes.filter((note) => note.isFavorite);
@@ -76,7 +79,6 @@ export function ProfilePage() {
         t,
       )
     : t("profile.values.noActivity");
-  const accountConnected = cloudSyncEnabled && Boolean(syncState?.connected);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,7 +108,7 @@ export function ProfilePage() {
   async function handleCreateDatabaseExport() {
     setExportModal({ phase: "exporting" });
     try {
-      const exportInfo = await createSqliteTempExport();
+      const exportInfo = await createNotexPackageTempExport();
       setExportModal({ phase: "ready", exportInfo });
       pushToast(t("profile.dataManagement.exportReady"), "success");
     } catch (error) {
@@ -122,7 +124,7 @@ export function ProfilePage() {
 
   async function handleSaveDatabaseExport(exportInfo: SqliteExportInfo) {
     try {
-      const destinationPath = await chooseSqliteExportDestination(exportInfo);
+      const destinationPath = await chooseNotexPackageExportDestination(exportInfo);
       if (destinationPath) {
         setExportModal(null);
         pushToast(t("profile.dataManagement.exportSaved"), "success");
@@ -140,15 +142,16 @@ export function ProfilePage() {
   async function handleImportDatabase() {
     setIsImportingDatabase(true);
     try {
-      const sourcePath = await chooseSqliteImportFile();
+      const sourcePath = await chooseNotexPackageImportFile();
       if (!sourcePath) {
         setIsImportingDatabase(false);
         return;
       }
 
-      await replaceSqliteDatabaseFromFile(sourcePath);
+      await replaceFromNotexPackage(sourcePath);
       await Promise.all([
         refreshKnowledge(),
+        refreshNotes(),
         hydrateSettings(),
         readSqliteDatabaseInfo().then(setDatabaseInfo),
       ]);
@@ -192,6 +195,19 @@ export function ProfilePage() {
     }
   }
 
+  async function handleOpenFilesFolder() {
+    try {
+      await openSqliteFilesFolder();
+    } catch (error) {
+      pushToast(
+        error instanceof Error
+          ? error.message
+          : t("profile.dataManagement.openFolderFailed"),
+        "warning",
+      );
+    }
+  }
+
   return (
     <div className="page-content list-page-grid">
       <header>
@@ -204,32 +220,25 @@ export function ProfilePage() {
           <article className="profile-card">
             <div
               className={
-                accountConnected && user?.avatarUrl
+                user?.avatarUrl
                   ? "profile-avatar"
                   : "profile-avatar profile-card__avatar--placeholder"
               }
             >
-              {accountConnected && user?.avatarUrl ? (
+              {user?.avatarUrl ? (
                 <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
               ) : (
                 <UserRound strokeWidth={1.6} />
               )}
             </div>
             <h2 className="panel-title">
-              {accountConnected ? user?.name : t("profile.localUser")}
+              {user?.name ?? t("profile.localUser")}
             </h2>
-            {accountConnected && user?.handle ? (
+            {user?.handle ? (
               <div className="handle">{user.handle}</div>
             ) : null}
             <div className="connected">
-              {accountConnected ? (
-                <>
-                  <span className="logo-mark logo-mark--google">G</span>
-                  {t("profile.connectedWith")}
-                </>
-              ) : (
-                t("profile.localAccount")
-              )}
+              {t("profile.localAccount")}
             </div>
           </article>
 
@@ -342,6 +351,16 @@ export function ProfilePage() {
                 label={t("profile.databaseManagement.localDataPath")}
                 onOpen={handleOpenLocalDataFolder}
                 openLabel={t("profile.databaseManagement.openLocalDataFolder")}
+              />
+              <DatabasePathRow
+                databasePath={
+                  databaseInfo?.filesDirectory ??
+                  t("profile.databaseManagement.filesPathLoading")
+                }
+                icon={Folder}
+                label={t("profile.databaseManagement.filesPath")}
+                onOpen={handleOpenFilesFolder}
+                openLabel={t("profile.databaseManagement.openFilesFolder")}
               />
             </div>
           </section>
@@ -553,15 +572,6 @@ function ExportDatabaseModal({
               {modal.exportInfo.tempPath}
             </div>
             <div className="choice-modal-actions">
-              <button type="button" disabled>
-                <Cloud />
-                <span>
-                  <span>{t("profile.dataManagement.exportToGoogleDrive")}</span>
-                  <span>
-                    {t("profile.dataManagement.exportToGoogleDrivePlaceholder")}
-                  </span>
-                </span>
-              </button>
               <button type="button" onClick={() => onSave(modal.exportInfo)}>
                 <FolderOpen />
                 <span>
@@ -733,12 +743,14 @@ function ShortcutHelpModal({
 }
 
 function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
+  const toolbarShortcutItems = buildToolbarShortcutItems(t);
+
   return [
     {
       title: t("profile.shortcuts.groups.global"),
       items: [
         {
-          keys: ["Ctrl / ⌘ + U"],
+          keys: ["Ctrl / ⌘ + P"],
           description: t("profile.shortcuts.items.openProfile"),
         },
         {
@@ -796,20 +808,8 @@ function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
       title: t("profile.shortcuts.groups.notes"),
       items: [
         {
-          keys: ["Ctrl / ⌘ + E"],
-          description: t("profile.shortcuts.items.editNote"),
-        },
-        {
-          keys: ["Ctrl / ⌘ + S"],
-          description: t("profile.shortcuts.items.saveNote"),
-        },
-        {
-          keys: ["Esc"],
-          description: t("profile.shortcuts.items.cancelNoteEdit"),
-        },
-        {
-          keys: ["/"],
-          description: t("profile.shortcuts.items.searchLinkedNotes"),
+          keys: [t("profile.shortcuts.keys.letter")],
+          description: t("profile.shortcuts.items.startNoteTyping"),
         },
         {
           keys: ["Enter", "Space"],
@@ -818,6 +818,28 @@ function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
         {
           keys: ["Ctrl / ⌘ / Alt + ← / →"],
           description: t("profile.shortcuts.items.reorderTags"),
+        },
+      ],
+    },
+    {
+      title: t("profile.shortcuts.groups.noteToolbar"),
+      items: [
+        ...toolbarShortcutItems,
+        {
+          keys: [formatShortcutForDisplay("Mod+T"), "← / ↑ / ↓ / →"],
+          description: t("profile.shortcuts.items.tableMode"),
+        },
+        {
+          keys: ["1", "Space"],
+          description: t("profile.shortcuts.items.orderedListTrigger"),
+        },
+        {
+          keys: [".", "Space"],
+          description: t("profile.shortcuts.items.bulletListTrigger"),
+        },
+        {
+          keys: ["Enter"],
+          description: t("profile.shortcuts.items.continueOrExitList"),
         },
       ],
     },
@@ -872,6 +894,32 @@ function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
       ],
     },
   ];
+}
+
+function buildToolbarShortcutItems(t: ReturnType<typeof useI18n>["t"]) {
+  const items = [];
+  let imageFileAdded = false;
+
+  for (const tool of editorSettings.noteTools) {
+    if (tool.id === "image" || tool.id === "file") {
+      if (imageFileAdded) {
+        continue;
+      }
+      imageFileAdded = true;
+      items.push({
+        keys: [formatShortcutForDisplay(tool.shortcut)],
+        description: t("profile.shortcuts.items.toolbar.imageFile"),
+      });
+      continue;
+    }
+
+    items.push({
+      keys: [formatShortcutForDisplay(tool.shortcut)],
+      description: t(`profile.shortcuts.items.toolbar.${tool.id}`),
+    });
+  }
+
+  return items;
 }
 
 function getRecentTimestamp(note: Note) {

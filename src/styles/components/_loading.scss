@@ -1,0 +1,47 @@
+.app-loading-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--nx-color-canvas);
+  color: var(--nx-color-text);
+}
+
+.app-loading-screen__content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.app-loading-screen__spinner,
+.route-loading-screen__spinner {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0.1875rem solid color-mix(in srgb, var(--nx-color-text) 16%, transparent);
+  border-top-color: var(--nx-color-accent);
+  border-radius: 999px;
+  animation: nx-loading-spin 0.8s linear infinite;
+}
+
+.app-loading-screen__label {
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.route-loading-screen {
+  min-height: 16rem;
+  display: grid;
+  place-items: center;
+}
+
+@keyframes nx-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loading-screen__spinner,
+  .route-loading-screen__spinner {
+    animation: none;
+  }
+}

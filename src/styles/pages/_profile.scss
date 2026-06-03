@@ -173,19 +173,43 @@
 
 .database-management-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
   min-height: var(--nx-space-11);
 }
 
 .database-management-grid .database-path-row {
-  padding: 0 var(--nx-space-5) 0 0;
+  padding: 0 var(--nx-space-5);
+}
+
+.database-management-grid .database-path-row:first-child {
+  padding-left: 0;
+}
+
+.database-management-grid .database-path-row:last-child {
+  padding-right: 0;
 }
 
 .database-management-grid .database-path-row + .database-path-row {
   border-left: 1px solid var(--nx-color-border);
-  padding-right: 0;
-  padding-left: var(--nx-space-5);
+}
+
+.database-path-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--nx-space-4);
+}
+
+.database-path-value {
+  display: block;
+  overflow: hidden;
+  margin-top: var(--nx-space-1);
+  color: var(--nx-color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mini-note-shell {
@@ -239,6 +263,7 @@ button.shortcuts-button {
   padding: 0;
   min-height: var(--nx-space-11);
 }
+
 button.security-row {
   width: 100%;
   border: 0;
@@ -259,25 +284,6 @@ button.security-row:hover {
   color: var(--nx-color-danger);
 }
 
-.database-path-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--nx-space-4);
-  padding: var(--nx-space-3) 0;
-}
-
-.database-path-value {
-  display: block;
-  overflow: hidden;
-  margin-top: var(--nx-space-1);
-  color: var(--nx-color-text-muted);
-  font-size: 0.78rem;
-  line-height: 1.45;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .security-sub,
 .plan-value {
   display: block;
@@ -286,51 +292,10 @@ button.security-row:hover {
   font-size: 0.82rem;
 }
 
-.sync-devices-panel {
-  display: grid;
-  gap: var(--nx-space-3);
-  border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
-  background: var(--nx-color-surface-subtle);
-  padding: var(--nx-space-4);
-}
-
-.sync-devices-panel p {
-  margin: 0;
-  color: var(--nx-color-text-muted);
-  font-size: 0.84rem;
-  line-height: 1.45;
-}
-
-.sync-device-list {
-  display: grid;
-  gap: var(--nx-space-2);
-}
-
-.sync-device-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--nx-space-3);
-  border-radius: var(--nx-radius-sm);
-  background: var(--nx-color-surface);
-  padding: var(--nx-space-3);
-}
-
-.sync-device-badge {
-  display: inline-flex;
-  margin-left: var(--nx-space-2);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--nx-color-success) 16%, transparent);
-  color: var(--nx-color-success);
-  padding: 0.1rem 0.45rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
 .plan-card {
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--nx-color-accent) 24%, var(--nx-color-border));
+  border: 1px solid
+    color-mix(in srgb, var(--nx-color-accent) 24%, var(--nx-color-border));
   border-radius: var(--nx-radius-card);
   background:
     linear-gradient(135deg, rgba(109, 76, 255, 0.24), transparent 70%),
@@ -414,7 +379,8 @@ button.security-row:hover {
   align-items: center;
   justify-content: center;
   gap: var(--nx-space-2);
-  border: 1px solid color-mix(in srgb, var(--nx-color-danger) 48%, var(--nx-color-border));
+  border: 1px solid
+    color-mix(in srgb, var(--nx-color-danger) 48%, var(--nx-color-border));
   border-radius: var(--nx-radius-sm);
   background: color-mix(in srgb, var(--nx-color-danger) 12%, transparent);
   color: var(--nx-color-danger);
@@ -457,7 +423,10 @@ button.security-row:hover {
   border-radius: var(--nx-radius-card);
   background: var(--nx-color-surface);
   padding: var(--nx-space-4);
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .collection-card:hover {

@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { appLimits, defaultUserSettings } from '../config/appSettings';
-import { notifySyncQueued, queueWorkspaceSync, runLocalMutation } from '../core/services/syncQueue';
 import { db } from '../core/storage/notexRepository';
 import type { Locale, PreferredLayout, ThemePreference, UserSettings } from '../core/models/models';
 
@@ -19,18 +18,15 @@ type AppStore = {
   reorderPinnedNotes: (noteIds: string[]) => Promise<void>;
   setQuickPinAt: (index: number, noteId: string | null) => Promise<void>;
   toggleQuickPin: (noteId: string) => Promise<void>;
+  setNotePanelHidden: (panelId: string, hidden: boolean) => Promise<void>;
   replaceSettings: (settings: UserSettings) => Promise<void>;
 };
 
 async function persist(settings: UserSettings) {
-  await runLocalMutation(() => db.transaction('rw', [db.userSettings, db.syncItems], async () => {
-    await db.userSettings.put({
-      ...settings,
-      updatedAt: new Date().toISOString(),
-    });
-    await queueWorkspaceSync();
-  }));
-  notifySyncQueued();
+  await db.userSettings.put({
+    ...settings,
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 function normalizeSettings(settings?: Partial<UserSettings> | null): UserSettings {
@@ -48,6 +44,7 @@ function normalizeSettings(settings?: Partial<UserSettings> | null): UserSetting
     favoriteTagIds: source.favoriteTagIds ?? defaultUserSettings.favoriteTagIds,
     pinnedNoteIds: source.pinnedNoteIds ?? defaultUserSettings.pinnedNoteIds,
     quickPinNoteIds: source.quickPinNoteIds ?? defaultUserSettings.quickPinNoteIds,
+    noteHiddenPanelIds: source.noteHiddenPanelIds ?? defaultUserSettings.noteHiddenPanelIds ?? [],
     updatedAt: source.updatedAt ?? defaultUserSettings.updatedAt,
   };
 }
@@ -131,6 +128,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const current = get().settings.quickPinNoteIds;
     const quickPinNoteIds = current.includes(noteId) ? current.filter((id) => id !== noteId) : [...current, noteId].slice(-appLimits.quickPins);
     const settings = { ...get().settings, quickPinNoteIds };
+    await updateSettings(set, settings);
+  },
+  setNotePanelHidden: async (panelId, hidden) => {
+    const current = get().settings.noteHiddenPanelIds ?? [];
+    const noteHiddenPanelIds = hidden ? uniqueIds([...current, panelId]) : current.filter((id) => id !== panelId);
+    const settings = { ...get().settings, noteHiddenPanelIds };
     await updateSettings(set, settings);
   },
   replaceSettings: async (settings) => {

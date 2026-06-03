@@ -1,47 +1,11 @@
 import { create } from 'zustand';
-import { defaultNewNoteType, defaultNoteThumbnailVariant, defaultUserSettings, demoSettings, editorSettings } from '../config/appSettings';
+import { defaultNewCollectionColor, defaultNewTagColor, defaultUserSettings, demoSettings } from '../config/appSettings';
 import { createMockData } from '../core/data/createMockData';
-import {
-  db,
-  readAllKnowledge,
-  seedDatabaseIfEmpty,
-} from '../core/storage/notexRepository';
-import { notifySyncQueued, queueDeletedNoteSync, queueNoteSync, queueWorkspaceSync, runLocalMutation } from '../core/services/syncQueue';
-import { stripInlineFormatting } from '../core/utils/inlineFormatting';
-import type {
-  ActivityItem,
-  Collection,
-  Locale,
-  NewNoteInput,
-  Note,
-  NoteThumbnail,
-  NoteStats,
-  NoteType,
-  RichTextBlock,
-  Tag,
-  TagColor,
-  UsageExample,
-  User,
-  UserSettings,
-} from '../core/models/models';
-
-type MarkdownContentSection = 'explanation' | 'summary';
-
-export type NoteEditDraft = {
-  type?: NoteType;
-  title: string;
-  collectionId: string | null;
-  intro: string;
-  summaryMarkdown: string;
-  explanationMarkdown: string;
-  usageExamples: UsageExample[];
-  tipTitle: string;
-  tipBody: string;
-  tagIds?: string[];
-};
+import { db, readAllKnowledge, seedDatabaseIfEmpty } from '../core/storage/notexRepository';
+import type { ActivityItem, Collection, Locale, Tag, TagColor, User, UserSettings } from '../core/models/models';
+import { useNotesStore } from './useNotesStore';
 
 type KnowledgeStore = {
-  notes: Note[];
   tags: Tag[];
   collections: Collection[];
   user: User | null;
@@ -50,548 +14,53 @@ type KnowledgeStore = {
   initialize: (locale: Locale, userSettings?: UserSettings) => Promise<void>;
   refreshKnowledge: () => Promise<void>;
   setUser: (user: User) => Promise<void>;
-  createDraftNote: (input: NewNoteInput) => Promise<Note>;
-  createNoteFromDraft: (draft: NoteEditDraft) => Promise<Note | null>;
-  createQuickNote: (content: string, title?: string) => Promise<Note | null>;
-  toggleFavorite: (noteId: string) => Promise<void>;
-  togglePinned: (noteId: string) => Promise<void>;
-  markNoteOpened: (noteId: string) => Promise<void>;
-  updateNoteTitle: (noteId: string, title: string) => Promise<void>;
-  updateNoteIntro: (noteId: string, intro: string) => Promise<void>;
-  updateNoteCollection: (noteId: string, collectionId: string | null) => Promise<void>;
-  updateNoteThumbnail: (noteId: string, thumbnail: NoteThumbnail) => Promise<void>;
-  saveNoteDraft: (noteId: string, draft: NoteEditDraft) => Promise<Note | null>;
-  updateMarkdownSection: (noteId: string, section: MarkdownContentSection, markdown: string) => Promise<void>;
-  updateNoteTip: (noteId: string, title: string, body: string) => Promise<void>;
-  moveToTrash: (noteId: string) => Promise<void>;
-  bulkMoveToTrash: (noteIds: string[]) => Promise<void>;
-  restoreNote: (noteId: string) => Promise<void>;
-  deleteNotesPermanently: (noteIds: string[]) => Promise<void>;
-  clearTrash: () => Promise<void>;
-  updateNoteTags: (noteId: string, tagIds: string[]) => Promise<void>;
-  bulkUpdateNoteCollection: (noteIds: string[], collectionId: string | null) => Promise<void>;
-  bulkUpdateNoteTag: (noteIds: string[], tagId: string, assigned: boolean) => Promise<void>;
   createCollection: (name: string, color?: TagColor) => Promise<Collection | null>;
   updateCollection: (collectionId: string, input: { name: string; color?: TagColor }) => Promise<void>;
   deleteCollection: (collectionId: string) => Promise<void>;
   createTag: (name: string, color?: TagColor) => Promise<Tag | null>;
   updateTag: (tagId: string, input: { name: string; color?: TagColor }) => Promise<void>;
   deleteTag: (tagId: string) => Promise<void>;
-  addUsageExample: (noteId: string, input: Omit<UsageExample, 'id'>) => Promise<void>;
-  updateUsageExample: (noteId: string, rowId: string, input: Omit<UsageExample, 'id'>) => Promise<void>;
-  deleteUsageExample: (noteId: string, rowId: string) => Promise<void>;
-  replaceUsageExamples: (noteId: string, rows: UsageExample[]) => Promise<void>;
-  addAdditionalExample: (noteId: string, example: string) => Promise<void>;
-  updateAdditionalExample: (noteId: string, index: number, example: string) => Promise<void>;
-  deleteAdditionalExample: (noteId: string, index: number) => Promise<void>;
-  addRelatedLink: (noteId: string, title: string, href: string) => Promise<void>;
-  deleteRelatedLink: (noteId: string, linkId: string) => Promise<void>;
-  addLinkedNote: (noteId: string, linkedNoteId: string) => Promise<void>;
-  deleteLinkedNote: (noteId: string, linkedNoteId: string) => Promise<void>;
-  duplicateNote: (noteId: string, title: string) => Promise<Note | null>;
   resetDemoData: (locale: Locale, settings: UserSettings) => Promise<void>;
 };
 
-function sortNotes(notes: Note[]) {
-  return [...notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-}
-
 const collectionOrder = demoSettings.collectionOrder;
-
-function sortCollections(collections: Collection[]) {
-  return [...collections].sort((a, b) => {
-    const aIndex = collectionOrder.indexOf(a.id);
-    const bIndex = collectionOrder.indexOf(b.id);
-    if (aIndex === -1 || bIndex === -1) {
-      return a.name.localeCompare(b.name);
-    }
-    return aIndex - bIndex;
-  });
-}
-
-function sortTags(tags: Tag[]) {
-  return [...tags].sort((a, b) => a.name.localeCompare(b.name));
-}
-
-async function persistNoteAndQueue(note: Note) {
-  await runLocalMutation(() => db.transaction('rw', [db.notes, db.syncItems], async () => {
-    await db.notes.put(note);
-    await queueNoteSync(note.id);
-  }));
-  notifySyncQueued();
-}
-
 const initialKnowledge = createMockData(defaultUserSettings.language);
 
 export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
-  notes: sortNotes(initialKnowledge.notes),
   tags: sortTags(initialKnowledge.tags),
   collections: sortCollections(initialKnowledge.collections),
   user: initialKnowledge.user,
-  activities: [...initialKnowledge.activities].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+  activities: sortActivities(initialKnowledge.activities),
   isReady: false,
   initialize: async (locale, userSettings = defaultUserSettings) => {
     await seedDatabaseIfEmpty(createMockData(locale), userSettings);
     const knowledge = await readAllKnowledge();
     set({
-      ...knowledge,
-      notes: sortNotes(knowledge.notes),
       tags: sortTags(knowledge.tags),
       collections: sortCollections(knowledge.collections),
-      activities: [...knowledge.activities].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      user: knowledge.user,
+      activities: sortActivities(knowledge.activities),
       isReady: true,
     });
   },
   refreshKnowledge: async () => {
     const knowledge = await readAllKnowledge();
     set({
-      ...knowledge,
-      notes: sortNotes(knowledge.notes),
       tags: sortTags(knowledge.tags),
       collections: sortCollections(knowledge.collections),
-      activities: [...knowledge.activities].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      user: knowledge.user,
+      activities: sortActivities(knowledge.activities),
       isReady: true,
     });
   },
   setUser: async (user) => {
-    await runLocalMutation(() => db.transaction('rw', [db.users, db.syncItems], async () => {
+    await db.transaction('rw', [db.users], async () => {
       await db.users.clear();
       await db.users.put(user);
-      await queueWorkspaceSync();
-    }));
+    });
     set({ user });
-    notifySyncQueued();
   },
-  createDraftNote: async (input) => {
-    const note = buildLocalNote({
-      input,
-      authorId: get().user?.id ?? 'user-local',
-    });
-    const activity = buildActivity(note.id, note.title);
-
-    await runLocalMutation(() => db.transaction('rw', [db.notes, db.activities, db.syncItems], async () => {
-      await db.notes.put(note);
-      await db.activities.put(activity);
-      await queueNoteSync(note.id);
-      await queueWorkspaceSync();
-    }));
-
-    set((state) => ({
-      notes: sortNotes([note, ...state.notes]),
-      activities: [activity, ...state.activities],
-    }));
-
-    notifySyncQueued();
-
-    return note;
-  },
-  createNoteFromDraft: async (draft) => {
-    const normalized = normalizeNoteEditDraft(draft);
-    if (!normalized) {
-      return null;
-    }
-
-    const note = buildLocalNoteFromDraft({
-      draft: normalized,
-      authorId: get().user?.id ?? 'user-local',
-    });
-    const activity = buildActivity(note.id, note.title);
-
-    await runLocalMutation(() => db.transaction('rw', [db.notes, db.activities, db.syncItems], async () => {
-      await db.notes.put(note);
-      await db.activities.put(activity);
-      await queueNoteSync(note.id);
-      await queueWorkspaceSync();
-    }));
-
-    set((state) => ({
-      notes: sortNotes([note, ...state.notes]),
-      activities: [activity, ...state.activities],
-    }));
-
-    notifySyncQueued();
-
-    return note;
-  },
-  createQuickNote: async (content, title = 'Quick capture') => {
-    const trimmed = content.trim();
-    if (!trimmed) {
-      return null;
-    }
-
-    return get().createNoteFromDraft({
-      title,
-      intro: '',
-      summaryMarkdown: trimmed,
-      explanationMarkdown: '',
-      usageExamples: [],
-      tipTitle: '',
-      tipBody: '',
-      collectionId: defaultUserSettings.primaryCollectionId,
-      tagIds: [],
-    });
-  },
-  toggleFavorite: async (noteId) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const updated = {
-      ...note,
-      isFavorite: !note.isFavorite,
-      updatedAt: new Date().toISOString(),
-    };
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  togglePinned: async (noteId) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const updated = {
-      ...note,
-      isPinned: !note.isPinned,
-      updatedAt: new Date().toISOString(),
-    };
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  markNoteOpened: async (noteId) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const updated = {
-      ...note,
-      lastOpenedAt: new Date().toISOString(),
-    };
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: state.notes.map((item) => (item.id === noteId ? updated : item)),
-    }));
-  },
-  updateNoteTitle: async (noteId, title) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const trimmedTitle = title.trim();
-    const nextTitle = stripInlineFormatting(trimmedTitle).trim() ? trimmedTitle : note.title;
-    const updated = finalizeNoteUpdate({
-      ...note,
-      title: nextTitle,
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  updateNoteIntro: async (noteId, intro) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const updated = finalizeNoteUpdate({
-      ...note,
-      content: {
-        ...note.content,
-        intro: intro.trim(),
-      },
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  updateNoteCollection: async (noteId, collectionId) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const updated = finalizeNoteUpdate({
-      ...note,
-      collectionId,
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  updateNoteThumbnail: async (noteId, thumbnail) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const updated = finalizeNoteUpdate({
-      ...note,
-      thumbnail,
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  saveNoteDraft: async (noteId, draft) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    const normalized = normalizeNoteEditDraft(draft);
-    if (!note || !normalized) {
-      return null;
-    }
-
-    const updated = finalizeNoteUpdate({
-      ...note,
-      type: normalized.type ?? note.type,
-      title: normalized.title,
-      collectionId: normalized.collectionId,
-      content: {
-        ...note.content,
-        intro: normalized.intro,
-        summary: markdownToBlocks(normalized.summaryMarkdown, `${note.id}-summary`),
-        explanation: markdownToBlocks(normalized.explanationMarkdown, `${note.id}-explanation`),
-        usageExamples: normalized.usageExamples.length ? { rows: normalized.usageExamples } : null,
-        tip: normalized.tipBody || normalized.tipTitle
-          ? {
-              id: note.content.tip?.id ?? createId(),
-              title: normalized.tipTitle || note.content.tip?.title || 'Tip',
-              body: normalized.tipBody,
-            }
-          : null,
-      },
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-
-    return updated;
-  },
-  updateMarkdownSection: async (noteId, section, markdown) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const updated = finalizeNoteUpdate({
-      ...note,
-      content: {
-        ...note.content,
-        [section]: markdownToBlocks(markdown, `${noteId}-${section}`),
-      },
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  updateNoteTip: async (noteId, title, body) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const trimmedTitle = title.trim();
-    const trimmedBody = body.trim();
-    const updated = finalizeNoteUpdate({
-      ...note,
-      content: {
-        ...note.content,
-        tip:
-          trimmedTitle || trimmedBody
-            ? {
-                id: note.content.tip?.id ?? createId(),
-                title: trimmedTitle || note.content.tip?.title || '',
-                body: trimmedBody,
-              }
-            : null,
-      },
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  moveToTrash: async (noteId) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const updated = { ...note, isTrashed: true, updatedAt: new Date().toISOString() };
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  bulkMoveToTrash: async (noteIds) => {
-    const noteIdSet = new Set(uniqueIds(noteIds));
-    const noteUpdates = get().notes
-      .filter((note) => noteIdSet.has(note.id) && !note.isTrashed)
-      .map((note) => ({ ...note, isTrashed: true, updatedAt: new Date().toISOString() }));
-
-    if (!noteUpdates.length) {
-      return;
-    }
-
-    await runLocalMutation(() => db.transaction('rw', [db.notes, db.syncItems], async () => {
-      await db.notes.bulkPut(noteUpdates);
-      for (const note of noteUpdates) {
-        await queueNoteSync(note.id);
-      }
-    }));
-    notifySyncQueued();
-
-    const updateMap = new Map(noteUpdates.map((note) => [note.id, note]));
-    set((state) => ({
-      notes: sortNotes(state.notes.map((note) => updateMap.get(note.id) ?? note)),
-    }));
-  },
-  restoreNote: async (noteId) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const updated = { ...note, isTrashed: false, updatedAt: new Date().toISOString() };
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  deleteNotesPermanently: async (noteIds) => {
-    const deletedIds = uniqueIds(noteIds).filter((noteId) => get().notes.some((note) => note.id === noteId && note.isTrashed));
-    if (!deletedIds.length) {
-      return;
-    }
-
-    const deletedIdSet = new Set(deletedIds);
-    const linkedNoteUpdates = get().notes
-      .filter((note) => !deletedIdSet.has(note.id) && note.linkedNoteIds.some((linkedId) => deletedIdSet.has(linkedId)))
-      .map((note) =>
-        finalizeNoteUpdate({
-          ...note,
-          linkedNoteIds: note.linkedNoteIds.filter((linkedId) => !deletedIdSet.has(linkedId)),
-        }),
-      );
-
-    await runLocalMutation(() => db.transaction('rw', [db.notes, db.activities, db.syncItems], async () => {
-      await db.notes.bulkDelete(deletedIds);
-      if (linkedNoteUpdates.length) {
-        await db.notes.bulkPut(linkedNoteUpdates);
-      }
-      await db.activities.where('noteId').anyOf(deletedIds).delete();
-      for (const noteId of deletedIds) {
-        await queueDeletedNoteSync(noteId);
-      }
-      for (const note of linkedNoteUpdates) {
-        await queueNoteSync(note.id);
-      }
-      await queueWorkspaceSync();
-    }));
-    notifySyncQueued();
-
-    set((state) => {
-      const linkedUpdateMap = new Map(linkedNoteUpdates.map((note) => [note.id, note]));
-      const remainingNotes = state.notes
-        .filter((note) => !deletedIdSet.has(note.id))
-        .map((note) => linkedUpdateMap.get(note.id) ?? note);
-
-      return {
-        notes: sortNotes(remainingNotes),
-        activities: state.activities.filter((activity) => !deletedIdSet.has(activity.noteId)),
-      };
-    });
-  },
-  clearTrash: async () => {
-    await get().deleteNotesPermanently(get().notes.filter((note) => note.isTrashed).map((note) => note.id));
-  },
-  updateNoteTags: async (noteId, tagIds) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const updated = finalizeNoteUpdate({ ...note, tagIds: uniqueIds(tagIds) });
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  bulkUpdateNoteCollection: async (noteIds, collectionId) => {
-    const noteIdSet = new Set(uniqueIds(noteIds));
-    const noteUpdates = get().notes
-      .filter((note) => noteIdSet.has(note.id) && note.collectionId !== collectionId)
-      .map((note) => finalizeNoteUpdate({ ...note, collectionId }));
-
-    if (!noteUpdates.length) {
-      return;
-    }
-
-    await runLocalMutation(() => db.transaction('rw', [db.notes, db.syncItems], async () => {
-      await db.notes.bulkPut(noteUpdates);
-      for (const note of noteUpdates) {
-        await queueNoteSync(note.id);
-      }
-    }));
-    notifySyncQueued();
-
-    set((state) => {
-      const updateMap = new Map(noteUpdates.map((note) => [note.id, note]));
-      return {
-        notes: sortNotes(state.notes.map((note) => updateMap.get(note.id) ?? note)),
-      };
-    });
-  },
-  bulkUpdateNoteTag: async (noteIds, tagId, assigned) => {
-    const noteIdSet = new Set(uniqueIds(noteIds));
-    const noteUpdates = get().notes
-      .filter((note) => noteIdSet.has(note.id) && note.tagIds.includes(tagId) !== assigned)
-      .map((note) => {
-        const nextTagIds = assigned ? [...note.tagIds, tagId] : note.tagIds.filter((id) => id !== tagId);
-        return finalizeNoteUpdate({ ...note, tagIds: uniqueIds(nextTagIds) });
-      });
-
-    if (!noteUpdates.length) {
-      return;
-    }
-
-    await runLocalMutation(() => db.transaction('rw', [db.notes, db.syncItems], async () => {
-      await db.notes.bulkPut(noteUpdates);
-      for (const note of noteUpdates) {
-        await queueNoteSync(note.id);
-      }
-    }));
-    notifySyncQueued();
-
-    set((state) => {
-      const updateMap = new Map(noteUpdates.map((note) => [note.id, note]));
-      return {
-        notes: sortNotes(state.notes.map((note) => updateMap.get(note.id) ?? note)),
-      };
-    });
-  },
-  createCollection: async (name, color = 'neutral') => {
+  createCollection: async (name, color = defaultNewCollectionColor) => {
     const trimmed = name.trim();
     if (!trimmed) {
       return null;
@@ -609,15 +78,8 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       icon: 'folder',
     };
 
-    await runLocalMutation(() => db.transaction('rw', [db.collections, db.syncItems], async () => {
-      await db.collections.put(collection);
-      await queueWorkspaceSync();
-    }));
-    notifySyncQueued();
-    set((state) => ({
-      collections: sortCollections([...state.collections, collection]),
-    }));
-
+    await db.collections.put(collection);
+    set((state) => ({ collections: sortCollections([...state.collections, collection]) }));
     return collection;
   },
   updateCollection: async (collectionId, input) => {
@@ -633,14 +95,8 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       color: input.color ?? collection.color ?? 'neutral',
     };
 
-    await runLocalMutation(() => db.transaction('rw', [db.collections, db.syncItems], async () => {
-      await db.collections.put(updated);
-      await queueWorkspaceSync();
-    }));
-    notifySyncQueued();
-    set((state) => ({
-      collections: sortCollections(state.collections.map((item) => (item.id === collectionId ? updated : item))),
-    }));
+    await db.collections.put(updated);
+    set((state) => ({ collections: sortCollections(state.collections.map((item) => (item.id === collectionId ? updated : item))) }));
   },
   deleteCollection: async (collectionId) => {
     const collection = get().collections.find((item) => item.id === collectionId);
@@ -648,32 +104,19 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       return;
     }
 
-    const noteUpdates = get().notes
-      .filter((note) => note.collectionId === collectionId)
-      .map((note) => finalizeNoteUpdate({ ...note, collectionId: null }));
+    const affectedNoteIds = useNotesStore
+      .getState()
+      .notes.filter((note) => note.collectionId === collectionId)
+      .map((note) => note.id);
 
-    await runLocalMutation(() => db.transaction('rw', [db.collections, db.notes, db.syncItems], async () => {
-      await db.collections.delete(collectionId);
-      if (noteUpdates.length) {
-        await db.notes.bulkPut(noteUpdates);
-      }
-      await queueWorkspaceSync();
-      for (const note of noteUpdates) {
-        await queueNoteSync(note.id);
-      }
-    }));
-    notifySyncQueued();
+    if (affectedNoteIds.length) {
+      await useNotesStore.getState().bulkUpdateNoteCollection(affectedNoteIds, null);
+    }
 
-    set((state) => {
-      const noteUpdateMap = new Map(noteUpdates.map((note) => [note.id, note]));
-
-      return {
-        collections: state.collections.filter((item) => item.id !== collectionId),
-        notes: sortNotes(state.notes.map((note) => noteUpdateMap.get(note.id) ?? note)),
-      };
-    });
+    await db.collections.delete(collectionId);
+    set((state) => ({ collections: state.collections.filter((item) => item.id !== collectionId) }));
   },
-  createTag: async (name, color = 'neutral') => {
+  createTag: async (name, color = defaultNewTagColor) => {
     const trimmed = name.trim();
     if (!trimmed) {
       return null;
@@ -691,15 +134,8 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       count: 0,
     };
 
-    await runLocalMutation(() => db.transaction('rw', [db.tags, db.syncItems], async () => {
-      await db.tags.put(tag);
-      await queueWorkspaceSync();
-    }));
-    notifySyncQueued();
-    set((state) => ({
-      tags: sortTags([...state.tags, tag]),
-    }));
-
+    await db.tags.put(tag);
+    set((state) => ({ tags: sortTags([...state.tags, tag]) }));
     return tag;
   },
   updateTag: async (tagId, input) => {
@@ -715,561 +151,101 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       color: input.color ?? tag.color ?? 'neutral',
     };
 
-    await runLocalMutation(() => db.transaction('rw', [db.tags, db.syncItems], async () => {
-      await db.tags.put(updated);
-      await queueWorkspaceSync();
-    }));
-    notifySyncQueued();
-    set((state) => ({
-      tags: sortTags(state.tags.map((item) => (item.id === tagId ? updated : item))),
-    }));
+    await db.tags.put(updated);
+    set((state) => ({ tags: sortTags(state.tags.map((item) => (item.id === tagId ? updated : item))) }));
   },
   deleteTag: async (tagId) => {
-    const noteUpdates = get().notes
-      .filter((note) => note.tagIds.includes(tagId))
-      .map((note) => finalizeNoteUpdate({ ...note, tagIds: note.tagIds.filter((id) => id !== tagId) }));
+    const affectedNoteIds = useNotesStore
+      .getState()
+      .notes.filter((note) => note.tagIds.includes(tagId))
+      .map((note) => note.id);
 
-    await runLocalMutation(() => db.transaction('rw', [db.tags, db.notes, db.syncItems], async () => {
-      await db.tags.delete(tagId);
-      if (noteUpdates.length) {
-        await db.notes.bulkPut(noteUpdates);
-      }
-      await queueWorkspaceSync();
-      for (const note of noteUpdates) {
-        await queueNoteSync(note.id);
-      }
-    }));
-    notifySyncQueued();
-
-    set((state) => {
-      const updatedNotes = noteUpdates.length
-        ? state.notes.map((note) => noteUpdates.find((updated) => updated.id === note.id) ?? note)
-        : state.notes;
-
-      return {
-        tags: state.tags.filter((tag) => tag.id !== tagId),
-        notes: sortNotes(updatedNotes),
-      };
-    });
-  },
-  addUsageExample: async (noteId, input) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    const row = normalizeUsageExampleInput(input);
-    if (!note || !row) {
-      return;
+    if (affectedNoteIds.length) {
+      await useNotesStore.getState().bulkUpdateNoteTag(affectedNoteIds, tagId, false);
     }
 
-    const updated = finalizeNoteUpdate({
-      ...note,
-      content: {
-        ...note.content,
-        usageExamples: {
-          rows: [...(note.content.usageExamples?.rows ?? []), { id: createId(), ...row }],
-        },
-      },
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  updateUsageExample: async (noteId, rowId, input) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    const row = normalizeUsageExampleInput(input);
-    if (!note || !row) {
-      return;
-    }
-
-    const rows = note.content.usageExamples?.rows ?? [];
-    const updated = finalizeNoteUpdate({
-      ...note,
-      content: {
-        ...note.content,
-        usageExamples: {
-          rows: rows.map((item) => (item.id === rowId ? { id: rowId, ...row } : item)),
-        },
-      },
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  deleteUsageExample: async (noteId, rowId) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const rows = note.content.usageExamples?.rows.filter((row) => row.id !== rowId) ?? [];
-    const updated = finalizeNoteUpdate({
-      ...note,
-      content: {
-        ...note.content,
-        usageExamples: rows.length ? { rows } : null,
-      },
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  replaceUsageExamples: async (noteId, rows) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const normalizedRows = rows.flatMap((row) => {
-      const normalized = normalizeUsageExampleInput(row);
-      return normalized ? [{ id: row.id || createId(), ...normalized }] : [];
-    });
-
-    const updated = finalizeNoteUpdate({
-      ...note,
-      content: {
-        ...note.content,
-        usageExamples: normalizedRows.length ? { rows: normalizedRows } : null,
-      },
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  addAdditionalExample: async (noteId, example) => {
-    const trimmed = example.trim();
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note || !trimmed) {
-      return;
-    }
-
-    const updated = finalizeNoteUpdate({
-      ...note,
-      content: {
-        ...note.content,
-        additionalExamples: [...(note.content.additionalExamples ?? []), trimmed],
-      },
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  updateAdditionalExample: async (noteId, index, example) => {
-    const trimmed = example.trim();
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note || !trimmed) {
-      return;
-    }
-
-    const examples = [...(note.content.additionalExamples ?? [])];
-    if (index < 0 || index >= examples.length) {
-      return;
-    }
-
-    examples[index] = trimmed;
-    const updated = finalizeNoteUpdate({
-      ...note,
-      content: {
-        ...note.content,
-        additionalExamples: examples,
-      },
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  deleteAdditionalExample: async (noteId, index) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const examples = (note.content.additionalExamples ?? []).filter((_, itemIndex) => itemIndex !== index);
-    const updated = finalizeNoteUpdate({
-      ...note,
-      content: {
-        ...note.content,
-        additionalExamples: examples,
-      },
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  addRelatedLink: async (noteId, title, href) => {
-    const trimmedTitle = title.trim();
-    const trimmedHref = href.trim();
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note || !trimmedTitle) {
-      return;
-    }
-
-    const updated = finalizeNoteUpdate({
-      ...note,
-      relatedLinks: [
-        ...(note.relatedLinks ?? []),
-        {
-          id: createId(),
-          title: trimmedTitle,
-          href: trimmedHref,
-        },
-      ],
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  deleteRelatedLink: async (noteId, linkId) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const updated = finalizeNoteUpdate({
-      ...note,
-      relatedLinks: (note.relatedLinks ?? []).filter((link) => link.id !== linkId),
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  addLinkedNote: async (noteId, linkedNoteId) => {
-    if (noteId === linkedNoteId) {
-      return;
-    }
-
-    const note = get().notes.find((item) => item.id === noteId);
-    const linkedNote = get().notes.find((item) => item.id === linkedNoteId);
-    if (!note || !linkedNote) {
-      return;
-    }
-
-    const updated = finalizeNoteUpdate({
-      ...note,
-      linkedNoteIds: uniqueIds([...note.linkedNoteIds, linkedNoteId]),
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  deleteLinkedNote: async (noteId, linkedNoteId) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return;
-    }
-
-    const updated = finalizeNoteUpdate({
-      ...note,
-      linkedNoteIds: note.linkedNoteIds.filter((id) => id !== linkedNoteId),
-    });
-
-    await persistNoteAndQueue(updated);
-    set((state) => ({
-      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
-    }));
-  },
-  duplicateNote: async (noteId, title) => {
-    const note = get().notes.find((item) => item.id === noteId);
-    if (!note) {
-      return null;
-    }
-
-    const now = new Date().toISOString();
-    const duplicate: Note = {
-      ...note,
-      id: createId(),
-      title,
-      isPinned: false,
-      createdAt: now,
-      updatedAt: now,
-      lastOpenedAt: now,
-      version: 1,
-      syncStatus: 'local',
-    };
-    const activity = buildActivity(duplicate.id, duplicate.title);
-
-    await runLocalMutation(() => db.transaction('rw', [db.notes, db.activities, db.syncItems], async () => {
-      await db.notes.put(duplicate);
-      await db.activities.put(activity);
-      await queueNoteSync(duplicate.id);
-      await queueWorkspaceSync();
-    }));
-
-    set((state) => ({
-      notes: sortNotes([duplicate, ...state.notes]),
-      activities: [activity, ...state.activities],
-    }));
-    notifySyncQueued();
-    return duplicate;
+    await db.tags.delete(tagId);
+    set((state) => ({ tags: state.tags.filter((tag) => tag.id !== tagId) }));
   },
   resetDemoData: async (locale, settings) => {
     const bundle = createMockData(locale);
-    await runLocalMutation(() => db.transaction('rw', [db.notes, db.tags, db.collections, db.users, db.activities, db.userSettings, db.syncItems], async () => {
-      await db.notes.clear();
-      await db.tags.clear();
-      await db.collections.clear();
-      await db.users.clear();
-      await db.activities.clear();
-      await db.userSettings.clear();
-      await db.syncItems.clear();
-      await db.notes.bulkPut(bundle.notes);
-      await db.tags.bulkPut(bundle.tags);
-      await db.collections.bulkPut(bundle.collections);
-      await db.users.put(bundle.user);
-      await db.activities.bulkPut(bundle.activities);
-      await db.userSettings.put(settings);
-      for (const note of bundle.notes) {
-        await queueNoteSync(note.id);
-      }
-      await queueWorkspaceSync();
-    }));
+    await db.transaction(
+      'rw',
+      [db.notes, db.noteBlocks, db.noteFiles, db.tags, db.collections, db.users, db.activities, db.userSettings],
+      async () => {
+        await db.notes.clear();
+        await db.noteBlocks.clear();
+        await db.noteFiles.clear();
+        await db.tags.clear();
+        await db.collections.clear();
+        await db.users.clear();
+        await db.activities.clear();
+        await db.userSettings.clear();
+        await db.notes.bulkPut(bundle.notes.map(stripNoteRelations));
+        await db.noteBlocks.bulkPut(bundle.noteBlocks);
+        await db.noteFiles.bulkPut(bundle.noteFiles);
+        await db.tags.bulkPut(bundle.tags);
+        await db.collections.bulkPut(bundle.collections);
+        await db.users.put(bundle.user);
+        await db.activities.bulkPut(bundle.activities);
+        await db.userSettings.put(settings);
+      },
+    );
+    await useNotesStore.getState().refreshNotes();
     set({
-      notes: sortNotes(bundle.notes),
       tags: sortTags(bundle.tags),
       collections: sortCollections(bundle.collections),
       user: bundle.user,
-      activities: [...bundle.activities].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      activities: sortActivities(bundle.activities),
       isReady: true,
     });
-    notifySyncQueued();
   },
 }));
+
+function sortCollections(collections: Collection[]) {
+  return [...collections].sort((a, b) => {
+    const aIndex = collectionOrder.indexOf(a.id);
+    const bIndex = collectionOrder.indexOf(b.id);
+    if (aIndex === -1 || bIndex === -1) {
+      return a.name.localeCompare(b.name);
+    }
+    return aIndex - bIndex;
+  });
+}
+
+function sortTags(tags: Tag[]) {
+  return [...tags].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function sortActivities(activities: ActivityItem[]) {
+  return [...activities].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
 
 function createId() {
   return crypto.randomUUID();
 }
 
 function createTagId(name: string) {
-  const slug = name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 40);
-
+  const slug = createSlug(name);
   return `tag-${slug || 'label'}-${createId().slice(0, 8)}`;
 }
 
 function createCollectionId(name: string) {
-  const slug = name
+  const slug = createSlug(name);
+  return `collection-${slug || 'group'}-${createId().slice(0, 8)}`;
+}
+
+function createSlug(value: string) {
+  return value
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 40);
-
-  return `collection-${slug || 'group'}-${createId().slice(0, 8)}`;
 }
 
-function uniqueIds(ids: string[]) {
-  return [...new Set(ids)];
+function stripNoteRelations<T extends { blocks?: unknown; files?: unknown }>(note: T): Omit<T, 'blocks' | 'files'> {
+  const { blocks: _blocks, files: _files, ...baseNote } = note;
+  return baseNote;
 }
-
-function normalizeUsageExampleInput(input: Omit<UsageExample, 'id'>) {
-  const expression = input.expression.trim();
-  const meaning = input.meaning.trim();
-  const example = input.example.trim();
-
-  if (!expression && !meaning && !example) {
-    return null;
-  }
-
-  return {
-    expression,
-    meaning,
-    example,
-  };
-}
-
-function normalizeNoteEditDraft(input: NoteEditDraft): NoteEditDraft | null {
-  const title = input.title.trim();
-  if (!stripInlineFormatting(title).trim()) {
-    return null;
-  }
-
-  const usageExamples = input.usageExamples.flatMap((row) => {
-    const normalized = normalizeUsageExampleInput(row);
-    return normalized ? [{ id: row.id || createId(), ...normalized }] : [];
-  });
-
-  return {
-    ...input,
-    title,
-    collectionId: input.collectionId || null,
-    intro: input.intro.trim(),
-    summaryMarkdown: input.summaryMarkdown.trimEnd(),
-    explanationMarkdown: input.explanationMarkdown.trimEnd(),
-    usageExamples,
-    tipTitle: input.tipTitle.trim(),
-    tipBody: input.tipBody.trimEnd(),
-    tagIds: input.tagIds ? uniqueIds(input.tagIds) : undefined,
-  };
-}
-
-function markdownToBlocks(markdown: string, prefix: string): RichTextBlock[] {
-  const text = markdown.trimEnd();
-  if (!text) {
-    return [];
-  }
-
-  return [{ id: `${prefix}-${createId()}`, text }];
-}
-
-function finalizeNoteUpdate(note: Note): Note {
-  const updated = {
-    ...note,
-    saveState: 'saved',
-    syncStatus: 'local',
-    updatedAt: new Date().toISOString(),
-    version: note.version + 1,
-  } satisfies Note;
-
-  return {
-    ...updated,
-    stats: calculateNoteStats(updated),
-  };
-}
-
-function calculateNoteStats(note: Note): NoteStats {
-  const text = [
-    note.title,
-    note.content.intro ?? '',
-    ...(note.content.summary?.map((block) => block.text) ?? []),
-    ...(note.content.explanation?.map((block) => block.text) ?? []),
-    ...(note.content.usageExamples?.rows.flatMap((row) => [row.expression, row.meaning, row.example]) ?? []),
-    note.content.tip?.title ?? '',
-    note.content.tip?.body ?? '',
-    ...(note.content.additionalExamples ?? []),
-  ]
-    .map(stripInlineFormatting)
-    .join(' ');
-  const wordCount = text.split(/\s+/).filter(Boolean).length;
-
-  return {
-    wordCount,
-    characterCount: text.length,
-    readingTimeMinutes: Math.max(1, Math.ceil(wordCount / editorSettings.readingWordsPerMinute)),
-  };
-}
-
-function buildActivity(noteId: string, label: string): ActivityItem {
-  const now = new Date().toISOString();
-  return {
-    id: createId(),
-    noteId,
-    label,
-    time: new Date().toLocaleString(),
-    createdAt: now,
-  };
-}
-
-function buildLocalNote({ input, authorId }: { input: NewNoteInput; authorId: string }): Note {
-  const now = new Date().toISOString();
-  const intro = input.intro.trim();
-  const title = input.title.trim();
-  const wordCount = intro.split(/\s+/).filter(Boolean).length;
-
-  return {
-    id: createId(),
-    type: input.type ?? defaultNewNoteType,
-    title,
-    collectionId: input.collectionId ?? defaultUserSettings.primaryCollectionId,
-    tagIds: input.tagIds ?? [],
-    linkedNoteIds: [],
-    isFavorite: false,
-    isPinned: false,
-    isArchived: false,
-    isTrashed: false,
-    saveState: 'saved',
-    authorId,
-    createdAt: now,
-    updatedAt: now,
-    lastOpenedAt: now,
-    content: {
-      intro,
-      summary: [{ id: createId(), text: intro }],
-      explanation: [],
-      usageExamples: null,
-      tip: null,
-      additionalExamples: [],
-    },
-    stats: {
-      wordCount,
-      characterCount: intro.length,
-      readingTimeMinutes: Math.max(1, Math.ceil(wordCount / editorSettings.readingWordsPerMinute)),
-    },
-    relatedLinks: [],
-    thumbnail: { variant: defaultNoteThumbnailVariant },
-    version: 1,
-    syncStatus: 'local',
-  };
-}
-
-function buildLocalNoteFromDraft({ draft, authorId }: { draft: NoteEditDraft; authorId: string }): Note {
-  const now = new Date().toISOString();
-  const note: Note = {
-    id: createId(),
-    type: draft.type ?? defaultNewNoteType,
-    title: draft.title,
-    collectionId: draft.collectionId ?? defaultUserSettings.primaryCollectionId,
-    tagIds: draft.tagIds ?? [],
-    linkedNoteIds: [],
-    isFavorite: false,
-    isPinned: false,
-    isArchived: false,
-    isTrashed: false,
-    saveState: 'saved',
-    authorId,
-    createdAt: now,
-    updatedAt: now,
-    lastOpenedAt: now,
-    content: {
-      intro: draft.intro,
-      summary: markdownToBlocks(draft.summaryMarkdown, `new-summary`),
-      explanation: markdownToBlocks(draft.explanationMarkdown, `new-explanation`),
-      usageExamples: draft.usageExamples.length ? { rows: draft.usageExamples } : null,
-      tip: draft.tipBody || draft.tipTitle
-        ? {
-            id: createId(),
-            title: draft.tipTitle || 'Tip',
-            body: draft.tipBody,
-          }
-        : null,
-      additionalExamples: [],
-    },
-    stats: {
-      wordCount: 0,
-      characterCount: 0,
-      readingTimeMinutes: 1,
-    },
-    relatedLinks: [],
-    thumbnail: { variant: defaultNoteThumbnailVariant },
-    version: 1,
-    syncStatus: 'local',
-  };
-
-  return {
-    ...note,
-    stats: calculateNoteStats(note),
-  };
-}
-
