@@ -36,6 +36,7 @@ import {
 } from "../core/services/notexPackage";
 import { themeRegistry } from "../core/theme/themeRegistry";
 import { filterNotes } from "../core/utils/noteFilters";
+import { formatShortcutForDisplay } from "../core/utils/shortcutFormatting";
 import { useI18n } from "../i18n/I18nProvider";
 import { useAppStore } from "../store/useAppStore";
 import { useNotesStore } from "../store/useNotesStore";
@@ -825,7 +826,7 @@ function buildShortcutHelpGroups(t: ReturnType<typeof useI18n>["t"]) {
       items: [
         ...toolbarShortcutItems,
         {
-          keys: [formatShortcutForHelp("Mod+T"), "← / ↑ / ↓ / →"],
+          keys: [formatShortcutForDisplay("Mod+T"), "← / ↑ / ↓ / →"],
           description: t("profile.shortcuts.items.tableMode"),
         },
         {
@@ -906,53 +907,19 @@ function buildToolbarShortcutItems(t: ReturnType<typeof useI18n>["t"]) {
       }
       imageFileAdded = true;
       items.push({
-        keys: [formatShortcutForHelp(tool.shortcut)],
+        keys: [formatShortcutForDisplay(tool.shortcut)],
         description: t("profile.shortcuts.items.toolbar.imageFile"),
       });
       continue;
     }
 
     items.push({
-      keys: [formatShortcutForHelp(tool.shortcut)],
+      keys: [formatShortcutForDisplay(tool.shortcut)],
       description: t(`profile.shortcuts.items.toolbar.${tool.id}`),
     });
   }
 
   return items;
-}
-
-function formatShortcutForHelp(shortcut: string) {
-  return shortcut
-    .split("+")
-    .map((part) => {
-      const token = part.trim();
-      const normalized = token.toLowerCase();
-
-      if (normalized === "mod") {
-        return "Ctrl / ⌘";
-      }
-      if (normalized === "alt") {
-        return "Alt";
-      }
-      if (normalized === "shift") {
-        return "Shift";
-      }
-      if (normalized === "arrowleft") {
-        return "←";
-      }
-      if (normalized === "arrowup") {
-        return "↑";
-      }
-      if (normalized === "arrowright") {
-        return "→";
-      }
-      if (normalized === "arrowdown") {
-        return "↓";
-      }
-
-      return token.length === 1 ? token.toUpperCase() : token;
-    })
-    .join(" + ");
 }
 
 function getRecentTimestamp(note: Note) {

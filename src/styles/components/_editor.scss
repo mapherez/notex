@@ -131,6 +131,7 @@ div.usage-styled-field__control {
 }
 
 .markdown-tool-button {
+  position: relative;
   display: inline-flex;
   min-width: 2rem;
   height: 2rem;
@@ -143,18 +144,66 @@ div.usage-styled-field__control {
   color: var(--nx-color-text-muted);
 }
 
+.markdown-tool-tooltip {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 0.45rem);
+  display: grid;
+  min-width: max-content;
+  justify-items: center;
+  gap: 0.18rem;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-surface-elevated);
+  box-shadow: var(--nx-shadow-soft);
+  color: var(--nx-color-text);
+  opacity: 0;
+  padding: 0.42rem 0.58rem;
+  pointer-events: none;
+  text-align: center;
+  transform: translate(-50%, -0.2rem);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+  visibility: hidden;
+  white-space: nowrap;
+  z-index: 95;
+}
+
+.markdown-tool-tooltip__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.markdown-tool-tooltip__shortcut {
+  color: var(--nx-color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.markdown-tool-button:not(:disabled):hover .markdown-tool-tooltip,
+.markdown-tool-button:not(:disabled):focus-visible .markdown-tool-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  visibility: visible;
+}
+
 .markdown-tool-button svg {
   width: 1.0625rem;
   height: 1.0625rem;
 }
 
-.markdown-tool-button[aria-expanded] > svg:last-child {
+.markdown-tool-button[aria-expanded] > svg:last-of-type {
   margin-left: var(--nx-space-1);
   color: var(--nx-color-text-muted);
   transition: transform 160ms ease;
 }
 
-.markdown-tool-button[aria-expanded="true"] > svg:last-child {
+.markdown-tool-button[aria-expanded="true"] > svg:last-of-type {
   transform: rotate(180deg);
 }
 

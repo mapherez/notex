@@ -2,17 +2,17 @@
 
 ## What's New in NoteX
 
-Notes now use the block-based editor across the app.
+This release makes block-based Notes the default NoteX experience.
 
 ### Highlights
 
-- Notes now use SQLite-backed block, file, and metadata tables with `.notex` package export/import.
-- The `/notes` experience now opens the block-based notes list and editor directly.
-- Sidebar New Note now creates a note immediately.
-- Built the note editor with header fields, empty state, add-block controls, block drag/reorder/delete, autosave, TOC, configurable right panels, sticky toolbar, and selection bubble toolbar.
-- Integrated Tiptap JSON storage per block, including tables, task lists, links, colors/highlights, text alignment, images, and attachment cards.
-- Updated profile backup/import to use `.notex` packages.
-- Updated docs and locale strings.
+- Replaced the old note system with the new block-based Notes editor.
+- Added flexible note blocks with autosave, drag reorder, delete confirmation, and table of contents.
+- Added rich editing with toolbar shortcuts, active formatting states, tables, checklists, links, tips, images, and file attachments.
+- Updated Notes, search, dashboard, favorites, recent, trash, tags, and collections to use the new Notes model.
+- Added `.notex` package export/import for local backups with database and files.
+- Improved startup and editor loading with route splitting, async editor chunks, and loading indicators.
+- Polished Notes list behavior, pinned note reordering, menus, tooltips, and New Note handling.
 
 ---
 

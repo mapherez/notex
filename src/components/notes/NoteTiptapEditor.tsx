@@ -64,6 +64,7 @@ import { exportNoteAttachment, openNoteAttachment, resolveNoteFileSrc } from '..
 import { openExternalUrl } from "../../core/services/externalLinks";
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { richTextToTiptapContent } from '../../core/utils/richText';
+import { formatShortcutForDisplay } from '../../core/utils/shortcutFormatting';
 import { useI18n } from '../../i18n/I18nProvider';
 import { emptyTiptapDocument } from '../../store/useNotesStore';
 import { editorSettings } from '../../config/appSettings';
@@ -149,12 +150,14 @@ type TableAction =
 type TextAlignment = 'center' | 'justify' | 'left' | 'right';
 
 const toolbarShortcutBindings = new Map<ToolbarActionId, ShortcutBinding>();
+const toolbarShortcutLabels = new Map<ToolbarActionId, string>();
 const configuredShortcutSignatures = new Set<string>();
 
 for (const tool of editorSettings.noteTools) {
   const binding = parseShortcut(tool.shortcut);
   if (binding && isToolbarActionId(tool.id)) {
     toolbarShortcutBindings.set(tool.id, binding);
+    toolbarShortcutLabels.set(tool.id, formatShortcutForDisplay(tool.shortcut));
     configuredShortcutSignatures.add(shortcutSignature(binding));
   }
 }
@@ -979,6 +982,7 @@ export function NoteTiptapToolbar({
           disabled={unavailable}
           label={t("editor.bold")}
           onClick={() => void executeToolbarAction('bold')}
+          shortcut={toolbarShortcutLabels.get('bold')}
         >
           <Bold />
         </ToolbarButton>
@@ -987,6 +991,7 @@ export function NoteTiptapToolbar({
           disabled={unavailable}
           label={t("editor.italic")}
           onClick={() => void executeToolbarAction('italic')}
+          shortcut={toolbarShortcutLabels.get('italic')}
         >
           <Italic />
         </ToolbarButton>
@@ -995,6 +1000,7 @@ export function NoteTiptapToolbar({
           disabled={unavailable}
           label={t("editor.underline")}
           onClick={() => void executeToolbarAction('underline')}
+          shortcut={toolbarShortcutLabels.get('underline')}
         >
           <Underline />
         </ToolbarButton>
@@ -1003,6 +1009,7 @@ export function NoteTiptapToolbar({
           disabled={unavailable}
           label={t("editor.strikethrough")}
           onClick={() => void executeToolbarAction('strike')}
+          shortcut={toolbarShortcutLabels.get('strike')}
         >
           <Strikethrough />
         </ToolbarButton>
@@ -1021,6 +1028,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("editor.alignLeft")}
           onClick={() => void executeToolbarAction('alignLeft')}
+          shortcut={toolbarShortcutLabels.get('alignLeft')}
         >
           <AlignLeft />
         </ToolbarButton>
@@ -1029,6 +1037,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("editor.alignCenter")}
           onClick={() => void executeToolbarAction('alignCenter')}
+          shortcut={toolbarShortcutLabels.get('alignCenter')}
         >
           <AlignCenter />
         </ToolbarButton>
@@ -1037,6 +1046,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("editor.alignRight")}
           onClick={() => void executeToolbarAction('alignRight')}
+          shortcut={toolbarShortcutLabels.get('alignRight')}
         >
           <AlignRight />
         </ToolbarButton>
@@ -1045,6 +1055,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("editor.alignJustify")}
           onClick={() => void executeToolbarAction('alignJustify')}
+          shortcut={toolbarShortcutLabels.get('alignJustify')}
         >
           <AlignJustify />
         </ToolbarButton>
@@ -1056,6 +1067,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("editor.heading1")}
           onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
+          shortcut={toolbarShortcutLabels.get('header')}
         >
           <Heading1 />
         </ToolbarButton>
@@ -1064,6 +1076,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("editor.heading2")}
           onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+          shortcut={toolbarShortcutLabels.get('header')}
         >
           <Heading2 />
         </ToolbarButton>
@@ -1072,6 +1085,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("editor.heading3")}
           onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
+          shortcut={toolbarShortcutLabels.get('header')}
         >
           <Heading3 />
         </ToolbarButton>
@@ -1080,6 +1094,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("editor.bulletList")}
           onClick={() => void executeToolbarAction('bulletList')}
+          shortcut={toolbarShortcutLabels.get('bulletList')}
         >
           <List />
         </ToolbarButton>
@@ -1088,6 +1103,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("editor.numberedList")}
           onClick={() => void executeToolbarAction('orderedList')}
+          shortcut={toolbarShortcutLabels.get('orderedList')}
         >
           <ListOrdered />
         </ToolbarButton>
@@ -1096,6 +1112,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("editor.checkList")}
           onClick={() => void executeToolbarAction('taskList')}
+          shortcut={toolbarShortcutLabels.get('taskList')}
         >
           <ListChecks />
         </ToolbarButton>
@@ -1103,6 +1120,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("editor.quote")}
           onClick={() => void executeToolbarAction('quote')}
+          shortcut={toolbarShortcutLabels.get('quote')}
         >
           <Quote />
         </ToolbarButton>
@@ -1110,6 +1128,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("noteDetail.tip")}
           onClick={() => void executeToolbarAction('tip')}
+          shortcut={toolbarShortcutLabels.get('tip')}
         >
           <Lightbulb />
         </ToolbarButton>
@@ -1120,6 +1139,7 @@ export function NoteTiptapToolbar({
           disabled={unavailable}
           label={t("editor.inlineCode")}
           onClick={() => void executeToolbarAction('inlineCode')}
+          shortcut={toolbarShortcutLabels.get('inlineCode')}
         >
           <Code />
         </ToolbarButton>
@@ -1127,6 +1147,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("editor.codeBlock")}
           onClick={() => void executeToolbarAction('codeBlock')}
+          shortcut={toolbarShortcutLabels.get('codeBlock')}
         >
           <SquareCode />
         </ToolbarButton>
@@ -1134,6 +1155,7 @@ export function NoteTiptapToolbar({
           disabled={unavailable}
           label={t("editor.link")}
           onClick={() => void executeToolbarAction('link')}
+          shortcut={toolbarShortcutLabels.get('link')}
         >
           <Link2 />
         </ToolbarButton>
@@ -1149,6 +1171,7 @@ export function NoteTiptapToolbar({
           >
             <Table2 />
             <ChevronDown />
+            <ToolbarTooltip label={t("editor.tableMenu")} shortcut={toolbarShortcutLabels.get('table')} />
           </button>
           {tableMenuOpen ? (
             <div className="markdown-table-menu">
@@ -1218,6 +1241,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("notes.editor.addImage")}
           onClick={() => void executeToolbarAction('image')}
+          shortcut={toolbarShortcutLabels.get('image')}
         >
           <ImageIcon />
         </ToolbarButton>
@@ -1225,6 +1249,7 @@ export function NoteTiptapToolbar({
           disabled={contentUnavailable}
           label={t("notes.editor.addFile")}
           onClick={() => void executeToolbarAction('file')}
+          shortcut={toolbarShortcutLabels.get('file')}
         >
           <FileUp />
         </ToolbarButton>
@@ -1447,18 +1472,19 @@ function ToolbarButton({
   disabled = false,
   label,
   onClick,
+  shortcut,
 }: {
   active?: boolean;
   children: ReactNode;
   disabled?: boolean;
   label: string;
   onClick: () => void;
+  shortcut?: string;
 }) {
   return (
     <button
       className={active ? 'markdown-tool-button is-active' : 'markdown-tool-button'}
       disabled={disabled}
-      title={label}
       type="button"
       aria-label={label}
       aria-pressed={active}
@@ -1466,7 +1492,17 @@ function ToolbarButton({
       onClick={onClick}
     >
       {children}
+      <ToolbarTooltip label={label} shortcut={shortcut} />
     </button>
+  );
+}
+
+function ToolbarTooltip({ label, shortcut }: { label: string; shortcut?: string }) {
+  return (
+    <span className="markdown-tool-tooltip" role="tooltip">
+      <span className="markdown-tool-tooltip__label">{label}</span>
+      {shortcut ? <span className="markdown-tool-tooltip__shortcut">{shortcut}</span> : null}
+    </span>
   );
 }
 

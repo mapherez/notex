@@ -141,6 +141,8 @@
     },
     "openMenu": "Open note actions",
     "reorderPinned": "Reorder pinned note",
+    "newNoteConfirmTitle": "Create a new note?",
+    "newNoteConfirmDescription": "The current note already has content. Create a new note and leave this one as it is?",
     "moreTags": "{{count}} more tags",
     "draftCreated": "Local note created",
     "pinChanged": "Pinned state updated",

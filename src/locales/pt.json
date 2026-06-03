@@ -141,6 +141,8 @@
     },
     "openMenu": "Abrir ações da nota",
     "reorderPinned": "Reordenar nota fixada",
+    "newNoteConfirmTitle": "Criar uma nova nota?",
+    "newNoteConfirmDescription": "A nota atual já tem conteúdo. Criar uma nova nota e deixar esta como está?",
     "moreTags": "Mais {{count}} tags",
     "draftCreated": "Nota local criada",
     "pinChanged": "Estado de fixação atualizado",

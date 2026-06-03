@@ -98,7 +98,6 @@ function TextStylePicker({
         className={clsx('markdown-tool-button text-style-picker__trigger', active && 'is-active')}
         disabled={disabled}
         type="button"
-        title={label}
         aria-label={label}
         aria-expanded={open}
         aria-pressed={active}
@@ -107,6 +106,9 @@ function TextStylePicker({
       >
         <Icon />
         <ChevronDown />
+        <span className="markdown-tool-tooltip" role="tooltip">
+          <span className="markdown-tool-tooltip__label">{label}</span>
+        </span>
       </button>
       {open ? (
         <div className="text-style-picker__menu" role="menu" aria-label={label}>

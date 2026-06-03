@@ -63,6 +63,10 @@
   background: var(--nx-color-hover);
 }
 
+.note-row:has(.note-row-menu) {
+  z-index: 85;
+}
+
 .note-row__link-overlay {
   position: absolute;
   inset: 0;

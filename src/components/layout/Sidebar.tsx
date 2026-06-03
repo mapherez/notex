@@ -1,7 +1,7 @@
 import { getVersion } from '@tauri-apps/api/app';
 import { isTauri } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
-import { NavLink, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { NavLink, Link, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Clock3,
   FileText,
@@ -16,7 +16,6 @@ import {
 import clsx from 'clsx';
 import { appSettings, navigationSettings } from '../../config/appSettings';
 import { useI18n } from '../../i18n/I18nProvider';
-import { useAppStore } from '../../store/useAppStore';
 import { useNotesStore } from '../../store/useNotesStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { latestPatchNoteVersion, PatchNotesModal } from '../ui/PatchNotesModal';
@@ -30,14 +29,12 @@ const navIcons = {
   trash: Trash,
 } as const;
 
-export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClose: () => void; onCreateNote: () => void }) {
   const { t } = useI18n();
   const [appVersion, setAppVersion] = useState(latestPatchNoteVersion);
   const [patchNotesOpen, setPatchNotesOpen] = useState(false);
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  const navigate = useNavigate();
-  const settings = useAppStore((state) => state.settings);
   const collections = useKnowledgeStore((state) => state.collections);
   const hasTrashedNotes = useNotesStore((state) => state.notes.some((note) => note.isTrashed));
   const activeCollectionId = searchParams.get('collection');
@@ -54,7 +51,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
   function createNote() {
     onClose();
-    navigate(`/notes/new?collection=${settings.primaryCollectionId}`);
+    onCreateNote();
   }
 
   return (
