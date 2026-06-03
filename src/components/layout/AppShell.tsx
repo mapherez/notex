@@ -1,4 +1,5 @@
 import { Plus, X } from 'lucide-react';
+import { isTauri } from '@tauri-apps/api/core';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import type { Note } from '../../core/models/models';
@@ -9,9 +10,11 @@ import { useAppStore } from '../../store/useAppStore';
 import { useNotesStore } from '../../store/useNotesStore';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { WindowTitleBar } from './WindowTitleBar';
 
 export function AppShell() {
   const { t } = useI18n();
+  const hasWindowTitleBar = isTauri();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [confirmNewNoteOpen, setConfirmNewNoteOpen] = useState(false);
   const [creatingNote, setCreatingNote] = useState(false);
@@ -80,30 +83,33 @@ export function AppShell() {
   }, [navigate, requestNewNote]);
 
   return (
-    <div className="app-shell">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onCreateNote={() => void requestNewNote()} />
-      <main className="main-shell">
-        <TopBar showSearch onMenuClick={() => setSidebarOpen(true)} />
-        <Outlet />
-      </main>
-      {confirmNewNoteOpen ? (
-        <div className="modal-backdrop">
-          <section className="choice-modal" role="dialog" aria-modal="true" aria-labelledby="new-note-confirm-title">
-            <h2 id="new-note-confirm-title">{t('notes.newNoteConfirmTitle')}</h2>
-            <p>{t('notes.newNoteConfirmDescription')}</p>
-            <div className="choice-modal-actions two-column-actions">
-              <button type="button" onClick={() => setConfirmNewNoteOpen(false)}>
-                <X />
-                <span>{t('common.cancel')}</span>
-              </button>
-              <button type="button" disabled={creatingNote} onClick={() => void createAndOpenNote()}>
-                <Plus />
-                <span>{t('navigation.newNote')}</span>
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
+    <div className={hasWindowTitleBar ? 'app-frame app-frame--custom-titlebar' : 'app-frame'}>
+      <WindowTitleBar />
+      <div className="app-shell">
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onCreateNote={() => void requestNewNote()} />
+        <main className="main-shell">
+          <TopBar showSearch onMenuClick={() => setSidebarOpen(true)} />
+          <Outlet />
+        </main>
+        {confirmNewNoteOpen ? (
+          <div className="modal-backdrop">
+            <section className="choice-modal" role="dialog" aria-modal="true" aria-labelledby="new-note-confirm-title">
+              <h2 id="new-note-confirm-title">{t('notes.newNoteConfirmTitle')}</h2>
+              <p>{t('notes.newNoteConfirmDescription')}</p>
+              <div className="choice-modal-actions two-column-actions">
+                <button type="button" onClick={() => setConfirmNewNoteOpen(false)}>
+                  <X />
+                  <span>{t('common.cancel')}</span>
+                </button>
+                <button type="button" disabled={creatingNote} onClick={() => void createAndOpenNote()}>
+                  <Plus />
+                  <span>{t('navigation.newNote')}</span>
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

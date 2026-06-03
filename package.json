@@ -6,7 +6,7 @@
   "scripts": {
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "tauri:icon": "tauri icon ./public/assets/notex_logo.png",
+    "tauri:icon": "tauri icon ./public/assets/notex_logo_small.webp",
     "release:tauri": "node .github/scripts/tauri-release.mjs",
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",

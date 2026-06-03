@@ -55,6 +55,12 @@
       "title": "Title"
     }
   },
+  "windowControls": {
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore",
+    "close": "Close window"
+  },
   "dashboard": {
     "greeting": "Hi, {{name}} 👋",
     "subtitle": "Here is your organized knowledge.",

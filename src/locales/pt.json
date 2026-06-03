@@ -55,6 +55,12 @@
       "title": "Título"
     }
   },
+  "windowControls": {
+    "minimize": "Minimizar",
+    "maximize": "Maximizar",
+    "restore": "Restaurar",
+    "close": "Fechar janela"
+  },
   "dashboard": {
     "greeting": "Olá, {{name}} 👋",
     "subtitle": "Aqui está o teu conhecimento organizado.",

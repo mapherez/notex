@@ -71,7 +71,7 @@ The in-app updater is configured through `src-tauri/tauri.conf.json` and checks 
 - `npm run dev` - start the Vite dev server.
 - `npm run tauri:dev` - start the Tauri desktop app in development mode.
 - `npm run tauri:build` - build the desktop app.
-- `npm run tauri:icon` - regenerate Tauri icons from `public/assets/notex_logo.png`.
+- `npm run tauri:icon` - regenerate Tauri icons from `public/assets/notex_logo_small.webp`.
 - `npm run release:tauri` - run the Tauri release helper script.
 - `npm run build` - typecheck and build the frontend.
 - `npm run preview` - preview the frontend build with Vite.

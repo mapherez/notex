@@ -1,10 +1,136 @@
 @use "../abstracts/variables" as *;
 
+.app-frame {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--nx-color-canvas);
+}
+
+.app-frame--custom-titlebar {
+  grid-template-rows: var(--nx-window-titlebar-height) minmax(0, 1fr);
+}
+
+.window-titlebar {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+  display: flex;
+  height: var(--nx-window-titlebar-height);
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--nx-color-border);
+  background: color-mix(in srgb, var(--nx-color-sidebar) 94%, var(--nx-color-canvas));
+  color: var(--nx-color-text-muted);
+  user-select: none;
+}
+
+.window-titlebar__drag-region {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  padding: 0 var(--nx-space-3);
+}
+
+.window-titlebar__logo {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: var(--nx-radius-sm);
+  object-fit: cover;
+}
+
+.window-titlebar__controls {
+  display: flex;
+  height: 100%;
+  flex: 0 0 auto;
+}
+
+.window-titlebar__control {
+  position: relative;
+  display: grid;
+  width: 2.875rem;
+  height: 100%;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.window-titlebar__tooltip {
+  position: absolute;
+  top: calc(100% + 0.42rem);
+  left: 50%;
+  z-index: 130;
+  min-width: max-content;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-surface-elevated);
+  box-shadow: var(--nx-shadow-soft);
+  color: var(--nx-color-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.15;
+  opacity: 0;
+  padding: 0.42rem 0.58rem;
+  pointer-events: none;
+  text-align: center;
+  transform: translate(-50%, -0.2rem);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.window-titlebar__control:last-child .window-titlebar__tooltip {
+  right: var(--nx-space-2);
+  left: auto;
+  transform: translateY(-0.2rem);
+}
+
+.window-titlebar__control svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  stroke-width: 1.8;
+}
+
+.window-titlebar__control:hover,
+.window-titlebar__control:focus-visible {
+  background: var(--nx-color-hover);
+  color: var(--nx-color-text);
+  outline: none;
+}
+
+.window-titlebar__control:hover .window-titlebar__tooltip,
+.window-titlebar__control:focus-visible .window-titlebar__tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  visibility: visible;
+}
+
+.window-titlebar__control:last-child:hover .window-titlebar__tooltip,
+.window-titlebar__control:last-child:focus-visible .window-titlebar__tooltip {
+  transform: translateY(0);
+}
+
+.window-titlebar__control--close:hover,
+.window-titlebar__control--close:focus-visible {
+  background: var(--nx-color-danger);
+  color: #fff;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: var(--nx-sidebar-width) minmax(0, 1fr);
   min-height: 100vh;
   background: var(--nx-color-canvas);
+}
+
+.app-frame--custom-titlebar .app-shell {
+  min-height: calc(100vh - var(--nx-window-titlebar-height));
 }
 
 .sidebar {
@@ -17,6 +143,11 @@
   background: var(--nx-color-sidebar);
   padding: var(--nx-space-6);
   z-index: 20;
+}
+
+.app-frame--custom-titlebar .sidebar {
+  top: var(--nx-window-titlebar-height);
+  height: calc(100vh - var(--nx-window-titlebar-height));
 }
 
 .sidebar-header {
@@ -378,6 +509,10 @@
   background: color-mix(in srgb, var(--nx-color-canvas) 94%, transparent);
   backdrop-filter: blur(18px);
   z-index: 90;
+}
+
+.app-frame--custom-titlebar .topbar {
+  top: var(--nx-window-titlebar-height);
 }
 
 .topbar--with-search {

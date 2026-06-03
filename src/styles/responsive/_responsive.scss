@@ -27,6 +27,11 @@
     transition: transform 180ms ease;
   }
 
+  .app-frame--custom-titlebar .sidebar {
+    top: var(--nx-window-titlebar-height);
+    height: calc(100vh - var(--nx-window-titlebar-height));
+  }
+
   .sidebar.open {
     transform: translateX(0);
   }
