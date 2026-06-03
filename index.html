@@ -5,9 +5,78 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#080b12" />
     <title>NoteX</title>
+    <style>
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+        background: #060709;
+      }
+
+      .app-boot-loader {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #060709;
+        color: #f1f2f4;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      .app-boot-loader__content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+      }
+
+      .app-boot-loader__spinner {
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(241, 242, 244, 0.16);
+        border-top-color: #8f70ff;
+        border-radius: 999px;
+        animation: app-boot-spin 0.8s linear infinite;
+      }
+
+      .app-boot-loader__label {
+        font-size: 35px;
+        font-weight: 700;
+      }
+
+      @keyframes app-boot-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .app-boot-loader__spinner {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="app-boot-loader" aria-label="Loading NoteX" role="status">
+        <div class="app-boot-loader__content">
+          <img
+            src="data:image/webp;base64,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"
+            alt="NoteX Logo"
+          />
+          <span class="app-boot-loader__label">NoteX</span>
+          <span class="app-boot-loader__spinner" aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
