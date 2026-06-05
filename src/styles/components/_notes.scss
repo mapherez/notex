@@ -409,6 +409,7 @@
 
 .note-row__tag-chain {
   --nx-tag-chain-step: 2rem;
+  --nx-tag-hover-lift: var(--nx-space-2);
 
   display: inline-grid;
   grid-template-columns: auto;
@@ -437,6 +438,14 @@
   justify-self: end;
 }
 
+.note-row__tag-chain-item::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: var(--nx-tag-hover-lift);
+}
+
 @for $index from 1 through 24 {
   .note-row__tag-chain-item:nth-child(#{$index}) {
     z-index: #{25 - $index};
@@ -446,7 +455,11 @@
 .note-row__tag-chain-item:hover,
 .note-row__tag-chain-item:focus-within {
   z-index: 60;
-  padding-block-end: var(--nx-space-3);
+}
+
+.note-row__tag-chain-item:hover .tag-chip,
+.note-row__tag-chain-item:focus-within .tag-chip {
+  transform: translateY(calc(-1 * var(--nx-tag-hover-lift)));
 }
 
 .note-row__tag-chain-item .tag-chip {

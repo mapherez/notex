@@ -481,9 +481,10 @@
 
 .notes-grid .note-row__badges {
   grid-area: badges;
+  align-items: flex-end;
   align-self: end;
   max-width: 100%;
-  min-height: 1.85rem;
+  min-height: calc(1.85rem + var(--nx-space-2));
 }
 
 .notes-grid .note-row__time {
