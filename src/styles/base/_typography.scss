@@ -1,3 +1,17 @@
 .page-title {
+  margin: 0;
+  font-size: var(--nx-font-size-page-title);
+  font-weight: var(--nx-font-weight-heading);
   letter-spacing: 0;
+  line-height: var(--nx-line-height-tight);
+}
+
+.page-subtitle {
+  margin: var(--nx-space-3) 0 0;
+  color: var(--nx-color-text-muted);
+  font-size: var(--nx-font-size-body);
+}
+
+.page-subtitle.empty {
+  margin: 0;
 }

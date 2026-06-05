@@ -7,6 +7,9 @@
 @use "base/reset";
 @use "base/typography";
 @use "layout/shell";
+
+// Phase 2 component primitives should be imported here, before page styles.
+// Existing legacy component/page order is preserved in Phase 1 to avoid cascade changes.
 @use "components/modals";
 @use "components/forms";
 @use "components/custom-select";

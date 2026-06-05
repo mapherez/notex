@@ -4,9 +4,9 @@
   }
 }
 
-@mixin focus-ring($color: var(--nx-color-accent)) {
-  outline: 2px solid color-mix(in srgb, #{$color} 55%, transparent);
-  outline-offset: 3px;
+@mixin focus-ring($color: var(--nx-color-accent), $strength: 55%) {
+  outline: var(--nx-focus-ring-width) solid color-mix(in srgb, #{$color} #{$strength}, transparent);
+  outline-offset: var(--nx-focus-ring-offset);
 }
 
 @mixin icon-size($size) {
@@ -20,4 +20,10 @@
   @media (max-width: $width) {
     @content;
   }
+}
+
+@mixin truncate-one-line {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

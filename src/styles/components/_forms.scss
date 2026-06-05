@@ -32,24 +32,6 @@
   padding: var(--nx-page-gutter) var(--nx-page-gutter) var(--nx-space-8);
 }
 
-.page-title {
-  margin: 0;
-  font-size: clamp(1.65rem, 2.3vw, 2rem);
-  font-weight: 780;
-  letter-spacing: 0;
-  line-height: 1.15;
-}
-
-.page-subtitle {
-  margin: var(--nx-space-3) 0 0;
-  color: var(--nx-color-text-muted);
-  font-size: 1rem;
-}
-
-.page-subtitle.empty {
-  margin: 0;
-}
-
 .legal-page {
   width: min(100%, 58rem);
 }

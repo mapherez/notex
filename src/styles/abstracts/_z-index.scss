@@ -2,5 +2,9 @@
 @use "variables" as *;
 
 @function z($name) {
+  @if not map.has-key($z-index, $name) {
+    @error "Unknown z-index layer `#{$name}`.";
+  }
+
   @return map.get($z-index, $name);
 }
