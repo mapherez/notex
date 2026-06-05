@@ -36,7 +36,7 @@ Nota apos os pontos 1-10: os itens finais foram revistos depois do audit geral. 
 | `[x]` | Notes list/grid migration plan: rever `NoteRow`, `notes-grid`, filters, bulk actions, badges, chips, menus e responsive list/grid antes de mexer no editor | `Audit/15_notes_list_grid_migration_plan.md` |
 | `[x]` | Note detail/editor migration plan: separar document layout, side panels/meta lists, note blocks, Tiptap/ProseMirror, node views, toolbar e editor responsive | `Audit/16_note_detail_editor_migration_plan.md` |
 | `[x]` | Dashboard migration plan: mover primitives para ficheiros certos, devolver dashboard-only styles ao dashboard, e definir mudancas concretas para `_dashboard.scss` e `DashboardPage.tsx` | `Audit/17_dashboard_migration_plan.md` |
-| `[ ]` | Decision log final: consolidar recomendacoes, ordem de implementacao, riscos e decisoes que precisam aprovacao | `Audit/99_css_audit_decision_log.md` |
+| `[x]` | Decision log final: consolidar recomendacoes, ordem de implementacao, riscos e decisoes que precisam aprovacao | `Audit/99_css_audit_decision_log.md` |
 
 ## Template Para Ficheiros De Resultado
 
