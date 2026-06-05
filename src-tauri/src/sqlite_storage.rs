@@ -2,6 +2,7 @@ use rusqlite::types::Value as SqlValue;
 use rusqlite::{params, params_from_iter, Connection, OpenFlags, OptionalExtension, Transaction};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
+use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::Component;
@@ -47,6 +48,20 @@ pub struct FileImportInfo {
     relative_path: String,
     absolute_path: String,
     created_at: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotePackageImportInfo {
+    note_id: String,
+    title: String,
+    imported_files_count: usize,
+    matched_tags: Vec<String>,
+    dropped_tags: Vec<String>,
+    matched_collection: Option<String>,
+    dropped_collection: Option<String>,
+    matched_linked_notes: Vec<String>,
+    dropped_linked_notes: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -152,11 +167,19 @@ pub fn notex_package_create_temp_export(app: AppHandle) -> Result<SqliteExportIn
         fs::remove_file(&package_path).map_err(to_string)?;
     }
 
-    conn.execute("VACUUM INTO ?1", params![temp_database.to_string_lossy().to_string()])
-        .map_err(to_string)?;
+    conn.execute(
+        "VACUUM INTO ?1",
+        params![temp_database.to_string_lossy().to_string()],
+    )
+    .map_err(to_string)?;
     validate_sqlite_database(&temp_database)?;
 
-    create_notex_package(&package_path, &temp_database, &files_directory(&app)?, &created_at)?;
+    create_notex_package(
+        &package_path,
+        &temp_database,
+        &files_directory(&app)?,
+        &created_at,
+    )?;
     validate_notex_package(&package_path)?;
     let _ = fs::remove_file(&temp_database);
 
@@ -189,6 +212,381 @@ pub fn notex_package_copy_export_to(
 }
 
 #[tauri::command]
+pub fn notex_note_package_create_temp_export(
+    app: AppHandle,
+    note_id: String,
+) -> Result<SqliteExportInfo, String> {
+    let conn = open_connection(&app)?;
+    ensure_schema(&conn)?;
+
+    let notes = read_payloads(
+        &conn,
+        "notes",
+        Some("id"),
+        &[JsonValue::String(note_id.clone())],
+    )?;
+    let note = notes
+        .into_iter()
+        .next()
+        .ok_or("Selected note was not found")?;
+    let blocks = read_payloads(
+        &conn,
+        "noteBlocks",
+        Some("noteId"),
+        &[JsonValue::String(note_id.clone())],
+    )?;
+    let files = read_payloads(
+        &conn,
+        "noteFiles",
+        Some("noteId"),
+        &[JsonValue::String(note_id)],
+    )?;
+    let tags = read_payloads_for_ids(&conn, "tags", string_array_field(&note, "tagIds"))?;
+    let collection = opt_text(&note, "collectionId")
+        .map(|collection_id| read_payloads_for_ids(&conn, "collections", vec![collection_id]))
+        .transpose()?
+        .and_then(|mut collections| collections.pop());
+    let linked_notes =
+        read_payloads_for_ids(&conn, "notes", string_array_field(&note, "linkedNoteIds"))?
+            .into_iter()
+            .map(|linked_note| {
+                serde_json::json!({
+                    "id": opt_text(&linked_note, "id"),
+                    "title": opt_text(&linked_note, "title"),
+                })
+            })
+            .collect::<Vec<_>>();
+
+    let created_at = timestamp_for_filename();
+    let title = text(&note, "title", "untitled")?;
+    let file_name = format!(
+        "notex-note-{}-{}.notex-note",
+        sanitize_file_stem(&title),
+        created_at
+    );
+    let temp_dir = temp_directory(&app)?;
+    fs::create_dir_all(&temp_dir).map_err(to_string)?;
+    let package_path = temp_dir.join(&file_name);
+    if package_path.exists() {
+        fs::remove_file(&package_path).map_err(to_string)?;
+    }
+
+    let note_export = serde_json::json!({
+        "schemaVersion": 1,
+        "exportedAt": created_at,
+        "note": note,
+        "blocks": blocks,
+        "files": files,
+        "tags": tags,
+        "collection": collection,
+        "linkedNotes": linked_notes,
+    });
+    create_notex_note_package(
+        &package_path,
+        &note_export,
+        &files_directory(&app)?,
+        &created_at,
+    )?;
+    validate_notex_note_package(&package_path)?;
+
+    Ok(SqliteExportInfo {
+        temp_path: package_path.to_string_lossy().to_string(),
+        file_name,
+        created_at,
+    })
+}
+
+#[tauri::command]
+pub fn notex_note_package_copy_export_to(
+    temp_path: String,
+    destination_path: String,
+) -> Result<String, String> {
+    let source = PathBuf::from(temp_path);
+    let destination = PathBuf::from(destination_path);
+    if !source.is_file() {
+        return Err("The temporary NoteX note export was not found".to_string());
+    }
+    validate_notex_note_package(&source)?;
+
+    if let Some(parent) = destination.parent() {
+        fs::create_dir_all(parent).map_err(to_string)?;
+    }
+
+    fs::copy(&source, &destination).map_err(to_string)?;
+    validate_notex_note_package(&destination)?;
+    Ok(destination.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub fn notex_note_package_import_from_file(
+    app: AppHandle,
+    source_path: String,
+) -> Result<NotePackageImportInfo, String> {
+    let source = PathBuf::from(source_path);
+    if !source.is_file() {
+        return Err("Selected NoteX note export was not found".to_string());
+    }
+    validate_notex_note_package(&source)?;
+
+    let imported_at = timestamp_for_filename();
+    let import_id = timestamp_for_id();
+    let now = current_timestamp();
+    let temp_dir = temp_directory(&app)?.join(format!("notex-note-import-{}", imported_at));
+    if temp_dir.exists() {
+        fs::remove_dir_all(&temp_dir).map_err(to_string)?;
+    }
+    fs::create_dir_all(&temp_dir).map_err(to_string)?;
+    extract_notex_package(&source, &temp_dir)?;
+
+    let note_export_text = fs::read_to_string(temp_dir.join("note.json")).map_err(to_string)?;
+    let note_export: JsonValue = serde_json::from_str(&note_export_text).map_err(to_string)?;
+    let mut note = note_export
+        .get("note")
+        .cloned()
+        .ok_or("NoteX note export is missing note data")?;
+    let blocks = json_array_items(&note_export, "blocks");
+    let files = json_array_items(&note_export, "files");
+    let exported_tags = json_array_items(&note_export, "tags");
+    let linked_notes = json_array_items(&note_export, "linkedNotes");
+    let collection = note_export.get("collection").cloned();
+
+    let mut conn = open_connection(&app)?;
+    ensure_schema(&conn)?;
+    let existing_tags = read_payloads(&conn, "tags", None, &[])?;
+    let existing_collections = read_payloads(&conn, "collections", None, &[])?;
+    let existing_notes = read_payloads(&conn, "notes", None, &[])?;
+
+    let new_note_id = format!("note-{}-import", import_id);
+    let title = text(&note, "title", "Untitled note")?;
+    let old_tag_ids = string_array_field(&note, "tagIds");
+    let old_linked_note_ids = string_array_field(&note, "linkedNoteIds");
+    let tag_by_old_id = payload_by_id(exported_tags);
+    let existing_tag_by_name = payload_by_normalized_name(existing_tags, "name");
+    let existing_collection_by_name = payload_by_normalized_name(existing_collections, "name");
+    let existing_note_titles = payloads_by_normalized_name(existing_notes, "title");
+
+    let mut new_tag_ids = Vec::new();
+    let mut matched_tags = Vec::new();
+    let mut dropped_tags = Vec::new();
+    for old_tag_id in old_tag_ids {
+        let Some(exported_tag) = tag_by_old_id.get(&old_tag_id) else {
+            continue;
+        };
+        let tag_name = text(exported_tag, "name", "")?;
+        if tag_name.trim().is_empty() {
+            continue;
+        }
+        if let Some(existing_tag) = existing_tag_by_name.get(&normalize_match_name(&tag_name)) {
+            new_tag_ids.push(text(existing_tag, "id", "")?);
+            matched_tags.push(tag_name);
+        } else {
+            dropped_tags.push(tag_name);
+        }
+    }
+
+    let mut matched_collection = None;
+    let mut dropped_collection = None;
+    let new_collection_id = if opt_text(&note, "collectionId").is_some() {
+        collection
+            .as_ref()
+            .and_then(|value| text(value, "name", "").ok())
+            .and_then(|collection_name| {
+                if collection_name.trim().is_empty() {
+                    return None;
+                }
+                existing_collection_by_name
+                    .get(&normalize_match_name(&collection_name))
+                    .and_then(|existing_collection| {
+                        matched_collection = Some(collection_name.clone());
+                        text(existing_collection, "id", "").ok()
+                    })
+                    .or_else(|| {
+                        dropped_collection = Some(collection_name);
+                        None
+                    })
+            })
+    } else {
+        None
+    };
+
+    let linked_note_by_old_id = payload_by_id(linked_notes);
+    let mut new_linked_note_ids = Vec::new();
+    let mut matched_linked_notes = Vec::new();
+    let mut dropped_linked_notes = Vec::new();
+    for old_linked_note_id in old_linked_note_ids {
+        let Some(exported_linked_note) = linked_note_by_old_id.get(&old_linked_note_id) else {
+            continue;
+        };
+        let linked_title = text(exported_linked_note, "title", "")?;
+        if linked_title.trim().is_empty() {
+            continue;
+        }
+        match existing_note_titles.get(&normalize_match_name(&linked_title)) {
+            Some(matches) if matches.len() == 1 => {
+                new_linked_note_ids.push(text(&matches[0], "id", "")?);
+                matched_linked_notes.push(linked_title);
+            }
+            _ => dropped_linked_notes.push(linked_title),
+        }
+    }
+
+    let mut block_id_map = HashMap::new();
+    for (index, block) in blocks.iter().enumerate() {
+        let old_block_id = text(block, "id", "")?;
+        block_id_map.insert(old_block_id, format!("block-{}-{}", import_id, index + 1));
+    }
+
+    let mut new_files = Vec::new();
+    let mut file_map = HashMap::new();
+    let destination_files_directory = files_directory(&app)?;
+    for (index, file) in files.iter().enumerate() {
+        let old_file_id = text(file, "id", "")?;
+        let old_relative_path = text(file, "relativePath", "")?;
+        let old_relative = safe_relative_files_path(&old_relative_path)?;
+        let source_file = temp_dir.join("files").join(&old_relative);
+        if !source_file.is_file() {
+            let original_name = text(file, "originalName", &old_relative_path)?;
+            return Err(format!(
+                "Imported note is missing attachment: {}",
+                original_name
+            ));
+        }
+
+        let extension = Path::new(&old_relative_path)
+            .extension()
+            .and_then(|value| value.to_str())
+            .map(|value| format!(".{}", sanitize_extension(value)))
+            .unwrap_or_default();
+        let new_file_id = format!("file-{}-{}", import_id, index + 1);
+        let new_relative_path = format!(
+            "{}/{}{}",
+            sanitize_path_segment(&new_note_id),
+            new_file_id,
+            extension
+        );
+        let destination = destination_files_directory.join(&new_relative_path);
+        if let Some(parent) = destination.parent() {
+            fs::create_dir_all(parent).map_err(to_string)?;
+        }
+        fs::copy(&source_file, &destination).map_err(to_string)?;
+
+        let mut new_file = file.clone();
+        set_json_field(&mut new_file, "id", JsonValue::String(new_file_id))?;
+        set_json_field(
+            &mut new_file,
+            "noteId",
+            JsonValue::String(new_note_id.clone()),
+        )?;
+        let new_block_id =
+            opt_text(file, "blockId").and_then(|block_id| block_id_map.get(&block_id).cloned());
+        set_json_field(
+            &mut new_file,
+            "blockId",
+            new_block_id
+                .map(JsonValue::String)
+                .unwrap_or(JsonValue::Null),
+        )?;
+        set_json_field(
+            &mut new_file,
+            "relativePath",
+            JsonValue::String(new_relative_path),
+        )?;
+        set_json_field(&mut new_file, "createdAt", JsonValue::String(now.clone()))?;
+        file_map.insert(old_file_id, new_file.clone());
+        new_files.push(new_file);
+    }
+
+    set_json_field(&mut note, "id", JsonValue::String(new_note_id.clone()))?;
+    set_json_field(&mut note, "tagIds", strings_to_json_array(new_tag_ids))?;
+    set_json_field(
+        &mut note,
+        "collectionId",
+        new_collection_id
+            .map(JsonValue::String)
+            .unwrap_or(JsonValue::Null),
+    )?;
+    set_json_field(
+        &mut note,
+        "linkedNoteIds",
+        strings_to_json_array(new_linked_note_ids),
+    )?;
+    set_json_field(&mut note, "isTrashed", JsonValue::Bool(false))?;
+    set_json_field(
+        &mut note,
+        "saveState",
+        JsonValue::String("saved".to_string()),
+    )?;
+    set_json_field(&mut note, "createdAt", JsonValue::String(now.clone()))?;
+    set_json_field(&mut note, "updatedAt", JsonValue::String(now.clone()))?;
+    set_json_field(&mut note, "lastOpenedAt", JsonValue::String(now.clone()))?;
+    set_json_field(&mut note, "version", JsonValue::from(1))?;
+
+    let mut new_blocks = Vec::new();
+    for block in blocks {
+        let old_block_id = text(&block, "id", "")?;
+        let new_block_id = block_id_map
+            .get(&old_block_id)
+            .cloned()
+            .ok_or("Imported block ID could not be mapped")?;
+        let mut new_block = block;
+        set_json_field(&mut new_block, "id", JsonValue::String(new_block_id))?;
+        set_json_field(
+            &mut new_block,
+            "noteId",
+            JsonValue::String(new_note_id.clone()),
+        )?;
+        set_json_field(&mut new_block, "createdAt", JsonValue::String(now.clone()))?;
+        set_json_field(&mut new_block, "updatedAt", JsonValue::String(now.clone()))?;
+        if let Some(content_json) = new_block.get_mut("contentJson") {
+            rewrite_note_file_nodes(content_json, &file_map)?;
+        }
+        new_blocks.push(new_block);
+    }
+
+    let tx = conn.transaction().map_err(to_string)?;
+    let insert_result = (|| -> Result<(), String> {
+        insert_payload(&tx, "notes", &note)?;
+        for block in &new_blocks {
+            insert_payload(&tx, "noteBlocks", block)?;
+        }
+        for file in &new_files {
+            insert_payload(&tx, "noteFiles", file)?;
+        }
+        tx.commit().map_err(to_string)?;
+        Ok(())
+    })();
+
+    if let Err(error) = insert_result {
+        for file in &new_files {
+            if let Some(relative_path) = file.get("relativePath").and_then(JsonValue::as_str) {
+                if let Ok(relative) = safe_relative_files_path(relative_path) {
+                    let path = destination_files_directory.join(relative);
+                    if path.is_file() {
+                        let _ = fs::remove_file(path);
+                    }
+                }
+            }
+        }
+        return Err(error);
+    }
+
+    let conn = open_connection(&app)?;
+    let _ = write_metadata(&conn, "last_note_imported_at", &imported_at);
+
+    Ok(NotePackageImportInfo {
+        note_id: new_note_id,
+        title,
+        imported_files_count: new_files.len(),
+        matched_tags,
+        dropped_tags,
+        matched_collection,
+        dropped_collection,
+        matched_linked_notes,
+        dropped_linked_notes,
+    })
+}
+
+#[tauri::command]
 pub fn notex_package_replace_from_file(app: AppHandle, source_path: String) -> Result<(), String> {
     let source = PathBuf::from(source_path);
     if !source.is_file() {
@@ -209,8 +607,10 @@ pub fn notex_package_replace_from_file(app: AppHandle, source_path: String) -> R
 
     let database = database_path(&app)?;
     let files = files_directory(&app)?;
-    let backup_database = temp_directory(&app)?.join(format!("notex-before-package-import-{}.sqlite", created_at));
-    let backup_files = temp_directory(&app)?.join(format!("notex-files-before-package-import-{}", created_at));
+    let backup_database =
+        temp_directory(&app)?.join(format!("notex-before-package-import-{}.sqlite", created_at));
+    let backup_files =
+        temp_directory(&app)?.join(format!("notex-files-before-package-import-{}", created_at));
     let had_existing_database = database.exists();
     let had_existing_files = files.exists();
 
@@ -277,7 +677,11 @@ pub fn notex_note_file_import(
         .to_string();
     let metadata = fs::metadata(&source).map_err(to_string)?;
     let checksum = checksum_file(&source)?;
-    let id = format!("file-{}-{}", timestamp_for_filename(), &checksum[..12.min(checksum.len())]);
+    let id = format!(
+        "file-{}-{}",
+        timestamp_for_filename(),
+        &checksum[..12.min(checksum.len())]
+    );
     let extension = source
         .extension()
         .and_then(|value| value.to_str())
@@ -291,7 +695,12 @@ pub fn notex_note_file_import(
     fs::copy(&source, &destination).map_err(to_string)?;
 
     let mime_type = infer_mime_type(&source);
-    let kind = if mime_type.starts_with("image/") { "image" } else { "attachment" }.to_string();
+    let kind = if mime_type.starts_with("image/") {
+        "image"
+    } else {
+        "attachment"
+    }
+    .to_string();
     Ok(FileImportInfo {
         id,
         note_id,
@@ -308,9 +717,15 @@ pub fn notex_note_file_import(
 }
 
 #[tauri::command]
-pub fn notex_note_file_absolute_path(app: AppHandle, relative_path: String) -> Result<String, String> {
+pub fn notex_note_file_absolute_path(
+    app: AppHandle,
+    relative_path: String,
+) -> Result<String, String> {
     let relative = safe_relative_files_path(&relative_path)?;
-    Ok(files_directory(&app)?.join(relative).to_string_lossy().to_string())
+    Ok(files_directory(&app)?
+        .join(relative)
+        .to_string_lossy()
+        .to_string())
 }
 
 #[tauri::command]
@@ -1125,6 +1540,68 @@ fn read_payloads(
     Ok(payloads)
 }
 
+fn read_payloads_for_ids(
+    conn: &Connection,
+    table: &str,
+    ids: Vec<String>,
+) -> Result<Vec<JsonValue>, String> {
+    let values = ids.into_iter().map(JsonValue::String).collect::<Vec<_>>();
+    read_payloads(conn, table, Some("id"), &values)
+}
+
+fn json_array_items(value: &JsonValue, field: &str) -> Vec<JsonValue> {
+    value
+        .get(field)
+        .and_then(JsonValue::as_array)
+        .cloned()
+        .unwrap_or_default()
+}
+
+fn payload_by_id(values: Vec<JsonValue>) -> HashMap<String, JsonValue> {
+    values
+        .into_iter()
+        .filter_map(|value| opt_text(&value, "id").map(|id| (id, value)))
+        .collect()
+}
+
+fn payload_by_normalized_name(values: Vec<JsonValue>, field: &str) -> HashMap<String, JsonValue> {
+    values
+        .into_iter()
+        .filter_map(|value| {
+            opt_text(&value, field)
+                .map(|name| normalize_match_name(&name))
+                .filter(|name| !name.is_empty())
+                .map(|name| (name, value))
+        })
+        .collect()
+}
+
+fn payloads_by_normalized_name(
+    values: Vec<JsonValue>,
+    field: &str,
+) -> HashMap<String, Vec<JsonValue>> {
+    let mut by_name: HashMap<String, Vec<JsonValue>> = HashMap::new();
+    for value in values {
+        let Some(name) = opt_text(&value, field) else {
+            continue;
+        };
+        let normalized = normalize_match_name(&name);
+        if normalized.is_empty() {
+            continue;
+        }
+        by_name.entry(normalized).or_default().push(value);
+    }
+    by_name
+}
+
+fn normalize_match_name(value: &str) -> String {
+    value
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
+}
+
 fn table_info(table: &str) -> Result<TableInfo, String> {
     match table {
         "notes" => Ok(TableInfo {
@@ -1213,6 +1690,20 @@ fn opt_text(value: &JsonValue, field: &str) -> Option<String> {
         .map(ToString::to_string)
 }
 
+fn string_array_field(value: &JsonValue, field: &str) -> Vec<String> {
+    value
+        .get(field)
+        .and_then(JsonValue::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(JsonValue::as_str)
+                .map(ToString::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 fn bool_i64(value: &JsonValue, field: &str) -> i64 {
     if value
         .get(field)
@@ -1246,6 +1737,74 @@ fn optional_json_field(value: &JsonValue, field: &str) -> Result<Option<String>,
         .map(serde_json::to_string)
         .transpose()
         .map_err(to_string)
+}
+
+fn set_json_field(value: &mut JsonValue, field: &str, next: JsonValue) -> Result<(), String> {
+    let Some(object) = value.as_object_mut() else {
+        return Err("Expected JSON object while preparing NoteX note import".to_string());
+    };
+    object.insert(field.to_string(), next);
+    Ok(())
+}
+
+fn strings_to_json_array(values: Vec<String>) -> JsonValue {
+    JsonValue::Array(values.into_iter().map(JsonValue::String).collect())
+}
+
+fn rewrite_note_file_nodes(
+    value: &mut JsonValue,
+    file_map: &HashMap<String, JsonValue>,
+) -> Result<bool, String> {
+    let is_note_file = value.get("type").and_then(JsonValue::as_str) == Some("noteFile");
+    let Some(object) = value.as_object_mut() else {
+        return Ok(true);
+    };
+
+    if is_note_file {
+        let old_file_id = object
+            .get("attrs")
+            .and_then(|attrs| attrs.get("id"))
+            .and_then(JsonValue::as_str)
+            .map(ToString::to_string);
+        let Some(old_file_id) = old_file_id else {
+            return Ok(false);
+        };
+        let Some(new_file) = file_map.get(&old_file_id) else {
+            return Ok(false);
+        };
+        let Some(attrs) = object.get_mut("attrs").and_then(JsonValue::as_object_mut) else {
+            return Ok(false);
+        };
+        for field in [
+            "id",
+            "noteId",
+            "blockId",
+            "kind",
+            "originalName",
+            "mimeType",
+            "sizeBytes",
+            "checksum",
+            "relativePath",
+            "createdAt",
+        ] {
+            attrs.insert(
+                field.to_string(),
+                new_file.get(field).cloned().unwrap_or(JsonValue::Null),
+            );
+        }
+    }
+
+    if let Some(content) = object.get_mut("content").and_then(JsonValue::as_array_mut) {
+        let mut next_content = Vec::with_capacity(content.len());
+        for mut child in std::mem::take(content) {
+            if rewrite_note_file_nodes(&mut child, file_map)? {
+                next_content.push(child);
+            }
+        }
+        *content = next_content;
+    }
+
+    Ok(true)
 }
 
 fn payload_text(value: &JsonValue) -> Result<String, String> {
@@ -1290,8 +1849,53 @@ fn timestamp_for_filename() -> String {
     seconds.to_string()
 }
 
+fn timestamp_for_id() -> String {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+
+    nanos.to_string()
+}
+
 fn current_timestamp() -> String {
-    timestamp_for_filename()
+    let seconds = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0);
+    unix_seconds_to_iso8601(seconds)
+}
+
+fn unix_seconds_to_iso8601(seconds: u64) -> String {
+    let days = (seconds / 86_400) as i64;
+    let seconds_of_day = seconds % 86_400;
+    let hour = seconds_of_day / 3_600;
+    let minute = (seconds_of_day % 3_600) / 60;
+    let second = seconds_of_day % 60;
+    let (year, month, day) = civil_from_days(days);
+
+    format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+        year, month, day, hour, minute, second
+    )
+}
+
+fn civil_from_days(days_since_epoch: i64) -> (i64, u32, u32) {
+    let z = days_since_epoch + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let day_of_era = z - era * 146_097;
+    let year_of_era =
+        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let mut year = year_of_era + era * 400;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let month_prime = (5 * day_of_year + 2) / 153;
+    let day = day_of_year - (153 * month_prime + 2) / 5 + 1;
+    let month = month_prime + if month_prime < 10 { 3 } else { -9 };
+    if month <= 2 {
+        year += 1;
+    }
+
+    (year, month as u32, day as u32)
 }
 
 fn validate_sqlite_database(path: &Path) -> Result<(), String> {
@@ -1342,14 +1946,74 @@ fn create_notex_package(
         "filesDirectory": "files"
     });
 
-    zip.start_file("manifest.json", options).map_err(to_string)?;
-    zip.write_all(manifest.to_string().as_bytes()).map_err(to_string)?;
+    zip.start_file("manifest.json", options)
+        .map_err(to_string)?;
+    zip.write_all(manifest.to_string().as_bytes())
+        .map_err(to_string)?;
     zip.start_file("notex.sqlite", options).map_err(to_string)?;
     let mut database_file = File::open(database_path).map_err(to_string)?;
     std::io::copy(&mut database_file, &mut zip).map_err(to_string)?;
 
     if files_path.exists() {
         add_directory_to_zip(&mut zip, files_path, files_path, "files", options)?;
+    }
+
+    zip.finish().map_err(to_string)?;
+    Ok(())
+}
+
+fn create_notex_note_package(
+    package_path: &Path,
+    note_export: &JsonValue,
+    files_path: &Path,
+    created_at: &str,
+) -> Result<(), String> {
+    let package_file = File::create(package_path).map_err(to_string)?;
+    let mut zip = ZipWriter::new(package_file);
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+    let manifest = serde_json::json!({
+        "packageType": "notex-note",
+        "schemaVersion": 1,
+        "exportedAt": created_at,
+        "note": "note.json",
+        "filesDirectory": "files"
+    });
+
+    zip.start_file("manifest.json", options)
+        .map_err(to_string)?;
+    zip.write_all(manifest.to_string().as_bytes())
+        .map_err(to_string)?;
+    zip.start_file("note.json", options).map_err(to_string)?;
+    zip.write_all(
+        serde_json::to_string_pretty(note_export)
+            .map_err(to_string)?
+            .as_bytes(),
+    )
+    .map_err(to_string)?;
+
+    if let Some(files) = note_export.get("files").and_then(JsonValue::as_array) {
+        for file in files {
+            let relative_path = file
+                .get("relativePath")
+                .and_then(JsonValue::as_str)
+                .ok_or("Note file metadata is missing a relative path")?;
+            let relative = safe_relative_files_path(relative_path)?;
+            let source = files_path.join(&relative);
+            if !source.is_file() {
+                let original_name = file
+                    .get("originalName")
+                    .and_then(JsonValue::as_str)
+                    .unwrap_or(relative_path);
+                return Err(format!(
+                    "Stored attachment was not found: {}",
+                    original_name
+                ));
+            }
+            let archive_name = format!("files/{}", relative.to_string_lossy().replace('\\', "/"));
+            zip.start_file(archive_name, options).map_err(to_string)?;
+            let mut source_file = File::open(source).map_err(to_string)?;
+            std::io::copy(&mut source_file, &mut zip).map_err(to_string)?;
+        }
     }
 
     zip.finish().map_err(to_string)?;
@@ -1385,6 +2049,36 @@ fn add_directory_to_zip(
     Ok(())
 }
 
+fn validate_notex_note_package(path: &Path) -> Result<(), String> {
+    let file = File::open(path).map_err(to_string)?;
+    let mut archive = ZipArchive::new(file).map_err(to_string)?;
+    let mut has_manifest = false;
+    let mut has_note = false;
+
+    for index in 0..archive.len() {
+        let file = archive.by_index(index).map_err(to_string)?;
+        let safe_path = safe_archive_path(file.name())?;
+        if safe_path == PathBuf::from("manifest.json") {
+            has_manifest = true;
+        }
+        if safe_path == PathBuf::from("note.json") {
+            has_note = true;
+        }
+    }
+
+    if !has_manifest {
+        return Err(
+            "Selected file is not a valid NoteX note export. Missing manifest.json".to_string(),
+        );
+    }
+    if !has_note {
+        return Err(
+            "Selected file is not a valid NoteX note export. Missing note.json".to_string(),
+        );
+    }
+    Ok(())
+}
+
 fn validate_notex_package(path: &Path) -> Result<(), String> {
     let file = File::open(path).map_err(to_string)?;
     let mut archive = ZipArchive::new(file).map_err(to_string)?;
@@ -1404,7 +2098,9 @@ fn validate_notex_package(path: &Path) -> Result<(), String> {
     }
 
     if !has_manifest {
-        return Err("Selected file is not a valid NoteX package. Missing manifest.json".to_string());
+        return Err(
+            "Selected file is not a valid NoteX package. Missing manifest.json".to_string(),
+        );
     }
     if !has_database {
         return Err("Selected file is not a valid NoteX package. Missing notex.sqlite".to_string());
@@ -1552,7 +2248,10 @@ fn open_file(path: &Path) -> Result<(), String> {
 
     #[cfg(all(unix, not(target_os = "macos")))]
     {
-        Command::new("xdg-open").arg(path).spawn().map_err(to_string)?;
+        Command::new("xdg-open")
+            .arg(path)
+            .spawn()
+            .map_err(to_string)?;
         return Ok(());
     }
 }
@@ -1591,6 +2290,15 @@ fn sanitize_path_segment(value: &str) -> String {
         .collect::<String>()
         .trim_matches('-')
         .to_string()
+}
+
+fn sanitize_file_stem(value: &str) -> String {
+    let sanitized = sanitize_path_segment(&value.to_ascii_lowercase());
+    if sanitized.is_empty() {
+        "untitled".to_string()
+    } else {
+        sanitized
+    }
 }
 
 fn sanitize_extension(value: &str) -> String {
@@ -1635,7 +2343,10 @@ mod tests {
 
     #[test]
     fn accepts_safe_package_paths() {
-        assert_eq!(safe_archive_path("notex.sqlite").unwrap(), PathBuf::from("notex.sqlite"));
+        assert_eq!(
+            safe_archive_path("notex.sqlite").unwrap(),
+            PathBuf::from("notex.sqlite")
+        );
         assert_eq!(
             safe_archive_path("files/note-1/file.png").unwrap(),
             PathBuf::from("files/note-1/file.png")

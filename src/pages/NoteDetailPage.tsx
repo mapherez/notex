@@ -36,6 +36,7 @@ import { TagChip } from '../components/ui/TagChip';
 import { appLimits, defaultNewTagColor, defaultNoteThumbnailVariant, thumbnailOptions } from '../config/appSettings';
 import type { Collection, Note, NoteBlock, NoteFile, NoteThumbnail as NoteThumbnailModel, Tag, TagColor, TiptapDocument } from '../core/models/models';
 import { chooseNoteAttachment, exportNoteAttachment, openNoteAttachment } from '../core/services/noteFiles';
+import { chooseNotexNoteExportDestination, createNotexNoteTempExport } from '../core/services/notexNotePackage';
 import { openExternalUrl } from '../core/services/externalLinks';
 import { stripInlineFormatting } from '../core/utils/inlineFormatting';
 import {
@@ -102,10 +103,14 @@ export function NoteDetailPage() {
   const createTag = useKnowledgeStore((state) => state.createTag);
   const user = useKnowledgeStore((state) => state.user);
   const settings = useAppStore((state) => state.settings);
+  const setConfirmNoteExport = useAppStore((state) => state.setConfirmNoteExport);
   const favoriteTagIds = useAppStore((state) => state.settings.favoriteTagIds);
   const pushToast = useToastStore((state) => state.pushToast);
   const linkInputRef = useRef<HTMLInputElement>(null);
   const [deleteBlockState, setDeleteBlockState] = useState<DeleteBlockState>(null);
+  const [noteExportConfirmOpen, setNoteExportConfirmOpen] = useState(false);
+  const [noteExportSkipConfirm, setNoteExportSkipConfirm] = useState(false);
+  const [isExportingNote, setIsExportingNote] = useState(false);
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
   const [dragBlockIds, setDragBlockIds] = useState<string[] | null>(null);
   const [headerTypingRequest, setHeaderTypingRequest] = useState<HeaderTypingRequest | null>(null);
@@ -190,6 +195,39 @@ export function NoteDetailPage() {
       }
     },
   });
+
+  function handleExportNote() {
+    if (settings.confirmNoteExport) {
+      setNoteExportConfirmOpen(true);
+      return;
+    }
+
+    void performExportNote(false);
+  }
+
+  async function performExportNote(skipFutureConfirmation: boolean) {
+    if (!note) {
+      return;
+    }
+
+    setIsExportingNote(true);
+    try {
+      if (skipFutureConfirmation && settings.confirmNoteExport) {
+        await setConfirmNoteExport(false);
+      }
+      const exportInfo = await createNotexNoteTempExport(note.id);
+      const destinationPath = await chooseNotexNoteExportDestination(exportInfo);
+      if (destinationPath) {
+        pushToast(t('notes.noteExported'), 'success');
+      }
+      setNoteExportConfirmOpen(false);
+      setNoteExportSkipConfirm(false);
+    } catch (error) {
+      pushToast(error instanceof Error ? error.message : t('notes.noteExportFailed'), 'warning');
+    } finally {
+      setIsExportingNote(false);
+    }
+  }
 
   const refreshTocEntries = useCallback(() => {
     if (tocRefreshFrameRef.current) {
@@ -487,6 +525,15 @@ export function NoteDetailPage() {
             onClick={() => void toggleFavorite(note.id)}
           >
             <Star />
+          </button>
+          <button
+            className="icon-button"
+            type="button"
+            aria-label={t('notes.exportNote')}
+            disabled={isExportingNote}
+            onClick={() => void handleExportNote()}
+          >
+            <Download />
           </button>
           <span className="inline-actions">
             <FileText />
@@ -813,6 +860,21 @@ export function NoteDetailPage() {
         </aside>
       </div>
 
+      <ExportNoteConfirmModal
+        disabled={isExportingNote}
+        open={noteExportConfirmOpen}
+        skipConfirm={noteExportSkipConfirm}
+        onCancel={() => {
+          if (!isExportingNote) {
+            setNoteExportConfirmOpen(false);
+            setNoteExportSkipConfirm(false);
+          }
+        }}
+        onConfirm={() => void performExportNote(noteExportSkipConfirm)}
+        onSkipConfirmChange={setNoteExportSkipConfirm}
+        t={t}
+      />
+
       {deleteBlockState ? (
         <DeleteConfirmModal
           cancelLabel={t('common.cancel')}
@@ -824,6 +886,60 @@ export function NoteDetailPage() {
         />
       ) : null}
     </>
+  );
+}
+
+function ExportNoteConfirmModal({
+  disabled,
+  open,
+  skipConfirm,
+  onCancel,
+  onConfirm,
+  onSkipConfirmChange,
+  t,
+}: {
+  disabled: boolean;
+  open: boolean;
+  skipConfirm: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  onSkipConfirmChange: (value: boolean) => void;
+  t: ReturnType<typeof useI18n>['t'];
+}) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="modal-backdrop">
+      <section
+        className="choice-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-note-title"
+      >
+        <h2 id="export-note-title">{t('notes.exportNoteModalTitle')}</h2>
+        <p>{t('notes.exportNoteModalDescription')}</p>
+        <label className="choice-modal-checkbox">
+          <input
+            type="checkbox"
+            checked={skipConfirm}
+            disabled={disabled}
+            onChange={(event) => onSkipConfirmChange(event.currentTarget.checked)}
+          />
+          <span>{t('notes.exportNoteDontShowAgain')}</span>
+        </label>
+        <div className="choice-modal-actions two-column-actions">
+          <button type="button" disabled={disabled} onClick={onCancel}>
+            <span>{t('common.cancel')}</span>
+          </button>
+          <button type="button" disabled={disabled} onClick={onConfirm}>
+            <Download />
+            <span>{t('common.export')}</span>
+          </button>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -1332,13 +1448,18 @@ function RelatedLinkRow({ href, onRemove, title }: { href: string; onRemove?: ()
 }
 
 function formatDate(value: string, locale: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
   return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(value));
+  }).format(date);
 }
 
 function arraysEqual(left: string[], right: string[]) {

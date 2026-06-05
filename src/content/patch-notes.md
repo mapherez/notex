@@ -1,3 +1,16 @@
+# 2.1.0
+
+## What's New in NoteX
+
+This release adds a new custom window bar at the top, and a few UI/UX fixes.
+
+### Highlights
+
+- Replaced the default window bar with a custom implementation, which will permit custom menus and buttons to exist there.
+- Improved the UI for block buttons and drag-handler.
+
+---
+
 # 2.0.0
 
 ## What's New in NoteX

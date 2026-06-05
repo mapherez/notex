@@ -43,5 +43,6 @@ export const defaultUserSettings: UserSettings = {
   pinnedNoteIds: userSettingsDefaults.pinnedNoteIds,
   quickPinNoteIds: userSettingsDefaults.quickPinNoteIds,
   noteHiddenPanelIds: userSettingsDefaults.noteHiddenPanelIds,
+  confirmNoteExport: userSettingsDefaults.confirmNoteExport,
   updatedAt: new Date().toISOString(),
 };

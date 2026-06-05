@@ -36,7 +36,8 @@
       "quickPinNoteIds": [
         "note-linguistic"
       ],
-      "noteHiddenPanelIds": []
+      "noteHiddenPanelIds": [],
+      "confirmNoteExport": true
     }
   },
   "limits": {

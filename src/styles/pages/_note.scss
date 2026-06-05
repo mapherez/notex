@@ -187,10 +187,9 @@
 .note-block {
   position: relative;
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr) 2rem;
-  gap: var(--nx-space-2);
   border: 1px solid transparent;
   border-radius: var(--nx-radius-md);
+  margin-inline: calc(var(--nx-space-3) * -1);
   padding: var(--nx-space-3);
   cursor: text;
   transition: border-color 160ms ease, background 160ms ease;
@@ -199,7 +198,7 @@
 .note-block:hover,
 .note-block:focus-within {
   border-color: var(--nx-color-border);
-  background: color-mix(in srgb, var(--nx-color-surface) 62%, transparent);
+  background: var(--nx-color-surface);
 }
 
 .note-block.is-dragging {
@@ -208,20 +207,34 @@
 
 .note-block-handle,
 .note-block-delete {
+  position: absolute;
+  top: var(--nx-space-3);
   display: grid;
   width: 2rem;
-  height: 2rem;
+  height: 2.5rem;
   place-items: center;
-  border: 0;
-  border-radius: var(--nx-radius-sm);
+  border: 1px solid transparent;
+  border-right: 0;
+  border-radius: var(--nx-radius-sm) 0 0 var(--nx-radius-sm);
   background: transparent;
   color: var(--nx-color-text-soft);
   opacity: 0;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, opacity 160ms ease;
 }
 
 .note-block-handle {
+  left: calc(2rem * -1);
   cursor: grab;
   touch-action: none;
+}
+
+.note-block-delete {
+  right: -1rem;
+  width: 1rem;
+  justify-content: flex-end;
+  border: 1px solid transparent;
+  border-left: 0;
+  border-radius: 0 var(--nx-radius-sm) var(--nx-radius-sm) 0;
 }
 
 .note-block-handle:active {
@@ -232,6 +245,8 @@
 .note-block:hover .note-block-delete,
 .note-block:focus-within .note-block-handle,
 .note-block:focus-within .note-block-delete {
+  border-color: var(--nx-color-border);
+  background: var(--nx-color-surface);
   opacity: 1;
 }
 
@@ -749,5 +764,23 @@
   .note-toc,
   .note-document-aside {
     position: static;
+  }
+}
+
+@media (max-width: 680px) {
+  .note-block {
+    margin-inline: 0;
+  }
+
+  .note-block-handle {
+    left: var(--nx-space-3);
+  }
+
+  .note-block-delete {
+    right: var(--nx-space-3);
+  }
+
+  .note-block-title {
+    padding-inline: calc(2rem + var(--nx-space-2));
   }
 }

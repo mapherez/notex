@@ -143,6 +143,7 @@ export type UserSettings = {
   pinnedNoteIds: string[];
   quickPinNoteIds: string[];
   noteHiddenPanelIds?: string[];
+  confirmNoteExport: boolean;
   updatedAt: string;
 };
 

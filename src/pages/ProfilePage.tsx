@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CustomSelect } from "../components/ui/CustomSelect";
 import { IconBadge } from "../components/ui/IconBadge";
 import { Panel } from "../components/ui/Panel";
@@ -34,8 +35,14 @@ import {
   createNotexPackageTempExport,
   replaceFromNotexPackage,
 } from "../core/services/notexPackage";
+import {
+  chooseNotexNoteImportFile,
+  importNotexNotePackage,
+  type NotexNoteImportInfo,
+} from "../core/services/notexNotePackage";
 import { themeRegistry } from "../core/theme/themeRegistry";
 import { filterNotes } from "../core/utils/noteFilters";
+import { richTextToPlainText } from "../core/utils/richText";
 import { formatShortcutForDisplay } from "../core/utils/shortcutFormatting";
 import { useI18n } from "../i18n/I18nProvider";
 import { useAppStore } from "../store/useAppStore";
@@ -52,12 +59,17 @@ type ExportModalState =
 
 export function ProfilePage() {
   const { locale, t } = useI18n();
+  const navigate = useNavigate();
   const [databaseInfo, setDatabaseInfo] = useState<SqliteDatabaseInfo | null>(
     null,
   );
   const [exportModal, setExportModal] = useState<ExportModalState>(null);
+  const [importChoiceModalOpen, setImportChoiceModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [isImportingDatabase, setIsImportingDatabase] = useState(false);
+  const [isImportingNote, setIsImportingNote] = useState(false);
+  const [noteImportSummary, setNoteImportSummary] =
+    useState<NotexNoteImportInfo | null>(null);
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
   const settings = useAppStore((state) => state.settings);
   const hydrateSettings = useAppStore((state) => state.hydrateSettings);
@@ -124,7 +136,8 @@ export function ProfilePage() {
 
   async function handleSaveDatabaseExport(exportInfo: SqliteExportInfo) {
     try {
-      const destinationPath = await chooseNotexPackageExportDestination(exportInfo);
+      const destinationPath =
+        await chooseNotexPackageExportDestination(exportInfo);
       if (destinationPath) {
         setExportModal(null);
         pushToast(t("profile.dataManagement.exportSaved"), "success");
@@ -166,6 +179,35 @@ export function ProfilePage() {
       );
     } finally {
       setIsImportingDatabase(false);
+    }
+  }
+
+  async function handleImportNotePackage() {
+    setIsImportingNote(true);
+    try {
+      const sourcePath = await chooseNotexNoteImportFile();
+      if (!sourcePath) {
+        return;
+      }
+
+      const importInfo = await importNotexNotePackage(sourcePath);
+      await Promise.all([refreshKnowledge(), refreshNotes()]);
+      setImportChoiceModalOpen(false);
+      if (hasSkippedNoteImportItems(importInfo)) {
+        setNoteImportSummary(importInfo);
+      } else {
+        pushToast(t("profile.dataManagement.noteImportComplete"), "success");
+        navigate(`/notes/${importInfo.noteId}`);
+      }
+    } catch (error) {
+      pushToast(
+        error instanceof Error
+          ? error.message
+          : t("profile.dataManagement.noteImportFailed"),
+        "warning",
+      );
+    } finally {
+      setIsImportingNote(false);
     }
   }
 
@@ -234,12 +276,8 @@ export function ProfilePage() {
             <h2 className="panel-title">
               {user?.name ?? t("profile.localUser")}
             </h2>
-            {user?.handle ? (
-              <div className="handle">{user.handle}</div>
-            ) : null}
-            <div className="connected">
-              {t("profile.localAccount")}
-            </div>
+            {user?.handle ? <div className="handle">{user.handle}</div> : null}
+            <div className="connected">{t("profile.localAccount")}</div>
           </article>
 
           <Panel title={t("profile.shortcuts.title")}>
@@ -313,7 +351,7 @@ export function ProfilePage() {
               <button
                 className="security-row"
                 type="button"
-                onClick={() => setImportModalOpen(true)}
+                onClick={() => setImportChoiceModalOpen(true)}
               >
                 <Upload className="security-row__icon security-row__icon--blue" />
                 <span>
@@ -402,6 +440,21 @@ export function ProfilePage() {
         onSave={handleSaveDatabaseExport}
         t={t}
       />
+      <ImportChoiceModal
+        isImportingNote={isImportingNote}
+        open={importChoiceModalOpen}
+        onCancel={() => {
+          if (!isImportingNote) {
+            setImportChoiceModalOpen(false);
+          }
+        }}
+        onImportNote={() => void handleImportNotePackage()}
+        onImportPackage={() => {
+          setImportChoiceModalOpen(false);
+          setImportModalOpen(true);
+        }}
+        t={t}
+      />
       <ImportDatabaseModal
         isImporting={isImportingDatabase}
         open={importModalOpen}
@@ -415,6 +468,17 @@ export function ProfilePage() {
           void handleCreateDatabaseExport();
         }}
         onImport={handleImportDatabase}
+        t={t}
+      />
+      <NoteImportSummaryModal
+        importInfo={noteImportSummary}
+        onClose={() => {
+          const importedNoteId = noteImportSummary?.noteId;
+          setNoteImportSummary(null);
+          if (importedNoteId) {
+            navigate(`/notes/${importedNoteId}`);
+          }
+        }}
         t={t}
       />
       <ShortcutHelpModal
@@ -592,6 +656,77 @@ function ExportDatabaseModal({
   );
 }
 
+function ImportChoiceModal({
+  isImportingNote,
+  open,
+  onCancel,
+  onImportNote,
+  onImportPackage,
+  t,
+}: {
+  isImportingNote: boolean;
+  open: boolean;
+  onCancel: () => void;
+  onImportNote: () => void;
+  onImportPackage: () => void;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="modal-backdrop">
+      <section
+        className="choice-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="import-choice-title"
+      >
+        <h2 id="import-choice-title">
+          {t("profile.dataManagement.importChoiceTitle")}
+        </h2>
+        <p>{t("profile.dataManagement.importChoiceDescription")}</p>
+        {isImportingNote ? (
+          <div className="choice-modal-status">
+            <Loader2 />
+            <span>{t("profile.dataManagement.importingNote")}</span>
+          </div>
+        ) : null}
+        <div className="choice-modal-actions">
+          <button
+            type="button"
+            disabled={isImportingNote}
+            onClick={onImportNote}
+          >
+            <FileText />
+            <span>
+              <span>{t("profile.dataManagement.importNoteData")}</span>
+              <span>{t("profile.dataManagement.importNoteDescription")}</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            disabled={isImportingNote}
+            onClick={onImportPackage}
+          >
+            <Upload />
+            <span>
+              <span>{t("profile.dataManagement.chooseImportDatabase")}</span>
+              <span>
+                {t("profile.dataManagement.chooseImportDatabaseDescription")}
+              </span>
+            </span>
+          </button>
+          <button type="button" disabled={isImportingNote} onClick={onCancel}>
+            <span>{t("common.cancel")}</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function ImportDatabaseModal({
   isImporting,
   open,
@@ -658,6 +793,76 @@ function ImportDatabaseModal({
           </button>
           <button type="button" disabled={isImporting} onClick={onCancel}>
             <span>{t("common.cancel")}</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function NoteImportSummaryModal({
+  importInfo,
+  onClose,
+  t,
+}: {
+  importInfo: NotexNoteImportInfo | null;
+  onClose: () => void;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  if (!importInfo) {
+    return null;
+  }
+
+  const skippedItems = [
+    importInfo.droppedTags.length
+      ? {
+          label: t("profile.dataManagement.noteImportSkippedTags"),
+          value: importInfo.droppedTags.join(", "),
+        }
+      : null,
+    importInfo.droppedCollection
+      ? {
+          label: t("profile.dataManagement.noteImportSkippedCollection"),
+          value: importInfo.droppedCollection,
+        }
+      : null,
+    importInfo.droppedLinkedNotes.length
+      ? {
+          label: t("profile.dataManagement.noteImportSkippedLinks"),
+          value: importInfo.droppedLinkedNotes.join(", "),
+        }
+      : null,
+  ].filter((item): item is { label: string; value: string } => Boolean(item));
+  const title =
+    richTextToPlainText(importInfo.title).trim() || t("notes.untitled");
+
+  return (
+    <div className="modal-backdrop">
+      <section
+        className="choice-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="note-import-summary-title"
+      >
+        <h2 id="note-import-summary-title">
+          {t("profile.dataManagement.noteImportSummaryTitle")}
+        </h2>
+        <p>
+          {t("profile.dataManagement.noteImportSummaryDescription", {
+            title,
+          })}
+        </p>
+        <div className="choice-modal-summary-list">
+          {skippedItems.map((item) => (
+            <div className="choice-modal-summary-row" key={item.label}>
+              <span>{item.label}</span>
+              <span>{item.value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="choice-modal-actions">
+          <button type="button" onClick={onClose}>
+            <span>{t("common.close")}</span>
           </button>
         </div>
       </section>
@@ -920,6 +1125,14 @@ function buildToolbarShortcutItems(t: ReturnType<typeof useI18n>["t"]) {
   }
 
   return items;
+}
+
+function hasSkippedNoteImportItems(importInfo: NotexNoteImportInfo) {
+  return (
+    importInfo.droppedTags.length > 0 ||
+    Boolean(importInfo.droppedCollection) ||
+    importInfo.droppedLinkedNotes.length > 0
+  );
 }
 
 function getRecentTimestamp(note: Note) {

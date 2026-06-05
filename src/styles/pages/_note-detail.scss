@@ -67,7 +67,7 @@
 .document-top {
   display: flex;
   position: sticky;
-  top: calc(var(--nx-topbar-height) + 1.5rem);
+  top: calc(var(--nx-topbar-height) + 3.5rem);
   z-index: 70;
   align-items: center;
   justify-content: space-between;

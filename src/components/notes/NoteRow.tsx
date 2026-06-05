@@ -258,6 +258,10 @@ function getNoteRowClassName({
 
 function formatDisplayTime(value: string, today: string, yesterday: string) {
   const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
   const now = new Date();
   const sameDay = date.toDateString() === now.toDateString();
   const mockTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

@@ -123,6 +123,50 @@
   line-height: 1.4;
 }
 
+.choice-modal-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  color: var(--nx-color-text-muted);
+  font-size: 0.9rem;
+}
+
+.choice-modal-checkbox input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--nx-color-accent-strong);
+}
+
+.choice-modal-summary-list {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-md);
+  background: var(--nx-color-surface);
+}
+
+.choice-modal-summary-row {
+  display: grid;
+  gap: var(--nx-space-1);
+  padding: var(--nx-space-3);
+}
+
+.choice-modal-summary-row + .choice-modal-summary-row {
+  border-top: 1px solid var(--nx-color-border);
+}
+
+.choice-modal-summary-row span:first-child {
+  font-size: 0.78rem;
+  font-weight: 760;
+  text-transform: uppercase;
+  color: var(--nx-color-text-muted);
+}
+
+.choice-modal-summary-row span:last-child {
+  color: var(--nx-color-text);
+  line-height: 1.45;
+}
+
 .shortcut-help-list {
   display: grid;
   gap: var(--nx-space-5);

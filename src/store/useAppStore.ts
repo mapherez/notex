@@ -19,6 +19,7 @@ type AppStore = {
   setQuickPinAt: (index: number, noteId: string | null) => Promise<void>;
   toggleQuickPin: (noteId: string) => Promise<void>;
   setNotePanelHidden: (panelId: string, hidden: boolean) => Promise<void>;
+  setConfirmNoteExport: (confirm: boolean) => Promise<void>;
   replaceSettings: (settings: UserSettings) => Promise<void>;
 };
 
@@ -45,6 +46,7 @@ function normalizeSettings(settings?: Partial<UserSettings> | null): UserSetting
     pinnedNoteIds: source.pinnedNoteIds ?? defaultUserSettings.pinnedNoteIds,
     quickPinNoteIds: source.quickPinNoteIds ?? defaultUserSettings.quickPinNoteIds,
     noteHiddenPanelIds: source.noteHiddenPanelIds ?? defaultUserSettings.noteHiddenPanelIds ?? [],
+    confirmNoteExport: source.confirmNoteExport ?? defaultUserSettings.confirmNoteExport,
     updatedAt: source.updatedAt ?? defaultUserSettings.updatedAt,
   };
 }
@@ -134,6 +136,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const current = get().settings.noteHiddenPanelIds ?? [];
     const noteHiddenPanelIds = hidden ? uniqueIds([...current, panelId]) : current.filter((id) => id !== panelId);
     const settings = { ...get().settings, noteHiddenPanelIds };
+    await updateSettings(set, settings);
+  },
+  setConfirmNoteExport: async (confirmNoteExport) => {
+    const settings = { ...get().settings, confirmNoteExport };
     await updateSettings(set, settings);
   },
   replaceSettings: async (settings) => {
