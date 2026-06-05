@@ -15,11 +15,15 @@ import {
   UserRound,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  type PropsWithChildren,
+  type ReactNode,
+  useEffect,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomSelect } from "../components/ui/CustomSelect";
 import { IconBadge } from "../components/ui/IconBadge";
-import { Panel } from "../components/ui/Panel";
 import { appLimits, editorSettings } from "../config/appSettings";
 import {
   openSqliteDatabaseFolder,
@@ -259,7 +263,7 @@ export function ProfilePage() {
 
       <div className="profile-layout">
         <section className="profile-left">
-          <article className="profile-card">
+          <article className="profile-section profile-card">
             <div
               className={
                 user?.avatarUrl
@@ -273,34 +277,34 @@ export function ProfilePage() {
                 <UserRound strokeWidth={1.6} />
               )}
             </div>
-            <h2 className="panel-title">
+            <h2 className="profile-section-title">
               {user?.name ?? t("profile.localUser")}
             </h2>
             {user?.handle ? <div className="handle">{user.handle}</div> : null}
             <div className="connected">{t("profile.localAccount")}</div>
           </article>
 
-          <Panel title={t("profile.shortcuts.title")}>
+          <ProfileSection title={t("profile.shortcuts.title")}>
             <button
-              className="security-row shortcuts-button"
+              className="profile-action-row shortcuts-button"
               type="button"
               onClick={() => setShortcutHelpOpen(true)}
             >
-              <Keyboard className="security-row__icon security-row__icon--blue" />
-              <span className="security-sub">
+              <Keyboard className="profile-action-row__icon profile-action-row__icon--blue" />
+              <span className="profile-row-description">
                 {t("profile.shortcuts.description")}
               </span>
               <ChevronRight />
             </button>
-          </Panel>
+          </ProfileSection>
         </section>
 
         <section className="profile-main">
           <div className="profile-top-row">
-            <section className="settings-card profile-top-card">
-              <h2 className="settings-title">
-                {t("profile.preferences.title")}
-              </h2>
+            <ProfileSection
+              className="profile-top-card"
+              title={t("profile.preferences.title")}
+            >
               <PreferenceSelect
                 icon={<IconBadge icon={CalendarClock} color="red" />}
                 label={t("profile.preferences.theme")}
@@ -331,44 +335,44 @@ export function ProfilePage() {
                   { value: "en", label: t("profile.preferences.english") },
                 ]}
               />
-            </section>
+            </ProfileSection>
 
-            <Panel title={t("profile.dataManagement.title")}>
+            <ProfileSection title={t("profile.dataManagement.title")}>
               <button
-                className="security-row"
+                className="profile-action-row"
                 type="button"
                 onClick={() => setExportModal({ phase: "confirm" })}
               >
-                <Download className="security-row__icon security-row__icon--success" />
+                <Download className="profile-action-row__icon profile-action-row__icon--success" />
                 <span>
                   <span>{t("profile.dataManagement.exportData")}</span>
-                  <span className="security-sub">
+                  <span className="profile-row-description">
                     {t("profile.dataManagement.exportDescription")}
                   </span>
                 </span>
                 <ChevronRight />
               </button>
               <button
-                className="security-row"
+                className="profile-action-row"
                 type="button"
                 onClick={() => setImportChoiceModalOpen(true)}
               >
-                <Upload className="security-row__icon security-row__icon--blue" />
+                <Upload className="profile-action-row__icon profile-action-row__icon--blue" />
                 <span>
                   <span>{t("profile.dataManagement.importData")}</span>
-                  <span className="security-sub">
+                  <span className="profile-row-description">
                     {t("profile.dataManagement.importDescription")}
                   </span>
                 </span>
                 <ChevronRight />
               </button>
-            </Panel>
+            </ProfileSection>
           </div>
 
-          <section className="settings-card profile-wide-section database-management-card">
-            <h2 className="settings-title">
-              {t("profile.databaseManagement.title")}
-            </h2>
+          <ProfileSection
+            className="profile-wide-section database-management-card"
+            title={t("profile.databaseManagement.title")}
+          >
             <div className="database-management-grid">
               <DatabasePathRow
                 databasePath={
@@ -401,9 +405,9 @@ export function ProfilePage() {
                 openLabel={t("profile.databaseManagement.openFilesFolder")}
               />
             </div>
-          </section>
+          </ProfileSection>
 
-          <Panel title={t("profile.statistics")}>
+          <ProfileSection title={t("profile.statistics")}>
             <div className="meta-list profile-stat-grid">
               <Metric
                 icon={CalendarClock}
@@ -430,7 +434,7 @@ export function ProfilePage() {
                 value={String(collections.length)}
               />
             </div>
-          </Panel>
+          </ProfileSection>
         </section>
       </div>
       <ExportDatabaseModal
@@ -490,6 +494,25 @@ export function ProfilePage() {
   );
 }
 
+function ProfileSection({
+  children,
+  title,
+  className,
+}: PropsWithChildren<{ title?: string; className?: string }>) {
+  return (
+    <section
+      className={["profile-section", className].filter(Boolean).join(" ")}
+    >
+      {title ? (
+        <div className="profile-section-header">
+          <h2 className="profile-section-title">{title}</h2>
+        </div>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
 function Metric({
   icon,
   color,
@@ -502,11 +525,11 @@ function Metric({
   value: string;
 }) {
   return (
-    <div className="settings-row">
+    <div className="profile-row">
       <IconBadge icon={icon} color={color} />
       <span>
-        <span className="settings-label">{value}</span>
-        <span className="settings-description">{label}</span>
+        <span className="profile-row-label">{value}</span>
+        <span className="profile-row-description">{label}</span>
       </span>
     </div>
   );
@@ -520,7 +543,7 @@ function PreferenceSelect({
   options,
   onChange,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   description: string;
   value: string;
@@ -528,11 +551,11 @@ function PreferenceSelect({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="settings-row">
+    <div className="profile-row">
       {icon}
       <span>
-        <span className="settings-label">{label}</span>
-        <span className="settings-description">{description}</span>
+        <span className="profile-row-label">{label}</span>
+        <span className="profile-row-description">{description}</span>
       </span>
       <CustomSelect
         ariaLabel={label}
@@ -561,7 +584,7 @@ function DatabasePathRow({
     <div className="database-path-row">
       <Icon className="database-path-row__icon" />
       <span>
-        <span className="settings-label">{label}</span>
+        <span className="profile-row-label">{label}</span>
         <span className="database-path-value" title={databasePath}>
           {databasePath}
         </span>

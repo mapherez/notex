@@ -105,6 +105,7 @@
   }
 
   .database-management-grid .database-path-row + .database-path-row,
+  .profile-stat-grid .profile-row + .profile-row,
   .profile-stat-grid .settings-row + .settings-row {
     border-left: 0;
   }
@@ -121,11 +122,13 @@
     border-top: 1px solid var(--nx-color-border);
   }
 
+  .profile-stat-grid .profile-row,
   .profile-stat-grid .settings-row {
     border-top: 1px solid var(--nx-color-border);
     padding: var(--nx-space-4) 0;
   }
 
+  .profile-stat-grid .profile-row:first-child,
   .profile-stat-grid .settings-row:first-child {
     border-top: 0;
     padding-top: 0;
@@ -331,10 +334,12 @@
     left: 0;
   }
 
+  .profile-row,
   .settings-row {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
+  .profile-row .custom-select,
   .settings-row .custom-select {
     grid-column: 2;
     width: 100%;
