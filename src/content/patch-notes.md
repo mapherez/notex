@@ -6,8 +6,13 @@ This release adds a new custom window bar at the top, and a few UI/UX fixes.
 
 ### Highlights
 
+- Added a new boot/loading screen
 - Replaced the default window bar with a custom implementation, which will permit custom menus and buttons to exist there.
-- Improved the UI for block buttons and drag-handler.
+- Many UI/UX improvements
+- Revamped Export/Import process:
+  - NoteX can now export the whole database, including attached files, and maintain correct structure
+  - When importing a database file, the user will be prompted if he wants to export the current database, as the import will overwrite everything
+  - NoteX can also export/import individual notes
 
 ---
 
