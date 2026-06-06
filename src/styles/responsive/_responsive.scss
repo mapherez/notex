@@ -48,6 +48,22 @@
     grid-template-columns: 1fr;
   }
 
+  .tags-page.page-scroll-layout,
+  .collections-page.page-scroll-layout {
+    overflow: auto;
+  }
+
+  .tags-layout,
+  .collections-layout,
+  .tags-main-section,
+  .collections-main-section,
+  .tags-side-panel,
+  .collections-side-panel {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
   .database-management-grid .database-path-row + .database-path-row,
   .profile-stat-grid .profile-row + .profile-row,
   .profile-stat-grid .settings-row + .settings-row {

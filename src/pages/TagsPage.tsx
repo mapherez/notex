@@ -206,7 +206,7 @@ export function TagsPage() {
   }
 
   return (
-    <div className="page-content list-page-grid tags-page">
+    <div className="page-content list-page-grid page-scroll-layout tags-page">
       <header>
         <h1 className="page-title">{t('tagsPage.title')}</h1>
         <p className="page-subtitle">{t('tagsPage.subtitle')}</p>

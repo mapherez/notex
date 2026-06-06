@@ -1,5 +1,34 @@
 .page-content {
   width: min(100%, var(--nx-content-max));
   margin: 0 auto;
+  min-height: 0;
   padding: var(--nx-page-gutter) var(--nx-page-gutter) var(--nx-space-8);
+}
+
+.main-shell > .page-content:not(.page-scroll-layout) {
+  height: 100%;
+  overflow: auto;
+}
+
+.list-page-grid {
+  display: grid;
+  gap: var(--nx-space-6);
+}
+
+.page-scroll-layout {
+  height: 100%;
+  overflow: hidden;
+}
+
+.list-page-grid.page-scroll-layout {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.notes-list-page.page-scroll-layout {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.page-scroll-region {
+  min-height: 0;
+  overflow: auto;
 }

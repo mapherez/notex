@@ -107,6 +107,7 @@ export function NoteDetailPage() {
   const favoriteTagIds = useAppStore((state) => state.settings.favoriteTagIds);
   const pushToast = useToastStore((state) => state.pushToast);
   const linkInputRef = useRef<HTMLInputElement>(null);
+  const noteScrollRef = useRef<HTMLElement>(null);
   const [deleteBlockState, setDeleteBlockState] = useState<DeleteBlockState>(null);
   const [noteExportConfirmOpen, setNoteExportConfirmOpen] = useState(false);
   const [noteExportSkipConfirm, setNoteExportSkipConfirm] = useState(false);
@@ -239,7 +240,7 @@ export function NoteDetailPage() {
       const nextEntries = collectNoteTocEntries();
       tocEntriesRef.current = nextEntries;
       setTocEntries((currentEntries) => (sameTocEntries(currentEntries, nextEntries) ? currentEntries : nextEntries));
-      setActiveTocId(findActiveTocEntryId(nextEntries));
+      setActiveTocId(findActiveTocEntryId(nextEntries, noteScrollRef.current));
     });
   }, []);
 
@@ -274,20 +275,22 @@ export function NoteDetailPage() {
 
   useEffect(() => {
     function updateActiveTocEntry() {
-      setActiveTocId(findActiveTocEntryId(tocEntriesRef.current));
+      setActiveTocId(findActiveTocEntryId(tocEntriesRef.current, noteScrollRef.current));
     }
 
-    window.addEventListener('scroll', updateActiveTocEntry, { passive: true });
+    const scrollContainer = noteScrollRef.current;
+    scrollContainer?.addEventListener('scroll', updateActiveTocEntry, { passive: true });
     window.addEventListener('resize', updateActiveTocEntry);
+    updateActiveTocEntry();
 
     return () => {
-      window.removeEventListener('scroll', updateActiveTocEntry);
+      scrollContainer?.removeEventListener('scroll', updateActiveTocEntry);
       window.removeEventListener('resize', updateActiveTocEntry);
       if (tocRefreshFrameRef.current) {
         window.cancelAnimationFrame(tocRefreshFrameRef.current);
       }
     };
-  }, []);
+  }, [note?.id]);
 
   useEffect(() => {
     function handleInitialTyping(event: globalThis.KeyboardEvent) {
@@ -504,7 +507,7 @@ export function NoteDetailPage() {
   }
 
   return (
-    <>
+    <div className="note-detail-page">
       <header className="document-top">
         <button className="back-button" type="button" onClick={() => navigate(-1)}>
           <ChevronLeft />
@@ -583,7 +586,7 @@ export function NoteDetailPage() {
                     type="button"
                     onClick={(event) => {
                       event.currentTarget.blur();
-                      scrollToTocEntry(entry.id);
+                      scrollToTocEntry(entry.id, noteScrollRef.current);
                     }}
                   >
                     {entry.label}
@@ -596,7 +599,7 @@ export function NoteDetailPage() {
           </div>
         </aside>
 
-        <main className="note-document-main">
+        <main className="note-document-main" ref={noteScrollRef}>
           <NoteHeader
             collections={collections}
             note={note}
@@ -885,7 +888,7 @@ export function NoteDetailPage() {
           title={t('notes.deleteBlockTitle')}
         />
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -1511,12 +1514,15 @@ function sameTocEntries(left: TocEntry[], right: TocEntry[]) {
   );
 }
 
-function findActiveTocEntryId(entries: TocEntry[]) {
+function findActiveTocEntryId(entries: TocEntry[], scrollContainer?: HTMLElement | null) {
   if (!entries.length) {
     return null;
   }
 
-  const triggerY = window.innerHeight / 2;
+  const scrollContainerRect = scrollContainer?.getBoundingClientRect();
+  const triggerY = scrollContainerRect
+    ? scrollContainerRect.top + scrollContainerRect.height / 2
+    : window.innerHeight / 2;
   let activeId = entries[0].id;
 
   entries.forEach((entry) => {
@@ -1533,9 +1539,16 @@ function findActiveTocEntryId(entries: TocEntry[]) {
   return activeId;
 }
 
-function scrollToTocEntry(entryId: string) {
+function scrollToTocEntry(entryId: string, scrollContainer?: HTMLElement | null) {
   const element = findTocTarget(entryId);
   if (!element) {
+    return;
+  }
+
+  if (scrollContainer) {
+    const scrollContainerRect = scrollContainer.getBoundingClientRect();
+    const targetTop = scrollContainer.scrollTop + element.getBoundingClientRect().top - scrollContainerRect.top - 16;
+    scrollContainer.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
     return;
   }
 

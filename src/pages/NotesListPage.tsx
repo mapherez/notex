@@ -111,7 +111,7 @@ export function CollectionsPage() {
   }
 
   return (
-    <div className="page-content list-page-grid collections-page">
+    <div className="page-content list-page-grid page-scroll-layout collections-page">
       <header>
         <h1 className="page-title">{t('notes.collectionsTitle')}</h1>
         <p className="page-subtitle">{t('notes.collectionsSubtitle')}</p>

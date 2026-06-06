@@ -375,11 +375,6 @@ button.security-row:hover {
   font-weight: 760;
 }
 
-.list-page-grid {
-  display: grid;
-  gap: var(--nx-space-6);
-}
-
 .collections-page {
   gap: var(--nx-space-4);
 }
@@ -388,18 +383,30 @@ button.security-row:hover {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(19rem, 24rem);
   align-items: start;
+  height: 100%;
+  min-height: 0;
   gap: var(--nx-space-5);
 }
 
 .collections-main-section,
 .collections-side-panel {
+  height: 100%;
+  min-height: 0;
   min-width: 0;
+}
+
+.collections-main-section {
+  overflow: auto;
+  padding-bottom: var(--nx-space-2);
+  padding-right: var(--nx-space-1);
 }
 
 .collections-side-panel {
   display: grid;
   align-content: start;
   gap: var(--nx-space-4);
+  overflow: auto;
+  padding-right: var(--nx-space-1);
 }
 
 .page-header-actions {

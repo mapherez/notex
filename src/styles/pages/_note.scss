@@ -2,19 +2,20 @@
   display: grid;
   grid-template-columns: 2.75rem minmax(0, 1fr) 20rem;
   gap: var(--nx-space-7);
+  height: 100%;
+  min-height: 0;
   width: min(100%, 88rem);
   margin: 0 auto;
-  padding: var(--nx-space-8) 0;
+  padding: var(--nx-space-8) 0 0;
 }
 
 .note-toc,
 .note-document-aside {
-  top: calc(var(--nx-topbar-height) + var(--nx-space-6) + var(--nx-space-13));
   align-self: start;
 }
 
 .note-toc {
-  position: sticky;
+  position: relative;
     z-index: 40;
     width: 2.75rem;
     min-height: 9rem;
@@ -136,7 +137,18 @@
 
 .note-document-main {
   min-width: 0;
+  min-height: 0;
+  overflow: auto;
   padding: 2rem;
+  overscroll-behavior: contain;
+}
+
+.note-document-aside {
+  align-self: stretch;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-right: var(--nx-space-1);
 }
 
 .note-document-heading {
@@ -757,13 +769,24 @@
 }
 
 @media (max-width: 1020px) {
+  .note-detail-page {
+    overflow: auto;
+  }
+
   .note-document-shell {
     grid-template-columns: minmax(0, 1fr);
+    height: auto;
   }
 
   .note-toc,
   .note-document-aside {
     position: static;
+  }
+
+  .note-document-main,
+  .note-document-aside {
+    overflow: visible;
+    padding-right: 0;
   }
 }
 

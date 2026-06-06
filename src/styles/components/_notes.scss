@@ -10,6 +10,10 @@
   gap: var(--nx-space-4);
 }
 
+.notes-list-scroll {
+  padding-bottom: var(--nx-space-2);
+}
+
 .pin-list {
   border-color: color-mix(in srgb, var(--nx-color-accent) 26%, var(--nx-color-border));
 }

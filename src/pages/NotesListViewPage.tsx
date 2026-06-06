@@ -345,7 +345,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   }
 
   return (
-    <div className="page-content list-page-grid">
+    <div className="page-content list-page-grid page-scroll-layout notes-list-page">
       <header className="page-header-actions">
         <span>
           <h1 className="page-title">{copy.title}</h1>
@@ -391,23 +391,25 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
         />
       )}
 
-      {filtered.length ? (
-        <div className={splitPinnedLists ? 'note-list-stack' : undefined}>
-          {splitPinnedLists ? (
-            <div className={['note-list', 'pin-list', preferredLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
-              {renderNoteRows(pinnedNotes)}
-            </div>
-          ) : null}
+      <div className="page-scroll-region notes-list-scroll">
+        {filtered.length ? (
+          <div className={splitPinnedLists ? 'note-list-stack' : undefined}>
+            {splitPinnedLists ? (
+              <div className={['note-list', 'pin-list', preferredLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
+                {renderNoteRows(pinnedNotes)}
+              </div>
+            ) : null}
 
-          {regularNotes.length ? (
-            <div className={['note-list', splitPinnedLists && 'unpinned-list', preferredLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
-              {renderNoteRows(regularNotes)}
-            </div>
-          ) : null}
-        </div>
-      ) : (
-        <EmptyState />
-      )}
+            {regularNotes.length ? (
+              <div className={['note-list', splitPinnedLists && 'unpinned-list', preferredLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
+                {renderNoteRows(regularNotes)}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <EmptyState />
+        )}
+      </div>
       <TrashConfirmModal
         confirmState={trashConfirm}
         onCancel={() => setTrashConfirm(null)}

@@ -1,7 +1,9 @@
 .app-frame {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   background: var(--nx-color-canvas);
 }
 
@@ -12,16 +14,26 @@
 .app-shell {
   display: grid;
   grid-template-columns: var(--nx-sidebar-width) minmax(0, 1fr);
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
   background: var(--nx-color-canvas);
 }
 
 .app-frame--custom-titlebar .app-shell {
-  min-height: calc(100vh - var(--nx-window-titlebar-height));
+  min-height: 0;
 }
 
 .main-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.main-shell > :not(.topbar) {
+  min-height: 0;
 }
 
 @media (max-width: 900px) {

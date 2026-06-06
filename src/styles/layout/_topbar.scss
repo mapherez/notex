@@ -64,16 +64,12 @@
   z-index: 90;
 }
 
-.app-frame--custom-titlebar .topbar {
-  top: var(--nx-window-titlebar-height);
-}
-
 .topbar--with-search {
   grid-template-columns: minmax(0, 1fr);
   gap: var(--nx-space-4);
 }
 
-.mobile-menu-button {
+.topbar .mobile-menu-button {
   display: none;
 }
 
@@ -106,7 +102,7 @@
 }
 
 @media (max-width: 900px) {
-  .mobile-menu-button {
+  .topbar .mobile-menu-button {
     display: inline-grid;
   }
 
