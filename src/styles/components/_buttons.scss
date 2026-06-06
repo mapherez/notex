@@ -27,3 +27,17 @@
 .icon-button.danger {
   color: var(--nx-color-danger);
 }
+
+.danger-action-button {
+  display: inline-flex;
+  min-height: 2.55rem;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nx-space-2);
+  border: 1px solid color-mix(in srgb, var(--nx-color-danger) 48%, var(--nx-color-border));
+  border-radius: var(--nx-radius-sm);
+  background: color-mix(in srgb, var(--nx-color-danger) 12%, transparent);
+  color: var(--nx-color-danger);
+  padding: 0 var(--nx-space-4);
+  font-weight: 740;
+}

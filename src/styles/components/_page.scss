@@ -32,3 +32,10 @@
   min-height: 0;
   overflow: auto;
 }
+
+.page-header-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--nx-space-4);
+}

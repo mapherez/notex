@@ -15,9 +15,9 @@
 @use "components/chips";
 @use "components/thumbnail";
 @use "components/meta";
+@use "components/entity";
 @use "components/menus";
 @use "components/modals";
-@use "components/forms";
 @use "components/custom-select";
 @use "components/color-picker";
 @use "components/sortable-tags";
@@ -27,6 +27,8 @@
 @use "pages/note-detail";
 @use "pages/note";
 @use "pages/profile";
+@use "pages/legal";
+@use "pages/collections";
 @use "components/filters";
 @use "pages/tags";
 @use "components/labels";
