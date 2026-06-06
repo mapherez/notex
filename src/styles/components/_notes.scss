@@ -378,13 +378,11 @@
   color: #fff;
 }
 
-.tag-list,
 .activity-list {
   display: grid;
   gap: var(--nx-space-4);
 }
 
-.tag-popular-row,
 .activity-row {
   display: flex;
   align-items: center;
@@ -392,10 +390,6 @@
   gap: var(--nx-space-4);
   color: var(--nx-color-text-muted);
   font-size: 0.92rem;
-}
-
-.tag-popular-row strong {
-  font-weight: 560;
 }
 
 .activity-row {

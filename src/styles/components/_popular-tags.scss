@@ -1,0 +1,17 @@
+.tag-list {
+  display: grid;
+  gap: var(--nx-space-4);
+}
+
+.tag-popular-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nx-space-4);
+  color: var(--nx-color-text-muted);
+  font-size: 0.92rem;
+}
+
+.tag-popular-row strong {
+  font-weight: 560;
+}

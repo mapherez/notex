@@ -25,53 +25,10 @@
   white-space: nowrap;
 }
 
-.tag-create-card,
-.tag-edit-form,
 .tags-quick-access-card {
   display: grid;
   align-content: start;
   gap: var(--nx-space-3);
-}
-
-.tag-create-card .settings-title {
-  margin-bottom: 0;
-}
-
-.tag-create-card input,
-.tag-edit-form input {
-  min-width: 0;
-  height: 2.65rem;
-  border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
-  background: var(--nx-color-input);
-  color: var(--nx-color-text);
-  padding: 0 var(--nx-space-3);
-  outline: none;
-}
-
-.tag-create-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--nx-space-3);
-}
-
-.tag-create-actions .color-picker {
-  min-width: 0;
-}
-
-.tag-create-actions > button {
-  display: inline-flex;
-  min-height: 2.65rem;
-  align-items: center;
-  justify-content: center;
-  gap: var(--nx-space-2);
-  border: 0;
-  border-radius: var(--nx-radius-sm);
-  background: var(--nx-color-accent);
-  color: #fff;
-  padding: 0 var(--nx-space-4);
-  font-weight: 750;
 }
 
 .tags-side-card-header {
@@ -162,51 +119,8 @@
   font-size: 0.86rem;
 }
 
-.tag-card-actions {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--nx-space-2);
-  z-index: 2;
-}
-
-.tag-action-button {
-  display: inline-flex;
-  min-height: 2.35rem;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  gap: var(--nx-space-2);
-  border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
-  background: var(--nx-color-input);
-  color: var(--nx-color-text-muted);
-  padding: 0 var(--nx-space-3);
-  font-size: 0.88rem;
-  font-weight: 740;
-}
-
 .tag-card-header .tag-action-button {
-  width: 2.25rem;
   flex: 0 0 auto;
-  padding: 0;
-}
-
-.tag-action-button:hover {
-  border-color: var(--nx-color-accent);
-  color: var(--nx-color-text);
-}
-
-.tag-action-button.danger {
-  color: var(--nx-color-danger);
-}
-
-.tag-action-button:disabled,
-.tags-action-button[aria-disabled="true"],
-.tag-create-actions > button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
 }
 
 .tags-action-button {
@@ -221,6 +135,11 @@
   color: var(--nx-color-text);
   padding: 0 var(--nx-space-4);
   font-weight: 740;
+}
+
+.tags-action-button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .tags-popular-card .panel-header {

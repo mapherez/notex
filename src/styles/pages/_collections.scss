@@ -8,7 +8,6 @@
   gap: var(--nx-space-3);
 }
 
-.collection-create-card .settings-title,
 .collection-preference-card .settings-title {
   margin-bottom: 0;
 }
@@ -19,96 +18,4 @@
 
 .collection-preference-card .custom-select {
   width: 100%;
-}
-
-.collection-create-card,
-.collection-edit-form {
-  display: grid;
-  gap: var(--nx-space-3);
-}
-
-.collection-create-card,
-.collection-edit-form {
-  align-content: start;
-}
-
-.collection-create-card input,
-.collection-edit-form input {
-  min-width: 0;
-  height: 2.65rem;
-  border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
-  background: var(--nx-color-input);
-  color: var(--nx-color-text);
-  padding: 0 var(--nx-space-3);
-  outline: none;
-}
-
-.collection-create-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--nx-space-3);
-}
-
-.collection-create-actions .color-picker {
-  min-width: 0;
-}
-
-.collection-create-actions > button {
-  display: inline-flex;
-  min-height: 2.65rem;
-  align-items: center;
-  justify-content: center;
-  gap: var(--nx-space-2);
-  border: 0;
-  border-radius: var(--nx-radius-sm);
-  background: var(--nx-color-accent);
-  color: #fff;
-  padding: 0 var(--nx-space-4);
-  font-weight: 750;
-}
-
-.collection-card-actions {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--nx-space-2);
-  z-index: 2;
-}
-
-.collection-action-button {
-  display: inline-flex;
-  min-height: 2.35rem;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  gap: var(--nx-space-2);
-  border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
-  background: var(--nx-color-input);
-  color: var(--nx-color-text-muted);
-  padding: 0 var(--nx-space-3);
-  font-size: 0.88rem;
-  font-weight: 740;
-}
-
-.collection-card-header .collection-action-button {
-  width: 2.25rem;
-  padding: 0;
-}
-
-.collection-action-button:hover {
-  border-color: var(--nx-color-accent);
-  color: var(--nx-color-text);
-}
-
-.collection-action-button.danger {
-  color: var(--nx-color-danger);
-}
-
-.collection-action-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
 }
