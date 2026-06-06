@@ -17,57 +17,6 @@
 }
 
 @media (max-width: 900px) {
-  .app-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    position: fixed;
-    transform: translateX(-100%);
-    transition: transform 180ms ease;
-  }
-
-  .app-frame--custom-titlebar .sidebar {
-    top: var(--nx-window-titlebar-height);
-    height: calc(100vh - var(--nx-window-titlebar-height));
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .sidebar-backdrop {
-    position: fixed;
-    inset: 0;
-    display: block;
-    border: 0;
-    background: rgba(0, 0, 0, 0.56);
-    z-index: 15;
-  }
-
-  .mobile-menu-button {
-    display: inline-grid;
-  }
-
-  .topbar,
-  .topbar--with-search {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: var(--nx-space-3);
-  }
-
-  .topbar__search-area {
-    width: auto;
-    margin: 0;
-    padding-right: 0;
-  }
-
-  .topbar--with-search .topbar__actions {
-    position: relative;
-    top: auto;
-    right: auto;
-    transform: none;
-  }
-
   .note-edit-toolbar-shell {
     padding: 0 var(--nx-page-gutter) var(--nx-space-2);
   }
@@ -83,11 +32,6 @@
   .note-edit-toolbar__actions {
     width: 100%;
     justify-content: flex-end;
-  }
-
-  .search-box,
-  .search-box-shell {
-    min-width: 0;
   }
 
   .stats-grid,
@@ -143,10 +87,6 @@
 @media (max-width: 680px) {
   :root {
     --nx-page-gutter: 1rem;
-  }
-
-  .topbar__actions .avatar {
-    display: none;
   }
 
   .stats-grid {

@@ -84,6 +84,13 @@
   height: 3.5rem;
 }
 
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
 .profile-card__avatar--placeholder {
   background: var(--nx-color-surface-subtle);
   color: var(--nx-color-text-muted);

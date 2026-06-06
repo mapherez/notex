@@ -93,7 +93,7 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
                 to={to}
                 end={to === "/"}
                 className={({ isActive }) =>
-                  clsx("nav-item", isActive && "active")
+                  clsx("sidebar-nav-item", isActive && "active")
                 }
                 onClick={onClose}
               >
@@ -122,7 +122,7 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
               key={collection.id}
               to={`/notes?collection=${collection.id}`}
               className={clsx(
-                "nav-item",
+                "sidebar-nav-item",
                 `collection-${collection.color ?? "neutral"}`,
                 location.pathname === "/notes" &&
                   activeCollectionId === collection.id &&

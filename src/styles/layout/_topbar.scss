@@ -1,0 +1,142 @@
+.avatar {
+  display: grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--nx-color-border);
+  border-radius: 999px;
+  background:
+    linear-gradient(140deg, rgba(255, 180, 87, 0.85), rgba(84, 50, 34, 0.9)),
+    var(--nx-color-surface-subtle);
+  color: #fff;
+  font-weight: 750;
+}
+
+.avatar svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.avatar-placeholder {
+  background: var(--nx-color-surface-subtle);
+  color: var(--nx-color-text-muted);
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.avatar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nx-space-2);
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.topbar__account-chevron {
+  margin-left: var(--nx-space-1);
+  color: var(--nx-color-text-muted);
+  transition: transform 160ms ease;
+}
+
+.avatar-button[aria-expanded="true"] .topbar__account-chevron {
+  transform: rotate(180deg);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  width: min(100%, var(--nx-content-max));
+  min-height: var(--nx-topbar-height);
+  margin: auto;
+  padding: var(--nx-page-gutter) var(--nx-space-8);
+  background: color-mix(in srgb, var(--nx-color-canvas) 94%, transparent);
+  backdrop-filter: blur(18px);
+  z-index: 90;
+}
+
+.app-frame--custom-titlebar .topbar {
+  top: var(--nx-window-titlebar-height);
+}
+
+.topbar--with-search {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--nx-space-4);
+}
+
+.mobile-menu-button {
+  display: none;
+}
+
+.topbar__search-area {
+  width: min(100%, var(--nx-content-max));
+  margin: 0 auto;
+  padding-inline-end: 10rem;
+}
+
+.topbar__actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  gap: var(--nx-space-3);
+  z-index: 2;
+}
+
+.topbar--with-search .search-box-shell,
+.topbar--with-search .search-box {
+  width: 100%;
+}
+
+.topbar--with-search .topbar__actions {
+  position: absolute;
+  top: 50%;
+  right: var(--nx-page-gutter);
+  transform: translateY(-50%);
+}
+
+@media (max-width: 900px) {
+  .mobile-menu-button {
+    display: inline-grid;
+  }
+
+  .topbar,
+  .topbar--with-search {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--nx-space-3);
+  }
+
+  .topbar__search-area {
+    width: auto;
+    margin: 0;
+    padding-right: 0;
+  }
+
+  .topbar--with-search .topbar__actions {
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+  }
+
+  .search-box,
+  .search-box-shell {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .topbar__actions .avatar {
+    display: none;
+  }
+}
