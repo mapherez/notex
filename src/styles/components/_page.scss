@@ -12,6 +12,7 @@
 
 .list-page-grid {
   display: grid;
+  align-content: start;
   gap: var(--nx-space-6);
 }
 
