@@ -1,0 +1,93 @@
+@use "../abstracts/variables" as *;
+
+.tag-chip {
+  --nx-chip-hue: var(--nx-color-neutral);
+
+  position: relative;
+  display: inline-flex;
+  min-height: 1.85rem;
+  align-items: center;
+  gap: var(--nx-space-2);
+  border: 1px solid rgba(7, 8, 10, 0.12);
+  border-radius: 0.31rem;
+  background: color-mix(in srgb, var(--nx-chip-hue) 72%, #f4f5f7);
+  color: color-mix(in srgb, var(--nx-chip-hue) 46%, #101216);
+  padding: 0.2rem 0.65rem;
+  font-size: 0.86rem;
+  font-weight: 650;
+  white-space: nowrap;
+  z-index: 1;
+  transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.tag-chip:hover,
+.tag-chip:focus-visible,
+.collection-chip:hover,
+.collection-chip:focus-visible {
+  background: color-mix(in srgb, var(--nx-chip-hue) 78%, #f8f9fb);
+  z-index: 50;
+}
+
+.tag-chip:focus-visible,
+.collection-chip:focus-visible,
+.tag-chip-link:focus-visible {
+  outline-offset: 3px;
+}
+
+.tag-chip-link {
+  color: inherit;
+  outline: none;
+}
+
+.collection-chip {
+  --nx-chip-hue: var(--nx-color-neutral);
+
+  position: relative;
+  display: inline-flex;
+  min-height: 1.85rem;
+  max-width: 11rem;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.38rem;
+  border: 1px solid rgba(7, 8, 10, 0.12);
+  border-radius: 0.31rem;
+  background: color-mix(in srgb, var(--nx-chip-hue) 72%, #f4f5f7);
+  color: color-mix(in srgb, var(--nx-chip-hue) 46%, #101216);
+  padding: 0.2rem 0.65rem;
+  font-size: 0.86rem;
+  font-weight: 650;
+  white-space: nowrap;
+  z-index: 1;
+  transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.collection-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collection-chip--empty {
+  --nx-chip-hue: var(--nx-color-neutral);
+}
+
+.tag-remove {
+  appearance: none;
+  display: inline-grid;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(7, 8, 10, 0.08);
+  color: currentColor;
+  line-height: 1;
+  padding: 0;
+}
+
+@each $name, $value in $palette-colors {
+  .tag-chip.#{$name},
+  .collection-chip.#{$name} {
+    --nx-chip-hue: #{$value};
+  }
+}

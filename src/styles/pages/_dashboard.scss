@@ -24,11 +24,7 @@
   gap: var(--nx-space-4);
 }
 
-.stat-card,
-.panel,
-.note-card,
-.profile-card,
-.settings-card {
+.stat-card {
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-card);
   background: var(--nx-color-surface);
@@ -48,34 +44,7 @@
   transform: translateY(-1px);
 }
 
-.icon-badge {
-  --nx-badge-hue: var(--nx-color-neutral);
-
-  display: grid;
-  width: 3.35rem;
-  height: 3.35rem;
-  place-items: center;
-  border: 1px solid var(--nx-color-border);
-  border-radius: 0.37rem;
-  background: color-mix(in srgb, var(--nx-badge-hue) 74%, #f4f5f7);
-  color: color-mix(in srgb, var(--nx-badge-hue) 46%, #0d0f13);
-}
-
-.icon-badge svg {
-  width: 1.375rem;
-  height: 1.375rem;
-}
-
 @each $name, $value in $palette-colors {
-  .icon-badge.#{$name} {
-    --nx-badge-hue: #{$value};
-  }
-
-  .tag-chip.#{$name},
-  .collection-chip.#{$name} {
-    --nx-chip-hue: #{$value};
-  }
-
   .notes-filter-dot.#{$name} {
     color: #{$value};
   }
@@ -297,28 +266,6 @@
   border-color: color-mix(in srgb, var(--nx-color-danger) 45%, var(--nx-color-border));
   color: var(--nx-color-danger);
   outline: none;
-}
-
-.panel {
-  padding: var(--nx-space-5);
-}
-
-.panel.flush {
-  padding: 0;
-}
-
-.panel-title {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 760;
-}
-
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--nx-space-4);
-  margin-bottom: var(--nx-space-5);
 }
 
 .link-accent {

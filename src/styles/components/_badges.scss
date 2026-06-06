@@ -1,0 +1,25 @@
+@use "../abstracts/variables" as *;
+
+.icon-badge {
+  --nx-badge-hue: var(--nx-color-neutral);
+
+  display: grid;
+  width: 3.35rem;
+  height: 3.35rem;
+  place-items: center;
+  border: 1px solid var(--nx-color-border);
+  border-radius: 0.37rem;
+  background: color-mix(in srgb, var(--nx-badge-hue) 74%, #f4f5f7);
+  color: color-mix(in srgb, var(--nx-badge-hue) 46%, #0d0f13);
+}
+
+.icon-badge svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+@each $name, $value in $palette-colors {
+  .icon-badge.#{$name} {
+    --nx-badge-hue: #{$value};
+  }
+}

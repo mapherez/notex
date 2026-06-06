@@ -26,12 +26,6 @@
   z-index: 2;
 }
 
-.page-content {
-  width: min(100%, var(--nx-content-max));
-  margin: 0 auto;
-  padding: var(--nx-page-gutter) var(--nx-page-gutter) var(--nx-space-8);
-}
-
 .legal-page {
   width: min(100%, 58rem);
 }

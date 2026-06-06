@@ -592,25 +592,6 @@
   gap: var(--nx-space-5);
 }
 
-.meta-list {
-  display: grid;
-  gap: var(--nx-space-5);
-}
-
-.meta-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--nx-space-4);
-  color: var(--nx-color-text-muted);
-  font-size: 0.92rem;
-}
-
-.meta-value {
-  color: var(--nx-color-text);
-  text-align: right;
-}
-
 .side-list {
   display: grid;
   gap: var(--nx-space-3);

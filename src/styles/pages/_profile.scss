@@ -52,8 +52,7 @@
   margin-bottom: var(--nx-profile-section-gap, var(--nx-space-5));
 }
 
-.profile-section-title,
-.settings-title {
+.profile-section-title {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 760;
@@ -106,14 +105,6 @@
   font-size: 0.86rem;
 }
 
-.settings-card {
-  padding: var(--nx-profile-section-padding, var(--nx-space-5));
-}
-
-.settings-title {
-  margin-bottom: var(--nx-profile-section-gap, var(--nx-space-5));
-}
-
 .database-path-row__icon {
   color: var(--nx-color-accent-strong);
 }
@@ -150,8 +141,7 @@
   font-weight: 720;
 }
 
-.profile-row-description,
-.settings-description {
+.profile-row-description {
   display: block;
   margin-top: var(--nx-space-1);
   color: var(--nx-color-text-muted);

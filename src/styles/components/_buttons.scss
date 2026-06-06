@@ -1,0 +1,29 @@
+.icon-button {
+  display: inline-grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--nx-radius-sm);
+  background: transparent;
+  color: var(--nx-color-text-muted);
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.icon-button svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.icon-button:hover,
+.icon-button:focus-visible,
+.icon-button.active {
+  border-color: var(--nx-color-border);
+  background: var(--nx-color-hover);
+  color: var(--nx-color-text);
+  outline: none;
+}
+
+.icon-button.danger {
+  color: var(--nx-color-danger);
+}

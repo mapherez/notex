@@ -7,9 +7,14 @@
 @use "base/reset";
 @use "base/typography";
 @use "layout/shell";
-
-// Phase 2 component primitives should be imported here, before page styles.
-// Existing legacy component/page order is preserved in Phase 1 to avoid cascade changes.
+@use "components/page";
+@use "components/surfaces";
+@use "components/buttons";
+@use "components/badges";
+@use "components/chips";
+@use "components/thumbnail";
+@use "components/meta";
+@use "components/menus";
 @use "components/modals";
 @use "components/forms";
 @use "components/custom-select";
@@ -22,7 +27,6 @@
 @use "pages/note";
 @use "pages/profile";
 @use "components/filters";
-@use "components/menus";
 @use "pages/tags";
 @use "components/labels";
 @use "components/editor";
