@@ -1,11 +1,11 @@
 .collections-page {
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
 }
 
 .collection-preference-card {
   display: grid;
   align-content: start;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
 }
 
 .collection-preference-card .settings-title {

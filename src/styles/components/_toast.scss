@@ -1,10 +1,12 @@
+@use "../abstracts/z-index" as *;
+
 .toast-viewport {
   position: fixed;
   right: var(--nx-space-6);
   bottom: var(--nx-space-6);
   display: grid;
-  gap: var(--nx-space-3);
-  z-index: 100;
+  gap: var(--nx-gap-sm);
+  z-index: z("system");
 }
 
 .toast {
@@ -12,9 +14,9 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   min-width: min(22rem, calc(100vw - 2rem));
   align-items: center;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-3);
   box-shadow: var(--nx-shadow-soft);

@@ -4,7 +4,7 @@
   height: 2.25rem;
   place-items: center;
   border: 1px solid transparent;
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: transparent;
   color: var(--nx-color-text-muted);
   transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
@@ -33,11 +33,11 @@
   min-height: 2.55rem;
   align-items: center;
   justify-content: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   border: 1px solid color-mix(in srgb, var(--nx-color-danger) 48%, var(--nx-color-border));
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: color-mix(in srgb, var(--nx-color-danger) 12%, transparent);
   color: var(--nx-color-danger);
   padding: 0 var(--nx-space-4);
-  font-weight: 740;
+  font-weight: var(--nx-font-weight-bold);
 }

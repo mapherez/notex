@@ -3,7 +3,7 @@
   width: 3.7rem;
   height: 3.7rem;
   overflow: hidden;
-  border-radius: 0.28rem;
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-subtle);
 }
 
@@ -30,7 +30,7 @@
 .note-thumb.paper::after {
   content: "";
   position: absolute;
-  inset: 1rem 0.55rem;
+  inset: var(--nx-space-4) var(--nx-space-2);
   border-top: 2px solid #ffb13d;
   border-bottom: 2px solid #7aa8ff;
 }
@@ -44,7 +44,7 @@
 .note-thumb.terminal::after {
   content: "";
   position: absolute;
-  inset: 0.65rem;
+  inset: var(--nx-space-3);
   border-left: 0.2rem solid #ff5b7d;
   box-shadow: 0.55rem 0 0 #50d37a, 1.1rem 0 0 #ffc653;
 }

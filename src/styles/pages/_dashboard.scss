@@ -1,32 +1,33 @@
 @use "../abstracts/variables" as *;
+@use "../abstracts/z-index" as *;
 
 .dashboard-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 22rem;
-  gap: var(--nx-space-6);
+  gap: var(--nx-gap-lg);
 }
 
 .dashboard-main {
   display: grid;
   align-content: start;
-  gap: var(--nx-space-8);
+  gap: var(--nx-gap-lg);
 }
 
 .dashboard-side {
   display: grid;
   align-content: start;
-  gap: var(--nx-space-5);
+  gap: var(--nx-gap-lg);
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
 }
 
 .stat-card {
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-card);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
 }
 
@@ -52,19 +53,19 @@
 
 .stat-label {
   color: var(--nx-color-text);
-  font-weight: 700;
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .stat-value {
   margin-top: var(--nx-space-2);
-  font-size: 1.65rem;
-  font-weight: 720;
+  font-size: var(--nx-font-size-metric);
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .stat-delta {
   margin-top: var(--nx-space-2);
   color: var(--nx-color-text-muted);
-  font-size: 0.92rem;
+  font-size: var(--nx-font-size-body);
 }
 
 .dashboard-quick-pins {
@@ -74,7 +75,7 @@
 .quick-pin-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
 }
 
 .quick-pin-slot {
@@ -86,11 +87,11 @@
   display: grid;
   grid-template-columns: 3rem minmax(0, 1fr);
   align-items: center;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   width: 100%;
   min-height: 5.8rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-card);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
   padding: var(--nx-space-4);
   text-align: left;
@@ -119,14 +120,14 @@
 
 .quick-pin-edit {
   position: absolute;
-  top: 0.55rem;
-  right: 0.55rem;
+  top: var(--nx-space-2);
+  right: var(--nx-space-2);
   display: inline-grid;
   place-items: center;
   width: 1.8rem;
   height: 1.8rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: 999px;
+  border-radius: var(--nx-radius-pill);
   background: var(--nx-color-surface-elevated);
   color: var(--nx-color-text-muted);
   opacity: 0.9;
@@ -150,21 +151,21 @@
 .quick-pin-card .note-thumb {
   width: 3rem;
   height: 3rem;
-  border-radius: 0.25rem;
+  border-radius: var(--nx-radius);
 }
 
 .quick-pin-copy,
 .quick-pin-options button > span {
   display: grid;
   min-width: 0;
-  gap: 0.18rem;
+  gap: var(--nx-gap-xs);
 }
 
 .quick-pin-copy strong,
 .quick-pin-options strong {
   overflow: hidden;
   color: var(--nx-color-text);
-  font-size: 0.9rem;
+  font-size: var(--nx-font-size-body);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -173,7 +174,7 @@
 .quick-pin-options button > span > span {
   overflow: hidden;
   color: var(--nx-color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--nx-font-size-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -183,12 +184,12 @@
   top: calc(100% + var(--nx-space-2));
   left: 0;
   right: 0;
-  z-index: 45;
+  z-index: z("dropdown");
   display: grid;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   min-width: 18rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-3);
   box-shadow: var(--nx-shadow-soft);
@@ -197,10 +198,10 @@
 .quick-pin-search {
   display: flex;
   align-items: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   height: 2.5rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.32rem;
+  border-radius: var(--nx-radius);
   background: var(--nx-color-input);
   padding: 0 var(--nx-space-3);
   color: var(--nx-color-text-muted);
@@ -217,7 +218,7 @@
 
 .quick-pin-options {
   display: grid;
-  gap: var(--nx-space-1);
+  gap: var(--nx-gap-xs);
   max-height: 18rem;
   overflow: auto;
 }
@@ -226,9 +227,9 @@
   display: grid;
   grid-template-columns: 2.4rem minmax(0, 1fr);
   align-items: center;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   border: 0;
-  border-radius: 0.28rem;
+  border-radius: var(--nx-radius);
   background: transparent;
   padding: var(--nx-space-2);
   text-align: left;
@@ -244,21 +245,21 @@
 .quick-pin-options .note-thumb {
   width: 2.4rem;
   height: 2.4rem;
-  border-radius: 0.23rem;
+  border-radius: var(--nx-radius);
 }
 
 .quick-pin-clear {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   min-height: 2.35rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.28rem;
+  border-radius: var(--nx-radius);
   background: transparent;
   color: var(--nx-color-text-muted);
-  font-size: 0.86rem;
-  font-weight: 650;
+  font-size: var(--nx-font-size-small);
+  font-weight: var(--nx-font-weight-medium);
 }
 
 .quick-pin-clear:hover,
@@ -270,6 +271,6 @@
 
 .link-accent {
   color: color-mix(in srgb, var(--nx-color-accent) 78%, var(--nx-color-text));
-  font-size: 0.88rem;
-  font-weight: 650;
+  font-size: var(--nx-font-size-small);
+  font-weight: var(--nx-font-weight-medium);
 }

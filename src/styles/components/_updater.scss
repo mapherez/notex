@@ -1,15 +1,17 @@
+@use "../abstracts/z-index" as *;
+
 .app-update-banner {
   position: fixed;
   left: var(--nx-space-6);
   bottom: var(--nx-space-6);
-  z-index: 95;
+  z-index: z("system");
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   width: min(34rem, calc(100vw - 2rem));
   align-items: center;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
   border: 1px solid color-mix(in srgb, var(--nx-color-accent) 35%, var(--nx-color-border));
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-4);
   box-shadow: var(--nx-shadow-soft);
@@ -20,7 +22,7 @@
   width: 2.45rem;
   height: 2.45rem;
   place-items: center;
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-accent-soft);
   color: var(--nx-color-accent-strong);
 }
@@ -32,22 +34,22 @@
 .app-update-copy {
   display: grid;
   min-width: 0;
-  gap: var(--nx-space-1);
+  gap: var(--nx-gap-xs);
 }
 
 .app-update-copy strong {
   color: var(--nx-color-text);
-  font-size: 1rem;
+  font-size: var(--nx-font-size-body);
 }
 
 .app-update-copy span {
   color: var(--nx-color-text-muted);
-  font-size: 0.88rem;
+  font-size: var(--nx-font-size-small);
 }
 
 .app-update-progress {
   color: var(--nx-color-accent-strong);
-  font-weight: 720;
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .app-update-progress-bar {
@@ -56,7 +58,7 @@
   height: 0.36rem;
   overflow: hidden;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--nx-radius-pill);
   background: var(--nx-color-surface-subtle);
   appearance: none;
 }
@@ -95,17 +97,17 @@
 .app-update-actions {
   display: flex;
   align-items: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
 
 .app-update-actions button {
   min-height: 2.45rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-input);
   color: var(--nx-color-text);
   padding: 0 var(--nx-space-3);
-  font-weight: 740;
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .app-update-actions button:first-child {
@@ -134,4 +136,3 @@
     transform: translateX(290%);
   }
 }
-

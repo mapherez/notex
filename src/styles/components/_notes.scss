@@ -1,13 +1,15 @@
+@use "../abstracts/z-index" as *;
+
 .note-list {
   overflow: visible;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-card);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
 }
 
 .note-list-stack {
   display: grid;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
 }
 
 .notes-list-scroll {
@@ -33,7 +35,7 @@
   display: grid;
   grid-template-columns: 1.45rem 3.7rem minmax(0, 1fr) auto auto auto;
   align-items: center;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
   min-height: 5.4rem;
   border-bottom: 1px solid var(--nx-color-border);
   padding: 0 var(--nx-space-4);
@@ -68,14 +70,14 @@
 }
 
 .note-row:has(.note-row-menu) {
-  z-index: 85;
+  z-index: z("dropdown");
 }
 
 .note-row__link-overlay {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  z-index: 1;
+  z-index: z("local");
 }
 
 .note-row__link-overlay:focus-visible {
@@ -89,7 +91,7 @@
 .note-row__badges,
 .note-row-actions {
   position: relative;
-  z-index: 2;
+  z-index: z("local-raised");
 }
 
 .note-select-control {
@@ -108,7 +110,7 @@
   width: 1.45rem;
   align-content: center;
   justify-items: center;
-  gap: 0.1rem;
+  gap: var(--nx-gap-xs);
 }
 
 .note-row__drag-handle,
@@ -124,7 +126,7 @@
 .note-row__drag-handle,
 .note-row__status-button {
   border: 0;
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: transparent;
   padding: 0;
 }
@@ -197,7 +199,7 @@
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
 
 .note-row__thumbnail,
@@ -207,7 +209,7 @@
 
 .note-row__title {
   overflow: hidden;
-  font-weight: 720;
+  font-weight: var(--nx-font-weight-bold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -216,7 +218,7 @@
   overflow: hidden;
   margin-top: var(--nx-space-2);
   color: var(--nx-color-text-muted);
-  font-size: 0.92rem;
+  font-size: var(--nx-font-size-body);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -227,8 +229,8 @@
   max-height: calc(3.5em + var(--nx-space-3));
   overflow: hidden;
   color: var(--nx-color-text-muted);
-  font-size: 0.92rem;
-  line-height: 1.75;
+  font-size: var(--nx-font-size-body);
+  line-height: var(--nx-line-height-reading);
 }
 
 .note-row__summary-preview.is-overflowing::after {
@@ -236,7 +238,7 @@
   position: absolute;
   right: 0;
   bottom: 0;
-  padding-left: 1.9rem;
+  padding-left: var(--nx-space-7);
   background: linear-gradient(90deg, transparent, var(--nx-color-surface) 48%);
   color: var(--nx-color-text-muted);
 }
@@ -247,7 +249,7 @@
 
 .note-row__time {
   color: var(--nx-color-text-muted);
-  font-size: 0.85rem;
+  font-size: var(--nx-font-size-small);
   text-align: right;
   white-space: nowrap;
 }
@@ -264,7 +266,7 @@
 .note-row__badges:hover,
 .note-row__badges:focus-within {
   overflow: visible;
-  z-index: 20;
+  z-index: z("dropdown");
 }
 
 .note-row__tag-chain {
@@ -287,7 +289,7 @@
 }
 
 .collection-chip + .note-row__tag-chain {
-  margin-left: 0.48rem;
+  margin-left: var(--nx-space-2);
 }
 
 .note-row__tag-chain-item {
@@ -314,7 +316,7 @@
 
 .note-row__tag-chain-item:hover,
 .note-row__tag-chain-item:focus-within {
-  z-index: 60;
+  z-index: z("dropdown");
 }
 
 .note-row__tag-chain-item:hover .tag-chip,
@@ -335,13 +337,13 @@
 
 .quick-capture {
   display: grid;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
 }
 
 .capture-box {
   min-height: 10rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-input);
   padding: var(--nx-space-4);
 }
@@ -364,7 +366,7 @@
 
 .capture-tools {
   display: flex;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
 }
 
 .submit-button {
@@ -373,23 +375,23 @@
   height: 2.25rem;
   place-items: center;
   border: 0;
-  border-radius: 0.28rem;
+  border-radius: var(--nx-radius);
   background: var(--nx-color-accent);
   color: #fff;
 }
 
 .activity-list {
   display: grid;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
 }
 
 .activity-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
   color: var(--nx-color-text-muted);
-  font-size: 0.92rem;
+  font-size: var(--nx-font-size-body);
 }
 
 .activity-row {
@@ -398,11 +400,11 @@
 }
 
 .activity-row svg {
-  margin-top: 0.12rem;
+  margin-top: var(--nx-space-1);
   color: var(--nx-color-text-soft);
 }
 
 .activity-copy {
   display: grid;
-  gap: var(--nx-space-1);
+  gap: var(--nx-gap-xs);
 }

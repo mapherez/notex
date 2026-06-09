@@ -1,0 +1,14 @@
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(
+      in srgb,
+      var(--nx-color-scrollbar-thumb) 30%,
+      transparent
+    )
+    var(--nx-color-scrollbar-track);
+}
+
+*:hover {
+  scrollbar-color: var(--nx-color-scrollbar-thumb)
+    var(--nx-color-scrollbar-track);
+}

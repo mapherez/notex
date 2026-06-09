@@ -1,19 +1,19 @@
 .label-manager {
   display: grid;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
 }
 
 .label-create-row,
 .label-row {
   display: grid;
   align-items: center;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
 }
 
 .label-create-row {
   grid-template-columns: minmax(0, 1fr) 10rem auto;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-input);
   padding: var(--nx-space-3);
 }
@@ -23,7 +23,7 @@
   min-width: 0;
   height: 2.65rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-input);
   color: var(--nx-color-text);
   padding: 0 var(--nx-space-3);
@@ -35,18 +35,18 @@
   min-height: 2.65rem;
   align-items: center;
   justify-content: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   border: 0;
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-accent);
   color: #fff;
   padding: 0 var(--nx-space-4);
-  font-weight: 750;
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .label-list {
   display: grid;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
 
 .label-row {
@@ -65,7 +65,7 @@
 
 .label-tag-link {
   width: fit-content;
-  border-radius: 0.31rem;
+  border-radius: var(--nx-radius);
 }
 
 .label-tag-link:hover .tag-chip,
@@ -82,11 +82,11 @@
 .confirm-box button {
   min-height: 2.35rem;
   border: 0;
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-accent);
   color: #fff;
   padding: 0 var(--nx-space-4);
-  font-weight: 700;
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .editable-field {
@@ -94,7 +94,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
 }
 
 .editable-read {
@@ -118,7 +118,7 @@
   width: 100%;
   min-height: 2.65rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-input);
   color: var(--nx-color-text);
   padding: var(--nx-space-3);
@@ -136,6 +136,5 @@ textarea.editable-control {
 
 .editable-actions {
   display: flex;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
-

@@ -1,3 +1,5 @@
+@use "../abstracts/z-index" as *;
+
 .search-box-shell {
   position: relative;
   min-width: 0;
@@ -7,10 +9,10 @@
 .search-box {
   display: flex;
   align-items: center;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   height: 3rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.43rem;
+  border-radius: var(--nx-radius);
   background: var(--nx-color-input);
   padding: 0 var(--nx-space-4);
   color: var(--nx-color-text-muted);
@@ -27,11 +29,11 @@
 
 .kbd {
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.23rem;
-  padding: 0.18rem 0.48rem;
+  border-radius: var(--nx-radius);
+  padding: var(--nx-space-1) var(--nx-space-2);
   background: var(--nx-color-surface);
   color: var(--nx-color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--nx-font-size-caption);
 }
 
 .search-results-popover {
@@ -39,12 +41,12 @@
   top: calc(100% + var(--nx-space-2));
   left: 0;
   right: 0;
-  z-index: 45;
+  z-index: z("dropdown");
   display: grid;
   overflow: auto;
   max-height: min(26rem, 70vh);
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-2);
   box-shadow: var(--nx-shadow-soft);
@@ -54,8 +56,8 @@
   display: grid;
   grid-template-columns: 2.6rem minmax(0, 1fr);
   align-items: center;
-  gap: var(--nx-space-3);
-  border-radius: 0.32rem;
+  gap: var(--nx-gap-sm);
+  border-radius: var(--nx-radius);
   padding: var(--nx-space-2);
   transition: background 160ms ease;
 }
@@ -70,19 +72,19 @@
 .search-result-row .note-thumb {
   width: 2.6rem;
   height: 2.6rem;
-  border-radius: 0.25rem;
+  border-radius: var(--nx-radius);
 }
 
 .search-result-copy {
   display: grid;
   min-width: 0;
-  gap: 0.18rem;
+  gap: var(--nx-gap-xs);
 }
 
 .search-result-copy strong {
   overflow: hidden;
   color: var(--nx-color-text);
-  font-size: 0.92rem;
+  font-size: var(--nx-font-size-body);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -91,18 +93,18 @@
   display: flex;
   min-width: 0;
   flex-wrap: wrap;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   color: var(--nx-color-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--nx-font-size-caption);
 }
 
 .search-result-match {
   color: color-mix(in srgb, var(--nx-color-accent) 76%, var(--nx-color-text));
-  font-weight: 700;
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .search-result-empty {
   padding: var(--nx-space-4);
   color: var(--nx-color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--nx-font-size-body);
 }

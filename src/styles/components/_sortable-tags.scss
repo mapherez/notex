@@ -1,14 +1,14 @@
 .sortable-tag-list {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   width: 100%;
   min-width: 0;
 }
 
 .sortable-tag-list__item {
   display: inline-flex;
-  border-radius: 0.35rem;
+  border-radius: var(--nx-radius);
   cursor: grab;
   outline: none;
   transition: opacity 160ms ease, outline-color 160ms ease, transform 160ms ease;

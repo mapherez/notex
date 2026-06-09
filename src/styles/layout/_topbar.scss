@@ -1,3 +1,5 @@
+@use "../abstracts/z-index" as *;
+
 .avatar {
   display: grid;
   width: 2.4rem;
@@ -5,12 +7,12 @@
   flex: 0 0 auto;
   place-items: center;
   border: 1px solid var(--nx-color-border);
-  border-radius: 999px;
+  border-radius: var(--nx-radius-pill);
   background:
     linear-gradient(140deg, rgba(255, 180, 87, 0.85), rgba(84, 50, 34, 0.9)),
     var(--nx-color-surface-subtle);
   color: #fff;
-  font-weight: 750;
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .avatar svg {
@@ -33,7 +35,7 @@
 .avatar-button {
   display: inline-flex;
   align-items: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   border: 0;
   background: transparent;
   color: inherit;
@@ -58,15 +60,15 @@
   width: min(100%, var(--nx-content-max));
   min-height: var(--nx-topbar-height);
   margin: auto;
-  padding: var(--nx-page-gutter) var(--nx-space-8);
+  padding: var(--nx-space-7) var(--nx-space-7);
   background: color-mix(in srgb, var(--nx-color-canvas) 94%, transparent);
   backdrop-filter: blur(18px);
-  z-index: 90;
+  z-index: z("system");
 }
 
 .topbar--with-search {
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
 }
 
 .topbar .mobile-menu-button {
@@ -85,8 +87,8 @@
   align-items: center;
   justify-content: flex-end;
   justify-self: end;
-  gap: var(--nx-space-3);
-  z-index: 2;
+  gap: var(--nx-gap-sm);
+  z-index: z("local-raised");
 }
 
 .topbar--with-search .search-box-shell,
@@ -97,7 +99,7 @@
 .topbar--with-search .topbar__actions {
   position: absolute;
   top: 50%;
-  right: var(--nx-page-gutter);
+  right: var(--nx-space-7);
   transform: translateY(-50%);
 }
 
@@ -109,7 +111,7 @@
   .topbar,
   .topbar--with-search {
     grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: var(--nx-space-3);
+    gap: var(--nx-gap-sm);
   }
 
   .topbar__search-area {

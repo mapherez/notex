@@ -2,7 +2,7 @@
   width: min(100%, var(--nx-content-max));
   margin: 0 auto;
   min-height: 0;
-  padding: var(--nx-page-gutter) var(--nx-page-gutter) var(--nx-space-8);
+  padding: var(--nx-space-7) var(--nx-space-7) var(--nx-space-7);
 }
 
 .main-shell > .page-content:not(.page-scroll-layout) {
@@ -13,7 +13,7 @@
 .list-page-grid {
   display: grid;
   align-content: start;
-  gap: var(--nx-space-6);
+  gap: var(--nx-gap-lg);
 }
 
 .page-scroll-layout {
@@ -38,5 +38,5 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
 }

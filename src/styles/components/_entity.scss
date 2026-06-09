@@ -1,4 +1,5 @@
 @use "../abstracts/breakpoints" as bp;
+@use "../abstracts/z-index" as *;
 
 .tags-layout,
 .collections-layout {
@@ -7,7 +8,7 @@
   align-items: start;
   height: 100%;
   min-height: 0;
-  gap: var(--nx-space-5);
+  gap: var(--nx-gap-lg);
 }
 
 .tags-main-section,
@@ -30,7 +31,7 @@
 .collections-side-panel {
   display: grid;
   align-content: start;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
   overflow: auto;
   padding-right: var(--nx-space-1);
 }
@@ -39,7 +40,7 @@
 .collection-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
 }
 
 .tag-card,
@@ -50,7 +51,7 @@
   align-content: space-between;
   align-self: start;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-card);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
   padding: var(--nx-space-4);
   transition:
@@ -68,7 +69,7 @@
 
 .tag-card:has(.color-picker__trigger[aria-expanded="true"]),
 .collection-card:has(.color-picker__trigger[aria-expanded="true"]) {
-  z-index: 85;
+  z-index: z("dropdown");
 }
 
 .tag-card-header,
@@ -76,7 +77,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
 }
 
 .tag-card-link-overlay,
@@ -84,7 +85,7 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  z-index: 1;
+  z-index: z("local");
 }
 
 .tag-card-link-overlay:focus-visible,
@@ -98,7 +99,7 @@
   display: flex;
   min-width: 0;
   align-items: flex-start;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   color: inherit;
 }
 
@@ -113,7 +114,7 @@
 .collection-edit-form {
   display: grid;
   align-content: start;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
 }
 
 .tag-create-card .settings-title,
@@ -128,7 +129,7 @@
   min-width: 0;
   height: 2.65rem;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-input);
   color: var(--nx-color-text);
   padding: 0 var(--nx-space-3);
@@ -140,7 +141,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
 }
 
 .tag-create-actions .color-picker,
@@ -154,13 +155,13 @@
   min-height: 2.65rem;
   align-items: center;
   justify-content: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   border: 0;
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-accent);
   color: #fff;
   padding: 0 var(--nx-space-4);
-  font-weight: 750;
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .tag-card-actions,
@@ -169,8 +170,8 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: var(--nx-space-2);
-  z-index: 2;
+  gap: var(--nx-gap-sm);
+  z-index: z("local-raised");
 }
 
 .tag-action-button,
@@ -180,14 +181,14 @@
   flex: 1;
   align-items: center;
   justify-content: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-input);
   color: var(--nx-color-text-muted);
   padding: 0 var(--nx-space-3);
-  font-size: 0.88rem;
-  font-weight: 740;
+  font-size: var(--nx-font-size-small);
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .tag-card-header .tag-action-button,

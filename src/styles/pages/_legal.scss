@@ -4,15 +4,15 @@
 
 .legal-card {
   display: grid;
-  gap: var(--nx-space-5);
+  gap: var(--nx-gap-lg);
   padding: var(--nx-space-6);
 }
 
 .legal-copy {
   display: grid;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
   color: var(--nx-color-text-muted);
-  line-height: 1.65;
+  line-height: var(--nx-line-height-body);
 }
 
 .legal-copy p {

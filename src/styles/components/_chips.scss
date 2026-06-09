@@ -1,4 +1,5 @@
 @use "../abstracts/variables" as *;
+@use "../abstracts/z-index" as *;
 
 .tag-chip {
   --nx-chip-hue: var(--nx-color-neutral);
@@ -7,16 +8,16 @@
   display: inline-flex;
   min-height: 1.85rem;
   align-items: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   border: 1px solid rgba(7, 8, 10, 0.12);
-  border-radius: 0.31rem;
+  border-radius: var(--nx-radius);
   background: color-mix(in srgb, var(--nx-chip-hue) 72%, #f4f5f7);
   color: color-mix(in srgb, var(--nx-chip-hue) 46%, #101216);
-  padding: 0.2rem 0.65rem;
-  font-size: 0.86rem;
-  font-weight: 650;
+  padding: var(--nx-space-1) var(--nx-space-3);
+  font-size: var(--nx-font-size-small);
+  font-weight: var(--nx-font-weight-medium);
   white-space: nowrap;
-  z-index: 1;
+  z-index: z("local");
   transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
@@ -25,7 +26,7 @@
 .collection-chip:hover,
 .collection-chip:focus-visible {
   background: color-mix(in srgb, var(--nx-chip-hue) 78%, #f8f9fb);
-  z-index: 50;
+  z-index: z("local-raised");
 }
 
 .tag-chip:focus-visible,
@@ -48,16 +49,16 @@
   max-width: 11rem;
   flex: 0 0 auto;
   align-items: center;
-  gap: 0.38rem;
+  gap: var(--nx-gap-sm);
   border: 1px solid rgba(7, 8, 10, 0.12);
-  border-radius: 0.31rem;
+  border-radius: var(--nx-radius);
   background: color-mix(in srgb, var(--nx-chip-hue) 72%, #f4f5f7);
   color: color-mix(in srgb, var(--nx-chip-hue) 46%, #101216);
-  padding: 0.2rem 0.65rem;
-  font-size: 0.86rem;
-  font-weight: 650;
+  padding: var(--nx-space-1) var(--nx-space-3);
+  font-size: var(--nx-font-size-small);
+  font-weight: var(--nx-font-weight-medium);
   white-space: nowrap;
-  z-index: 1;
+  z-index: z("local");
   transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
@@ -78,7 +79,7 @@
   flex: 0 0 auto;
   place-items: center;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--nx-radius-pill);
   background: rgba(7, 8, 10, 0.08);
   color: currentColor;
   line-height: 1;

@@ -6,7 +6,7 @@ html {
   height: 100%;
   min-height: 100%;
   background: var(--nx-color-canvas);
-  font-family: var(--nx-font-sans);
+  font-family: var(--nx-font-family-sans);
 }
 
 body {
@@ -16,7 +16,7 @@ body {
   overflow: hidden;
   background: var(--nx-color-canvas);
   color: var(--nx-color-text);
-  font-family: var(--nx-font-sans);
+  font-family: var(--nx-font-family-sans);
   text-rendering: geometricPrecision;
 }
 

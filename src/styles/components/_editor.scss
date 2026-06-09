@@ -1,4 +1,5 @@
 @use "../abstracts/variables" as *;
+@use "../abstracts/z-index" as *;
 
 .styled-text-field {
   display: grid;
@@ -11,11 +12,11 @@ div.usage-styled-field__control {
 .text-style-toolbar {
   display: inline-flex;
   align-items: center;
-  gap: var(--nx-space-1);
+  gap: var(--nx-gap-xs);
 }
 
 .text-style-toolbar--compact {
-  gap: 0;
+  gap: var(--nx-gap-null);
 }
 
 .text-style-picker {
@@ -26,12 +27,12 @@ div.usage-styled-field__control {
   position: absolute;
   left: 0;
   top: calc(100% + var(--nx-space-2));
-  z-index: 65;
+  z-index: z("dropdown");
   display: grid;
   grid-template-columns: repeat(5, 1.75rem);
-  gap: var(--nx-space-1);
+  gap: var(--nx-gap-xs);
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-2);
   box-shadow: var(--nx-shadow-soft);
@@ -42,14 +43,14 @@ div.usage-styled-field__control {
   grid-column: 1 / -1;
   min-height: 2rem;
   align-items: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   border: 0;
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: transparent;
   color: var(--nx-color-text-muted);
   padding: 0 var(--nx-space-2);
-  font-size: 0.86rem;
-  font-weight: 650;
+  font-size: var(--nx-font-size-small);
+  font-weight: var(--nx-font-weight-medium);
   text-align: left;
 }
 
@@ -69,7 +70,7 @@ div.usage-styled-field__control {
   width: 1rem;
   height: 1rem;
   border: 1px solid var(--nx-color-border-strong);
-  border-radius: 0.13rem;
+  border-radius: var(--nx-radius);
   background: var(--nx-color-text);
 }
 
@@ -79,7 +80,7 @@ div.usage-styled-field__control {
   height: 1.75rem;
   place-items: center;
   border: 1px solid var(--nx-color-border);
-  border-radius: 999px;
+  border-radius: var(--nx-radius-pill);
   background: var(--nx-color-surface);
   padding: 0;
 }
@@ -95,7 +96,7 @@ div.usage-styled-field__control {
   display: block;
   width: 0.95rem;
   height: 0.95rem;
-  border-radius: 999px;
+  border-radius: var(--nx-radius-pill);
 }
 
 @each $name, $value in $palette-colors {
@@ -113,10 +114,10 @@ div.usage-styled-field__control {
   }
 
   .rich-text-bg--#{$name} {
-    border-radius: 0.13rem;
+    border-radius: var(--nx-radius);
     background: color-mix(in srgb, #{$value} 28%, transparent);
     color: var(--nx-color-text);
-    padding: 0 0.14em;
+    padding: 0 var(--nx-space-1);
   }
 }
 
@@ -137,9 +138,9 @@ div.usage-styled-field__control {
   height: 2rem;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
+  gap: var(--nx-gap-xs);
   border: 0;
-  border-radius: 0.22rem;
+  border-radius: var(--nx-radius);
   background: transparent;
   color: var(--nx-color-text-muted);
 }
@@ -147,18 +148,18 @@ div.usage-styled-field__control {
 .markdown-tool-tooltip {
   position: absolute;
   left: 50%;
-  top: calc(100% + 0.45rem);
+  top: calc(100% + var(--nx-space-2));
   display: grid;
   min-width: max-content;
   justify-items: center;
-  gap: 0.18rem;
+  gap: var(--nx-gap-xs);
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-elevated);
   box-shadow: var(--nx-shadow-soft);
   color: var(--nx-color-text);
   opacity: 0;
-  padding: 0.42rem 0.58rem;
+  padding: var(--nx-space-2);
   pointer-events: none;
   text-align: center;
   transform: translate(-50%, -0.2rem);
@@ -167,21 +168,21 @@ div.usage-styled-field__control {
     transform 120ms ease;
   visibility: hidden;
   white-space: nowrap;
-  z-index: 95;
+  z-index: z("dropdown");
 }
 
 .markdown-tool-tooltip__label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1.15;
+  font-size: var(--nx-font-size-caption);
+  font-weight: var(--nx-font-weight-bold);
+  line-height: var(--nx-line-height-tight);
 }
 
 .markdown-tool-tooltip__shortcut {
   color: var(--nx-color-text-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 1.1;
+  font-size: var(--nx-font-size-caption);
+  font-weight: var(--nx-font-weight-bold);
+  letter-spacing: var(--nx-letter-spacing-label);
+  line-height: var(--nx-line-height-tight);
   text-transform: uppercase;
 }
 
@@ -236,20 +237,20 @@ div.usage-styled-field__control {
   left: 0;
   top: calc(100% + var(--nx-space-2));
   display: flex;
-  gap: var(--nx-space-1);
+  gap: var(--nx-gap-xs);
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-2);
   box-shadow: var(--nx-shadow-soft);
-  z-index: 65;
+  z-index: z("dropdown");
 }
 
 .markdown-preview {
   display: grid;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   color: var(--nx-color-text-muted);
-  line-height: 1.75;
+  line-height: var(--nx-line-height-reading);
 }
 
 .markdown-preview h1,
@@ -260,20 +261,20 @@ div.usage-styled-field__control {
 .markdown-preview h6 {
   margin: var(--nx-space-2) 0 0;
   color: var(--nx-color-text);
-  font-weight: 780;
-  line-height: 1.25;
+  font-weight: var(--nx-font-weight-bold);
+  line-height: var(--nx-line-height-heading);
 }
 
 .markdown-preview h1 {
-  font-size: 1.6rem;
+  font-size: var(--nx-font-size-title-lg);
 }
 
 .markdown-preview h2 {
-  font-size: 1.3rem;
+  font-size: var(--nx-font-size-title-md);
 }
 
 .markdown-preview h3 {
-  font-size: 1.12rem;
+  font-size: var(--nx-font-size-title-sm);
 }
 
 .markdown-preview p {
@@ -293,13 +294,13 @@ div.usage-styled-field__control {
 
 .markdown-preview a {
   color: color-mix(in srgb, var(--nx-color-accent) 82%, var(--nx-color-text));
-  font-weight: 700;
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .markdown-preview ul,
 .markdown-preview ol {
   display: grid;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   margin: 0;
   padding-left: var(--nx-space-6);
 }
@@ -313,19 +314,19 @@ div.usage-styled-field__control {
 
 .markdown-preview code {
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.18rem;
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-subtle);
   color: var(--nx-color-text);
-  padding: 0.12rem 0.36rem;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 0.9em;
+  padding: var(--nx-space-1);
+  font-family: var(--nx-font-family-mono);
+  font-size: var(--nx-font-size-small);
 }
 
 .markdown-preview pre {
   overflow: auto;
   margin: 0;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-subtle);
   padding: var(--nx-space-4);
 }
@@ -339,7 +340,7 @@ div.usage-styled-field__control {
 .markdown-task {
   display: inline-flex;
   align-items: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
 
 .markdown-task input {
@@ -357,7 +358,7 @@ div.usage-styled-field__control {
   border: 1px solid var(--nx-color-border-strong);
   border-collapse: separate;
   border-spacing: 0;
-  border-radius: 0.32rem;
+  border-radius: var(--nx-radius);
 }
 
 .markdown-table th,
@@ -380,8 +381,8 @@ div.usage-styled-field__control {
 
 .markdown-table th {
   color: var(--nx-color-text);
-  font-size: 0.92rem;
-  font-weight: 760;
+  font-size: var(--nx-font-size-body);
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .markdown-table td {
@@ -395,9 +396,9 @@ div.usage-styled-field__control {
 
 .confirm-box {
   display: grid;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   border: 1px solid color-mix(in srgb, var(--nx-color-danger) 35%, var(--nx-color-border));
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: color-mix(in srgb, var(--nx-color-danger) 8%, var(--nx-color-surface));
   padding: var(--nx-space-4);
   color: var(--nx-color-text-muted);
@@ -405,5 +406,5 @@ div.usage-styled-field__control {
 
 .confirm-box div {
   display: flex;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }

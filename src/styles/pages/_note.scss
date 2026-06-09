@@ -1,12 +1,14 @@
+@use "../abstracts/z-index" as *;
+
 .note-document-shell {
   display: grid;
   grid-template-columns: 2.75rem minmax(0, 1fr) 20rem;
-  gap: var(--nx-space-7);
+  gap: var(--nx-gap-lg);
   height: 100%;
   min-height: 0;
   width: min(100%, 88rem);
   margin: 0 auto;
-  padding: var(--nx-space-8) 0 0;
+  padding: var(--nx-space-7) 0 0;
 }
 
 .note-toc,
@@ -16,17 +18,17 @@
 
 .note-toc {
   position: relative;
-    z-index: 40;
+    z-index: z("local-raised");
     width: 2.75rem;
     min-height: 9rem;
   color: var(--nx-color-text-muted);
-  font-size: 0.88rem;
+  font-size: var(--nx-font-size-small);
 }
 
 .note-toc-dashes {
   display: grid;
   justify-items: center;
-  gap: 0.55rem;
+  gap: var(--nx-gap-sm);
   width: 2.75rem;
   padding-top: var(--nx-space-2);
 }
@@ -35,7 +37,7 @@
   display: block;
   width: 1.25rem;
   height: 2px;
-  border-radius: 999px;
+  border-radius: var(--nx-radius-pill);
   background: var(--nx-color-text-soft);
   opacity: 0.82;
 }
@@ -63,9 +65,9 @@
   left: 0;
   display: grid;
   width: 14rem;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-lg);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-4);
   box-shadow: var(--nx-shadow-soft);
@@ -89,19 +91,19 @@
 
 .note-toc-title {
   color: var(--nx-color-text);
-  font-weight: 760;
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .note-toc nav {
   display: grid;
-  gap: var(--nx-space-1);
+  gap: var(--nx-gap-xs);
 }
 
 .note-toc-link {
   display: block;
   width: 100%;
   border: 0;
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: transparent;
     color: var(--nx-color-text-muted);
     padding: var(--nx-space-1) var(--nx-space-2);
@@ -132,14 +134,14 @@
 }
 
 .note-toc-empty {
-  line-height: 1.55;
+  line-height: var(--nx-line-height-body);
 }
 
 .note-document-main {
   min-width: 0;
   min-height: 0;
   overflow: auto;
-  padding: 2rem;
+  padding: var(--nx-space-7);
   overscroll-behavior: contain;
 }
 
@@ -174,22 +176,22 @@
 
 .note-document-heading .note-title-input {
   min-height: 2.6rem;
-  font-size: clamp(1.8rem, 3vw, 2.25rem);
-  font-weight: 780;
-  letter-spacing: 0;
-  line-height: 1.15;
+  font-size: var(--nx-font-size-title-lg);
+  font-weight: var(--nx-font-weight-bold);
+  letter-spacing: var(--nx-letter-spacing-default);
+  line-height: var(--nx-line-height-tight);
 }
 
 .note-document-heading .note-subtitle-input {
   min-height: 1.7rem;
   color: var(--nx-color-text-muted);
-  font-size: 1.02rem;
-  line-height: 1.7;
+  font-size: var(--nx-font-size-title-sm);
+  line-height: var(--nx-line-height-reading);
 }
 
 .note-block-list {
   display: grid;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
 }
 
 .note-block-list.is-reordering {
@@ -200,7 +202,7 @@
   position: relative;
   display: grid;
   border: 1px solid transparent;
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   margin-inline: calc(var(--nx-space-3) * -1);
   padding: var(--nx-space-3);
   cursor: text;
@@ -227,7 +229,7 @@
   place-items: center;
   border: 1px solid transparent;
   border-right: 0;
-  border-radius: var(--nx-radius-sm) 0 0 var(--nx-radius-sm);
+  border-radius: var(--nx-radius) 0 0 var(--nx-radius);
   background: transparent;
   color: var(--nx-color-text-soft);
   opacity: 0;
@@ -235,18 +237,18 @@
 }
 
 .note-block-handle {
-  left: calc(2rem * -1);
+  left: calc(var(--nx-space-7) * -1);
   cursor: grab;
   touch-action: none;
 }
 
 .note-block-delete {
-  right: -1rem;
+  right: calc(var(--nx-space-4) * -1);
   width: 1rem;
   justify-content: flex-end;
   border: 1px solid transparent;
   border-left: 0;
-  border-radius: 0 var(--nx-radius-sm) var(--nx-radius-sm) 0;
+  border-radius: 0 var(--nx-radius) var(--nx-radius) 0;
 }
 
 .note-block-handle:active {
@@ -280,7 +282,7 @@
   display: grid;
   min-width: 0;
   align-content: start;
-    gap: 10px;
+    gap: var(--nx-gap-sm);
     min-height: 30px;
 }
 
@@ -290,9 +292,9 @@
   border: 0;
   background: transparent;
   color: var(--nx-color-text);
-  font-size: 1.1rem;
-  font-weight: 760;
-  line-height: 1.35;
+  font-size: var(--nx-font-size-title-sm);
+  font-weight: var(--nx-font-weight-bold);
+  line-height: var(--nx-line-height-heading);
     outline: none;
     overflow: hidden;
     resize: none;
@@ -314,7 +316,7 @@
 .note-inline-prosemirror a,
 .note-tiptap-prosemirror a {
   color: color-mix(in srgb, var(--nx-color-accent) 86%, var(--nx-color-text));
-  font-weight: 700;
+  font-weight: var(--nx-font-weight-bold);
   text-decoration-line: underline;
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.18em;
@@ -326,7 +328,7 @@
   display: inline-block;
   width: 0.82em;
   height: 0.82em;
-  margin-left: 0.24em;
+  margin-left: var(--nx-space-1);
   background: currentColor;
   cursor: pointer;
   opacity: 0.76;
@@ -349,7 +351,7 @@
   min-height: 30px;
   place-items: center;
   border: 1px dashed transparent;
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: transparent;
   color: var(--nx-color-text-soft);
   padding: 0;
@@ -386,7 +388,7 @@
 .note-bubble-toolbar {
   display: inline-flex;
   align-items: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
 
 .note-add-block-row button {
@@ -395,12 +397,12 @@
   height: 2.75rem;
   place-items: center;
   border: 1px solid var(--nx-color-border);
-  border-radius: 999px;
+  border-radius: var(--nx-radius-pill);
   background: var(--nx-color-surface);
   color: var(--nx-color-text-muted);
   padding: 0;
-  font-size: 1.4rem;
-  font-weight: 720;
+  font-size: var(--nx-font-size-title-md);
+  font-weight: var(--nx-font-weight-bold);
   line-height: 1;
 }
 
@@ -414,7 +416,7 @@
 
 .note-tiptap-editor {
   display: grid;
-  gap: 0;
+  gap: var(--nx-gap-null);
     min-height: 30px;
 }
 
@@ -424,16 +426,16 @@
   min-height: 3.1rem;
     align-items: center;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
   padding: var(--nx-space-2);
   box-shadow: var(--nx-shadow-soft);
-  z-index: 60;
+  z-index: z("dropdown");
 }
 
 .note-bubble-toolbar {
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-1);
   box-shadow: var(--nx-shadow-soft);
@@ -441,32 +443,32 @@
 
 .note-tiptap-prosemirror {
   min-height: 30px;
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   color: var(--nx-color-text);
-  line-height: 1.75;
+  line-height: var(--nx-line-height-reading);
   outline: none;
 }
 
 .note-tiptap-prosemirror p {
-  margin: 0.4rem 0;
+  margin: var(--nx-space-2) 0;
 }
 
 .note-inline-prosemirror code,
 .note-tiptap-prosemirror code {
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.22rem;
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-subtle);
   color: var(--nx-color-text);
-  padding: 0.12rem 0.34rem;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 0.92em;
+  padding: var(--nx-space-1);
+  font-family: var(--nx-font-family-mono);
+  font-size: var(--nx-font-size-body);
 }
 
 .note-tiptap-prosemirror pre {
   overflow: auto;
   margin: var(--nx-space-3) 0;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-subtle);
   padding: var(--nx-space-4);
 }
@@ -483,7 +485,7 @@
 .note-tiptap-prosemirror h2,
 .note-tiptap-prosemirror h3 {
   margin: var(--nx-space-4) 0 var(--nx-space-2);
-  line-height: 1.2;
+  line-height: var(--nx-line-height-heading);
 }
 
 .note-tiptap-prosemirror blockquote {
@@ -496,8 +498,8 @@
 .note-tiptap-prosemirror ul[data-type="taskList"] {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  margin: 0.4rem 0;
+  gap: var(--nx-gap-sm);
+  margin: var(--nx-space-2) 0;
   padding-left: 0;
   list-style: none;
 }
@@ -507,7 +509,7 @@
 .note-tiptap-prosemirror li[data-checked] {
   display: flex;
   align-items: flex-start;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   min-height: 1.75rem;
   list-style: none;
 }
@@ -579,7 +581,7 @@
 
 .note-tip-content {
   display: grid;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
 
 .note-tiptap-prosemirror table {
@@ -599,9 +601,9 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
   padding: var(--nx-space-3);
 }
@@ -618,7 +620,7 @@
 .note-file-card button,
 .note-image-controls button {
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
   color: var(--nx-color-text-muted);
   padding: var(--nx-space-2) var(--nx-space-3);
@@ -626,7 +628,7 @@
 
 .note-image-node {
   display: grid;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   margin: var(--nx-space-4) 0;
 }
 
@@ -661,7 +663,7 @@
 .note-image-node figure {
   display: grid;
   max-width: 100%;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   margin: 0;
 }
 
@@ -673,7 +675,7 @@
 
 .note-image-node img {
   width: 100%;
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
 }
 
 .note-image-placeholder {
@@ -681,7 +683,7 @@
   min-height: 8rem;
   align-items: center;
   border: 1px dashed var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
   color: var(--nx-color-text-muted);
   padding: var(--nx-space-4);
@@ -691,12 +693,12 @@
 .note-image-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
 
 .note-panel-toggle-list {
   display: grid;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
 
 .note-panel-toggle-list label,
@@ -705,7 +707,7 @@
 .note-linked-list li {
   display: flex;
   align-items: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
 
 .note-file-side-list li,
@@ -736,7 +738,7 @@
 .side-list-actions {
   display: inline-flex;
   flex-shrink: 0;
-  gap: var(--nx-space-1);
+  gap: var(--nx-gap-xs);
   margin-left: auto;
 }
 
@@ -748,7 +750,7 @@
 
 .note-linked-panel {
   display: grid;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
 }
 
 .tag-chip-button {
@@ -765,7 +767,7 @@
   top: calc(100% + var(--nx-space-2));
   left: 0;
   right: 0;
-  z-index: 50;
+  z-index: z("dropdown");
 }
 
 @media (max-width: 1020px) {

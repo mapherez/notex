@@ -16,6 +16,42 @@
   }
 }
 
+@mixin nx-type-caption {
+  font-size: var(--nx-font-size-caption);
+  font-weight: var(--nx-font-weight-regular);
+  line-height: var(--nx-line-height-compact);
+}
+
+@mixin nx-type-body {
+  font-size: var(--nx-font-size-body);
+  font-weight: var(--nx-font-weight-regular);
+  line-height: var(--nx-line-height-body);
+}
+
+@mixin nx-type-title-sm {
+  font-size: var(--nx-font-size-title-sm);
+  font-weight: var(--nx-font-weight-bold);
+  line-height: var(--nx-line-height-heading);
+}
+
+@mixin nx-type-title-md {
+  font-size: var(--nx-font-size-title-md);
+  font-weight: var(--nx-font-weight-bold);
+  line-height: var(--nx-line-height-heading);
+}
+
+@mixin nx-type-title-lg {
+  font-size: var(--nx-font-size-title-lg);
+  font-weight: var(--nx-font-weight-bold);
+  line-height: var(--nx-line-height-tight);
+}
+
+@mixin nx-type-metric {
+  font-size: var(--nx-font-size-metric);
+  font-weight: var(--nx-font-weight-bold);
+  line-height: var(--nx-line-height-tight);
+}
+
 @mixin media-down($width) {
   @media (max-width: $width) {
     @content;

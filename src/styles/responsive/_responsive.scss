@@ -12,7 +12,7 @@
 
 @media (max-width: 900px) {
   .note-edit-toolbar-shell {
-    padding: 0 var(--nx-page-gutter) var(--nx-space-2);
+    padding: 0 var(--nx-space-7) var(--nx-space-2);
   }
 
   .note-edit-toolbar {
@@ -41,10 +41,6 @@
 }
 
 @media (max-width: 680px) {
-  :root {
-    --nx-page-gutter: 1rem;
-  }
-
   .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -163,9 +159,9 @@
   }
 
   .app-update-banner {
-    left: var(--nx-page-gutter);
-    right: var(--nx-page-gutter);
-    bottom: var(--nx-page-gutter);
+    left: var(--nx-space-4);
+    right: var(--nx-space-4);
+    bottom: var(--nx-space-4);
     grid-template-columns: auto minmax(0, 1fr);
     width: auto;
   }
@@ -212,5 +208,3 @@
     left: 0;
   }
 }
-
-

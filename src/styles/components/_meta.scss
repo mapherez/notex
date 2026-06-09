@@ -1,15 +1,15 @@
 .meta-list {
   display: grid;
-  gap: var(--nx-space-5);
+  gap: var(--nx-gap-lg);
 }
 
 .meta-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
   color: var(--nx-color-text-muted);
-  font-size: 0.92rem;
+  font-size: var(--nx-font-size-body);
 }
 
 .meta-value {

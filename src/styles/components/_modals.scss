@@ -1,3 +1,5 @@
+@use "../abstracts/z-index" as *;
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -5,15 +7,15 @@
   place-items: center;
   background: rgba(0, 0, 0, 0.48);
   padding: var(--nx-space-5);
-  z-index: 120;
+  z-index: z("modal");
 }
 
 .choice-modal {
   display: grid;
   width: min(100%, 32rem);
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-card);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-6);
   box-shadow: var(--nx-shadow-soft);
@@ -21,7 +23,7 @@
 
 .delete-confirm-modal {
   width: min(100%, 26rem);
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   padding: var(--nx-space-5);
 }
 
@@ -35,26 +37,26 @@
   overflow: hidden;
   width: min(100%, 68rem);
   max-height: min(52rem, calc(100vh - 3rem));
-  gap: 0;
+  gap: var(--nx-gap-null);
   grid-template-rows: auto minmax(0, 1fr);
   padding: 0;
 }
 
 .choice-modal h2 {
   margin: 0;
-  font-size: 1.35rem;
-  line-height: 1.2;
+  font-size: var(--nx-font-size-title-md);
+  line-height: var(--nx-line-height-heading);
 }
 
 .choice-modal p {
   margin: 0;
   color: var(--nx-color-text-muted);
-  line-height: 1.55;
+  line-height: var(--nx-line-height-body);
 }
 
 .choice-modal-actions {
   display: grid;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
 }
 
 .choice-modal-actions.two-column-actions {
@@ -64,11 +66,11 @@
 .choice-modal-path {
   overflow: hidden;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-input);
   color: var(--nx-color-text-muted);
   padding: var(--nx-space-3);
-  font-size: 0.82rem;
+  font-size: var(--nx-font-size-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -76,13 +78,13 @@
 .choice-modal-status {
   display: flex;
   align-items: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
   color: var(--nx-color-text-muted);
   padding: var(--nx-space-3);
-  font-size: 0.9rem;
+  font-size: var(--nx-font-size-body);
 }
 
 .choice-modal-status svg {
@@ -94,9 +96,9 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
   color: var(--nx-color-text);
   padding: var(--nx-space-4);
@@ -119,16 +121,16 @@
   display: block;
   margin-top: var(--nx-space-1);
   color: var(--nx-color-text-muted);
-  font-size: 0.82rem;
-  line-height: 1.4;
+  font-size: var(--nx-font-size-caption);
+  line-height: var(--nx-line-height-compact);
 }
 
 .choice-modal-checkbox {
   display: flex;
   align-items: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   color: var(--nx-color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--nx-font-size-body);
 }
 
 .choice-modal-checkbox input {
@@ -141,13 +143,13 @@
   display: grid;
   overflow: hidden;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
 }
 
 .choice-modal-summary-row {
   display: grid;
-  gap: var(--nx-space-1);
+  gap: var(--nx-gap-xs);
   padding: var(--nx-space-3);
 }
 
@@ -156,20 +158,20 @@
 }
 
 .choice-modal-summary-row span:first-child {
-  font-size: 0.78rem;
-  font-weight: 760;
+  font-size: var(--nx-font-size-caption);
+  font-weight: var(--nx-font-weight-bold);
   text-transform: uppercase;
   color: var(--nx-color-text-muted);
 }
 
 .choice-modal-summary-row span:last-child {
   color: var(--nx-color-text);
-  line-height: 1.45;
+  line-height: var(--nx-line-height-compact);
 }
 
 .shortcut-help-list {
   display: grid;
-  gap: var(--nx-space-5);
+  gap: var(--nx-gap-lg);
   min-height: 0;
   overflow: auto;
   padding-right: var(--nx-space-1);
@@ -177,21 +179,21 @@
 
 .shortcut-help-group {
   display: grid;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
 }
 
 .shortcut-help-group h3 {
   margin: 0;
   color: var(--nx-color-text);
-  font-size: 0.92rem;
-  font-weight: 760;
+  font-size: var(--nx-font-size-body);
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .shortcut-help-rows {
   display: grid;
   overflow: hidden;
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-md);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
 }
 
@@ -199,7 +201,7 @@
   display: grid;
   grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr);
   align-items: start;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
   padding: var(--nx-space-3);
 }
 
@@ -210,27 +212,27 @@
 .shortcut-help-keys {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
 
 .shortcut-help-row > span:last-child {
   color: var(--nx-color-text-muted);
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: var(--nx-font-size-small);
+  line-height: var(--nx-line-height-compact);
 }
 
 .patch-notes-modal__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
   border-bottom: 1px solid var(--nx-color-border);
   padding: var(--nx-space-5);
 }
 
 .patch-notes-modal__header>div {
   display: grid;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
 
 .patch-notes-modal__layout {
@@ -242,7 +244,7 @@
 .patch-notes-modal__versions {
   display: grid;
   align-content: start;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
   min-height: 0;
   overflow: auto;
   border-right: 1px solid var(--nx-color-border);
@@ -253,26 +255,26 @@
 .patch-notes-modal__versions h3 {
   margin: 0;
   color: var(--nx-color-text-muted);
-  font-size: 0.78rem;
-  font-weight: 760;
-  letter-spacing: 0.04em;
+  font-size: var(--nx-font-size-caption);
+  font-weight: var(--nx-font-weight-bold);
+  letter-spacing: var(--nx-letter-spacing-label);
   text-transform: uppercase;
 }
 
 .patch-notes-modal__versions>div {
   display: grid;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
 }
 
 .patch-notes-modal__versions button {
   min-height: 2.35rem;
   border: 1px solid transparent;
-  border-radius: var(--nx-radius-sm);
+  border-radius: var(--nx-radius);
   background: transparent;
   color: var(--nx-color-text-muted);
   padding: 0 var(--nx-space-3);
   text-align: left;
-  font-weight: 700;
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .patch-notes-modal__versions button:hover,
@@ -304,7 +306,7 @@
 @media (max-width: 42rem) {
   .shortcut-help-row {
     grid-template-columns: 1fr;
-    gap: var(--nx-space-2);
+    gap: var(--nx-gap-sm);
   }
 
 .patch-notes-modal__layout {

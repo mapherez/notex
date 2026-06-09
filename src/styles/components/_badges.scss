@@ -8,7 +8,7 @@
   height: 3.35rem;
   place-items: center;
   border: 1px solid var(--nx-color-border);
-  border-radius: 0.37rem;
+  border-radius: var(--nx-radius);
   background: color-mix(in srgb, var(--nx-badge-hue) 74%, #f4f5f7);
   color: color-mix(in srgb, var(--nx-badge-hue) 46%, #0d0f13);
 }

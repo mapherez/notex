@@ -1,20 +1,16 @@
 @use "../abstracts/breakpoints" as bp;
 
 .profile-layout {
-  --nx-profile-section-padding: var(--nx-space-5);
-  --nx-profile-section-gap: var(--nx-space-5);
-  --nx-profile-row-gap: var(--nx-space-4);
-
   display: grid;
   grid-template-columns: 15.3rem minmax(0, 1fr);
-  gap: var(--nx-space-5);
+  gap: var(--nx-gap-lg);
 }
 
 .profile-left,
 .profile-main {
   display: grid;
   align-content: start;
-  gap: var(--nx-space-5);
+  gap: var(--nx-gap-lg);
 }
 
 .profile-main {
@@ -25,7 +21,7 @@
   display: grid;
   align-items: stretch;
   grid-template-columns: minmax(0, 1fr) minmax(20rem, 24.5rem);
-  gap: var(--nx-space-5);
+  gap: var(--nx-gap-lg);
 }
 
 .profile-top-row > .profile-section,
@@ -41,23 +37,23 @@
 
 .profile-section {
   border: 1px solid var(--nx-color-border);
-  border-radius: var(--nx-radius-card);
+  border-radius: var(--nx-radius);
   background: var(--nx-color-surface);
-  padding: var(--nx-profile-section-padding, var(--nx-space-5));
+  padding: var(--nx-space-5);
 }
 
 .profile-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--nx-space-4);
-  margin-bottom: var(--nx-profile-section-gap, var(--nx-space-5));
+  gap: var(--nx-gap-md);
+  margin-bottom: var(--nx-space-5);
 }
 
 .profile-section-title {
   margin: 0;
-  font-size: 1.2rem;
-  font-weight: 760;
+  font-size: var(--nx-font-size-title-md);
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .profile-card {
@@ -72,13 +68,13 @@
   height: 8.5rem;
   margin: 0 auto var(--nx-space-4);
   place-items: center;
-  border-radius: 999px;
+  border-radius: var(--nx-radius-pill);
   background:
     linear-gradient(140deg, rgba(255, 188, 88, 0.86), rgba(43, 30, 35, 0.95)),
     var(--nx-color-surface-subtle);
   color: #fff;
-  font-size: 2rem;
-  font-weight: 780;
+  font-size: var(--nx-font-size-title-lg);
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .profile-avatar svg {
@@ -100,18 +96,18 @@
 
 .handle {
   color: var(--nx-color-accent-strong);
-  font-size: 0.9rem;
-  font-weight: 650;
+  font-size: var(--nx-font-size-body);
+  font-weight: var(--nx-font-weight-medium);
 }
 
 .connected {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--nx-space-2);
+  gap: var(--nx-gap-sm);
   margin-top: var(--nx-space-2);
   color: var(--nx-color-text-muted);
-  font-size: 0.86rem;
+  font-size: var(--nx-font-size-small);
 }
 
 .database-path-row__icon {
@@ -130,7 +126,7 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--nx-profile-row-gap, var(--nx-space-4));
+  gap: var(--nx-gap-md);
   border-top: 1px solid var(--nx-color-border);
   padding: var(--nx-space-4) 0;
 }
@@ -142,14 +138,14 @@
 
 .profile-row-label {
   display: block;
-  font-weight: 720;
+  font-weight: var(--nx-font-weight-bold);
 }
 
 .profile-row-description {
   display: block;
   margin-top: var(--nx-space-1);
   color: var(--nx-color-text-muted);
-  font-size: 0.88rem;
+  font-size: var(--nx-font-size-small);
 }
 
 .profile-row > span,
@@ -162,7 +158,7 @@
 .quick-pins {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--nx-space-3);
+  gap: var(--nx-gap-sm);
 }
 
 .chip-stack--spaced {
@@ -171,7 +167,7 @@
 
 .profile-stat-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
+  gap: var(--nx-gap-null);
 }
 
 .profile-stat-grid .profile-row {
@@ -196,8 +192,8 @@
 .database-management-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-  min-height: var(--nx-space-11);
+  gap: var(--nx-gap-null);
+  min-height: var(--nx-space-8);
 }
 
 .database-management-grid .database-path-row {
@@ -220,7 +216,7 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--nx-space-4);
+  gap: var(--nx-gap-md);
 }
 
 .database-path-value {
@@ -228,8 +224,8 @@
   overflow: hidden;
   margin-top: var(--nx-space-1);
   color: var(--nx-color-text-muted);
-  font-size: 0.78rem;
-  line-height: 1.45;
+  font-size: var(--nx-font-size-caption);
+  line-height: var(--nx-line-height-compact);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -238,13 +234,13 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--nx-profile-row-gap, var(--nx-space-4));
+  gap: var(--nx-gap-md);
   padding: var(--nx-space-3) 0;
 }
 
 button.shortcuts-button {
   padding: 0;
-  min-height: var(--nx-space-11);
+  min-height: var(--nx-space-8);
 }
 
 button.profile-action-row {

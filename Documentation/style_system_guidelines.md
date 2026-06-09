@@ -191,8 +191,7 @@ gap: var(--nx-space-3) var(--nx-space-4);
 becomes:
 
 ```scss
-row-gap: var(--nx-gap-sm);
-column-gap: var(--nx-gap-md);
+gap: var(--nx-gap-sm) var(--nx-gap-md);
 ```
 
 ### Padding Migration
@@ -205,7 +204,8 @@ Token replacement rules:
 
 ```scss
 var(--nx-profile-section-padding, var(--nx-space-5)) -> var(--nx-space-5)
-var(--nx-page-gutter)                                -> approved --nx-space-* equivalent
+var(--nx-page-gutter)                                -> var(--nx-space-7)
+old mobile --nx-page-gutter: 1rem                    -> var(--nx-space-4)
 ```
 
 `--nx-profile-section-padding` is only used in a small number of places and
@@ -382,9 +382,9 @@ Approved z-index layers:
 $z-index: (
   "local": 1,
   "local-raised": 2,
-  "dropdown": 10,
-  "modal": 20,
-  "system": 30,
+  "dropdown": 50,
+  "modal": 60,
+  "system": 70,
 );
 ```
 
