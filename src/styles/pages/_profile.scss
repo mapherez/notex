@@ -2,37 +2,41 @@
 
 .profile-layout {
   display: grid;
-  grid-template-columns: 15.3rem minmax(0, 1fr);
+  grid-template-areas:
+    "account preferences export"
+    "shortcuts database database"
+    ". statistics statistics";
+  grid-template-columns: 15.3rem minmax(0, 1fr) minmax(20rem, 24.5rem);
   gap: var(--nx-gap-lg);
-}
-
-.profile-left,
-.profile-main {
-  display: grid;
-  align-content: start;
-  gap: var(--nx-gap-lg);
-}
-
-.profile-main {
-  min-width: 0;
-}
-
-.profile-top-row {
-  display: grid;
   align-items: stretch;
-  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24.5rem);
-  gap: var(--nx-gap-lg);
 }
 
-.profile-top-row > .profile-section,
-.profile-wide-section,
-.profile-main > .profile-section {
+.profile-layout > .profile-section {
   min-width: 0;
 }
 
-.profile-top-row > .profile-section,
-.profile-top-card {
-  height: 100%;
+.profile-account-card {
+  grid-area: account;
+}
+
+.profile-shortcuts-card {
+  grid-area: shortcuts;
+}
+
+.profile-preferences-card {
+  grid-area: preferences;
+}
+
+.profile-export-card {
+  grid-area: export;
+}
+
+.database-management-card {
+  grid-area: database;
+}
+
+.profile-statistics-card {
+  grid-area: statistics;
 }
 
 .profile-section {
@@ -57,6 +61,8 @@
 }
 
 .profile-card {
+  display: grid;
+  align-content: center;
   padding: var(--nx-space-6);
   text-align: center;
 }
@@ -154,17 +160,6 @@
   min-width: 0;
 }
 
-.chip-stack,
-.quick-pins {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--nx-gap-sm);
-}
-
-.chip-stack--spaced {
-  margin-top: var(--nx-space-3);
-}
-
 .profile-stat-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--nx-gap-null);
@@ -259,28 +254,30 @@ button.profile-action-row:hover {
   border-top: 1px solid transparent;
 }
 
-.profile-action-row.danger {
-  color: var(--nx-color-danger);
-}
-
 @include bp.down("content-collapse") {
   .profile-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .profile-top-row {
+    grid-template-areas:
+      "account shortcuts"
+      "preferences export"
+      "database database"
+      "statistics statistics";
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .profile-left {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 
 @include bp.down("tablet") {
+  .profile-layout {
+    grid-template-areas:
+      "account"
+      "shortcuts"
+      "preferences"
+      "export"
+      "database"
+      "statistics";
+    grid-template-columns: 1fr;
+  }
+
   .profile-stat-grid,
-  .profile-left,
-  .profile-top-row,
   .database-management-grid {
     grid-template-columns: 1fr;
   }

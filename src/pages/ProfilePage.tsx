@@ -262,180 +262,183 @@ export function ProfilePage() {
       </header>
 
       <div className="profile-layout">
-        <section className="profile-left">
-          <article className="profile-section profile-card">
-            <div
-              className={
-                user?.avatarUrl
-                  ? "profile-avatar"
-                  : "profile-avatar profile-card__avatar--placeholder"
-              }
-            >
-              {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
-              ) : (
-                <UserRound strokeWidth={1.6} />
-              )}
-            </div>
-            <h2 className="profile-section-title">
-              {user?.name ?? t("profile.localUser")}
-            </h2>
-            {user?.handle ? <div className="handle">{user.handle}</div> : null}
-            <div className="connected">{t("profile.localAccount")}</div>
-          </article>
-
-          <ProfileSection title={t("profile.shortcuts.title")}>
-            <button
-              className="profile-action-row shortcuts-button"
-              type="button"
-              onClick={() => setShortcutHelpOpen(true)}
-            >
-              <Keyboard className="profile-action-row__icon profile-action-row__icon--blue" />
-              <span className="profile-row-description">
-                {t("profile.shortcuts.description")}
-              </span>
-              <ChevronRight />
-            </button>
-          </ProfileSection>
-        </section>
-
-        <section className="profile-main">
-          <div className="profile-top-row">
-            <ProfileSection
-              className="profile-top-card"
-              title={t("profile.preferences.title")}
-            >
-              <PreferenceSelect
-                icon={<IconBadge icon={CalendarClock} color="red" />}
-                label={t("profile.preferences.theme")}
-                description={t("profile.preferences.themeDescription")}
-                value={settings.theme}
-                onChange={(value) =>
-                  void setTheme(value as ThemePreference).then(() =>
-                    pushToast(t("common.done"), "success"),
-                  )
-                }
-                options={themeRegistry.map((theme) => ({
-                  value: theme.id,
-                  label: t(theme.labelKey),
-                }))}
-              />
-              <PreferenceSelect
-                icon={<IconBadge icon={Globe2} color="green" />}
-                label={t("profile.preferences.language")}
-                description={t("profile.preferences.languageDescription")}
-                value={settings.language}
-                onChange={(value) =>
-                  void setLanguage(value as Locale).then(() =>
-                    pushToast(t("common.done"), "success"),
-                  )
-                }
-                options={[
-                  { value: "pt", label: t("profile.preferences.portuguese") },
-                  { value: "en", label: t("profile.preferences.english") },
-                ]}
-              />
-            </ProfileSection>
-
-            <ProfileSection title={t("profile.dataManagement.title")}>
-              <button
-                className="profile-action-row"
-                type="button"
-                onClick={() => setExportModal({ phase: "confirm" })}
-              >
-                <Download className="profile-action-row__icon profile-action-row__icon--success" />
-                <span>
-                  <span>{t("profile.dataManagement.exportData")}</span>
-                  <span className="profile-row-description">
-                    {t("profile.dataManagement.exportDescription")}
-                  </span>
-                </span>
-                <ChevronRight />
-              </button>
-              <button
-                className="profile-action-row"
-                type="button"
-                onClick={() => setImportChoiceModalOpen(true)}
-              >
-                <Upload className="profile-action-row__icon profile-action-row__icon--blue" />
-                <span>
-                  <span>{t("profile.dataManagement.importData")}</span>
-                  <span className="profile-row-description">
-                    {t("profile.dataManagement.importDescription")}
-                  </span>
-                </span>
-                <ChevronRight />
-              </button>
-            </ProfileSection>
-          </div>
-
-          <ProfileSection
-            className="profile-wide-section database-management-card"
-            title={t("profile.databaseManagement.title")}
+        <article className="profile-section profile-card profile-account-card">
+          <div
+            className={
+              user?.avatarUrl
+                ? "profile-avatar"
+                : "profile-avatar profile-card__avatar--placeholder"
+            }
           >
-            <div className="database-management-grid">
-              <DatabasePathRow
-                databasePath={
-                  databaseInfo?.databasePath ??
-                  t("profile.dataManagement.databasePathLoading")
-                }
-                icon={Database}
-                label={t("profile.databaseManagement.currentDatabase")}
-                onOpen={handleOpenDatabaseFolder}
-                openLabel={t("profile.dataManagement.openDatabaseFolder")}
-              />
-              <DatabasePathRow
-                databasePath={
-                  databaseInfo?.localDataDirectory ??
-                  t("profile.databaseManagement.localDataPathLoading")
-                }
-                icon={HardDrive}
-                label={t("profile.databaseManagement.localDataPath")}
-                onOpen={handleOpenLocalDataFolder}
-                openLabel={t("profile.databaseManagement.openLocalDataFolder")}
-              />
-              <DatabasePathRow
-                databasePath={
-                  databaseInfo?.filesDirectory ??
-                  t("profile.databaseManagement.filesPathLoading")
-                }
-                icon={Folder}
-                label={t("profile.databaseManagement.filesPath")}
-                onOpen={handleOpenFilesFolder}
-                openLabel={t("profile.databaseManagement.openFilesFolder")}
-              />
-            </div>
-          </ProfileSection>
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
+            ) : (
+              <UserRound strokeWidth={1.6} />
+            )}
+          </div>
+          <h2 className="profile-section-title">
+            {user?.name ?? t("profile.localUser")}
+          </h2>
+          {user?.handle ? <div className="handle">{user.handle}</div> : null}
+          <div className="connected">{t("profile.localAccount")}</div>
+        </article>
 
-          <ProfileSection title={t("profile.statistics")}>
-            <div className="meta-list profile-stat-grid">
-              <Metric
-                icon={CalendarClock}
-                color="blue"
-                label={t("profile.stats.lastActivity")}
-                value={lastActivityValue}
-              />
-              <Metric
-                icon={FileText}
-                color="red"
-                label={t("profile.stats.notes")}
-                value={String(activeNotes.length)}
-              />
-              <Metric
-                icon={Star}
-                color="amber"
-                label={t("profile.stats.favorites")}
-                value={String(favoriteNotes.length)}
-              />
-              <Metric
-                icon={Folder}
-                color="green"
-                label={t("profile.stats.collections")}
-                value={String(collections.length)}
-              />
-            </div>
-          </ProfileSection>
-        </section>
+        <ProfileSection
+          className="profile-shortcuts-card"
+          title={t("profile.shortcuts.title")}
+        >
+          <button
+            className="profile-action-row shortcuts-button"
+            type="button"
+            onClick={() => setShortcutHelpOpen(true)}
+          >
+            <Keyboard className="profile-action-row__icon profile-action-row__icon--blue" />
+            <span className="profile-row-description">
+              {t("profile.shortcuts.description")}
+            </span>
+            <ChevronRight />
+          </button>
+        </ProfileSection>
+
+        <ProfileSection
+          className="profile-preferences-card"
+          title={t("profile.preferences.title")}
+        >
+          <PreferenceSelect
+            icon={<IconBadge icon={CalendarClock} color="red" />}
+            label={t("profile.preferences.theme")}
+            description={t("profile.preferences.themeDescription")}
+            value={settings.theme}
+            onChange={(value) =>
+              void setTheme(value as ThemePreference).then(() =>
+                pushToast(t("common.done"), "success"),
+              )
+            }
+            options={themeRegistry.map((theme) => ({
+              value: theme.id,
+              label: t(theme.labelKey),
+            }))}
+          />
+          <PreferenceSelect
+            icon={<IconBadge icon={Globe2} color="green" />}
+            label={t("profile.preferences.language")}
+            description={t("profile.preferences.languageDescription")}
+            value={settings.language}
+            onChange={(value) =>
+              void setLanguage(value as Locale).then(() =>
+                pushToast(t("common.done"), "success"),
+              )
+            }
+            options={[
+              { value: "pt", label: t("profile.preferences.portuguese") },
+              { value: "en", label: t("profile.preferences.english") },
+            ]}
+          />
+        </ProfileSection>
+
+        <ProfileSection
+          className="profile-export-card"
+          title={t("profile.dataManagement.title")}
+        >
+          <button
+            className="profile-action-row"
+            type="button"
+            onClick={() => setExportModal({ phase: "confirm" })}
+          >
+            <Download className="profile-action-row__icon profile-action-row__icon--success" />
+            <span>
+              <span>{t("profile.dataManagement.exportData")}</span>
+              <span className="profile-row-description">
+                {t("profile.dataManagement.exportDescription")}
+              </span>
+            </span>
+            <ChevronRight />
+          </button>
+          <button
+            className="profile-action-row"
+            type="button"
+            onClick={() => setImportChoiceModalOpen(true)}
+          >
+            <Upload className="profile-action-row__icon profile-action-row__icon--blue" />
+            <span>
+              <span>{t("profile.dataManagement.importData")}</span>
+              <span className="profile-row-description">
+                {t("profile.dataManagement.importDescription")}
+              </span>
+            </span>
+            <ChevronRight />
+          </button>
+        </ProfileSection>
+
+        <ProfileSection
+          className="database-management-card"
+          title={t("profile.databaseManagement.title")}
+        >
+          <div className="database-management-grid">
+            <DatabasePathRow
+              databasePath={
+                databaseInfo?.databasePath ??
+                t("profile.dataManagement.databasePathLoading")
+              }
+              icon={Database}
+              label={t("profile.databaseManagement.currentDatabase")}
+              onOpen={handleOpenDatabaseFolder}
+              openLabel={t("profile.dataManagement.openDatabaseFolder")}
+            />
+            <DatabasePathRow
+              databasePath={
+                databaseInfo?.localDataDirectory ??
+                t("profile.databaseManagement.localDataPathLoading")
+              }
+              icon={HardDrive}
+              label={t("profile.databaseManagement.localDataPath")}
+              onOpen={handleOpenLocalDataFolder}
+              openLabel={t("profile.databaseManagement.openLocalDataFolder")}
+            />
+            <DatabasePathRow
+              databasePath={
+                databaseInfo?.filesDirectory ??
+                t("profile.databaseManagement.filesPathLoading")
+              }
+              icon={Folder}
+              label={t("profile.databaseManagement.filesPath")}
+              onOpen={handleOpenFilesFolder}
+              openLabel={t("profile.databaseManagement.openFilesFolder")}
+            />
+          </div>
+        </ProfileSection>
+
+        <ProfileSection
+          className="profile-statistics-card"
+          title={t("profile.statistics")}
+        >
+          <div className="meta-list profile-stat-grid">
+            <Metric
+              icon={CalendarClock}
+              color="blue"
+              label={t("profile.stats.lastActivity")}
+              value={lastActivityValue}
+            />
+            <Metric
+              icon={FileText}
+              color="red"
+              label={t("profile.stats.notes")}
+              value={String(activeNotes.length)}
+            />
+            <Metric
+              icon={Star}
+              color="amber"
+              label={t("profile.stats.favorites")}
+              value={String(favoriteNotes.length)}
+            />
+            <Metric
+              icon={Folder}
+              color="green"
+              label={t("profile.stats.collections")}
+              value={String(collections.length)}
+            />
+          </div>
+        </ProfileSection>
       </div>
       <ExportDatabaseModal
         modal={exportModal}

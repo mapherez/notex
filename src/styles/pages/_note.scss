@@ -224,7 +224,7 @@
   position: absolute;
   top: var(--nx-space-3);
   display: grid;
-  width: 2rem;
+  width: 1.25rem;
   height: 2.5rem;
   place-items: center;
   border: 1px solid transparent;
@@ -237,7 +237,7 @@
 }
 
 .note-block-handle {
-  left: calc(var(--nx-space-7) * -1);
+  left: calc(var(--nx-space-5) * -1);
   cursor: grab;
   touch-action: none;
 }
