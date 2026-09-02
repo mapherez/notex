@@ -324,6 +324,170 @@ button.security-row:hover {
   color: var(--nx-color-danger);
 }
 
+.mcp-profile-section__header {
+  align-items: flex-start;
+  gap: var(--nx-space-3);
+}
+
+.mcp-status,
+.sidebar-mcp-status {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--nx-space-2);
+  color: var(--nx-color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.mcp-status__dot,
+.sidebar-mcp-status__dot {
+  width: 0.48rem;
+  height: 0.48rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--nx-color-danger);
+}
+
+.mcp-status--online .mcp-status__dot,
+.sidebar-mcp-status--online .sidebar-mcp-status__dot {
+  background: var(--nx-color-success);
+}
+
+.mcp-account-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--nx-space-3);
+  margin-bottom: var(--nx-space-4);
+}
+
+.mcp-account-row__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--nx-color-accent-strong);
+}
+
+.mcp-account-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcp-error {
+  margin: 0 0 var(--nx-space-4);
+  color: var(--nx-color-danger);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.mcp-auth-actions {
+  display: grid;
+  gap: var(--nx-space-2);
+}
+
+.mcp-session-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--nx-space-2);
+}
+
+.mcp-command-button {
+  display: grid;
+  width: 100%;
+  min-height: 2.5rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--nx-space-2);
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-surface-subtle);
+  color: var(--nx-color-text);
+  padding: var(--nx-space-2) var(--nx-space-3);
+  font-size: 0.84rem;
+  text-align: left;
+}
+
+.mcp-command-button:hover,
+.mcp-command-button:focus-visible,
+.mcp-overflow__trigger:hover,
+.mcp-overflow__trigger:focus-visible {
+  border-color: var(--nx-color-border-strong);
+  background: var(--nx-color-hover);
+  outline: none;
+}
+
+.mcp-command-button:disabled,
+.mcp-overflow__trigger:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.mcp-command-button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.mcp-command-button__spinner {
+  animation: spin 900ms linear infinite;
+}
+
+.mcp-overflow {
+  position: relative;
+}
+
+.mcp-overflow__trigger {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--nx-color-border);
+  background: var(--nx-color-surface-subtle);
+}
+
+.mcp-overflow__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--nx-space-2));
+  display: grid;
+  width: 13.5rem;
+  overflow: hidden;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-surface-elevated);
+  box-shadow: var(--nx-shadow-soft);
+  padding: var(--nx-space-1);
+  z-index: 20;
+}
+
+.mcp-overflow__menu button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--nx-space-2);
+  border: 0;
+  border-radius: var(--nx-radius-sm);
+  background: transparent;
+  color: var(--nx-color-text);
+  padding: var(--nx-space-3);
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.mcp-overflow__menu button:hover,
+.mcp-overflow__menu button:focus-visible {
+  background: var(--nx-color-hover);
+  outline: none;
+}
+
+.mcp-overflow__menu button.danger {
+  color: var(--nx-color-danger);
+}
+
+.mcp-overflow__menu svg {
+  width: 1rem;
+  height: 1rem;
+}
+
 .security-sub,
 .plan-value {
   display: block;

@@ -50,7 +50,7 @@ function createServer(userId: string, scopes: ReadonlySet<string>, registry: Bri
           openWorldHint: false,
         },
       },
-      async (input) => {
+      async (input: unknown) => {
         try {
           const requiredScope = commandScope[command];
           if (!scopes.has(requiredScope)) throw new PublicBridgeError('FORBIDDEN');
@@ -80,20 +80,7 @@ export function createProtectedMcpHandler(
   registry: BridgeRegistry,
   logger: AppLogger,
 ): McpHttpHandler & { protectedFetch: (request: Request) => Promise<Response> } {
-  const handler = createMcpHandler(
-    ({ authInfo }) => {
-      const userId = authInfo?.extra?.userId;
-      if (typeof userId !== 'string' || !userId) throw new PublicBridgeError('FORBIDDEN');
-      return createServer(userId, new Set(authInfo.scopes), registry);
-    },
-    {
-      legacy: 'stateless',
-      responseMode: 'json',
-      onerror(error) {
-        logger.warn({ event: 'mcp_protocol_error', errorType: error.name });
-      },
-    },
-  );
+  const handler = createMcpProtocolHandler(registry, logger);
 
   const protectedFetch = requireMcpAuth(
     auth,
@@ -125,4 +112,20 @@ export function createProtectedMcpHandler(
   );
 
   return Object.assign(handler, { protectedFetch });
+}
+
+export function createMcpProtocolHandler(registry: BridgeRegistry, logger: AppLogger): McpHttpHandler {
+  return createMcpHandler(
+    ({ authInfo }) => {
+      const userId = authInfo?.extra?.userId;
+      if (typeof userId !== 'string' || !userId) throw new PublicBridgeError('FORBIDDEN');
+      return createServer(userId, new Set(authInfo.scopes), registry);
+    },
+    {
+      legacy: 'stateless',
+      onerror(error) {
+        logger.warn({ event: 'mcp_protocol_error', errorType: error.name });
+      },
+    },
+  );
 }

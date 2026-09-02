@@ -13,6 +13,7 @@ import { TagsPage } from './pages/TagsPage';
 import { useAppStore } from './store/useAppStore';
 import { useNotesStore } from './store/useNotesStore';
 import { useKnowledgeStore } from './store/useKnowledgeStore';
+import { useMcpStore } from './store/useMcpStore';
 import { useToastStore } from './store/useToastStore';
 
 const NoteDetailPage = lazy(() =>
@@ -29,6 +30,7 @@ export function App() {
   const initializeNotes = useNotesStore((state) => state.initialize);
   const notesReady = useNotesStore((state) => state.isReady);
   const pushToast = useToastStore((state) => state.pushToast);
+  const initializeMcp = useMcpStore((state) => state.initialize);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +77,12 @@ export function App() {
   }, [notesReady, initializeNotes, isHydrated, isStorageReady]);
 
   const appReady = isStorageReady && isHydrated && isReady && notesReady;
+
+  useEffect(() => {
+    if (appReady) {
+      void initializeMcp();
+    }
+  }, [appReady, initializeMcp]);
 
   return (
     <I18nProvider locale={settings.language}>

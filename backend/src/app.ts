@@ -38,7 +38,7 @@ export function createApplication(input: {
   const { auth, config, database, registry, desktopClientId, logger } = input;
   const app = express();
   app.disable('x-powered-by');
-  app.set('trust proxy', 1);
+  if (config.trustProxy) app.set('trust proxy', config.trustProxy);
   app.use((request, response, next) => {
     const hostname = getHostname(request);
     if (!hostname || !config.allowedHosts.includes(hostname)) {
@@ -81,17 +81,24 @@ export function createApplication(input: {
           resource: config.mcpUrl,
         },
       });
+      const desktopDeviceResult = {
+        ...result,
+        activation_token: database.createDesktopActivation(result.expires_in).token,
+        client_id: desktopClientId,
+        token_endpoint: new URL('/api/auth/oauth2/token', config.publicUrl).toString(),
+        resource: config.mcpUrl,
+      };
       if (mode === 'register') {
         const intent = database.createRegistrationIntent(result.user_code, result.expires_in);
         const verification = new URL('/desktop/device/register', config.publicUrl);
         verification.searchParams.set('user_code', result.user_code);
         verification.searchParams.set('intent', intent.token);
-        response.json({ ...result, verification_uri_complete: verification.toString() });
+        response.json({ ...desktopDeviceResult, verification_uri_complete: verification.toString() });
         return;
       }
       const verification = new URL('/device', config.publicUrl);
       verification.searchParams.set('user_code', result.user_code);
-      response.json({ ...result, verification_uri_complete: verification.toString() });
+      response.json({ ...desktopDeviceResult, verification_uri_complete: verification.toString() });
     } catch (error) {
       next(error);
     }

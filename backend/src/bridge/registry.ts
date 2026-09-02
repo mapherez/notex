@@ -119,13 +119,23 @@ export class BridgeRegistry {
     const connection = this.connections.get(userId);
     return {
       loggedIn,
-      online: Boolean(loggedIn && connection?.ready && connection.socket.readyState === connection.socket.OPEN),
+      online: Boolean(
+        loggedIn &&
+          connection?.ready &&
+          connection.socket.readyState === connection.socket.OPEN &&
+          this.database.isDesktopSessionActive(userId, connection.sessionId),
+      ),
       ...(connection?.appVersion ? { appVersion: connection.appVersion } : {}),
     };
   }
 
   async dispatch<T extends CommandName>(userId: string, command: T, rawInput: unknown): Promise<CommandOutput<T>> {
-    const input = parseCommandInput(command, rawInput) as CommandInput<T>;
+    let input: CommandInput<T>;
+    try {
+      input = parseCommandInput(command, rawInput) as CommandInput<T>;
+    } catch {
+      throw new PublicBridgeError('INVALID_INPUT');
+    }
     const presence = this.getPresence(userId);
     if (!presence.loggedIn) throw new PublicBridgeError('USER_NOT_LOGGED_IN');
 
@@ -205,9 +215,11 @@ export class BridgeRegistry {
   }
 
   private closeConnection(connection: DesktopConnection, error: PublicBridgeError, reason: string): void {
-    this.detach(connection);
-    connection.socket.close(4001, reason.slice(0, 120));
+    if (this.connections.get(connection.userId) === connection) {
+      this.connections.delete(connection.userId);
+    }
     this.rejectPending(connection, error);
+    connection.socket.close(4001, reason.slice(0, 120));
   }
 
   private rejectPending(connection: DesktopConnection, error: PublicBridgeError): void {

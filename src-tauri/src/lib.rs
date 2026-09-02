@@ -1,15 +1,25 @@
 mod external_links;
+mod mcp_bridge;
 mod sqlite_storage;
 mod update_cleanup;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(mcp_bridge::McpManager::new())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             external_links::notex_open_external_url,
+            mcp_bridge::notex_mcp_get_state,
+            mcp_bridge::notex_mcp_initialize,
+            mcp_bridge::notex_mcp_start_authorization,
+            mcp_bridge::notex_mcp_cancel_authorization,
+            mcp_bridge::notex_mcp_logout,
+            mcp_bridge::notex_mcp_revoke_ai_access,
+            mcp_bridge::notex_mcp_delete_account,
+            mcp_bridge::notex_mcp_respond,
             sqlite_storage::notex_sqlite_status,
             sqlite_storage::notex_sqlite_create_temp_export,
             sqlite_storage::notex_sqlite_copy_export_to,

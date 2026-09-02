@@ -1,10 +1,13 @@
+import { createHmac } from 'node:crypto';
+
 import { cimd } from '@better-auth/cimd';
 import { fetchClientMetadataResource } from '@better-auth/cimd/node';
 import { mcp } from '@better-auth/mcp';
 import { oauthDeviceAuthorization } from '@better-auth/oauth-provider';
 import { betterAuth } from 'better-auth';
-import { getMigrations } from 'better-auth/db';
+import { getMigrations } from 'better-auth/db/migration';
 import { jwt } from 'better-auth/plugins';
+import { z } from 'zod';
 
 import type { BackendConfig } from './config.js';
 import { BackendDatabase, readCookie } from './database.js';
@@ -12,11 +15,20 @@ import { BackendDatabase, readCookie } from './database.js';
 export const DESKTOP_SCOPE = 'notex:desktop';
 export const REGISTRATION_COOKIE = 'notex_registration_intent';
 const PUBLIC_SCOPES = ['openid', 'profile', 'email', 'offline_access', 'notex:read', 'notex:create', 'notex:edit'] as const;
+const oauthResourceRecordSchema = z.object({ identifier: z.string() });
 
 type HookContext = { request?: Request; headers?: Headers } | null;
 
 function getHeaders(context: HookContext): Headers | undefined {
   return context?.request?.headers ?? context?.headers;
+}
+
+function deriveDesktopClientId(secret: string): string {
+  const suffix = createHmac('sha256', secret)
+    .update('notex-desktop-oauth-client')
+    .digest('base64url')
+    .slice(0, 32);
+  return `notex-desktop-${suffix}`;
 }
 
 export function createAuth(config: BackendConfig, database: BackendDatabase) {
@@ -26,7 +38,8 @@ export function createAuth(config: BackendConfig, database: BackendDatabase) {
     basePath: '/api/auth',
     secret: config.authSecret,
     database: database.raw,
-    trustedOrigins: config.allowedOrigins,
+    trustedOrigins: [...config.allowedOrigins],
+    logger: { disabled: true },
     emailAndPassword: { enabled: false },
     socialProviders: {
       google: {
@@ -51,6 +64,7 @@ export function createAuth(config: BackendConfig, database: BackendDatabase) {
       user: {
         create: {
           async before(user, context) {
+            if (!user.emailVerified) return false;
             const token = readCookie(getHeaders(context as HookContext), REGISTRATION_COOKIE);
             if (!token || !database.consumeRegistrationIntent(token, user.id, user.email)) return false;
           },
@@ -101,7 +115,7 @@ export function createAuth(config: BackendConfig, database: BackendDatabase) {
         expiresIn: '10m',
         interval: '5s',
       }),
-    ],
+    ] as const,
   });
 }
 
@@ -127,19 +141,82 @@ export async function ensureDesktopOAuthClient(auth: NoteXAuth, database: Backen
     if (existing) return existingClientId;
   }
 
-  const created = await auth.api.adminCreateOAuthClient({
-    body: {
-      client_name: 'NoteX Desktop',
-      application_type: 'native',
-      token_endpoint_auth_method: 'none',
-      grant_types: ['urn:ietf:params:oauth:grant-type:device_code', 'refresh_token'],
-      scope: `openid profile email offline_access ${DESKTOP_SCOPE}`,
-      skip_consent: true,
-      require_pkce: true,
-    },
+  if (typeof auth.options.secret !== 'string') throw new Error('Better Auth secret is unavailable.');
+  const clientId = deriveDesktopClientId(auth.options.secret);
+  const context = await auth.$context;
+  const resourceIdentifier = new URL('/mcp', context.baseURL).toString();
+  let resource = oauthResourceRecordSchema.safeParse(
+    await context.adapter.findOne({
+      model: 'oauthResource',
+      where: [{ field: 'identifier', value: resourceIdentifier }],
+    }),
+  );
+  if (!resource.success) {
+    // Better Auth initializes plugins before migrations, so its first resource seed is deferred.
+    const now = new Date();
+    await context.adapter.create({
+      model: 'oauthResource',
+      data: {
+        identifier: resourceIdentifier,
+        name: resourceIdentifier,
+        accessTokenTtl: null,
+        refreshTokenTtl: null,
+        signingAlgorithm: null,
+        signingKeyId: null,
+        allowedScopes: null,
+        customClaims: null,
+        dpopBoundAccessTokensRequired: false,
+        disabled: false,
+        policyVersion: 1,
+        metadata: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
+    resource = oauthResourceRecordSchema.safeParse(
+      await context.adapter.findOne({
+        model: 'oauthResource',
+        where: [{ field: 'identifier', value: resourceIdentifier }],
+      }),
+    );
+  }
+  if (!resource.success) throw new Error('MCP OAuth resource could not be initialized.');
+
+  const existing = await context.adapter.findOne({
+    model: 'oauthClient',
+    where: [{ field: 'clientId', value: clientId }],
   });
-  database.setSetting(settingKey, created.client_id);
-  return created.client_id;
+  if (!existing) {
+    const now = new Date();
+    await context.adapter.create({
+      model: 'oauthClient',
+      data: {
+        clientId,
+        clientDiscoveryId: null,
+        disabled: false,
+        skipConsent: true,
+        enableEndSession: false,
+        scopes: ['openid', 'profile', 'email', 'offline_access', DESKTOP_SCOPE],
+        clientCredentialsScopes: [],
+        name: 'NoteX Desktop',
+        redirectUris: [],
+        tokenEndpointAuthMethod: 'none',
+        applicationType: 'native',
+        grantTypes: ['urn:ietf:params:oauth:grant-type:device_code', 'refresh_token'],
+        responseTypes: [],
+        requirePKCE: true,
+        dpopBoundAccessTokens: false,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
+    await context.adapter.create({
+      model: 'oauthClientResource',
+      data: { clientId, resourceId: resource.data.identifier, createdAt: now },
+    });
+  }
+  database.setSetting(settingKey, clientId);
+  return clientId;
 }
 
 export async function revokeAiAccess(auth: NoteXAuth, userId: string, desktopClientId: string): Promise<void> {

@@ -16,3 +16,9 @@ Operational notes:
 - SQLite is the primary working store.
 - Runtime SQLite data lives in the Tauri app data directory and must not be committed.
 - User-facing text should stay in `src/locales/en.json` and `src/locales/pt.json`.
+
+MCP documentation:
+
+- [`MCP_ARCHITECTURE.md`](MCP_ARCHITECTURE.md): invariants, threat model, protocol, and data-retention rules.
+- [`MCP_BACKEND_OPERATIONS.md`](MCP_BACKEND_OPERATIONS.md): deployment, secrets, backups, reverse proxy, and recovery.
+- [`MCP_IMPLEMENTATION_CHECKPOINT.md`](MCP_IMPLEMENTATION_CHECKPOINT.md): current phase status and exact resume sequence.

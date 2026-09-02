@@ -18,6 +18,7 @@ import { appSettings, navigationSettings } from '../../config/appSettings';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useNotesStore } from '../../store/useNotesStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
+import { useMcpStore } from '../../store/useMcpStore';
 import { latestPatchNoteVersion, PatchNotesModal } from '../ui/PatchNotesModal';
 
 const navIcons = {
@@ -38,6 +39,7 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
   const collections = useKnowledgeStore((state) => state.collections);
   const hasTrashedNotes = useNotesStore((state) => state.notes.some((note) => note.isTrashed));
   const activeCollectionId = searchParams.get('collection');
+  const mcpOnline = useMcpStore((state) => state.connection.state === 'online');
 
   useEffect(() => {
     if (!isTauri()) {
@@ -144,16 +146,22 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
             </NavLink>
           ))}
         </nav>
-        {appVersion ? (
-          <button
-            className="sidebar-version"
-            type="button"
-            aria-label={t('patchNotes.open', { version: appVersion })}
-            onClick={() => setPatchNotesOpen(true)}
-          >
-            v{appVersion}
-          </button>
-        ) : null}
+        <div className="sidebar-runtime-status">
+          {appVersion ? (
+            <button
+              className="sidebar-version"
+              type="button"
+              aria-label={t('patchNotes.open', { version: appVersion })}
+              onClick={() => setPatchNotesOpen(true)}
+            >
+              v{appVersion}
+            </button>
+          ) : null}
+          <span className={mcpOnline ? 'sidebar-mcp-status sidebar-mcp-status--online' : 'sidebar-mcp-status'}>
+            <span className="sidebar-mcp-status__dot" aria-hidden="true" />
+            {t(mcpOnline ? 'profile.mcp.online' : 'profile.mcp.offline')}
+          </span>
+        </div>
       </aside>
       <PatchNotesModal open={patchNotesOpen} onClose={() => setPatchNotesOpen(false)} />
     </>

@@ -4,9 +4,8 @@ import {
   BRIDGE_HEARTBEAT_INTERVAL_MS,
   BRIDGE_OFFLINE_AFTER_MS,
   MAX_BRIDGE_FRAME_BYTES,
-  bridgeAuthenticateSchema,
-  bridgeReadySchema,
-  bridgeResponseSchema,
+  parseDesktopBridgeFrame,
+  type BridgeFrame,
 } from '@notex/mcp-contract';
 import { WebSocketServer, type RawData, type WebSocket } from 'ws';
 
@@ -14,8 +13,19 @@ import type { BackendConfig } from '../config.js';
 import type { AppLogger } from '../logger.js';
 import { BridgeRegistry, type DesktopConnection } from './registry.js';
 
-function parseFrame(data: RawData): unknown {
-  return JSON.parse(data.toString('utf8')) as unknown;
+function toBridgeFrame(data: RawData): BridgeFrame {
+  if (data instanceof ArrayBuffer) return data;
+  const bytes = Array.isArray(data) ? Buffer.concat(data) : data;
+  return new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+}
+
+function getHostname(host: string | undefined): string | null {
+  if (!host) return null;
+  try {
+    return new URL(`http://${host}`).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
 }
 
 export function installBridgeServer(
@@ -27,9 +37,20 @@ export function installBridgeServer(
   const webSocketServer = new WebSocketServer({ noServer: true, maxPayload: MAX_BRIDGE_FRAME_BYTES });
 
   server.on('upgrade', (request, socket, head) => {
-    const url = new URL(request.url ?? '/', config.publicUrl);
-    if (url.pathname !== '/v1/bridge') return;
-    const host = (request.headers.host ?? '').split(':')[0]?.toLowerCase();
+    let url: URL;
+    try {
+      url = new URL(request.url ?? '/', config.publicUrl);
+    } catch {
+      socket.write('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+    if (url.pathname !== '/v1/bridge') {
+      socket.write('HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+    const host = getHostname(request.headers.host);
     const origin = request.headers.origin;
     if (!host || !config.allowedHosts.includes(host) || (origin && !config.allowedOrigins.includes(origin))) {
       socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
@@ -51,10 +72,13 @@ export function installBridgeServer(
 
     socket.on('message', (data) => {
       try {
-        const frame = parseFrame(data);
+        const frame = parseDesktopBridgeFrame(toBridgeFrame(data));
         if (!connection) {
-          const authentication = bridgeAuthenticateSchema.parse(frame);
-          const ticket = registry.consumeTicket(authentication.ticket);
+          if (frame.type !== 'authenticate') {
+            socket.close(4002, 'Expected authentication frame.');
+            return;
+          }
+          const ticket = registry.consumeTicket(frame.ticket);
           if (!ticket) {
             socket.close(4003, 'Invalid or expired ticket.');
             return;
@@ -64,14 +88,12 @@ export function installBridgeServer(
           socket.send(JSON.stringify({ type: 'authenticated' }));
           return;
         }
-        const type = (frame as { type?: unknown }).type;
-        if (type === 'ready') {
-          const ready = bridgeReadySchema.parse(frame);
-          registry.markReady(connection, ready.appVersion);
+        if (frame.type === 'ready') {
+          registry.markReady(connection, frame.appVersion);
           return;
         }
-        if (type === 'response') {
-          registry.acceptResponse(connection, bridgeResponseSchema.parse(frame));
+        if (frame.type === 'response') {
+          registry.acceptResponse(connection, frame);
           return;
         }
         socket.close(4002, 'Unsupported bridge frame.');

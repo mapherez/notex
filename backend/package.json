@@ -12,9 +12,9 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
-    "typecheck": "npm run build:contract && tsc -p tsconfig.json --noEmit",
-    "test": "npm run build:contract && vitest run",
-    "test:watch": "vitest",
+    "typecheck": "npm run build:contract && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "npm run build:contract && vitest run test",
+    "test:watch": "vitest test",
     "simulate:desktop": "tsx src/simulator.ts"
   },
   "dependencies": {

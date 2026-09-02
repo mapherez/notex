@@ -24,6 +24,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { CustomSelect } from "../components/ui/CustomSelect";
 import { IconBadge } from "../components/ui/IconBadge";
+import { McpProfileSection } from "../components/profile/McpProfileSection";
 import { appLimits, editorSettings } from "../config/appSettings";
 import {
   openSqliteDatabaseFolder,
@@ -297,6 +298,8 @@ export function ProfilePage() {
               <ChevronRight />
             </button>
           </ProfileSection>
+
+          <McpProfileSection />
         </section>
 
         <section className="profile-main">

@@ -1,133 +1,123 @@
 # MCP Implementation Checkpoint
 
-Date: 2026-09-01
+Date: 2026-09-02
 
 ## Current Phase Status
 
 - **Phase 0: complete and validated.**
-- **Phase 1: started, paused, and not yet validated.**
-- Phases 2-5: not started.
+- **Phase 1: implementation complete and locally validated.**
+- **Phase 1 external staging gate:** pending real Google credentials and an external MCP client/Inspector.
+- **Phases 2-5 application integration:** not started.
 
-This file is the restart point for the next session. Do not treat the current backend scaffold as release-ready or validated.
+This is the restart point for the next session. The backend is no longer an unvalidated scaffold, but it is not a production deployment until the external staging gate passes.
 
 ## Repository Safety State
 
 - No NoteX application database migration was added.
-- The existing NoteX SQLite schema/version 3 was not changed or opened by the new code.
-- No existing note, tag, collection, or other local user data was modified.
-- No frontend, Tauri/Rust, CSS, editor, Profile, sidebar, translation, or workflow file has been changed yet.
-- Historical editor/CSS constraints were reviewed before starting: audit `16` from commit `8f86a62` and audit `99` from commit `617bf8a`.
-- Existing untracked files `MCP_IMPLEMENTATION_PLAN.md` and `_IMPROVEMENTS.txt` were left untouched.
+- The existing NoteX SQLite schema/version 3 was not changed or opened by backend code or tests.
+- No existing note, block, tag, collection, attachment, or other local user data was modified.
+- No frontend, Tauri/Rust, CSS, editor, Profile, sidebar, or translation file has been changed for MCP yet.
+- Existing user files `Documentation/MCP_IMPLEMENTATION_PLAN.md` and `_IMPROVEMENTS.txt` were left untouched.
 
-## Completed And Validated
+## Phase 0 Result
 
-### Shared contract
+`packages/notex-mcp-contract` remains the source of truth for:
 
-Created `packages/notex-mcp-contract` with:
+- All 11 MCP commands and their Zod input/output schemas.
+- Public errors, scopes, detailed presence, protocol version, ticket/heartbeat/timeout limits, and no-queue/no-replay policy.
+- Direction-specific bridge frame parsers with strict UTF-8/JSON validation and a 2 MiB limit.
 
-- Zod schemas and TypeScript types for all 11 MCP commands.
-- Typed public errors and exact offline/logged-out semantics.
-- Bridge authentication, ready, request, response, protocol version, limits, heartbeat, ticket TTL, and timeout contracts.
-- Explicit detailed presence states and the narrower public MCP availability states.
-- Direction-specific frame parsers with a 2 MiB byte limit, strict UTF-8/JSON decoding, and schema validation.
-- A fixed machine-readable delivery policy: no queue, no replay, fail in-flight work on disconnect, and single-use tickets.
-- Canonical public error messages, including exact logged-out and offline text.
-- Scope mapping for `notex:read`, `notex:create`, and `notex:edit`.
+Validated result: 1 Vitest file / 8 tests passed, plus clean typecheck and build.
 
-Validation already run successfully:
+## Phase 1 Completed
+
+### Backend identity and OAuth
+
+- Independent Node.js 24/TypeScript backend in `backend/` with its own lockfile.
+- Better Auth with Google, MCP OAuth Provider, OAuth Device Authorization, CIMD, DCR, PKCE S256, resource indicators, refresh rotation, and audience-bound MCP tokens.
+- Canonical Google identity uses issuer plus subject; verified email is display metadata only.
+- New Better Auth users require a one-use registration intent created by NoteX Register. Login/MCP OAuth cannot create an account silently.
+- Deterministic first-party native desktop OAuth client and MCP resource bootstrap after migrations.
+- AI access revocation preserves the first-party desktop grant. Remote account deletion removes only backend/Better Auth metadata.
+- Better Auth's own logger is disabled; application logging is structured and redacted.
+
+### Backend persistence
+
+- Custom tables store only account registration, desktop-session, settings, and migration metadata.
+- Better Auth tables store users, sessions, OAuth clients/grants/tokens/resources, device codes, and signing keys.
+- Presence, bridge tickets, pending requests, arguments, results, and note data are memory-only.
+- Tests assert that no note-content tables or fields exist in the backend database.
+
+### Bridge and MCP
+
+- One-use 30-second WebSocket tickets and one ready desktop connection per account.
+- Exact bridge protocol negotiation, strict shared frame parsing, heartbeat, 20-second timeout, replacement, logout, disconnect, and no replay.
+- Real-network WebSocket integration covers routing, ticket replay rejection, Origin rejection, and in-flight disconnect failure.
+- Streamable HTTP MCP supports the modern `2026-07-28` `server/discover` envelope and stateless 2025 clients.
+- All 11 tools are registered from the shared contract. Every invocation checks its read/create/edit scope before bridge dispatch.
+- Invalid schemas become public `INVALID_INPUT`; unexpected failures do not expose implementation details.
+
+### Operations
+
+- Multi-stage Debian slim Dockerfile with Node 24, non-root UID/GID 10001, `/data`, port 8080, and healthcheck.
+- Compose configuration uses a named data volume, read-only root filesystem, tmpfs `/tmp`, dropped capabilities, and no-new-privileges.
+- Separate Node 24 CI for contract/backend/Docker and GHCR multi-arch publication workflow for `linux/amd64` and `linux/arm64`.
+- Deployment and recovery documentation in `Documentation/MCP_BACKEND_OPERATIONS.md` and `backend/README.md`.
+
+## Validation Completed
+
+Backend validation:
 
 ```text
-npm run build
+npm run typecheck
 npm test
+npm run build
+npm audit --audit-level=moderate
 ```
 
-Final Phase 0 result:
+Result:
 
-- TypeScript typecheck passed.
-- Clean TypeScript build passed.
-- 1 Vitest file / 8 tests passed.
-- `dist` contains only `index.js`, `index.d.ts`, and `index.d.ts.map`; tests are neither emitted nor rediscovered.
+- TypeScript source and test typechecks passed.
+- 7 Vitest files / 33 tests passed.
+- Production build passed.
+- Backend and contract audits reported 0 vulnerabilities.
+- Compiled backend smoke test returned health, RFC 8414, and RFC 9728 metadata correctly.
 
-### Architecture documentation
+Docker validation:
 
-Created `Documentation/MCP_ARCHITECTURE.md` with the local-first invariants, trust boundaries, explicit threat model, accepted exposure, retention rules, availability semantics, versioning, implementation guardrails, and the Phase 0 gate.
+- `linux/amd64` image built successfully under Node 24.
+- Container ran with a read-only root filesystem, temporary `/data`, and `better-sqlite3` loaded successfully.
+- Runtime identity was UID/GID 10001 and Docker health status became healthy.
+- Runtime SQLite contained only Better Auth and `notex_` metadata tables.
+- Local `linux/arm64` execution was not available because Docker Desktop had no arm64 binfmt/QEMU handler. The publication workflow installs QEMU before its two-platform Buildx build.
 
-### Dependency manifests
+## External Staging Gate
 
-- Created an independent `backend/package.json` and `backend/package-lock.json`.
-- Installed backend dependencies successfully (0 reported vulnerabilities).
-- Created and installed the independent contract package and lockfile.
-- The local machine currently uses Node 20; the backend manifest targets Node 24 and npm emitted the expected engine warning during installation.
+These checks require deployment inputs that are not present in the repository:
 
-## Written But Not Yet Validated
+1. Configure a real Google OAuth web client and callback URL.
+2. Run Register for a new Google account, Login for an existing account, and rejection for an unregistered account.
+3. Verify browser callback, consent continuation, device polling, refresh rotation, logout, AI revocation, and account deletion against the hosted URL.
+4. Connect MCP Inspector or another external MCP client through CIMD/DCR and PKCE.
+5. Execute `notex_status` and a read tool through the CLI desktop simulator over public HTTPS/WSS.
 
-The following backend first-pass modules were just added and have **not** been typechecked, built, started, or tested:
-
-- `backend/src/config.ts`
-- `backend/src/database.ts`
-- `backend/src/errors.ts`
-- `backend/src/logger.ts`
-- `backend/src/auth.ts`
-- `backend/src/pages.ts`
-- `backend/src/bridge/registry.ts`
-- `backend/src/bridge/server.ts`
-- `backend/src/mcp.ts`
-- `backend/src/desktop-api.ts`
-- `backend/src/app.ts`
-- `backend/src/main.ts`
-- `backend/src/simulator.ts`
-
-The intended behavior represented by this scaffold is:
-
-- Better Auth with Google, MCP OAuth Provider, CIMD, DCR, PKCE policy, refresh rotation, and Device Authorization.
-- Explicit NoteX registration intent required before Better Auth may create a new Google-backed user.
-- A first-party native OAuth client is created for NoteX Desktop.
-- Backend-only SQLite tables use the `notex_` prefix and store account/session metadata only.
-- WebSocket tickets, presence, pending bridge requests, and payloads live in memory only.
-- One ready desktop connection per account; replacement closes the older connection.
-- Disconnect, timeout, backend restart, or logout rejects in-flight work without replay.
-- MCP v2 stateless HTTP with the SDK's stateless 2025 compatibility path.
-- Per-tool scope checks and routing by authenticated user ID.
-- Desktop endpoints for activation, ticket renewal, logout, account status, AI grant revocation, and remote MCP account deletion.
-- A CLI desktop simulator that needs a bridge URL and one-time ticket.
-
-## Known Unresolved Risks
-
-These are Phase 1 and later risks; they do not reopen the completed Phase 0 contract gate:
-
-1. Run backend TypeScript validation and fix API/type mismatches against Better Auth 1.7.2 and MCP SDK 2.0.0. The newest files were not compiled after being written.
-2. Verify the Better Auth device-code route, OAuth token exchange, generated desktop client, Google callback, signed `oauth_query`, consent continuation, and registration cookie as a real browser flow.
-3. Confirm the registration database hook returns a clear `Register account first` error for a new user entering through an AI platform or desktop Login.
-4. Inspect Better Auth's generated SQLite migration and prove that account/grant/token deletion and AI-only revocation target all required records while preserving the desktop authorization.
-5. Add backend unit/integration tests for the registry, one-use tickets, replacement, timeout, disconnect, no replay, scopes, and account lifecycle.
-6. Ensure operational logs never include URL query strings, emails, Authorization/Cookie headers, MCP arguments/results, or WebSocket frames.
-7. Verify Express 5 wildcard route syntax and Host/Origin handling, including IPv6 and reverse-proxy deployment.
-8. Add Docker, healthcheck, non-root runtime, GHCR workflow, Node 24 CI, and backend deployment documentation.
-
-## Work Not Started
-
-- Rust/Tauri credential storage in Windows Credential Manager.
-- Rust HTTP/OAuth device polling/WebSocket bridge and renderer event transport.
-- Renderer MCP state store and post-bootstrap bridge readiness.
-- Transport-independent local dispatcher.
-- Shared UI/MCP note search extraction.
-- Dirty-note/save coordinator and optimistic version checks.
-- Shared Tiptap extension factories, rich-text conversion, and sanitization.
-- MCP reads and writes through the current stores/repository.
-- Profile/sidebar MCP UI and PT/EN translations.
-- NoteX schema-v3 compatibility fixture and end-to-end tests.
-- Full frontend/Rust/backend/Docker validation.
+No production secret or fake bypass should be added to avoid this gate.
 
 ## Exact Resume Sequence
 
-1. Do not start desktop or frontend work yet.
-2. Run `npm run typecheck` in `backend/` and resolve every compile error without weakening types.
-3. Add focused tests for `BackendDatabase` and `BridgeRegistry`; run `npm test` in `backend/`.
-4. Start the backend with development Google credentials and inspect the Better Auth-generated schema separately from the NoteX database.
-5. Validate Register and Login device flows, then validate MCP OAuth discovery/authentication with MCP Inspector.
-6. Exercise one `notex_status` request through the simulator, including offline, replacement, timeout, disconnect, and no-replay cases.
-7. Only after that vertical slice passes, begin the Tauri integration and then the renderer dispatcher/UI phases from the approved plan.
+1. Review `git status --short` because all MCP changes remain uncommitted and the user may have edited files.
+2. If staging credentials/domain are available, run the external staging gate above before changing the desktop app.
+3. Begin Phase 2 in Rust/Tauri: secure refresh-token storage, device flow, token refresh, desktop session activation, WSS lifecycle, and renderer events.
+4. Add the renderer MCP state/dispatcher only after the existing `App.tsx` bootstrap is complete; send bridge `ready` only after dispatcher readiness.
+5. Add the Profile/sidebar MCP UI and PT/EN states without changing NoteX SQLite schema v3.
+6. Deliver Phase 3 reads end to end before beginning rich-text writes.
 
-## Current Git State
+## Work Not Started
 
-All MCP work is still uncommitted and appears as new/untracked paths under `backend/`, `packages/`, and `Documentation/`. Review `git status --short` before resuming because the user may make changes in the meantime.
+- Windows Credential Manager integration and Tauri OAuth/WSS commands.
+- Renderer transport state and transport-independent local dispatcher.
+- Shared UI/MCP note search extraction.
+- Profile/sidebar MCP controls and translations.
+- Local reads from existing stores/repository.
+- Dirty-note/save coordinator, optimistic version enforcement, shared Tiptap factories, sanitization, and local writes.
+- Schema-v3 compatibility fixture against a copy of an existing NoteX database.

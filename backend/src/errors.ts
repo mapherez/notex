@@ -1,4 +1,5 @@
 import type { BridgeError, BridgeErrorCode } from '@notex/mcp-contract';
+import { z } from 'zod';
 
 const publicMessages: Record<BridgeErrorCode, string> = {
   USER_NOT_LOGGED_IN: 'User not logged in',
@@ -39,5 +40,26 @@ export class PublicBridgeError extends Error {
 
 export function asPublicBridgeError(error: unknown): PublicBridgeError {
   if (error instanceof PublicBridgeError) return error;
+  if (error instanceof z.ZodError) return new PublicBridgeError('INVALID_INPUT');
   return new PublicBridgeError('INTERNAL');
+}
+
+export function publicErrorHttpStatus(code: BridgeErrorCode): number {
+  switch (code) {
+    case 'INVALID_INPUT':
+      return 400;
+    case 'USER_NOT_LOGGED_IN':
+      return 401;
+    case 'FORBIDDEN':
+      return 403;
+    case 'NOT_FOUND':
+      return 404;
+    case 'CONFLICT':
+    case 'LOCAL_EDITS_PENDING':
+      return 409;
+    case 'TIMEOUT':
+      return 504;
+    default:
+      return 500;
+  }
 }

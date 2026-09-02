@@ -58,6 +58,14 @@ export class BackendDatabase {
         created_at INTEGER NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS notex_desktop_activations (
+        token_hash TEXT PRIMARY KEY,
+        expires_at INTEGER NOT NULL,
+        consumed_at INTEGER,
+        user_id TEXT,
+        session_id TEXT
+      );
+
       CREATE TABLE IF NOT EXISTS notex_desktop_sessions (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
@@ -80,6 +88,9 @@ export class BackendDatabase {
 
       INSERT OR IGNORE INTO notex_backend_migrations(version, applied_at)
       VALUES (1, CURRENT_TIMESTAMP);
+
+      INSERT OR IGNORE INTO notex_backend_migrations(version, applied_at)
+      VALUES (2, CURRENT_TIMESTAMP);
     `);
   }
 
@@ -165,10 +176,48 @@ export class BackendDatabase {
     return this.getAccount(userId) !== null;
   }
 
-  activateDesktopSession(userId: string, grantId: string): { sessionId: string; replacedSessionIds: string[] } {
-    const grantHash = sha256(grantId);
+  createDesktopActivation(ttlSeconds = 600): { token: string; expiresAt: number } {
+    const token = randomBytes(32).toString('base64url');
+    const expiresAt = Math.floor(Date.now() / 1000) + ttlSeconds;
+    const now = Math.floor(Date.now() / 1000);
+    this.raw
+      .prepare('DELETE FROM notex_desktop_activations WHERE expires_at < ?')
+      .run(now);
+    this.raw
+      .prepare('INSERT INTO notex_desktop_activations(token_hash, expires_at) VALUES (?, ?)')
+      .run(sha256(token), expiresAt);
+    return { token, expiresAt };
+  }
+
+  activateDesktopSession(
+    userId: string,
+    activationToken: string,
+  ): { sessionId: string; replacedSessionIds: string[] } | null {
+    const grantHash = sha256(activationToken);
+    const nowSeconds = Math.floor(Date.now() / 1000);
     const now = new Date().toISOString();
     return this.raw.transaction(() => {
+      const activation = this.raw
+        .prepare(
+          `SELECT consumed_at AS consumedAt, user_id AS userId, session_id AS sessionId
+             FROM notex_desktop_activations
+            WHERE token_hash = ? AND expires_at >= ?`,
+        )
+        .get(grantHash, nowSeconds) as
+        | { consumedAt: number | null; userId: string | null; sessionId: string | null }
+        | undefined;
+      if (!activation) return null;
+      if (activation.consumedAt !== null) {
+        if (
+          activation.userId !== userId ||
+          !activation.sessionId ||
+          !this.isDesktopSessionActive(userId, activation.sessionId)
+        ) {
+          return null;
+        }
+        return { sessionId: activation.sessionId, replacedSessionIds: [] };
+      }
+
       const replacedSessionIds = (
         this.raw
           .prepare('SELECT id FROM notex_desktop_sessions WHERE user_id = ? AND active = 1 AND grant_hash <> ?')
@@ -194,6 +243,13 @@ export class BackendDatabase {
              active = 1, updated_at = excluded.updated_at, revoked_at = NULL`,
         )
         .run(sessionId, userId, grantHash, now, now);
+      this.raw
+        .prepare(
+          `UPDATE notex_desktop_activations
+              SET consumed_at = ?, user_id = ?, session_id = ?
+            WHERE token_hash = ? AND consumed_at IS NULL`,
+        )
+        .run(nowSeconds, userId, sessionId, grantHash);
       return { sessionId, replacedSessionIds };
     })();
   }
@@ -245,6 +301,7 @@ export class BackendDatabase {
   deleteAccountMetadata(userId: string): void {
     this.raw.transaction(() => {
       this.raw.prepare('DELETE FROM notex_desktop_sessions WHERE user_id = ?').run(userId);
+      this.raw.prepare('DELETE FROM notex_desktop_activations WHERE user_id = ?').run(userId);
       this.raw.prepare('DELETE FROM notex_pending_registrations WHERE user_id = ?').run(userId);
       this.raw.prepare('DELETE FROM notex_accounts WHERE user_id = ?').run(userId);
     })();

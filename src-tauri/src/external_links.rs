@@ -2,6 +2,10 @@ use std::process::Command;
 
 #[tauri::command]
 pub fn notex_open_external_url(url: String) -> Result<(), String> {
+    open_external_url(&url)
+}
+
+pub(crate) fn open_external_url(url: &str) -> Result<(), String> {
     let trimmed = url.trim();
     if !is_allowed_external_url(trimmed) {
         return Err("Only http, https, and mailto links can be opened externally".to_string());
