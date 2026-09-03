@@ -5,8 +5,8 @@ Date: 2026-09-03
 ## Repository State
 
 - Branch: `add_mcp`.
-- Current implementation commit: `37b7884` (`feat(mcp): integrate MCP functionality into the application`).
-- The branch matched `origin/add_mcp` and the worktree was clean when this checkpoint was updated.
+- Baseline implementation commit: `37b7884` (`feat(mcp): integrate MCP functionality into the application`).
+- The Phase 3 implementation described below is present as uncommitted worktree changes on top of that commit and must not be discarded.
 - The approved implementation plan remains in `Documentation/MCP_IMPLEMENTATION_PLAN.md`.
 
 ## Current Phase Status
@@ -14,12 +14,12 @@ Date: 2026-09-03
 - **Phase 0: complete and validated.**
 - **Phase 1: implementation complete and locally validated.**
 - **Phase 2: implementation complete and locally validated.**
-- **Phases 1-2 external staging gate: pending.** Real Google credentials, a public HTTPS/WSS deployment, and an external MCP client are still required.
-- **Phase 3: only the transport-independent dispatcher shell and `notex_status` exist.** Note, block, tag, and collection reads are not implemented yet.
-- **Phase 4: not started.**
+- **Phase 3: implementation complete and locally validated.** All six read/status commands are connected to the current renderer stores.
+- **Phases 1-3 external staging gate: pending.** Real Google credentials, a public HTTPS/WSS deployment, a running desktop app, and an external MCP client are still required.
+- **Phase 4: writes not started.** The shared Tiptap factories and read-side rich-text serializer were completed early as Phase 3 prerequisites.
 - **Phase 5: partially completed early.** Backend hardening, Docker, backend CI, GHCR publication, and production URL injection exist; final end-to-end hardening and release validation remain.
 
-The infrastructure can authenticate and connect a running NoteX instance to the backend, but the current desktop dispatcher cannot yet search, read, or mutate local notes. It returns `INTERNAL` for every command except `notex_status`.
+The desktop dispatcher can report status, search notes, read note summaries and blocks, and list tags and collections. The five write commands remain intentionally unimplemented and return `INTERNAL` until Phase 4.
 
 ## Local-First Safety State
 
@@ -28,10 +28,12 @@ The infrastructure can authenticate and connect a running NoteX instance to the 
 - MCP authentication data is not stored in the NoteX SQLite database or browser storage.
 - The desktop refresh credential and session metadata are stored through Windows Credential Manager.
 - Rust and the backend do not write directly to the notes database.
+- Phase 3 reads use only `useNotesStore.getState()` and `useKnowledgeStore.getState()`; dispatcher tests assert that no Tauri/SQLite command is invoked.
 - The backend has a separate SQLite database containing only account, OAuth, client, grant, token, session, signing-key, registration, and desktop-session metadata.
 - Presence, WebSocket tickets, pending requests, arguments, results, and note content remain memory-only in the backend.
 - Disconnects, backend restarts, and timeouts fail in-flight requests without queueing or replay.
 - No existing note, block, tag, collection, attachment, or other local user data was migrated or modified by this work.
+- The only Phase 3 change in `sqlite_storage.rs` is a `#[cfg(test)]` regression test; production schema code remains unchanged at version 3.
 
 ## Phase 0 Result
 
@@ -103,28 +105,52 @@ Validated result: 1 Vitest file / 8 tests passed, plus clean typecheck and build
 
 - `App.tsx` starts MCP only after the existing SQLite, settings, knowledge, and notes bootstrap completes.
 - `src/core/services/mcpBridge.ts` installs event listeners before native initialization and drops responses after disconnection.
-- `src/core/mcp/dispatcher.ts` is independent of transport, enforces deadlines, and currently implements only `notex_status`.
+- `src/core/mcp/dispatcher.ts` is independent of transport, enforces deadlines, and now implements status plus all five Phase 3 reads.
 - The Zustand MCP store is transient and does not persist tokens or account state.
 - Profile includes Register, Login, Cancel, Logout, Revoke AI access, and Delete MCP account states.
 - Revocation and account deletion use confirmation modals; their copy explicitly preserves local notes.
 - The sidebar shows green `Online` only after bridge readiness and red `Offline` for every other state.
 - MCP UI text exists in Portuguese and English.
 
+## Phase 3 Result
+
+### Shared Search and Editor Schema
+
+- `src/core/utils/noteSearch.ts` is now the single search implementation used by both the existing SearchBox and MCP.
+- Search remains accent-insensitive, excludes trash by default, supports active/trash/all for MCP, preserves cross-field phrase matching, ranks content before tags and collections, and applies deterministic limits.
+- The full and inline Tiptap extension sets were extracted to `src/core/editor/noteEditorExtensions.ts` without changing editor markup, node views, shortcuts, or visual behavior.
+- `src/core/mcp/richTextOutput.ts` produces plain text plus sanitized supported HTML and never exposes Tiptap JSON or local file metadata.
+
+### Read Dispatcher
+
+- `notex_status`, `search_notes`, `get_note`, `get_note_block`, `list_tags`, and `list_collections` validate both input and output through the shared contract.
+- `get_note` returns the header, current version, and summaries ordered by block `sortOrder`.
+- `get_note_block` returns exact supported rich content for one block, excluding file nodes and executable or unsafe HTML.
+- Trashed notes are searchable only when requested and are marked read-only in note/block responses.
+- Missing or mismatched note/block IDs return `NOT_FOUND`; invalid input and expired deadlines return typed errors.
+
+### Compatibility Evidence
+
+- Frontend tests cover search ordering, limits, accents, location filters, rich-text sanitization, all read commands, typed failures, and absence of direct SQLite calls.
+- A Rust in-memory v3 fixture snapshots the SQLite objects and an existing note, repeats the current schema bootstrap, and confirms unchanged schema, schema version, and note content.
+- A final real-copy and public end-to-end check remains part of the external staging gate; automated fixtures do not replace that release check.
+
 ## Validation Completed
 
 ### Contract and Backend
 
 ```text
-npm run typecheck
-npm test
-npm run build
-npm audit --audit-level=moderate
+npm --prefix packages/notex-mcp-contract test
+npm --prefix backend run typecheck
+npm --prefix backend test
+npm --prefix backend run build
 ```
 
 - Contract: 1 Vitest file / 8 tests passed.
 - Backend: 7 Vitest files / 33 tests passed.
 - Backend and contract production builds passed.
 - Backend and contract audits reported 0 vulnerabilities at the time of validation.
+- A backend-local Vitest config now prevents the root frontend test config from shadowing the seven backend test files.
 - Compiled backend smoke tests returned health, RFC 8414, and RFC 9728 metadata.
 - Real-network WebSocket tests covered routing, ticket replay rejection, Origin rejection, and in-flight disconnect failure.
 
@@ -132,15 +158,23 @@ npm audit --audit-level=moderate
 
 ```text
 cargo test --manifest-path src-tauri/Cargo.toml
+npm test
 npm run typecheck
 npm run check:styles
 npm run build
 ```
 
-- Rust: 6 tests passed, including endpoint restrictions and bridge frame validation.
+- Rust: 7 tests passed, including endpoint restrictions, bridge frame validation, and SQLite v3 preservation.
+- Frontend: 3 Vitest files / 16 tests passed for shared search, rich-text output, and MCP dispatch.
 - Frontend typecheck, style checks, and production build passed.
 - Profile/sidebar were inspected in PT/EN, dark/light, and desktop/mobile viewports using a local Tauri IPC mock.
 - The visual run had no application console errors; only the existing React Router warnings were present.
+
+### Dependency Audit Note
+
+- `npm audit --omit=dev --audit-level=high` passes with no high-severity production finding, but reports 41 moderate findings in the existing React Router/Tiptap dependency graph.
+- The full root audit reports 7 high-severity findings in build/development dependencies.
+- A dry run showed that blind `npm audit fix` would create mixed Tiptap peer versions. Upgrade the complete Tiptap package set together and re-run editor regression checks before Phase 4 accepts remote rich-text input.
 
 ### Docker
 
@@ -161,25 +195,24 @@ The following checks require deployment inputs that are not present in the repos
 5. Validate Register for a new account, Register for an existing account, Login for an existing account, and Login rejection for an unknown account.
 6. Validate callback continuation, device polling, refresh rotation, restart, logout, AI revocation, account deletion, and immediate desktop-session replacement.
 7. Connect MCP Inspector or another external client through CIMD/DCR and PKCE.
-8. Confirm offline, logged-out, backend-restart, and interrupted-socket behavior without queueing or replay.
+8. Execute `notex_status`, all five reads, and trash reads against a real local schema-v3 database.
+9. Confirm offline, logged-out, backend-restart, and interrupted-socket behavior without queueing or replay.
 
 No production secret or authentication bypass should be committed to avoid this gate.
 
 ## Remaining Implementation
 
-### Phase 3: Local Reads
+### Phase 3: External Read-Only Gate
 
-- Extract the current global note search into a shared function used by both UI and MCP.
-- Connect the dispatcher to `useNotesStore.getState()` and `useKnowledgeStore.getState()`.
-- Implement `search_notes`, `get_note`, `get_note_block`, `list_tags`, and `list_collections`.
-- Return both plain text and supported rich HTML without exposing Tiptap JSON.
-- Include active and trashed notes according to `location`; mark trashed notes and blocks read-only.
-- Add focused dispatcher/search tests covering ordering, limits, accents, active/trash/all, missing IDs, and deadlines.
-- Validate the read-only flow against a real copy of a schema-v3 NoteX database.
+- Deploy the backend with real Google credentials and an approved public HTTPS/WSS origin.
+- Authenticate the NoteX desktop app and an external MCP client as the same registered account.
+- Execute status, search, note, block, tag, and collection reads against a real copied schema-v3 database.
+- Compare the copied database before and after the MCP run and confirm unchanged tables, columns, schema version, and rows.
+- Repeat with NoteX logged out, closed, disconnected, and restarted to confirm immediate failures and no replay.
 
 ### Phase 4: Writes and Rich Text
 
-- Extract shared inline/full Tiptap extension factories.
+- Upgrade all Tiptap packages as one compatible set and clear the current Tiptap security advisory before accepting remote HTML.
 - Parse and sanitize `{ format: "text" | "html", value }` with the same editor schema.
 - Reject scripts, unsafe protocols, images, files, and unsupported nodes.
 - Add a per-note coordinator for debounced saves, saves in progress, and local dirty drafts.
@@ -193,7 +226,7 @@ No production secret or authentication bypass should be committed to avoid this 
 
 - Add a dedicated frontend/Rust CI workflow; current MCP CI covers only contract, backend, and Docker.
 - Complete SSRF/CIMD and authorization abuse tests against the deployed environment.
-- Run the full schema-v3 before/after compatibility fixture and assert unchanged tables, columns, schema version, and existing rows.
+- Retain the automated schema-v3 fixture and complete the real-database before/after staging assertion.
 - Exercise all 11 tools through the official MCP Inspector over public HTTPS/WSS.
 - Validate compatible custom remote MCP clients without platform-specific backend code.
 - Publish the backend image and signed NoteX desktop build only after the external gate passes.
@@ -201,10 +234,10 @@ No production secret or authentication bypass should be committed to avoid this 
 ## Exact Resume Sequence
 
 1. Run `git status --short` and confirm this checkpoint still matches the branch.
-2. Implement the shared search utility and refactor the existing SearchBox to use it.
-3. Implement and test the five missing Phase 3 read commands in the local dispatcher.
-4. Run frontend typecheck, style checks, build, Rust tests, backend tests, and contract tests.
-5. Create the schema-v3 read-only compatibility fixture.
-6. Deploy staging and complete the real Google/MCP read-only path before starting writes.
-7. Implement Phase 4 writes and rich-text handling.
+2. Commit or otherwise preserve the current uncommitted Phase 3 implementation.
+3. Obtain the public backend origin and real Google OAuth credentials.
+4. Deploy staging and complete the real Google/MCP read-only path before starting writes.
+5. Upgrade the full Tiptap dependency set and verify editor/read-output regressions.
+6. Implement the Phase 4 input parser, save coordinator, transactions, and five write commands.
+7. Run frontend, Rust, contract, backend, Docker, and MCP Inspector validation.
 8. Complete the remaining Phase 5 release gates.

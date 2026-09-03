@@ -2338,8 +2338,26 @@ fn infer_mime_type(path: &Path) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::safe_archive_path;
+    use super::{ensure_schema, read_metadata, safe_archive_path, SCHEMA_VERSION};
+    use rusqlite::Connection;
     use std::path::PathBuf;
+
+    fn schema_snapshot(conn: &Connection) -> Vec<(String, String, Option<String>)> {
+        let mut statement = conn
+            .prepare(
+                "SELECT type, name, sql
+                 FROM sqlite_master
+                 WHERE name NOT LIKE 'sqlite_%'
+                 ORDER BY type, name",
+            )
+            .unwrap();
+
+        statement
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap()
+    }
 
     #[test]
     fn accepts_safe_package_paths() {
@@ -2359,5 +2377,74 @@ mod tests {
         assert!(safe_archive_path("files/../../secret.txt").is_err());
         assert!(safe_archive_path("/tmp/notex.sqlite").is_err());
         assert!(safe_archive_path("C:\\tmp\\notex.sqlite").is_err());
+    }
+
+    #[test]
+    fn preserves_existing_v3_schema_and_note_content() {
+        let conn = Connection::open_in_memory().unwrap();
+        ensure_schema(&conn).unwrap();
+        conn.execute(
+            "INSERT INTO notes (
+                id, title, subtitle, tag_ids, linked_note_ids,
+                created_at, updated_at, stats, payload
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            (
+                "note-v3",
+                "Existing note",
+                "Local content",
+                "[]",
+                "[]",
+                "2026-01-01T00:00:00.000Z",
+                "2026-01-01T00:00:00.000Z",
+                "{}",
+                r#"{"id":"note-v3","title":"Existing note"}"#,
+            ),
+        )
+        .unwrap();
+
+        let schema_before = schema_snapshot(&conn);
+        let note_before: (String, String, String, i64, String) = conn
+            .query_row(
+                "SELECT id, title, subtitle, version, payload FROM notes WHERE id = ?1",
+                ["note-v3"],
+                |row| {
+                    Ok((
+                        row.get(0)?,
+                        row.get(1)?,
+                        row.get(2)?,
+                        row.get(3)?,
+                        row.get(4)?,
+                    ))
+                },
+            )
+            .unwrap();
+
+        ensure_schema(&conn).unwrap();
+
+        let schema_after = schema_snapshot(&conn);
+        let note_after: (String, String, String, i64, String) = conn
+            .query_row(
+                "SELECT id, title, subtitle, version, payload FROM notes WHERE id = ?1",
+                ["note-v3"],
+                |row| {
+                    Ok((
+                        row.get(0)?,
+                        row.get(1)?,
+                        row.get(2)?,
+                        row.get(3)?,
+                        row.get(4)?,
+                    ))
+                },
+            )
+            .unwrap();
+
+        assert_eq!(schema_before, schema_after);
+        assert_eq!(note_before, note_after);
+        assert_eq!(
+            read_metadata(&conn, "sqlite_schema_version")
+                .unwrap()
+                .as_deref(),
+            Some(SCHEMA_VERSION)
+        );
     }
 }
