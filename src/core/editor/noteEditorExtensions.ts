@@ -144,6 +144,7 @@ export function createNoteContentExtensions({
       bulletList: false,
       link: false,
       orderedList: false,
+      underline: false,
     }),
     Placeholder.configure({ placeholder }),
     UnderlineExtension,
@@ -182,6 +183,7 @@ export function createNoteInlineExtensions(placeholder = ''): Extensions {
       link: false,
       listItem: false,
       orderedList: false,
+      underline: false,
     }),
     UnderlineExtension,
     Link.configure({

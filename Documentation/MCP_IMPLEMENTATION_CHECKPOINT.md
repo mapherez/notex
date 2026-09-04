@@ -1,12 +1,13 @@
 # MCP Implementation Checkpoint
 
-Date: 2026-09-03
+Date: 2026-09-04
 
 ## Repository State
 
 - Branch: `add_mcp`.
-- Baseline implementation commit: `37b7884` (`feat(mcp): integrate MCP functionality into the application`).
-- The Phase 3 implementation described below is present as uncommitted worktree changes on top of that commit and must not be discarded.
+- Current Phase 3 commit: `32af334` (`feat: add unit tests for MCP dispatcher and note search functionality`).
+- The branch matched `origin/add_mcp` before the dependency-hardening work described below began.
+- Tiptap/security hardening and its regression test are currently uncommitted worktree changes on top of `32af334` and must not be discarded.
 - The approved implementation plan remains in `Documentation/MCP_IMPLEMENTATION_PLAN.md`.
 
 ## Current Phase Status
@@ -16,7 +17,7 @@ Date: 2026-09-03
 - **Phase 2: implementation complete and locally validated.**
 - **Phase 3: implementation complete and locally validated.** All six read/status commands are connected to the current renderer stores.
 - **Phases 1-3 external staging gate: pending.** Real Google credentials, a public HTTPS/WSS deployment, a running desktop app, and an external MCP client are still required.
-- **Phase 4: writes not started.** The shared Tiptap factories and read-side rich-text serializer were completed early as Phase 3 prerequisites.
+- **Phase 4: writes not started.** Shared Tiptap factories, the read-side rich-text serializer, and the coordinated Tiptap security upgrade are complete prerequisites.
 - **Phase 5: partially completed early.** Backend hardening, Docker, backend CI, GHCR publication, and production URL injection exist; final end-to-end hardening and release validation remain.
 
 The desktop dispatcher can report status, search notes, read note summaries and blocks, and list tags and collections. The five write commands remain intentionally unimplemented and return `INTERNAL` until Phase 4.
@@ -165,16 +166,24 @@ npm run build
 ```
 
 - Rust: 7 tests passed, including endpoint restrictions, bridge frame validation, and SQLite v3 preservation.
-- Frontend: 3 Vitest files / 16 tests passed for shared search, rich-text output, and MCP dispatch.
+- Frontend: 4 Vitest files / 18 tests passed for editor extensions, shared search, rich-text output, and MCP dispatch.
 - Frontend typecheck, style checks, and production build passed.
 - Profile/sidebar were inspected in PT/EN, dark/light, and desktop/mobile viewports using a local Tauri IPC mock.
 - The visual run had no application console errors; only the existing React Router warnings were present.
+- Tiptap 3.31.2 browser QA rendered headings, bold/italic text, bullet lists, tasks, tables, and NoteX tips; an edit persisted through the existing repository path and the shared search returned the fixture note.
+- The duplicate `underline` extension introduced by the newer StarterKit was found during browser QA, disabled in StarterKit, and covered by a real Editor regression test.
 
 ### Dependency Audit Note
 
-- `npm audit --omit=dev --audit-level=high` passes with no high-severity production finding, but reports 41 moderate findings in the existing React Router/Tiptap dependency graph.
-- The full root audit reports 7 high-severity findings in build/development dependencies.
-- A dry run showed that blind `npm audit fix` would create mixed Tiptap peer versions. Upgrade the complete Tiptap package set together and re-run editor regression checks before Phase 4 accepts remote rich-text input.
+- All direct and transitive Tiptap packages are aligned and pinned at 3.31.2; `npm ls` reports no invalid or mixed peers.
+- React Router is now 6.30.6, Vite is 6.4.3, and the previously vulnerable Babel, Browserslist, Fast URI, Immutable, JS-YAML, Nano ID, PostCSS, and selector-parser versions were updated within compatible ranges.
+- The npm install audit summary dropped from 50 findings (including 7 high) to 2 moderate findings, with no high or critical findings. The registry audit detail endpoint repeatedly stalled, so the two remaining moderate advisories still need classification before release.
+- `npm ci` completed successfully from the resulting lockfile before the final test run.
+
+### Visual QA Note
+
+- At 390 px, the editor itself remains within 300 px and its rich content renders correctly.
+- The existing note-detail header still creates horizontal page overflow (`scrollWidth` 637 px) through `.document-actions`; this is outside the editor/Tiptap change and should be fixed as separate responsive UI work.
 
 ### Docker
 
@@ -212,7 +221,6 @@ No production secret or authentication bypass should be committed to avoid this 
 
 ### Phase 4: Writes and Rich Text
 
-- Upgrade all Tiptap packages as one compatible set and clear the current Tiptap security advisory before accepting remote HTML.
 - Parse and sanitize `{ format: "text" | "html", value }` with the same editor schema.
 - Reject scripts, unsafe protocols, images, files, and unsupported nodes.
 - Add a per-note coordinator for debounced saves, saves in progress, and local dirty drafts.
@@ -234,10 +242,10 @@ No production secret or authentication bypass should be committed to avoid this 
 ## Exact Resume Sequence
 
 1. Run `git status --short` and confirm this checkpoint still matches the branch.
-2. Commit or otherwise preserve the current uncommitted Phase 3 implementation.
-3. Obtain the public backend origin and real Google OAuth credentials.
-4. Deploy staging and complete the real Google/MCP read-only path before starting writes.
-5. Upgrade the full Tiptap dependency set and verify editor/read-output regressions.
+2. Commit or otherwise preserve the current uncommitted dependency-hardening changes.
+3. Classify the two remaining moderate npm advisories when the registry audit endpoint is responsive.
+4. Obtain the public backend origin and real Google OAuth credentials.
+5. Deploy staging and complete the real Google/MCP read-only path before starting writes.
 6. Implement the Phase 4 input parser, save coordinator, transactions, and five write commands.
 7. Run frontend, Rust, contract, backend, Docker, and MCP Inspector validation.
 8. Complete the remaining Phase 5 release gates.
