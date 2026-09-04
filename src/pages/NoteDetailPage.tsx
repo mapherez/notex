@@ -35,6 +35,7 @@ import { SortableTagList } from '../components/ui/SortableTagList';
 import { TagChip } from '../components/ui/TagChip';
 import { appLimits, defaultNewTagColor, defaultNoteThumbnailVariant, thumbnailOptions } from '../config/appSettings';
 import type { Collection, Note, NoteBlock, NoteFile, NoteThumbnail as NoteThumbnailModel, Tag, TagColor, TiptapDocument } from '../core/models/models';
+import { beginLocalSave, setLocalDraftPending } from '../core/mcp/noteMutationCoordinator';
 import { chooseNoteAttachment, exportNoteAttachment, openNoteAttachment } from '../core/services/noteFiles';
 import { chooseNotexNoteExportDestination, createNotexNoteTempExport } from '../core/services/notexNotePackage';
 import { openExternalUrl } from '../core/services/externalLinks';
@@ -601,7 +602,7 @@ export function NoteDetailPage() {
             collections={collections}
             note={note}
             noteTags={noteTags}
-            onChange={(input) => void updateHeader(note.id, input)}
+            onChange={(input) => updateHeader(note.id, input)}
             onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
             onThumbnailChange={(thumbnail) => void updateThumbnail(note.id, thumbnail)}
             onToolbarTargetChange={setToolbarTarget}
@@ -957,7 +958,7 @@ function NoteHeader({
   collections: Collection[];
   note: Note;
   noteTags: Tag[];
-  onChange: (input: { collectionId?: string | null; subtitle?: string; title?: string }) => void;
+  onChange: (input: { collectionId?: string | null; subtitle?: string; title?: string }) => Promise<void>;
   onTagsChange: (tagIds: string[]) => void;
   onThumbnailChange: (thumbnail: NoteThumbnailModel) => void;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
@@ -968,6 +969,8 @@ function NoteHeader({
   const [subtitle, setSubtitle] = useState(note.subtitle);
   const [collectionId, setCollectionId] = useState(note.collectionId ?? '');
   const saveTimeoutRef = useRef<number | null>(null);
+  const draftRevisionRef = useRef(0);
+  const draftSourceId = 'header';
 
   useEffect(() => {
     setTitle(note.title);
@@ -975,15 +978,38 @@ function NoteHeader({
     setCollectionId(note.collectionId ?? '');
   }, [note.id, note.title, note.subtitle, note.collectionId]);
 
+  useEffect(() => () => {
+    draftRevisionRef.current += 1;
+    setLocalDraftPending(note.id, draftSourceId, false);
+  }, [note.id]);
+
   useEffect(() => {
     if (title === note.title && subtitle === note.subtitle && collectionId === (note.collectionId ?? '')) {
+      draftRevisionRef.current += 1;
+      setLocalDraftPending(note.id, draftSourceId, false);
       return undefined;
     }
+    const draftRevision = ++draftRevisionRef.current;
+    setLocalDraftPending(note.id, draftSourceId, true);
     if (saveTimeoutRef.current) {
       window.clearTimeout(saveTimeoutRef.current);
     }
     saveTimeoutRef.current = window.setTimeout(() => {
-      onChange({ title, subtitle, collectionId: collectionId || null });
+      const finishSave = beginLocalSave(note.id, draftSourceId);
+      void (async () => {
+        let saved = false;
+        try {
+          await onChange({ title, subtitle, collectionId: collectionId || null });
+          saved = true;
+        } catch {
+          // Keep the draft registered so a remote mutation cannot overwrite it.
+        } finally {
+          finishSave();
+          if (saved && draftRevisionRef.current === draftRevision) {
+            setLocalDraftPending(note.id, draftSourceId, false);
+          }
+        }
+      })();
     }, 650);
     return () => {
       if (saveTimeoutRef.current) {
@@ -1138,6 +1164,7 @@ function BlockEditor({
   const [titleActive, setTitleActive] = useState(false);
   const [contentActive, setContentActive] = useState(false);
   const saveTimeoutRef = useRef<number | null>(null);
+  const draftRevisionRef = useRef(0);
   const lastTypingNonceRef = useRef<number | null>(null);
   const contentJsonRef = useRef<TiptapDocument | null>(contentJson);
   const contentTextRef = useRef(contentText);
@@ -1147,12 +1174,18 @@ function BlockEditor({
   const titleVisible = titleHasContent || titleActive;
   const contentVisible = contentHasContent || contentActive;
   const blockIsEmpty = !titleVisible && !contentVisible;
+  const draftSourceId = `block:${block.id}`;
 
   useEffect(() => {
     setTitle(block.title);
     setContentJson(block.contentJson);
     setContentText(block.contentText);
   }, [block.id, block.title, block.contentJson, block.contentText]);
+
+  useEffect(() => () => {
+    draftRevisionRef.current += 1;
+    setLocalDraftPending(noteId, draftSourceId, false);
+  }, [draftSourceId, noteId]);
 
   useEffect(() => {
     contentJsonRef.current = contentJson;
@@ -1172,25 +1205,43 @@ function BlockEditor({
   useEffect(() => {
     const contentChanged = JSON.stringify(contentJson) !== JSON.stringify(block.contentJson);
     if (title === block.title && contentText === block.contentText && !contentChanged) {
+      draftRevisionRef.current += 1;
+      setLocalDraftPending(noteId, draftSourceId, false);
       return undefined;
     }
+    const draftRevision = ++draftRevisionRef.current;
+    setLocalDraftPending(noteId, draftSourceId, true);
     if (saveTimeoutRef.current) {
       window.clearTimeout(saveTimeoutRef.current);
     }
     saveTimeoutRef.current = window.setTimeout(() => {
-      void updateBlock(noteId, block.id, {
-        kind: contentHasContent || contentJson ? 'content' : block.kind,
-        title,
-        contentJson,
-        contentText,
-      });
+      const finishSave = beginLocalSave(noteId, draftSourceId);
+      void (async () => {
+        let saved = false;
+        try {
+          await updateBlock(noteId, block.id, {
+            kind: contentHasContent || contentJson ? 'content' : block.kind,
+            title,
+            contentJson,
+            contentText,
+          });
+          saved = true;
+        } catch {
+          // Keep the draft registered so a remote mutation cannot overwrite it.
+        } finally {
+          finishSave();
+          if (saved && draftRevisionRef.current === draftRevision) {
+            setLocalDraftPending(noteId, draftSourceId, false);
+          }
+        }
+      })();
     }, 700);
     return () => {
       if (saveTimeoutRef.current) {
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [block.contentJson, block.contentText, block.id, block.kind, block.title, contentHasContent, contentJson, contentText, noteId, title, updateBlock]);
+  }, [block.contentJson, block.contentText, block.id, block.kind, block.title, contentHasContent, contentJson, contentText, draftSourceId, noteId, title, updateBlock]);
 
   function setFileInsertPending(pending: boolean) {
     fileInsertPendingRef.current = pending;

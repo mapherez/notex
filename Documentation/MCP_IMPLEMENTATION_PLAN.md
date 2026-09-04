@@ -1,5 +1,7 @@
 # Plano de Implementação MCP para o NoteX
 
+> **Estado:** plano remoto preservado para trabalho futuro. A prioridade atual é o servidor MCP local embutido definido em [`MCP_LOCAL_IMPLEMENTATION_PLAN.md`](./MCP_LOCAL_IMPLEMENTATION_PLAN.md). O diretório `backend/` e esta arquitetura não devem ser removidos.
+
 ## Resumo
 
 - O primeiro artefacto será o **contrato partilhado** entre backend e NoteX. Depois cria-se uma versão mínima do backend com um simulador de NoteX, e só então se liga a aplicação real. Não se deve concluir um dos lados inteiro antes de validar o fluxo ponta a ponta.

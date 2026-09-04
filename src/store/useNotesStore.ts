@@ -18,6 +18,12 @@ type NoteInput = {
   title?: string;
 };
 
+type CreateNoteWithBlocksInput = NoteInput & {
+  blocks?: BlockInput[];
+  subtitle?: string;
+  tagIds?: string[];
+};
+
 type HeaderInput = {
   collectionId?: string | null;
   subtitle?: string;
@@ -44,6 +50,7 @@ type NotesStore = {
   initialize: () => Promise<void>;
   refreshNotes: () => Promise<void>;
   createNote: (input?: NoteInput) => Promise<Note>;
+  createNoteWithBlocks: (input?: CreateNoteWithBlocksInput) => Promise<Note>;
   markNoteOpened: (noteId: string) => Promise<void>;
   updateNoteHeader: (noteId: string, input: HeaderInput) => Promise<void>;
   updateNoteTags: (noteId: string, tagIds: string[]) => Promise<void>;
@@ -87,33 +94,37 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set({ notes: sortNotes(notes), isReady: true });
   },
   createNote: async (input = {}) => {
-    const now = new Date().toISOString();
-    const note: Note = {
-      id: createId(),
-      title: input.title?.trim() || '',
-      subtitle: '',
-      collectionId: input.collectionId ?? defaultUserSettings.primaryCollectionId,
-      tagIds: [],
-      linkedNoteIds: [],
-      additionalExamples: [],
-      relatedLinks: [],
-      isFavorite: false,
-      isPinned: false,
-      isArchived: false,
-      isTrashed: false,
-      saveState: 'saved',
-      authorId: 'user-local',
-      createdAt: now,
-      updatedAt: now,
-      lastOpenedAt: now,
-      stats: emptyStats(),
-      thumbnail: { variant: defaultNoteThumbnailVariant },
-      version: 1,
-      blocks: [],
-      files: [],
-    };
+    const note = createNewNote(input);
 
     await db.notes.put(stripNoteRelations(note));
+    set((state) => ({ notes: sortNotes([note, ...state.notes]), isReady: true }));
+    return note;
+  },
+  createNoteWithBlocks: async (input = {}) => {
+    const baseNote = createNewNote(input);
+    const blocks = (input.blocks ?? []).map((blockInput, sortOrder): NoteBlock => ({
+      id: createId(),
+      noteId: baseNote.id,
+      sortOrder,
+      title: blockInput.title ?? '',
+      kind: blockInput.kind ?? 'content',
+      contentJson: blockInput.contentJson === undefined ? emptyTiptapDocument : blockInput.contentJson,
+      contentText: blockInput.contentText ?? '',
+      createdAt: baseNote.createdAt,
+      updatedAt: baseNote.updatedAt,
+    }));
+    const noteWithoutStats: Note = {
+      ...baseNote,
+      subtitle: input.subtitle?.trim() || '',
+      tagIds: uniqueIds(input.tagIds ?? []),
+      blocks,
+    };
+    const note = { ...noteWithoutStats, stats: calculateStats(noteWithoutStats) };
+
+    await db.transaction('rw', [db.notes, db.noteBlocks], async () => {
+      await db.notes.put(stripNoteRelations(note));
+      await db.noteBlocks.bulkPut(blocks);
+    });
     set((state) => ({ notes: sortNotes([note, ...state.notes]), isReady: true }));
     return note;
   },
@@ -544,6 +555,34 @@ function sortNotes(notes: Note[]) {
 
 function findNote(notes: Note[], noteId: string) {
   return notes.find((note) => note.id === noteId);
+}
+
+function createNewNote(input: NoteInput): Note {
+  const now = new Date().toISOString();
+  return {
+    id: createId(),
+    title: input.title?.trim() || '',
+    subtitle: '',
+    collectionId: input.collectionId ?? defaultUserSettings.primaryCollectionId,
+    tagIds: [],
+    linkedNoteIds: [],
+    additionalExamples: [],
+    relatedLinks: [],
+    isFavorite: false,
+    isPinned: false,
+    isArchived: false,
+    isTrashed: false,
+    saveState: 'saved',
+    authorId: 'user-local',
+    createdAt: now,
+    updatedAt: now,
+    lastOpenedAt: now,
+    stats: emptyStats(),
+    thumbnail: { variant: defaultNoteThumbnailVariant },
+    version: 1,
+    blocks: [],
+    files: [],
+  };
 }
 
 function emptyStats(): NoteStats {

@@ -2,12 +2,20 @@
 
 Date: 2026-09-04
 
+## Current Direction
+
+- The active direction is now the embedded local MCP server documented in `Documentation/MCP_LOCAL_IMPLEMENTATION_PLAN.md`.
+- The local path is `local AI client -> Streamable HTTP on 127.0.0.1 -> NoteX/Tauri -> existing renderer dispatcher -> stores/repository -> SQLite v3`.
+- The remote backend, Google OAuth, and WebSocket bridge remain preserved for future web-platform access but are no longer the current implementation priority.
+- The current uncommitted Phase 4 dispatcher/store/rich-text work is transport-independent and must be preserved for the local path.
+- Local MCP implementation has not started yet. The MVP authentication policy is now fixed as loopback-only without login or bearer token, with strict Host/Origin validation and no permissive CORS.
+
 ## Repository State
 
 - Branch: `add_mcp`.
-- Current Phase 3 commit: `32af334` (`feat: add unit tests for MCP dispatcher and note search functionality`).
-- The branch matched `origin/add_mcp` before the dependency-hardening work described below began.
-- Tiptap/security hardening and its regression test are currently uncommitted worktree changes on top of `32af334` and must not be discarded.
+- Current committed baseline: `8662938` (`feat: update Tiptap dependencies and add underline extension tests`).
+- The branch matched `origin/add_mcp` before the Phase 4 work described below began.
+- Phase 4 production changes are currently uncommitted and must not be discarded before validation.
 - The approved implementation plan remains in `Documentation/MCP_IMPLEMENTATION_PLAN.md`.
 
 ## Current Phase Status
@@ -17,10 +25,10 @@ Date: 2026-09-04
 - **Phase 2: implementation complete and locally validated.**
 - **Phase 3: implementation complete and locally validated.** All six read/status commands are connected to the current renderer stores.
 - **Phases 1-3 external staging gate: pending.** Real Google credentials, a public HTTPS/WSS deployment, a running desktop app, and an external MCP client are still required.
-- **Phase 4: writes not started.** Shared Tiptap factories, the read-side rich-text serializer, and the coordinated Tiptap security upgrade are complete prerequisites.
+- **Phase 4: production implementation present, validation pending.** The five write commands, rich-text input sanitization, local draft coordination, optimistic versions, and atomic note-plus-block creation are implemented but no Phase 4 tests, typecheck, or build have been run yet.
 - **Phase 5: partially completed early.** Backend hardening, Docker, backend CI, GHCR publication, and production URL injection exist; final end-to-end hardening and release validation remain.
 
-The desktop dispatcher can report status, search notes, read note summaries and blocks, and list tags and collections. The five write commands remain intentionally unimplemented and return `INTERNAL` until Phase 4.
+The desktop dispatcher now contains all eleven read and write commands. The five writes must be treated as unvalidated until the focused Phase 4 checks are explicitly authorized and completed.
 
 ## Local-First Safety State
 
@@ -136,6 +144,28 @@ Validated result: 1 Vitest file / 8 tests passed, plus clean typecheck and build
 - A Rust in-memory v3 fixture snapshots the SQLite objects and an existing note, repeats the current schema bootstrap, and confirms unchanged schema, schema version, and note content.
 - A final real-copy and public end-to-end check remains part of the external staging gate; automated fixtures do not replace that release check.
 
+## Phase 4 Implementation State
+
+### Rich-Text Input
+
+- `src/core/mcp/richTextInput.ts` converts MCP `{ format: "text" | "html", value }` inputs with the same full and inline Tiptap extension factories used by the editor.
+- HTML is parsed in the renderer, executable and file/image elements are removed, unknown wrappers are unwrapped, unsafe link protocols are removed, and attributes/styles are allowlisted before conversion to Tiptap JSON.
+- Inline fields are stored as the editor's normalized HTML; block fields are stored as Tiptap JSON plus generated plain text. Tiptap JSON remains internal and is not returned by the MCP contract.
+
+### Mutations and Conflicts
+
+- `create_note`, `update_note_header`, `add_note_block`, `update_note_block`, and `set_note_tags` are connected to `useNotesStore`.
+- Existing-note writes require an exact `expectedVersion`, reject trashed notes, preserve omitted fields, reject unknown tag/collection IDs, and return the resulting version.
+- A per-note in-memory coordinator rejects MCP writes while header/block debounces or local saves are active and prevents overlapping MCP mutations on the same note.
+- The existing Note Detail header and block debounces now register pending drafts and saves with that coordinator.
+- `createNoteWithBlocks` persists the note and its initial blocks through one existing SQLite transaction and then updates the Zustand state. No table, column, migration, or schema version was added.
+
+### Validation Boundary
+
+- These Phase 4 changes were implemented under an explicit instruction not to run tests automatically.
+- No Phase 4 test, typecheck, build, browser run, Tauri test, backend test, dependency operation, or network operation has been executed for the current worktree.
+- Phase 4 remains open until focused validation is authorized and any resulting defects are corrected.
+
 ## Validation Completed
 
 ### Contract and Backend
@@ -219,16 +249,12 @@ No production secret or authentication bypass should be committed to avoid this 
 - Compare the copied database before and after the MCP run and confirm unchanged tables, columns, schema version, and rows.
 - Repeat with NoteX logged out, closed, disconnected, and restarted to confirm immediate failures and no replay.
 
-### Phase 4: Writes and Rich Text
+### Phase 4: Validation and Closure
 
-- Parse and sanitize `{ format: "text" | "html", value }` with the same editor schema.
-- Reject scripts, unsafe protocols, images, files, and unsupported nodes.
-- Add a per-note coordinator for debounced saves, saves in progress, and local dirty drafts.
-- Enforce `expectedVersion` on every mutation and return typed conflicts.
-- Implement `create_note`, `update_note_header`, `add_note_block`, `update_note_block`, and `set_note_tags` through existing stores/repository behavior.
-- Make note-plus-block creation one local SQLite transaction.
-- Reject every write to trashed notes.
-- Add rich-text, transaction, conflict, dirty-draft, disconnect, and two-client tests.
+- Add focused rich-text input, transaction, version-conflict, trash, unknown-ID, dirty-draft, deadline, and overlapping-client tests.
+- Run the frontend typecheck and focused Phase 4 tests only after explicit authorization.
+- Correct any compile or behavioral failures found by that validation.
+- Complete the real MCP write flow later in staging; Google OAuth and public HTTPS/WSS remain unavailable locally.
 
 ### Phase 5: Final Hardening and Release
 
@@ -241,11 +267,11 @@ No production secret or authentication bypass should be committed to avoid this 
 
 ## Exact Resume Sequence
 
-1. Run `git status --short` and confirm this checkpoint still matches the branch.
-2. Commit or otherwise preserve the current uncommitted dependency-hardening changes.
-3. Classify the two remaining moderate npm advisories when the registry audit endpoint is responsive.
-4. Obtain the public backend origin and real Google OAuth credentials.
-5. Deploy staging and complete the real Google/MCP read-only path before starting writes.
-6. Implement the Phase 4 input parser, save coordinator, transactions, and five write commands.
-7. Run frontend, Rust, contract, backend, Docker, and MCP Inspector validation.
+1. Run `git status --short` and confirm the uncommitted Phase 4 files are still present.
+2. Review the Phase 4 diff without discarding or rewriting the committed baseline.
+3. After explicit authorization, add/run focused Phase 4 tests and frontend typecheck; stop again before broader validation.
+4. Correct validation failures, then commit the Phase 4 implementation and its tests.
+5. Obtain the public backend origin and real Google OAuth credentials when available.
+6. Deploy staging and complete both read and write flows through a real external MCP client.
+7. Run the remaining Rust, contract, backend, Docker, and MCP Inspector release validation only when authorized.
 8. Complete the remaining Phase 5 release gates.
