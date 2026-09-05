@@ -2,7 +2,7 @@ import {
   commandInputSchemas,
   commandNames,
   commandScope,
-  type CommandName,
+  toolMetadata,
 } from '@notex/mcp-contract';
 import { requireMcpAuth } from '@better-auth/mcp';
 import { createMcpHandler, McpServer, type AuthInfo, type McpHttpHandler } from '@modelcontextprotocol/server';
@@ -12,20 +12,6 @@ import { asPublicBridgeError, PublicBridgeError } from './errors.js';
 import type { AppLogger } from './logger.js';
 import type { NoteXAuth } from './auth.js';
 import type { BridgeRegistry } from './bridge/registry.js';
-
-const toolDescriptions: Record<CommandName, string> = {
-  notex_status: 'Check whether this account has a live, ready NoteX Desktop connection.',
-  search_notes: 'Search local NoteX notes by text, including active notes or trash when requested.',
-  get_note: 'Read one local note header and its ordered block summaries.',
-  get_note_block: 'Read the exact supported rich-text content of one local note block.',
-  list_tags: 'List existing local NoteX tags. Use returned IDs in write tools.',
-  list_collections: 'List existing local NoteX collections. Use returned IDs in write tools.',
-  create_note: 'Create a local NoteX note, optionally with blocks and existing tags.',
-  update_note_header: 'Update selected header fields of a local NoteX note using optimistic versioning.',
-  add_note_block: 'Append a block to a local NoteX note using optimistic versioning.',
-  update_note_block: 'Update selected fields of a local NoteX block using optimistic versioning.',
-  set_note_tags: 'Replace a local note tag set with existing tag IDs using optimistic versioning.',
-};
 
 function scopeList(scopeClaim: unknown): string[] {
   if (typeof scopeClaim === 'string') return scopeClaim.split(/\s+/).filter(Boolean);
@@ -40,15 +26,10 @@ function createServer(userId: string, scopes: ReadonlySet<string>, registry: Bri
     server.registerTool(
       command,
       {
-        title: command.replaceAll('_', ' '),
-        description: toolDescriptions[command],
+        title: toolMetadata[command].title,
+        description: toolMetadata[command].description,
         inputSchema: commandInputSchemas[command],
-        annotations: {
-          readOnlyHint: commandScope[command] === 'notex:read',
-          destructiveHint: false,
-          idempotentHint: command.startsWith('get_') || command.startsWith('list_') || command === 'search_notes',
-          openWorldHint: false,
-        },
+        annotations: toolMetadata[command].annotations,
       },
       async (input: unknown) => {
         try {

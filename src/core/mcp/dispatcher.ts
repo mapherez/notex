@@ -496,7 +496,8 @@ function truncatePreview(value: string) {
 }
 
 function deadlineExpired(deadlineAt: string) {
-  const deadline = Date.parse(deadlineAt);
+  const numericDeadline = Number(deadlineAt);
+  const deadline = Number.isFinite(numericDeadline) ? numericDeadline : Date.parse(deadlineAt);
   return !Number.isFinite(deadline) || deadline <= Date.now();
 }
 

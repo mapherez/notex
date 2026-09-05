@@ -1,6 +1,6 @@
 # MCP Implementation Checkpoint
 
-Date: 2026-09-04
+Date: 2026-09-05
 
 ## Current Direction
 
@@ -8,7 +8,8 @@ Date: 2026-09-04
 - The local path is `local AI client -> Streamable HTTP on 127.0.0.1 -> NoteX/Tauri -> existing renderer dispatcher -> stores/repository -> SQLite v3`.
 - The remote backend, Google OAuth, and WebSocket bridge remain preserved for future web-platform access but are no longer the current implementation priority.
 - The current uncommitted Phase 4 dispatcher/store/rich-text work is transport-independent and must be preserved for the local path.
-- Local MCP implementation has not started yet. The MVP authentication policy is now fixed as loopback-only without login or bearer token, with strict Host/Origin validation and no permissive CORS.
+- Local MCP phases 0 through 3 are now implemented. Phase 3 still requires the explicitly authorized frontend and visual validation described below.
+- The local MVP authentication policy is fixed as loopback-only without login or bearer token, with strict Host/Origin validation and no permissive CORS.
 
 ## Repository State
 
@@ -16,9 +17,36 @@ Date: 2026-09-04
 - Current committed baseline: `8662938` (`feat: update Tiptap dependencies and add underline extension tests`).
 - The branch matched `origin/add_mcp` before the Phase 4 work described below began.
 - Phase 4 production changes are currently uncommitted and must not be discarded before validation.
-- The approved implementation plan remains in `Documentation/MCP_IMPLEMENTATION_PLAN.md`.
+- The active implementation plan is `Documentation/MCP_LOCAL_IMPLEMENTATION_PLAN.md`; `Documentation/MCP_IMPLEMENTATION_PLAN.md` remains the preserved remote plan.
 
-## Current Phase Status
+## Local MCP Phase Status
+
+- **Local Phase 0: complete.** The local pivot, transport, security boundaries, generic UI, and preservation of the remote backend are documented.
+- **Local Phase 1: implementation complete.** The shared generated tool manifest, transport-neutral renderer request host, Rust broker, deadlines, limits, cancellation, and local/remote response routing are present.
+- **Local Phase 2: implementation complete and runtime-smoke-validated.** The embedded stateless Streamable HTTP server binds only to `127.0.0.1`, validates Host/Origin, exposes the 11-tool manifest, supports start/stop, and cancels pending work without replay. A real NoteX process initialized the server, listed all 11 tools, stopped it, closed the port, and exited with code 0.
+- **Local Phase 3: complete and validated.** Profile start/stop lifecycle, generic configuration modal, clipboard actions, editable persisted port, PT/EN copy, localized errors, responsive layout, and local sidebar presence are implemented. The remote bridge no longer initializes automatically.
+- **Local Phase 4: not started.** The next implementation phase validates all six reads and five writes end to end through the local HTTP endpoint against a copied schema-v3 database.
+- **Local Phase 5: not started.** Final security, multi-instance, CI, packaging, and release validation remain.
+
+The user reported that the Local Phase 3 frontend typecheck and style checks passed. The authorized visual run covered PT/dark at 1440x900 and EN/light at 1440x900 and 390x844. It confirmed start/stop controls, all lifecycle/error labels, local sidebar presence, clipboard success feedback, port editing, URL refresh, online port locking, and no horizontal overflow at 390 px. No application runtime error was found; the preview only reported the existing React Router future warnings and a missing development favicon.
+
+## Remaining Local Implementation
+
+### Local Phase 4: End-to-End Tools
+
+- Exercise the six read tools through the embedded endpoint.
+- Exercise the five write tools and validate rich text, trash read-only behavior, unknown IDs, versions, dirty drafts, and atomic note-plus-block creation.
+- Confirm stop/close during a request never replays or executes work later.
+- Snapshot a copy of a schema-v3 database before and after the local MCP flow.
+
+### Local Phase 5: Hardening and Distribution
+
+- Validate invalid Host/Origin, occupied ports, payload/rate limits, and multiple NoteX instances.
+- Add dedicated local MCP frontend/Rust CI coverage.
+- Validate the generic configuration flow on supported Windows viewports and themes.
+- Complete packaging and user documentation without requiring the remote backend.
+
+## Remote MCP Phase Status
 
 - **Phase 0: complete and validated.**
 - **Phase 1: implementation complete and locally validated.**
@@ -42,6 +70,7 @@ The desktop dispatcher now contains all eleven read and write commands. The five
 - Presence, WebSocket tickets, pending requests, arguments, results, and note content remain memory-only in the backend.
 - Disconnects, backend restarts, and timeouts fail in-flight requests without queueing or replay.
 - No existing note, block, tag, collection, attachment, or other local user data was migrated or modified by this work.
+- The local MCP port is persisted only as `mcpPort` inside the existing `user_settings.payload` JSON. No SQL table, column, migration, or schema-version change was added.
 - The only Phase 3 change in `sqlite_storage.rs` is a `#[cfg(test)]` regression test; production schema code remains unchanged at version 3.
 
 ## Phase 0 Result
@@ -239,7 +268,7 @@ The following checks require deployment inputs that are not present in the repos
 
 No production secret or authentication bypass should be committed to avoid this gate.
 
-## Remaining Implementation
+## Remaining Remote Implementation
 
 ### Phase 3: External Read-Only Gate
 
@@ -265,7 +294,13 @@ No production secret or authentication bypass should be committed to avoid this 
 - Validate compatible custom remote MCP clients without platform-specific backend code.
 - Publish the backend image and signed NoteX desktop build only after the external gate passes.
 
-## Exact Resume Sequence
+## Local Resume Sequence
+
+1. Begin Local Phase 4 with the six read tools through the real embedded endpoint and a copied schema-v3 database.
+2. Continue with the five write tools only after the read path is confirmed.
+3. Complete Local Phase 5 hardening, CI, packaging, and documentation.
+
+## Remote Resume Sequence
 
 1. Run `git status --short` and confirm the uncommitted Phase 4 files are still present.
 2. Review the Phase 4 diff without discarding or rewriting the committed baseline.

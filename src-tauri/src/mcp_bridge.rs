@@ -15,12 +15,17 @@ use tokio_tungstenite::{
     tungstenite::{self, Message},
 };
 
-use crate::external_links;
+use crate::{
+    external_links,
+    mcp_request_broker::{
+        DesktopResponse, McpRequestBroker, McpRequestEvent as BridgeRequestEvent,
+        REQUEST_EVENT,
+    },
+};
 
 const BRIDGE_PROTOCOL_VERSION: &str = "1.0";
 const MAX_BRIDGE_FRAME_BYTES: usize = 2 * 1024 * 1024;
 const STATE_EVENT: &str = "notex://mcp-state";
-const REQUEST_EVENT: &str = "notex://mcp-request";
 const CREDENTIAL_SERVICE: &str = "com.mapherez.notex.mcp";
 const CREDENTIAL_ACCOUNT: &str = "desktop-refresh-token";
 const DESKTOP_SESSION_HEADER: &str = "x-notex-desktop-session";
@@ -1478,15 +1483,6 @@ struct PublicHttpError {
     code: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BridgeRequestEvent {
-    request_id: String,
-    command: String,
-    input: Value,
-    deadline_at: String,
-}
-
 #[derive(Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum ServerFrame {
@@ -1539,27 +1535,6 @@ impl From<ServerFrame> for BridgeRequestEvent {
             _ => unreachable!("only request frames become renderer events"),
         }
     }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DesktopResponse {
-    request_id: String,
-    ok: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    result: Option<Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    error: Option<DesktopBridgeError>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DesktopBridgeError {
-    code: String,
-    message: String,
-    retryable: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    current_version: Option<u64>,
 }
 
 #[derive(Serialize)]
@@ -1726,8 +1701,15 @@ pub async fn notex_mcp_delete_account(
 #[tauri::command]
 pub async fn notex_mcp_respond(
     manager: State<'_, McpManager>,
+    request_broker: State<'_, McpRequestBroker>,
     response: DesktopResponse,
 ) -> Result<(), String> {
+    if McpRequestBroker::owns_request_id(&response.request_id) {
+        return request_broker
+            .respond(response)
+            .await
+            .map_err(|error| error.to_string());
+    }
     manager
         .send_bridge_response(response)
         .await

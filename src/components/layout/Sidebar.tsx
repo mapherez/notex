@@ -18,7 +18,7 @@ import { appSettings, navigationSettings } from '../../config/appSettings';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useNotesStore } from '../../store/useNotesStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
-import { useMcpStore } from '../../store/useMcpStore';
+import { useLocalMcpStore } from '../../store/useLocalMcpStore';
 import { latestPatchNoteVersion, PatchNotesModal } from '../ui/PatchNotesModal';
 
 const navIcons = {
@@ -39,7 +39,9 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
   const collections = useKnowledgeStore((state) => state.collections);
   const hasTrashedNotes = useNotesStore((state) => state.notes.some((note) => note.isTrashed));
   const activeCollectionId = searchParams.get('collection');
-  const mcpOnline = useMcpStore((state) => state.connection.state === 'online');
+  const mcpOnline = useLocalMcpStore(
+    (state) => state.connection.state === 'running' && state.connection.rendererReady,
+  );
 
   useEffect(() => {
     if (!isTauri()) {

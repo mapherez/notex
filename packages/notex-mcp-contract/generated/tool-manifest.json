@@ -1,0 +1,584 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": "1.0",
+  "tools": [
+    {
+      "name": "notex_status",
+      "scope": "notex:read",
+      "title": "notex status",
+      "description": "Check whether NoteX is ready to handle MCP requests.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "search_notes",
+      "scope": "notex:read",
+      "title": "search notes",
+      "description": "Search NoteX notes by text, including active notes or trash when requested.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "query": {
+            "default": "",
+            "type": "string",
+            "maxLength": 500
+          },
+          "location": {
+            "default": "active",
+            "type": "string",
+            "enum": [
+              "active",
+              "trash",
+              "all"
+            ]
+          },
+          "limit": {
+            "default": 20,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        }
+      }
+    },
+    {
+      "name": "get_note",
+      "scope": "notex:read",
+      "title": "get note",
+      "description": "Read one NoteX note header and its ordered block summaries.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "noteId"
+        ]
+      }
+    },
+    {
+      "name": "get_note_block",
+      "scope": "notex:read",
+      "title": "get note block",
+      "description": "Read the exact supported rich-text content of one NoteX note block.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "blockId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "noteId",
+          "blockId"
+        ]
+      }
+    },
+    {
+      "name": "list_tags",
+      "scope": "notex:read",
+      "title": "list tags",
+      "description": "List existing NoteX tags. Use returned IDs in write tools.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "query": {
+            "default": "",
+            "type": "string",
+            "maxLength": 200
+          },
+          "limit": {
+            "default": 100,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "list_collections",
+      "scope": "notex:read",
+      "title": "list collections",
+      "description": "List existing NoteX collections. Use returned IDs in write tools.",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "query": {
+            "default": "",
+            "type": "string",
+            "maxLength": 200
+          },
+          "limit": {
+            "default": 100,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "create_note",
+      "scope": "notex:create",
+      "title": "create note",
+      "description": "Create a NoteX note, optionally with blocks and existing tags.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "html"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500000
+              }
+            },
+            "required": [
+              "format",
+              "value"
+            ]
+          },
+          "subtitle": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "html"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500000
+              }
+            },
+            "required": [
+              "format",
+              "value"
+            ]
+          },
+          "collectionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tagIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "blocks": {
+            "default": [],
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "object",
+                  "properties": {
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "text",
+                        "html"
+                      ]
+                    },
+                    "value": {
+                      "type": "string",
+                      "maxLength": 500000
+                    }
+                  },
+                  "required": [
+                    "format",
+                    "value"
+                  ]
+                },
+                "content": {
+                  "type": "object",
+                  "properties": {
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "text",
+                        "html"
+                      ]
+                    },
+                    "value": {
+                      "type": "string",
+                      "maxLength": 500000
+                    }
+                  },
+                  "required": [
+                    "format",
+                    "value"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "update_note_header",
+      "scope": "notex:edit",
+      "title": "update note header",
+      "description": "Update selected header fields of a NoteX note using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "html"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500000
+              }
+            },
+            "required": [
+              "format",
+              "value"
+            ]
+          },
+          "subtitle": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "html"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500000
+              }
+            },
+            "required": [
+              "format",
+              "value"
+            ]
+          },
+          "collectionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion"
+        ]
+      }
+    },
+    {
+      "name": "add_note_block",
+      "scope": "notex:edit",
+      "title": "add note block",
+      "description": "Append a block to a NoteX note using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "html"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500000
+              }
+            },
+            "required": [
+              "format",
+              "value"
+            ]
+          },
+          "content": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "html"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500000
+              }
+            },
+            "required": [
+              "format",
+              "value"
+            ]
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion"
+        ]
+      }
+    },
+    {
+      "name": "update_note_block",
+      "scope": "notex:edit",
+      "title": "update note block",
+      "description": "Update selected fields of a NoteX block using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "blockId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "html"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500000
+              }
+            },
+            "required": [
+              "format",
+              "value"
+            ]
+          },
+          "content": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "html"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 500000
+              }
+            },
+            "required": [
+              "format",
+              "value"
+            ]
+          }
+        },
+        "required": [
+          "noteId",
+          "blockId",
+          "expectedVersion"
+        ]
+      }
+    },
+    {
+      "name": "set_note_tags",
+      "scope": "notex:edit",
+      "title": "set note tags",
+      "description": "Replace a NoteX note tag set with existing tag IDs using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "tagIds": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "tagIds"
+        ]
+      }
+    }
+  ]
+}

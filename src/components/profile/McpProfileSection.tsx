@@ -1,81 +1,65 @@
-import {
-  Cable,
-  EllipsisVertical,
-  Loader2,
-  LogIn,
-  LogOut,
-  ShieldOff,
-  Trash2,
-  UserPlus,
-  X,
-} from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { useClickOutside } from '../../core/utils/useClickOutside';
+import { Cable, Loader2, Play, Settings2, Square } from 'lucide-react';
+import { useState } from 'react';
 import { useI18n } from '../../i18n/I18nProvider';
-import { useMcpStore } from '../../store/useMcpStore';
+import { useLocalMcpStore } from '../../store/useLocalMcpStore';
 import { useToastStore } from '../../store/useToastStore';
+import { McpConfigurationModal } from './McpConfigurationModal';
 
-type Confirmation = 'revoke' | 'delete' | null;
+const localErrorTranslationKeys: Record<string, string> = {
+  INITIALIZATION_FAILED: 'profile.mcp.localErrors.initializationFailed',
+  INVALID_PORT: 'profile.mcp.localErrors.invalidPort',
+  INVALID_STATE: 'profile.mcp.localErrors.invalidState',
+  PORT_UNAVAILABLE: 'profile.mcp.localErrors.portUnavailable',
+  RENDERER_NOT_READY: 'profile.mcp.localErrors.rendererNotReady',
+  SERVER_STOPPED: 'profile.mcp.localErrors.serverStopped',
+};
 
 export function McpProfileSection() {
   const { t } = useI18n();
-  const connection = useMcpStore((state) => state.connection);
-  const action = useMcpStore((state) => state.action);
-  const startAuthorization = useMcpStore((state) => state.startAuthorization);
-  const cancelAuthorization = useMcpStore((state) => state.cancelAuthorization);
-  const logout = useMcpStore((state) => state.logout);
-  const revokeAiAccess = useMcpStore((state) => state.revokeAiAccess);
-  const deleteAccount = useMcpStore((state) => state.deleteAccount);
+  const connection = useLocalMcpStore((state) => state.connection);
+  const action = useLocalMcpStore((state) => state.action);
+  const start = useLocalMcpStore((state) => state.start);
+  const stop = useLocalMcpStore((state) => state.stop);
   const pushToast = useToastStore((state) => state.pushToast);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [confirmation, setConfirmation] = useState<Confirmation>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
+  const [configurationOpen, setConfigurationOpen] = useState(false);
 
-  const online = connection.state === 'online';
-  const authorizing = connection.state === 'authorizing';
-  const hasDesktopSession =
-    Boolean(connection.email) ||
-    connection.state === 'connecting' ||
-    connection.state === 'online' ||
-    connection.state === 'offline';
-  const busy = action !== null;
+  const serverRunning = connection.state === 'running';
+  const online = serverRunning && connection.rendererReady;
+  const transitioning =
+    connection.state === 'starting' ||
+    connection.state === 'stopping' ||
+    action !== null;
+  const displayedState =
+    serverRunning && !connection.rendererReady ? 'stopped' : connection.state;
+  const errorMessageKey = connection.errorCode
+    ? localErrorTranslationKeys[connection.errorCode]
+    : undefined;
 
-  useEffect(() => {
-    if (!menuOpen) {
-      return;
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setMenuOpen(false);
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [menuOpen]);
-
-  async function run(actionToRun: () => Promise<void>, successMessage?: string) {
+  async function run(actionToRun: () => Promise<void>) {
     try {
       await actionToRun();
-      if (successMessage) {
-        pushToast(successMessage, 'success');
-      }
     } catch {
-      pushToast(t('profile.mcp.actionFailed'), 'warning');
+      pushToast(t('profile.mcp.localActionFailed'), 'warning');
     }
   }
 
-  async function confirmAction() {
-    const selected = confirmation;
-    setConfirmation(null);
-    if (selected === 'revoke') {
-      await run(revokeAiAccess, t('profile.mcp.accessRevoked'));
-    } else if (selected === 'delete') {
-      await run(deleteAccount, t('profile.mcp.accountDeleted'));
+  function actionLabel() {
+    if (connection.state === 'starting' || action === 'start') {
+      return t('profile.mcp.startingServer');
     }
+    if (connection.state === 'stopping' || action === 'stop') {
+      return t('profile.mcp.stoppingServer');
+    }
+    if (serverRunning) {
+      return t('profile.mcp.stopServer');
+    }
+    if (connection.state === 'error') {
+      return t('profile.mcp.retryServer');
+    }
+    return t('profile.mcp.startServer');
   }
+
+  const ActionIcon = transitioning ? Loader2 : serverRunning ? Square : Play;
 
   return (
     <section className="profile-section mcp-profile-section">
@@ -83,152 +67,50 @@ export function McpProfileSection() {
         <h2 className="profile-section-title">{t('profile.mcp.title')}</h2>
         <span className={online ? 'mcp-status mcp-status--online' : 'mcp-status'}>
           <span className="mcp-status__dot" aria-hidden="true" />
-          {t(`profile.mcp.states.${connection.state}`)}
+          {t(`profile.mcp.localStates.${displayedState}`)}
         </span>
       </div>
 
       <div className="mcp-account-row">
         <Cable className="mcp-account-row__icon" aria-hidden="true" />
         <span>
-          <span className="profile-row-label">{t('profile.mcp.account')}</span>
-          <span className="profile-row-description mcp-account-email">
-            {connection.email ?? t('profile.mcp.noAccount')}
-          </span>
+          <span className="profile-row-label">{t('profile.mcp.localServer')}</span>
+          <span className="profile-row-description mcp-account-email">{connection.url}</span>
         </span>
       </div>
 
-      {connection.errorCode ? (
+      {connection.state === 'error' ? (
         <p className="mcp-error" role="status">
-          {t('profile.mcp.connectionError')}
+          {t(errorMessageKey ?? 'profile.mcp.localServerError')}
         </p>
       ) : null}
 
-      {authorizing ? (
+      <div className="mcp-local-actions">
         <button
           className="mcp-command-button"
           type="button"
-          disabled={busy}
-          onClick={() => void run(cancelAuthorization)}
+          disabled={transitioning}
+          onClick={() => void run(serverRunning ? stop : start)}
         >
-          <Loader2 className="mcp-command-button__spinner" />
-          <span>{t('profile.mcp.cancel')}</span>
+          <ActionIcon
+            className={transitioning ? 'mcp-command-button__spinner' : undefined}
+          />
+          <span>{actionLabel()}</span>
         </button>
-      ) : hasDesktopSession ? (
-        <div className="mcp-session-actions">
-          <button
-            className="mcp-command-button"
-            type="button"
-            disabled={busy}
-            onClick={() => void run(logout, t('profile.mcp.loggedOut'))}
-          >
-            {action === 'logout' ? <Loader2 className="mcp-command-button__spinner" /> : <LogOut />}
-            <span>{t('profile.mcp.logout')}</span>
-          </button>
-          <div className="mcp-overflow" ref={menuRef}>
-            <button
-              className="icon-button mcp-overflow__trigger"
-              type="button"
-              aria-label={t('profile.mcp.moreActions')}
-              aria-expanded={menuOpen}
-              aria-haspopup="menu"
-              disabled={busy}
-              onClick={() => setMenuOpen((open) => !open)}
-            >
-              <EllipsisVertical />
-            </button>
-            {menuOpen ? (
-              <div className="mcp-overflow__menu" role="menu">
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setConfirmation('revoke');
-                  }}
-                >
-                  <ShieldOff />
-                  <span>{t('profile.mcp.revokeAccess')}</span>
-                </button>
-                <button
-                  className="danger"
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setConfirmation('delete');
-                  }}
-                >
-                  <Trash2 />
-                  <span>{t('profile.mcp.deleteAccount')}</span>
-                </button>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : (
-        <div className="mcp-auth-actions">
-          <button
-            className="mcp-command-button"
-            type="button"
-            disabled={busy}
-            onClick={() => void run(() => startAuthorization('register'))}
-          >
-            {action === 'register' ? <Loader2 className="mcp-command-button__spinner" /> : <UserPlus />}
-            <span>{t('profile.mcp.register')}</span>
-          </button>
-          <button
-            className="mcp-command-button"
-            type="button"
-            disabled={busy}
-            onClick={() => void run(() => startAuthorization('login'))}
-          >
-            {action === 'login' ? <Loader2 className="mcp-command-button__spinner" /> : <LogIn />}
-            <span>{t('profile.mcp.login')}</span>
-          </button>
-        </div>
-      )}
+        <button
+          className="mcp-command-button"
+          type="button"
+          onClick={() => setConfigurationOpen(true)}
+        >
+          <Settings2 />
+          <span>{t('profile.mcp.configureServer')}</span>
+        </button>
+      </div>
 
-      {confirmation ? (
-        <div className="modal-backdrop">
-          <section
-            className="choice-modal delete-confirm-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="mcp-confirm-title"
-          >
-            <h2 id="mcp-confirm-title">
-              {t(
-                confirmation === 'revoke'
-                  ? 'profile.mcp.revokeConfirmTitle'
-                  : 'profile.mcp.deleteConfirmTitle',
-              )}
-            </h2>
-            <p>
-              {t(
-                confirmation === 'revoke'
-                  ? 'profile.mcp.revokeConfirmDescription'
-                  : 'profile.mcp.deleteConfirmDescription',
-              )}
-            </p>
-            <div className="choice-modal-actions two-column-actions">
-              <button type="button" disabled={busy} onClick={() => setConfirmation(null)}>
-                <X />
-                <span>{t('common.cancel')}</span>
-              </button>
-              <button type="button" disabled={busy} onClick={() => void confirmAction()}>
-                {confirmation === 'revoke' ? <ShieldOff /> : <Trash2 />}
-                <span>
-                  {t(
-                    confirmation === 'revoke'
-                      ? 'profile.mcp.revokeAccess'
-                      : 'profile.mcp.deleteAccount',
-                  )}
-                </span>
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
+      <McpConfigurationModal
+        open={configurationOpen}
+        onClose={() => setConfigurationOpen(false)}
+      />
     </section>
   );
 }

@@ -279,6 +279,86 @@ export const commandScope: Record<CommandName, McpScope> = {
   set_note_tags: 'notex:edit',
 };
 
+export type ToolAnnotations = {
+  readOnlyHint: boolean;
+  destructiveHint: boolean;
+  idempotentHint: boolean;
+  openWorldHint: boolean;
+};
+
+export type ToolMetadata = {
+  title: string;
+  description: string;
+  annotations: ToolAnnotations;
+};
+
+const toolDescriptions: Record<CommandName, string> = {
+  notex_status: 'Check whether NoteX is ready to handle MCP requests.',
+  search_notes: 'Search NoteX notes by text, including active notes or trash when requested.',
+  get_note: 'Read one NoteX note header and its ordered block summaries.',
+  get_note_block: 'Read the exact supported rich-text content of one NoteX note block.',
+  list_tags: 'List existing NoteX tags. Use returned IDs in write tools.',
+  list_collections: 'List existing NoteX collections. Use returned IDs in write tools.',
+  create_note: 'Create a NoteX note, optionally with blocks and existing tags.',
+  update_note_header: 'Update selected header fields of a NoteX note using optimistic versioning.',
+  add_note_block: 'Append a block to a NoteX note using optimistic versioning.',
+  update_note_block: 'Update selected fields of a NoteX block using optimistic versioning.',
+  set_note_tags: 'Replace a NoteX note tag set with existing tag IDs using optimistic versioning.',
+};
+
+function isIdempotentTool(command: CommandName): boolean {
+  return (
+    command.startsWith('get_') ||
+    command.startsWith('list_') ||
+    command === 'search_notes'
+  );
+}
+
+export const toolMetadata = Object.fromEntries(
+  commandNames.map((command) => [
+    command,
+    {
+      title: command.replaceAll('_', ' '),
+      description: toolDescriptions[command],
+      annotations: {
+        readOnlyHint: commandScope[command] === 'notex:read',
+        destructiveHint: false,
+        idempotentHint: isIdempotentTool(command),
+        openWorldHint: false,
+      },
+    } satisfies ToolMetadata,
+  ]),
+) as Record<CommandName, ToolMetadata>;
+
+export type ToolManifestEntry = ToolMetadata & {
+  name: CommandName;
+  scope: McpScope;
+  inputSchema: Record<string, unknown>;
+};
+
+export type ToolManifest = {
+  schemaVersion: 1;
+  protocolVersion: typeof BRIDGE_PROTOCOL_VERSION;
+  tools: ToolManifestEntry[];
+};
+
+export function createToolManifest(): ToolManifest {
+  return {
+    schemaVersion: 1,
+    protocolVersion: BRIDGE_PROTOCOL_VERSION,
+    tools: commandNames.map((command) => ({
+      name: command,
+      scope: commandScope[command],
+      ...toolMetadata[command],
+      inputSchema: z.toJSONSchema(commandInputSchemas[command], {
+        target: 'draft-07',
+        io: 'input',
+        reused: 'inline',
+      }) as Record<string, unknown>,
+    })),
+  };
+}
+
 export function parseCommandInput<T extends CommandName>(name: T, input: unknown): CommandInput<T> {
   return commandInputSchemas[name].parse(input) as CommandInput<T>;
 }

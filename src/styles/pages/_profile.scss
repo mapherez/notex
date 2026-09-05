@@ -386,6 +386,11 @@ button.security-row:hover {
   gap: var(--nx-space-2);
 }
 
+.mcp-local-actions {
+  display: grid;
+  gap: var(--nx-space-2);
+}
+
 .mcp-session-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -431,6 +436,118 @@ button.security-row:hover {
 
 .mcp-command-button__spinner {
   animation: spin 900ms linear infinite;
+}
+
+.mcp-configuration-modal {
+  width: min(100%, 36rem);
+}
+
+.mcp-configuration-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nx-space-3);
+}
+
+.mcp-configuration-modal__header .icon-button,
+.mcp-configuration-copy-url,
+.mcp-configuration-save-port {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+}
+
+.mcp-configuration-list {
+  display: grid;
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-surface);
+}
+
+.mcp-configuration-list__row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(7.5rem, 0.4fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--nx-space-3);
+  padding: var(--nx-space-3);
+}
+
+.mcp-configuration-list__row + .mcp-configuration-list__row {
+  border-top: 1px solid var(--nx-color-border);
+}
+
+.mcp-configuration-list dt {
+  color: var(--nx-color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.mcp-configuration-list dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--nx-color-text);
+  font-size: 0.86rem;
+}
+
+.mcp-configuration-url {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--nx-space-2);
+}
+
+.mcp-configuration-url code {
+  overflow: hidden;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcp-configuration-copy-url {
+  border: 1px solid var(--nx-color-border);
+  background: var(--nx-color-surface-subtle);
+}
+
+.mcp-configuration-port {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--nx-space-2);
+}
+
+.mcp-configuration-port input {
+  width: 100%;
+  min-width: 0;
+  height: 2.25rem;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-input);
+  color: var(--nx-color-text);
+  padding: 0 var(--nx-space-3);
+  font: inherit;
+}
+
+.mcp-configuration-port input:focus-visible {
+  border-color: var(--nx-color-accent-strong);
+  outline: none;
+}
+
+.mcp-configuration-port input:disabled {
+  opacity: 0.62;
+}
+
+.mcp-configuration-save-port {
+  border: 1px solid var(--nx-color-border);
+  background: var(--nx-color-surface-subtle);
+}
+
+.mcp-configuration-save-port:disabled {
+  cursor: default;
+  opacity: 0.5;
 }
 
 .mcp-overflow {

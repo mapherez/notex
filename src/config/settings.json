@@ -22,6 +22,7 @@
     "userSettings": {
       "theme": "dark",
       "language": "pt",
+      "mcpPort": 47321,
       "username": "Local user",
       "startupPage": "/",
       "preferredLayout": "list",
