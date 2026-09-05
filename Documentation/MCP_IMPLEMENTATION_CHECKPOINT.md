@@ -7,17 +7,30 @@ Date: 2026-09-05
 - The active direction is now the embedded local MCP server documented in `Documentation/MCP_LOCAL_IMPLEMENTATION_PLAN.md`.
 - The local path is `local AI client -> Streamable HTTP on 127.0.0.1 -> NoteX/Tauri -> existing renderer dispatcher -> stores/repository -> SQLite v3`.
 - The remote backend, Google OAuth, and WebSocket bridge remain preserved for future web-platform access but are no longer the current implementation priority.
-- The current uncommitted Phase 4 dispatcher/store/rich-text work is transport-independent and must be preserved for the local path.
-- Local MCP phases 0 through 3 are now implemented. Phase 3 still requires the explicitly authorized frontend and visual validation described below.
+- The Phase 4 dispatcher/store/rich-text work is transport-independent and is reused by the local path.
+- Local MCP phases 0 through 3 are implemented and validated.
 - The local MVP authentication policy is fixed as loopback-only without login or bearer token, with strict Host/Origin validation and no permissive CORS.
 
 ## Repository State
 
 - Branch: `add_mcp`.
-- Current committed baseline: `8662938` (`feat: update Tiptap dependencies and add underline extension tests`).
-- The branch matched `origin/add_mcp` before the Phase 4 work described below began.
-- Phase 4 production changes are currently uncommitted and must not be discarded before validation.
+- Current implementation commit: `02a1790` (`feat: implement local MCP server with tool manifest generation and configuration UI`).
+- At this checkpoint update, the only working-tree change is this checkpoint document.
 - The active implementation plan is `Documentation/MCP_LOCAL_IMPLEMENTATION_PLAN.md`; `Documentation/MCP_IMPLEMENTATION_PLAN.md` remains the preserved remote plan.
+
+## Cross-Machine Resume Point
+
+- Last completed local task: **Local Phase 4, step 4 (read-boundary validation)**.
+- Next task only: **Local Phase 4, step 5**, exercising `create_note`, `update_note_header`, `add_note_block`, `update_note_block`, and `set_note_tags` through the real embedded HTTP endpoint.
+- Do not begin rich-text attack cases, concurrency, timeout, no-replay, broad test suites, dependency updates, or Local Phase 5 in the same step unless the user explicitly authorizes them.
+- The production implementation is in Git at commit `02a1790`. This checkpoint update must also be committed and transferred before changing PCs.
+- `output/mcp-phase4/` is intentionally ignored and does not transfer through Git. It contains only local test configuration, validators, snapshots, and an isolated Cargo target; none of it is required by the production app.
+- `C:\Users\Mapherez\AppData\Roaming\com.mapherez.notex.mcp-phase4` is also machine-local and must not be copied as application source or committed.
+- On another PC, recreate a fresh isolated schema-v3 database from that PC's NoteX data while NoteX is closed. Never run Phase 4 writes against the normal `com.mapherez.notex` app-data directory.
+- Use an ignored Tauri overlay with identifier `com.mapherez.notex.mcp-phase4` and a loopback-only development command such as `.\\node_modules\\.bin\\vite.cmd --host 127.0.0.1`.
+- Use an ignored Cargo target such as `output/mcp-phase4/target` if the normal Rust target is locked. Start Tauri through the direct local CLI so `--config` is preserved: `.\\node_modules\\.bin\\tauri.cmd dev --config output\\mcp-phase4\\tauri.phase4.conf.json`.
+- Before write validation, record a schema/table/column/count snapshot of the isolated database. Create any required trash fixture only in that isolated database and verify the UI displays the isolated database path.
+- The user's standing instruction remains: run only the specifically authorized test step and stop before the next test category.
 
 ## Local MCP Phase Status
 
@@ -25,16 +38,23 @@ Date: 2026-09-05
 - **Local Phase 1: implementation complete.** The shared generated tool manifest, transport-neutral renderer request host, Rust broker, deadlines, limits, cancellation, and local/remote response routing are present.
 - **Local Phase 2: implementation complete and runtime-smoke-validated.** The embedded stateless Streamable HTTP server binds only to `127.0.0.1`, validates Host/Origin, exposes the 11-tool manifest, supports start/stop, and cancels pending work without replay. A real NoteX process initialized the server, listed all 11 tools, stopped it, closed the port, and exited with code 0.
 - **Local Phase 3: complete and validated.** Profile start/stop lifecycle, generic configuration modal, clipboard actions, editable persisted port, PT/EN copy, localized errors, responsive layout, and local sidebar presence are implemented. The remote bridge no longer initializes automatically.
-- **Local Phase 4: not started.** The next implementation phase validates all six reads and five writes end to end through the local HTTP endpoint against a copied schema-v3 database.
+- **Local Phase 4: in progress.** The isolated schema-v3 database baseline, real embedded-server discovery, all six read tools, and read-boundary validation are complete. The next step is to exercise the five MCP write tools against the isolated fixture.
 - **Local Phase 5: not started.** Final security, multi-instance, CI, packaging, and release validation remain.
 
 The user reported that the Local Phase 3 frontend typecheck and style checks passed. The authorized visual run covered PT/dark at 1440x900 and EN/light at 1440x900 and 390x844. It confirmed start/stop controls, all lifecycle/error labels, local sidebar presence, clipboard success feedback, port editing, URL refresh, online port locking, and no horizontal overflow at 390 px. No application runtime error was found; the preview only reported the existing React Router future warnings and a missing development favicon.
+
+Local Phase 4 steps 1 and 2 were validated against the isolated Tauri identifier `com.mapherez.notex.mcp-phase4`. Its app-data directory contains a byte-identical copy of the original database taken while NoteX was closed. The baseline has `sqlite_schema_version = 3`, nine application tables, and no schema or row-count difference after discovery. The isolated app displayed the copied database path, started MCP on `127.0.0.1:47321`, returned HTTP 200 for MCP `initialize` with protocol `2025-06-18` and server `NoteX 2.1.0`, and returned all 11 expected tools from `tools/list`. Stopping MCP closed the port, the app exited with code 0, and the original database hash remained unchanged. Reusable ignored artifacts are in `output/mcp-phase4/`, including the isolated Cargo target and structural snapshots.
+
+Local Phase 4 step 3 exercised all six read tools through the real embedded endpoint. `notex_status` reported online; `search_notes` returned 18 active notes and no trash entries; `get_note` returned a writable active note with three correctly ordered blocks; `get_note_block` returned both text and HTML rich content; `list_tags` returned 35 entries; and `list_collections` returned three entries. The validator did not print note payloads, titles, IDs, or emails. After shutdown, the schema-and-count snapshot remained identical to the baseline, the original database hash was unchanged, the MCP port was closed, and the app exited with code 0.
+
+Local Phase 4 step 4 added one controlled trash note and one block only to the isolated database, retaining schema version 3 and the same nine tables. Through the real MCP endpoint, `search_notes` returned disjoint `active` and `trash` partitions whose counts matched `all`; both `get_note` and `get_note_block` marked trash as read-only; invalid location/limit inputs returned `INVALID_INPUT`; missing and mismatched note/block references returned `NOT_FOUND`; and rich-text output removed executable content, unsafe protocols, and local file metadata. The validator printed no note payloads, titles, IDs, or emails. After shutdown, the fixture snapshot was unchanged, the original database hash was unchanged, the MCP port was closed, and the app exited with code 0.
 
 ## Remaining Local Implementation
 
 ### Local Phase 4: End-to-End Tools
 
-- Exercise the six read tools through the embedded endpoint.
+- Isolated database preparation, real discovery, and all six read tools are complete.
+- Read boundaries, trash read-only behavior, invalid inputs, missing IDs, and rich-text output safety are complete.
 - Exercise the five write tools and validate rich text, trash read-only behavior, unknown IDs, versions, dirty drafts, and atomic note-plus-block creation.
 - Confirm stop/close during a request never replays or executes work later.
 - Snapshot a copy of a schema-v3 database before and after the local MCP flow.
@@ -296,8 +316,8 @@ No production secret or authentication bypass should be committed to avoid this 
 
 ## Local Resume Sequence
 
-1. Begin Local Phase 4 with the six read tools through the real embedded endpoint and a copied schema-v3 database.
-2. Continue with the five write tools only after the read path is confirmed.
+1. Continue Local Phase 4 with the five write tools against the prepared isolated fixture.
+2. Validate rich-text inputs, unknown tag/collection IDs, optimistic versions, dirty drafts, trash write rejection, and atomic note-plus-block creation.
 3. Complete Local Phase 5 hardening, CI, packaging, and documentation.
 
 ## Remote Resume Sequence
