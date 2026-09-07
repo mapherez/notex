@@ -37,7 +37,6 @@ jobs:
 
     env:
       CI: true
-      NOTEX_MCP_BACKEND_URL: ${{ vars.NOTEX_MCP_BACKEND_URL }}
 
     steps:
       - name: Checkout
@@ -67,21 +66,6 @@ jobs:
         run: |
           if (-not $env:TAURI_SIGNING_PRIVATE_KEY) {
             throw "Missing TAURI_SIGNING_PRIVATE_KEY secret. Generate it with 'npx tauri signer generate' and add the private key to repository secrets."
-          }
-
-      - name: Verify optional remote MCP backend URL
-        shell: pwsh
-        run: |
-          if (-not $env:NOTEX_MCP_BACKEND_URL) {
-            Write-Host "Building with local MCP only."
-            exit 0
-          }
-          $uri = $null
-          if (-not [Uri]::TryCreate($env:NOTEX_MCP_BACKEND_URL, [UriKind]::Absolute, [ref]$uri) -or $uri.Scheme -ne "https") {
-            throw "NOTEX_MCP_BACKEND_URL must be an absolute HTTPS origin."
-          }
-          if ($uri.UserInfo -or $uri.Query -or $uri.Fragment -or $uri.AbsolutePath -ne "/") {
-            throw "NOTEX_MCP_BACKEND_URL must not contain credentials, a path, query, or fragment."
           }
 
       - name: Build Tauri app

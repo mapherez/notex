@@ -166,7 +166,7 @@ Validated result: 1 Vitest file / 8 tests passed, plus clean typecheck and build
 - Device registration and login open the system browser and poll the OAuth device flow.
 - Access tokens remain in memory; refresh credentials persist in Windows Credential Manager.
 - Stored backend endpoints and bridge URLs are constrained to the configured backend origin.
-- Production builds require the compile-time `NOTEX_MCP_BACKEND_URL` HTTPS origin.
+- Local MCP production builds do not require `NOTEX_MCP_BACKEND_URL`; the remote backend URL will be reintroduced only when the remote connection is activated for release.
 - Startup refreshes the credential, verifies the current desktop session, obtains a one-use bridge ticket, and opens WSS.
 - The bridge sends `ready` only after the NoteX stores and renderer dispatcher are initialized.
 - WebSocket reconnect uses fresh tickets and never replays commands.
@@ -293,7 +293,7 @@ The following checks require deployment inputs that are not present in the repos
 1. Select and deploy the public HTTPS/WSS backend origin.
 2. Configure a real Google OAuth web client and exact callback URL.
 3. Configure backend secrets, persistent `/data`, reverse-proxy TLS, Host/Origin allowlists, and health monitoring.
-4. Set the GitHub repository variable `NOTEX_MCP_BACKEND_URL` before producing a desktop release.
+4. A future remote-enabled release must provide `NOTEX_MCP_BACKEND_URL`; local MCP releases intentionally omit it.
 5. Validate Register for a new account, Register for an existing account, Login for an existing account, and Login rejection for an unknown account.
 6. Validate callback continuation, device polling, refresh rotation, restart, logout, AI revocation, account deletion, and immediate desktop-session replacement.
 7. Connect MCP Inspector or another external client through CIMD/DCR and PKCE.
