@@ -32,6 +32,12 @@ async function installMcpRequestHost() {
 async function respondToMcpRequest(request: McpBridgeRequest, appVersion: string) {
   let response: McpBridgeResponse;
   try {
+    // A renderer event may arrive after stop or timeout; never execute stale local work.
+    if (request.requestId.startsWith('local-mcp-') && !(await invoke<boolean>(
+      'notex_local_mcp_request_pending', { requestId: request.requestId },
+    ))) {
+      return;
+    }
     response = await dispatchMcpCommand(request, appVersion);
   } catch {
     response = {

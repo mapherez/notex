@@ -1,6 +1,20 @@
 # MCP Implementation Checkpoint
 
-Date: 2026-09-05
+Date: 2026-09-07
+
+## Latest Handoff (Overrides Historical Status Below)
+
+- The user has redirected work to finishing implementation before further testing. Do not run test suites or automated note actions without a new request. Launching the development app is for the user to try the implementation, not another validation campaign.
+- Five write tools were exercised successfully through the real local endpoint on the isolated database: create, header update, block append, block update and tags. The resulting note had three blocks, version 5, and preserved omitted fields.
+- Implemented in the current uncommitted work: local HTTP rate limiting (60 requests/second with HTTP 429 and Retry-After), preservation of conflict currentVersion/retryable metadata, a broker pending-request check before renderer execution, rejection of calls on cancelled server handlers, protection of running-server state against invalid start attempts, and bounded HTTP shutdown.
+- Added Windows frontend/contract/Rust CI, generated-manifest drift checking, a local-only release compilation gate, and made the remote backend URL optional in the release workflow. Added MCP_LOCAL_USER_GUIDE.md.
+- Added focused rich-text, draft coordination, dispatcher transaction and broker cancellation tests. Earlier in this session 23 frontend tests, 10 Rust tests, the frontend build and styles passed. Subsequent dispatcher/broker tests and the final lifecycle changes have NOT been validated; those results must not be represented as final coverage.
+- The real write-boundary validator was not executed. Automatic approval review rejected it; the user then stopped further testing. Rich-text inputs, same-note concurrency, dirty-draft UI, interrupted writes, timeout/no-replay, full SQLite row-content integrity and packaged release verification remain validation gates.
+- The pending-request check prevents already-cancelled local events from starting. It cannot roll back SQLite work already submitted or eliminate a cancellation race after the check. Do not claim guaranteed rollback on disconnect.
+- Removed the global SQLite transaction context. Each transaction callback now receives its own bound database adapter; all existing transaction call sites use that adapter. Concurrent batches and standalone writes no longer accidentally join another batch. SQLite schema, tables and Rust persistence commands are unchanged.
+- Closed broker receivers are pruned before applying the in-flight limit, preventing disconnected callers from exhausting the broker permanently.
+- Local Phase 4/5 implementation is in place, including the user guide, Windows CI and optional remote release configuration. Release acceptance remains pending; do not equate implemented with fully validated. No dependency upgrades or remote backend changes were made.
+- Current handoff: open Profile, Start MCP, then Configure MCP for the generic local URL. The development launcher in ignored output/mcp-phase4/start-local-dev.ps1 uses the normal NoteX identifier/data directory and a loopback Vite server. It performs no automated MCP calls. Historical isolated validation instructions below are not the current implementation task.
 
 ## Current Direction
 

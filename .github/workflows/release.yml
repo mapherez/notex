@@ -69,11 +69,12 @@ jobs:
             throw "Missing TAURI_SIGNING_PRIVATE_KEY secret. Generate it with 'npx tauri signer generate' and add the private key to repository secrets."
           }
 
-      - name: Verify MCP backend URL
+      - name: Verify optional remote MCP backend URL
         shell: pwsh
         run: |
           if (-not $env:NOTEX_MCP_BACKEND_URL) {
-            throw "Missing NOTEX_MCP_BACKEND_URL repository variable. Set it to the public HTTPS origin of the NoteX MCP backend."
+            Write-Host "Building with local MCP only."
+            exit 0
           }
           $uri = $null
           if (-not [Uri]::TryCreate($env:NOTEX_MCP_BACKEND_URL, [UriKind]::Absolute, [ref]$uri) -or $uri.Scheme -ne "https") {

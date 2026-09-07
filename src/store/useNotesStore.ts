@@ -121,7 +121,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     };
     const note = { ...noteWithoutStats, stats: calculateStats(noteWithoutStats) };
 
-    await db.transaction('rw', [db.notes, db.noteBlocks], async () => {
+    await db.transaction('rw', [db.notes, db.noteBlocks], async (db) => {
       await db.notes.put(stripNoteRelations(note));
       await db.noteBlocks.bulkPut(blocks);
     });
@@ -318,7 +318,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       updatedAt: now,
     };
     const updated = finalizeNote({ ...note, blocks: [...nextBlocks, block] });
-    await db.transaction('rw', [db.notes, db.noteBlocks], async () => {
+    await db.transaction('rw', [db.notes, db.noteBlocks], async (db) => {
       await db.noteBlocks.put(block);
       await db.notes.put(stripNoteRelations(updated));
     });
@@ -347,7 +347,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       ...note,
       blocks: blocks.map((item) => (item.id === blockId ? updatedBlock : item)),
     });
-    await db.transaction('rw', [db.notes, db.noteBlocks], async () => {
+    await db.transaction('rw', [db.notes, db.noteBlocks], async (db) => {
       await db.noteBlocks.put(updatedBlock);
       await db.notes.put(stripNoteRelations(updated));
     });
@@ -373,7 +373,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       .map((block, index) => ({ ...block, sortOrder: reordered.length + index }));
     const blocks = [...reordered, ...tail];
     const updated = finalizeNote({ ...note, blocks });
-    await db.transaction('rw', [db.notes, db.noteBlocks], async () => {
+    await db.transaction('rw', [db.notes, db.noteBlocks], async (db) => {
       await db.noteBlocks.bulkPut(blocks);
       await db.notes.put(stripNoteRelations(updated));
     });
@@ -389,7 +389,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       .map((block, index) => ({ ...block, sortOrder: index }));
     const files = (note.files ?? []).filter((file) => file.blockId !== blockId);
     const updated = finalizeNote({ ...note, blocks, files });
-    await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async () => {
+    await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
       await db.noteBlocks.delete(blockId);
       await db.noteFiles.where('blockId').equals(blockId).delete();
       await db.noteBlocks.bulkPut(blocks);
@@ -416,7 +416,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       createdAt: imported.createdAt,
     };
     const updated = finalizeNote({ ...note, files: [...(note.files ?? []), file] });
-    await db.transaction('rw', [db.notes, db.noteFiles], async () => {
+    await db.transaction('rw', [db.notes, db.noteFiles], async (db) => {
       await db.noteFiles.put(file);
       await db.notes.put(stripNoteRelations(updated));
     });
@@ -444,7 +444,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       blocks,
       files: (note.files ?? []).filter((file) => file.id !== fileId),
     });
-    await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async () => {
+    await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
       if (changedBlocks.length) {
         await db.noteBlocks.bulkPut(changedBlocks);
       }
@@ -479,7 +479,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     if (!ids.length) {
       return;
     }
-    await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async () => {
+    await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
       await db.notes.bulkDelete(ids);
       await db.noteBlocks.where('noteId').anyOf(ids).delete();
       await db.noteFiles.where('noteId').anyOf(ids).delete();

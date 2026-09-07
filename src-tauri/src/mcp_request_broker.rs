@@ -102,6 +102,11 @@ impl McpRequestBroker {
         request_id.starts_with(LOCAL_REQUEST_ID_PREFIX)
     }
 
+    pub(crate) async fn is_pending(&self, request_id: &str) -> bool {
+        self.inner.pending.lock().await.get(request_id)
+            .is_some_and(|sender| !sender.is_closed())
+    }
+
     pub(crate) async fn dispatch<R: Runtime>(
         &self,
         app: &AppHandle<R>,
@@ -126,6 +131,7 @@ impl McpRequestBroker {
 
         {
             let mut pending = self.inner.pending.lock().await;
+            pending.retain(|_, sender| !sender.is_closed());
             if pending.len() >= MAX_IN_FLIGHT_REQUESTS {
                 return Err(McpRequestBrokerError::Overloaded);
             }
@@ -194,5 +200,32 @@ impl McpRequestBroker {
         for sender in senders {
             let _ = sender.send(Err(McpRequestBrokerError::Cancelled));
         }
+    }
+}
+
+#[tauri::command]
+pub(crate) async fn notex_local_mcp_request_pending(
+    broker: tauri::State<'_, McpRequestBroker>,
+    request_id: String,
+) -> Result<bool, String> {
+    Ok(broker.is_pending(&request_id).await)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn cancelled_requests_cannot_execute_or_accept_late_responses() {
+        let broker = McpRequestBroker::new();
+        let (sender, receiver) = oneshot::channel();
+        broker.inner.pending.lock().await.insert("local-mcp-test".into(), sender);
+        assert!(broker.is_pending("local-mcp-test").await);
+        broker.cancel_all().await;
+        assert!(matches!(receiver.await.unwrap(), Err(McpRequestBrokerError::Cancelled)));
+        assert!(!broker.is_pending("local-mcp-test").await);
+        let late = DesktopResponse { request_id: "local-mcp-test".into(), ok: true, result: Some(Value::Null), error: None };
+        assert!(matches!(broker.respond(late).await, Err(McpRequestBrokerError::UnknownRequest)));
+        assert!(broker.inner.pending.lock().await.is_empty());
     }
 }

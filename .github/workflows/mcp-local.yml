@@ -1,0 +1,39 @@
+name: Local MCP and Desktop CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, add_mcp]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mcp-local-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - run: npm ci
+      - run: npm --prefix packages/notex-mcp-contract ci
+      - run: npm --prefix packages/notex-mcp-contract test
+      - run: npm test
+      - run: git diff --exit-code -- packages/notex-mcp-contract/generated/tool-manifest.json
+      - run: npm run check:styles
+      - run: npm run build
+      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
+      - name: Verify local-only desktop release build
+        run: .\node_modules\.bin\tauri.cmd build --no-bundle

@@ -4,6 +4,7 @@ import type { Note, NoteBlock } from '../models/models';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { useNotesStore } from '../../store/useNotesStore';
 import { dispatchMcpCommand, type McpBridgeResponse } from './dispatcher';
+import { setLocalDraftPending } from './noteMutationCoordinator';
 
 const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }));
 
@@ -64,6 +65,40 @@ describe('dispatchMcpCommand', () => {
         { id: 'collection-reference', name: 'Referência', color: 'amber' },
       ],
     });
+  });
+
+  it('submits note and initial blocks as one transaction and publishes only after commit', async () => {
+    let complete!: () => void;
+    invokeMock.mockImplementation(() => new Promise<void>((resolve) => { complete = resolve; }));
+    const pending = dispatchMcpCommand(request('create_note', {
+      collectionId: null, blocks: [{ content: { format: 'text', value: 'Atomic block' } }],
+    }), '2.1.0');
+    await vi.waitFor(() => expect(invokeMock).toHaveBeenCalledTimes(1));
+    expect(invokeMock.mock.calls[0][0]).toBe('notex_sqlite_transaction');
+    expect(invokeMock.mock.calls[0][1].operations.map((op: { table: string }) => op.table)).toEqual(['notes', 'noteBlocks']);
+    expect(useNotesStore.getState().notes).toHaveLength(2);
+    complete();
+    expect((await pending).ok).toBe(true);
+    expect(useNotesStore.getState().notes).toHaveLength(3);
+  });
+
+  it('does not publish a note when its transaction fails', async () => {
+    invokeMock.mockRejectedValue(new Error('Storage failure'));
+    expectFailure(await dispatchMcpCommand(request('create_note', { collectionId: null, blocks: [{}] }), '2.1.0'), 'INTERNAL');
+    expect(useNotesStore.getState().notes).toHaveLength(2);
+  });
+
+  it('rejects dirty drafts before sending any write to storage', async () => {
+    setLocalDraftPending(activeNote.id, 'test-header', true);
+    try {
+      expectFailure(await dispatchMcpCommand(request('update_note_header', {
+        noteId: activeNote.id, expectedVersion: activeNote.version,
+        title: { format: 'text', value: 'Remote' },
+      }), '2.1.0'), 'LOCAL_EDITS_PENDING');
+      expect(invokeMock).not.toHaveBeenCalled();
+    } finally {
+      setLocalDraftPending(activeNote.id, 'test-header', false);
+    }
   });
 
   it('reports online status and rejects expired or invalid requests', async () => {

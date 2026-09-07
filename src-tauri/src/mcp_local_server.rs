@@ -6,6 +6,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
+    time::{Duration, Instant},
 };
 
 use axum::{
@@ -182,6 +183,17 @@ impl LocalMcpManager {
         port: u16,
     ) -> Result<LocalMcpPublicState, LocalMcpError> {
         let _lifecycle = self.inner.lifecycle.lock().await;
+        {
+            let runtime = self.inner.runtime.lock().await;
+            if runtime.public.state == LocalMcpLifecycleState::Running
+                && runtime.public.port == Some(port)
+            {
+                return Ok(runtime.public.clone());
+            }
+            if !matches!(runtime.public.state, LocalMcpLifecycleState::Stopped | LocalMcpLifecycleState::Error) {
+                return Err(LocalMcpError::new("INVALID_STATE", "Stop the MCP server before changing its port."));
+            }
+        }
         let renderer_ready = self.inner.renderer_ready.load(Ordering::Acquire);
         if !renderer_ready {
             return self
@@ -210,20 +222,6 @@ impl LocalMcpManager {
 
         {
             let mut runtime = self.inner.runtime.lock().await;
-            if runtime.public.state == LocalMcpLifecycleState::Running
-                && runtime.public.port == Some(port)
-            {
-                return Ok(runtime.public.clone());
-            }
-            if !matches!(
-                runtime.public.state,
-                LocalMcpLifecycleState::Stopped | LocalMcpLifecycleState::Error
-            ) {
-                return Err(LocalMcpError::new(
-                    "INVALID_STATE",
-                    "The MCP server is already changing state.",
-                ));
-            }
             runtime.public = LocalMcpPublicState::new(
                 LocalMcpLifecycleState::Starting,
                 renderer_ready,
@@ -259,6 +257,7 @@ impl LocalMcpManager {
             broker: broker.clone(),
             renderer_ready: self.inner.renderer_ready.clone(),
             tools,
+            cancellation: cancellation.clone(),
         };
         let service = StreamableHttpService::new(
             move || Ok::<_, std::io::Error>(handler.clone()),
@@ -272,6 +271,10 @@ impl LocalMcpManager {
         );
         let router = Router::new()
             .nest_service("/mcp", service)
+            .layer(middleware::from_fn_with_state(
+                Arc::new(Mutex::new(RequestRateLimit::new())),
+                limit_request_rate,
+            ))
             .layer(middleware::from_fn(reject_browser_origin));
 
         {
@@ -332,8 +335,12 @@ impl LocalMcpManager {
             cancellation.cancel();
         }
         broker.cancel_all().await;
-        if let Some(task) = task {
-            let _ = task.await;
+        if let Some(mut task) = task {
+            // Idle HTTP connections must not keep the Stop action pending indefinitely.
+            if tokio::time::timeout(Duration::from_secs(1), &mut task).await.is_err() {
+                task.abort();
+                let _ = task.await;
+            }
         }
 
         let public = LocalMcpPublicState::stopped(
@@ -396,6 +403,7 @@ struct NoteXMcpHandler<R: Runtime> {
     broker: McpRequestBroker,
     renderer_ready: Arc<AtomicBool>,
     tools: Arc<Vec<Tool>>,
+    cancellation: CancellationToken,
 }
 
 impl<R: Runtime> Clone for NoteXMcpHandler<R> {
@@ -405,6 +413,7 @@ impl<R: Runtime> Clone for NoteXMcpHandler<R> {
             broker: self.broker.clone(),
             renderer_ready: self.renderer_ready.clone(),
             tools: self.tools.clone(),
+            cancellation: self.cancellation.clone(),
         }
     }
 }
@@ -435,7 +444,7 @@ impl<R: Runtime> ServerHandler for NoteXMcpHandler<R> {
         request: CallToolRequestParams,
         _context: RequestContext<RoleServer>,
     ) -> Result<CallToolResponse, ErrorData> {
-        if !self.renderer_ready.load(Ordering::Acquire) {
+        if self.cancellation.is_cancelled() || !self.renderer_ready.load(Ordering::Acquire) {
             return Ok(tool_error(
                 "NOTEX_OFFLINE",
                 "NoteX is not ready to handle MCP requests.",
@@ -471,7 +480,16 @@ fn renderer_response(
             None => tool_error("INTERNAL", "An internal error occurred."),
         },
         Ok(response) => match response.error {
-            Some(error) => tool_error(&error.code, &error.message),
+            Some(error) => {
+                let mut result = CallToolResult::structured_error(json!({
+                    "code": error.code,
+                    "message": error.message,
+                    "retryable": error.retryable,
+                    "currentVersion": error.current_version,
+                }));
+                result.content = vec![ContentBlock::text(error.message)];
+                result
+            },
             None => tool_error("INTERNAL", "An internal error occurred."),
         },
         Err(McpRequestBrokerError::Timeout) => {
@@ -569,6 +587,78 @@ async fn reject_browser_origin(request: Request<Body>, next: Next) -> Response {
         return (StatusCode::FORBIDDEN, "Forbidden").into_response();
     }
     next.run(request).await
+}
+
+struct RequestRateLimit {
+    window_started: Instant,
+    requests: u32,
+}
+
+impl RequestRateLimit {
+    fn new() -> Self {
+        Self { window_started: Instant::now(), requests: 0 }
+    }
+
+    fn accept(&mut self, now: Instant) -> bool {
+        if now.duration_since(self.window_started) >= Duration::from_secs(1) {
+            self.window_started = now;
+            self.requests = 0;
+        }
+        if self.requests >= 60 {
+            return false;
+        }
+        self.requests += 1;
+        true
+    }
+}
+
+async fn limit_request_rate(
+    axum::extract::State(limit): axum::extract::State<Arc<Mutex<RequestRateLimit>>>,
+    request: Request<Body>,
+    next: Next,
+) -> Response {
+    if !limit.lock().await.accept(Instant::now()) {
+        return (StatusCode::TOO_MANY_REQUESTS, [("retry-after", "1")], "Too many requests").into_response();
+    }
+    next.run(request).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rate_limit_rejects_bursts_and_recovers() {
+        let mut limit = RequestRateLimit::new();
+        let start = limit.window_started;
+        for _ in 0..60 { assert!(limit.accept(start)); }
+        assert!(!limit.accept(start));
+        assert!(limit.accept(start + Duration::from_secs(1)));
+    }
+
+    #[test]
+    fn conflict_preserves_recovery_metadata() {
+        let result = renderer_response(Ok(DesktopResponse {
+            request_id: "local-mcp-test".into(), ok: false, result: None,
+            error: Some(crate::mcp_request_broker::DesktopBridgeError {
+                code: "CONFLICT".into(), message: "Conflict".into(),
+                retryable: true, current_version: Some(7),
+            }),
+        }));
+        let value = serde_json::to_value(result).unwrap();
+        assert_eq!(value["structuredContent"]["currentVersion"], 7);
+        assert_eq!(value["structuredContent"]["retryable"], true);
+    }
+
+    #[test]
+    fn manifest_exposes_six_reads_and_five_writes() {
+        let tools = load_tools().unwrap();
+        assert_eq!(tools.len(), 11);
+        let value = serde_json::to_value(tools).unwrap();
+        let reads = value.as_array().unwrap().iter()
+            .filter(|tool| tool["annotations"]["readOnlyHint"] == true).count();
+        assert_eq!(reads, 6);
+    }
 }
 
 fn local_mcp_url(port: u16) -> String {
