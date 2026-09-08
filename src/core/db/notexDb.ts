@@ -79,17 +79,21 @@ class SqliteStorageAdapter implements NoteXStorageDatabase {
   userSettings: StorageTable<UserSettings>;
 
   constructor(private readonly context?: SqliteTransactionContext) {
-    this.notes = new SqliteTable<Note>('notes', context);
-    this.noteBlocks = new SqliteTable<NoteBlock>('noteBlocks', context);
-    this.noteFiles = new SqliteTable<NoteFile>('noteFiles', context);
-    this.tags = new SqliteTable<Tag>('tags', context);
-    this.collections = new SqliteTable<Collection>('collections', context);
-    this.users = new SqliteTable<User>('users', context);
-    this.activities = new SqliteTable<ActivityItem>('activities', context);
-    this.userSettings = new SqliteTable<UserSettings>('userSettings', context);
+    this.notes = new SqliteTable<Note>("notes", context);
+    this.noteBlocks = new SqliteTable<NoteBlock>("noteBlocks", context);
+    this.noteFiles = new SqliteTable<NoteFile>("noteFiles", context);
+    this.tags = new SqliteTable<Tag>("tags", context);
+    this.collections = new SqliteTable<Collection>("collections", context);
+    this.users = new SqliteTable<User>("users", context);
+    this.activities = new SqliteTable<ActivityItem>("activities", context);
+    this.userSettings = new SqliteTable<UserSettings>("userSettings", context);
   }
 
-  async transaction<T>(_mode: string, _tables: unknown[], scope: (transaction: NoteXStorageDatabase) => Promise<T>) {
+  async transaction<T>(
+    _mode: string,
+    _tables: unknown[],
+    scope: (transaction: NoteXStorageDatabase) => Promise<T>,
+  ): Promise<T> {
     if (this.context) {
       return scope(this);
     }
@@ -98,7 +102,9 @@ class SqliteStorageAdapter implements NoteXStorageDatabase {
     // Each callback owns its batch; unrelated async writes cannot join it.
     const result = await scope(new SqliteStorageAdapter(context));
     if (context.operations.length) {
-      await invoke('notex_sqlite_transaction', { operations: context.operations });
+      await invoke("notex_sqlite_transaction", {
+        operations: context.operations,
+      });
     }
     return result;
   }
