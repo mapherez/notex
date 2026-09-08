@@ -479,13 +479,19 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     if (!ids.length) {
       return;
     }
+    const idSet = new Set(ids);
+    const attachmentPaths = uniqueIds(
+      get().notes
+        .filter((note) => idSet.has(note.id))
+        .flatMap((note) => (note.files ?? []).map((file) => file.relativePath)),
+    );
     await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
       await db.notes.bulkDelete(ids);
       await db.noteBlocks.where('noteId').anyOf(ids).delete();
       await db.noteFiles.where('noteId').anyOf(ids).delete();
     });
-    const idSet = new Set(ids);
     set((state) => ({ notes: state.notes.filter((note) => !idSet.has(note.id)) }));
+    await Promise.allSettled(attachmentPaths.map((relativePath) => deleteNoteAttachment(relativePath)));
   },
   clearTrash: async () => {
     await get().deleteNotesPermanently(get().notes.filter((note) => note.isTrashed).map((note) => note.id));

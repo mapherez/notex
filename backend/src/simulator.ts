@@ -17,6 +17,7 @@ const fixtures: Record<CommandName, unknown> = {
   search_notes: { results: [] },
   get_note: null,
   get_note_block: null,
+  get_trash_status: { noteCount: 0, stateToken: '0'.repeat(64) },
   list_tags: { tags: [] },
   list_collections: { collections: [] },
   create_note: { noteId: 'simulated-note', version: 1, blockIds: [] },
@@ -24,6 +25,10 @@ const fixtures: Record<CommandName, unknown> = {
   add_note_block: { noteId: 'simulated-note', version: 2, blockId: 'simulated-block' },
   update_note_block: { noteId: 'simulated-note', version: 2, blockId: 'simulated-block' },
   set_note_tags: { noteId: 'simulated-note', version: 2 },
+  move_note_to_trash: { noteId: 'simulated-note', version: 3 },
+  restore_note: { noteId: 'simulated-note', version: 4 },
+  delete_note_permanently: { noteId: 'simulated-note', deleted: true },
+  clear_trash: { deletedCount: 0 },
 };
 
 const socket = new WebSocket(bridgeUrl);

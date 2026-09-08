@@ -62,7 +62,7 @@
 - Remover scripts, protocolos inseguros, imagens, ficheiros e nós não suportados dos inputs MCP; manter formatação suportada como headings, listas, tabelas, links, cores, highlights, quotes e code.
 - Adicionar um coordenador por nota para identificar debounce, save em curso e rascunhos locais. Uma edição MCP sobre uma nota dirty devolve conflito.
 - Todas as mutações existentes exigem `expectedVersion`; o campo `Note.version` atual é suficiente. Criar nota com blocos deve usar uma única transação local.
-- Campos omitidos permanecem inalterados. Não adicionar delete, trash, restore, reorder, ficheiros, import/export, links ou criação de tags/coleções no MVP.
+- Campos omitidos permanecem inalterados. O contrato passou a incluir mover para o lixo, restaurar, eliminar permanentemente e limpar o lixo. Reorder, ficheiros, import/export, links e criação de tags/coleções continuam fora do MVP.
 
 ### Fase 5: Hardening e Release
 
@@ -74,8 +74,10 @@
 
 ## Contratos MCP
 
-- Leitura: `notex_status`, `search_notes`, `get_note`, `get_note_block`, `list_tags`, `list_collections`.
-- Escrita: `create_note`, `update_note_header`, `add_note_block`, `update_note_block`, `set_note_tags`.
+- Leitura: `notex_status`, `search_notes`, `get_note`, `get_note_block`, `get_trash_status`, `list_tags`, `list_collections`.
+- Escrita: `create_note`, `update_note_header`, `add_note_block`, `update_note_block`, `set_note_tags`, `move_note_to_trash` e `restore_note`.
+- Eliminação: `delete_note_permanently` e `clear_trash`, ambas no scope `notex:delete` e marcadas como destrutivas.
+- `clear_trash` exige o `stateToken` devolvido por `get_trash_status` e falha com `CONFLICT` se o lixo tiver mudado.
 - `search_notes` aceita `active`, `trash` ou `all`, usando `active` por defeito.
 - `get_note` devolve header, versão e resumo ordenado dos blocos; `get_note_block` devolve o conteúdo rico exato de um bloco.
 - Tags e coleções são referenciadas por IDs obtidos nas ferramentas de listagem. IDs desconhecidos são rejeitados; nenhuma entidade organizacional é criada.
@@ -88,7 +90,7 @@
 - Validar registo, login, reinício da app, logout, revogação, eliminação de conta e substituição imediata da sessão desktop anterior.
 - Confirmar que app fechada, backend reiniciado ou socket interrompida falham sem replay quando o NoteX regressa.
 - Testar OAuth com PKCE, CIMD e DCR, scopes, audience/resource, refresh, revogação e tentativa de criar conta através do cliente AI.
-- Testar leitura ativa/lixo e rejeição de todas as mutações no lixo.
+- Testar leitura ativa/lixo, rejeição de edições de conteúdo no lixo e as operações explícitas de restaurar ou eliminar.
 - Testar conflitos por versão, rascunho local, dois clientes AI e desconexão durante uma escrita.
 - Criar fixtures rich text de browser/Word e confirmar preservação de formatação suportada e remoção de scripts/ficheiros.
 - Validar Profile/sidebar em PT/EN, dark/light e viewports atuais; executar `npm run typecheck`, `npm run check:styles`, `npm run build`, testes Rust/backend e testes de integração MCP.

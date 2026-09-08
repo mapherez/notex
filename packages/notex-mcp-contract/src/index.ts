@@ -14,7 +14,7 @@ export const bridgeDeliveryPolicy = {
   ticketUse: 'single-use',
 } as const;
 
-export const mcpScopes = ['notex:read', 'notex:create', 'notex:edit'] as const;
+export const mcpScopes = ['notex:read', 'notex:create', 'notex:edit', 'notex:delete'] as const;
 export type McpScope = (typeof mcpScopes)[number];
 
 export const bridgeErrorCodeSchema = z.enum([
@@ -204,6 +204,17 @@ const updateNoteBlockInputSchema = z
     message: 'At least one block field is required.',
   });
 
+const noteVersionInputSchema = z.object({
+  noteId: entityIdSchema.describe('ID of the note.'),
+  expectedVersion: expectedVersionSchema,
+});
+
+const trashStateTokenSchema = z
+  .string()
+  .length(64)
+  .regex(/^[a-f0-9]+$/)
+  .describe('Trash state token returned by get_trash_status.');
+
 export const commandInputSchemas = {
   notex_status: emptyInputSchema,
   search_notes: z.object({
@@ -217,6 +228,7 @@ export const commandInputSchemas = {
   }),
   get_note: z.object({ noteId: entityIdSchema }),
   get_note_block: z.object({ noteId: entityIdSchema, blockId: entityIdSchema }),
+  get_trash_status: emptyInputSchema,
   list_tags: z.object({
     query: z.string().max(200).default(''),
     limit: z.number().int().min(1).max(100).default(100),
@@ -264,6 +276,12 @@ export const commandInputSchemas = {
       .max(50)
       .describe('Complete replacement set of existing tag IDs. Use an empty array to remove all tags.'),
   }),
+  move_note_to_trash: noteVersionInputSchema,
+  restore_note: noteVersionInputSchema,
+  delete_note_permanently: noteVersionInputSchema,
+  clear_trash: z.object({
+    expectedStateToken: trashStateTokenSchema,
+  }),
 } as const;
 
 export const mutationResultSchema = z.object({
@@ -280,6 +298,10 @@ export const commandOutputSchemas = {
   search_notes: z.object({ results: z.array(noteSearchResultSchema) }),
   get_note: noteDetailSchema,
   get_note_block: noteBlockDetailSchema,
+  get_trash_status: z.object({
+    noteCount: z.number().int().nonnegative(),
+    stateToken: trashStateTokenSchema,
+  }),
   list_tags: z.object({ tags: z.array(tagDtoSchema) }),
   list_collections: z.object({ collections: z.array(collectionDtoSchema) }),
   create_note: mutationResultSchema.extend({ blockIds: z.array(entityIdSchema) }),
@@ -287,6 +309,15 @@ export const commandOutputSchemas = {
   add_note_block: mutationResultSchema.extend({ blockId: entityIdSchema }),
   update_note_block: mutationResultSchema.extend({ blockId: entityIdSchema }),
   set_note_tags: mutationResultSchema,
+  move_note_to_trash: mutationResultSchema,
+  restore_note: mutationResultSchema,
+  delete_note_permanently: z.object({
+    noteId: entityIdSchema,
+    deleted: z.literal(true),
+  }),
+  clear_trash: z.object({
+    deletedCount: z.number().int().nonnegative(),
+  }),
 } as const;
 
 export type CommandName = keyof typeof commandInputSchemas;
@@ -300,6 +331,7 @@ export const commandScope: Record<CommandName, McpScope> = {
   search_notes: 'notex:read',
   get_note: 'notex:read',
   get_note_block: 'notex:read',
+  get_trash_status: 'notex:read',
   list_tags: 'notex:read',
   list_collections: 'notex:read',
   create_note: 'notex:create',
@@ -307,6 +339,10 @@ export const commandScope: Record<CommandName, McpScope> = {
   add_note_block: 'notex:edit',
   update_note_block: 'notex:edit',
   set_note_tags: 'notex:edit',
+  move_note_to_trash: 'notex:edit',
+  restore_note: 'notex:edit',
+  delete_note_permanently: 'notex:delete',
+  clear_trash: 'notex:delete',
 };
 
 export type ToolAnnotations = {
@@ -327,6 +363,7 @@ const toolDescriptions: Record<CommandName, string> = {
   search_notes: 'Search NoteX notes by independent terms across note headers, blocks, tags, and collections, ranked by relevance.',
   get_note: 'Read one NoteX note header and its ordered block summaries.',
   get_note_block: 'Read the exact supported rich-text content of one NoteX note block.',
+  get_trash_status: 'Read the current trash count and state token required by clear_trash.',
   list_tags: 'List existing NoteX tags. Use returned IDs in write tools.',
   list_collections: 'List existing NoteX collections. Use returned IDs in write tools.',
   create_note: 'Create a NoteX note, optionally with blocks and existing tags.',
@@ -334,7 +371,17 @@ const toolDescriptions: Record<CommandName, string> = {
   add_note_block: 'Append a block to a NoteX note using optimistic versioning.',
   update_note_block: 'Update selected fields of a NoteX block using optimistic versioning.',
   set_note_tags: 'Replace a NoteX note tag set with existing tag IDs using optimistic versioning.',
+  move_note_to_trash: 'Move an active NoteX note to trash using optimistic versioning.',
+  restore_note: 'Restore a NoteX note from trash using optimistic versioning.',
+  delete_note_permanently: 'Permanently delete one NoteX note that is already in trash.',
+  clear_trash: 'Permanently delete the complete NoteX trash if its state has not changed.',
 };
+
+const destructiveCommands = new Set<CommandName>([
+  'move_note_to_trash',
+  'delete_note_permanently',
+  'clear_trash',
+]);
 
 function isIdempotentTool(command: CommandName): boolean {
   return (
@@ -352,7 +399,7 @@ export const toolMetadata = Object.fromEntries(
       description: toolDescriptions[command],
       annotations: {
         readOnlyHint: commandScope[command] === 'notex:read',
-        destructiveHint: false,
+        destructiveHint: destructiveCommands.has(command),
         idempotentHint: isIdempotentTool(command),
         openWorldHint: false,
       },

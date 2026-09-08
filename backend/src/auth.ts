@@ -8,13 +8,14 @@ import { betterAuth } from 'better-auth';
 import { getMigrations } from 'better-auth/db/migration';
 import { jwt } from 'better-auth/plugins';
 import { z } from 'zod';
+import { mcpScopes } from '@notex/mcp-contract';
 
 import type { BackendConfig } from './config.js';
 import { BackendDatabase, readCookie } from './database.js';
 
 export const DESKTOP_SCOPE = 'notex:desktop';
 export const REGISTRATION_COOKIE = 'notex_registration_intent';
-const PUBLIC_SCOPES = ['openid', 'profile', 'email', 'offline_access', 'notex:read', 'notex:create', 'notex:edit'] as const;
+const PUBLIC_SCOPES = ['openid', 'profile', 'email', 'offline_access', ...mcpScopes] as const;
 const oauthResourceRecordSchema = z.object({ identifier: z.string() });
 
 type HookContext = { request?: Request; headers?: Headers } | null;

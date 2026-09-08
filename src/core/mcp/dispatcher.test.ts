@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CommandOutput } from '@notex/mcp-contract';
+import type { CommandName, CommandOutput } from '@notex/mcp-contract';
 import type { Note, NoteBlock } from '../models/models';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { useNotesStore } from '../../store/useNotesStore';
@@ -200,6 +200,116 @@ describe('dispatchMcpCommand', () => {
     expectFailure(mismatchedBlock, 'NOT_FOUND');
     expect(invokeMock).not.toHaveBeenCalled();
   });
+
+  it('moves active notes to trash and restores trashed notes with version checks', async () => {
+    const moved = successResult<'move_note_to_trash'>(
+      await dispatchMcpCommand(
+        request('move_note_to_trash', { noteId: activeNote.id, expectedVersion: activeNote.version }),
+        '2.2.0',
+      ),
+    );
+    expect(moved).toEqual({ noteId: activeNote.id, version: activeNote.version + 1 });
+    expect(useNotesStore.getState().notes.find((note) => note.id === activeNote.id)?.isTrashed).toBe(true);
+
+    const restored = successResult<'restore_note'>(
+      await dispatchMcpCommand(
+        request('restore_note', { noteId: trashNote.id, expectedVersion: trashNote.version }),
+        '2.2.0',
+      ),
+    );
+    expect(restored).toEqual({ noteId: trashNote.id, version: trashNote.version + 1 });
+    expect(useNotesStore.getState().notes.find((note) => note.id === trashNote.id)?.isTrashed).toBe(false);
+
+    expectFailure(
+      await dispatchMcpCommand(
+        request('restore_note', { noteId: trashNote.id, expectedVersion: trashNote.version + 1 }),
+        '2.2.0',
+      ),
+      'INVALID_INPUT',
+    );
+  });
+
+  it('permanently deletes only trashed notes and removes their attachment files', async () => {
+    const trashWithFile: Note = {
+      ...trashNote,
+      files: [
+        {
+          id: 'trash-file',
+          noteId: trashNote.id,
+          blockId: null,
+          kind: 'attachment',
+          originalName: 'archive.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 42,
+          checksum: 'checksum',
+          relativePath: 'note-trash/archive.pdf',
+          createdAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+    };
+    useNotesStore.setState({ notes: [activeNote, trashWithFile] });
+
+    expectFailure(
+      await dispatchMcpCommand(
+        request('delete_note_permanently', {
+          noteId: activeNote.id,
+          expectedVersion: activeNote.version,
+        }),
+        '2.2.0',
+      ),
+      'INVALID_INPUT',
+    );
+
+    const deleted = successResult<'delete_note_permanently'>(
+      await dispatchMcpCommand(
+        request('delete_note_permanently', {
+          noteId: trashWithFile.id,
+          expectedVersion: trashWithFile.version,
+        }),
+        '2.2.0',
+      ),
+    );
+    expect(deleted).toEqual({ noteId: trashWithFile.id, deleted: true });
+    expect(useNotesStore.getState().notes.map((note) => note.id)).toEqual([activeNote.id]);
+    expect(invokeMock).toHaveBeenCalledWith('notex_note_file_delete', {
+      relativePath: 'note-trash/archive.pdf',
+    });
+  });
+
+  it('clears only the complete trash set observed by the caller', async () => {
+    const secondTrash = createNote({
+      id: 'note-trash-2',
+      title: 'Second deleted note',
+      isTrashed: true,
+      version: 3,
+      blocks: [],
+    });
+    useNotesStore.setState({ notes: [activeNote, trashNote, secondTrash] });
+
+    const trashStatus = successResult<'get_trash_status'>(
+      await dispatchMcpCommand(request('get_trash_status', {}), '2.2.0'),
+    );
+    expect(trashStatus.noteCount).toBe(2);
+    expect(trashStatus.stateToken).toMatch(/^[a-f0-9]{64}$/);
+
+    expectFailure(
+      await dispatchMcpCommand(
+        request('clear_trash', { expectedStateToken: '0'.repeat(64) }),
+        '2.2.0',
+      ),
+      'CONFLICT',
+    );
+    expect(invokeMock).not.toHaveBeenCalled();
+
+    const cleared = successResult<'clear_trash'>(
+      await dispatchMcpCommand(
+        request('clear_trash', { expectedStateToken: trashStatus.stateToken }),
+        '2.2.0',
+      ),
+    );
+    expect(cleared).toEqual({ deletedCount: 2 });
+    expect(useNotesStore.getState().notes.map((note) => note.id)).toEqual([activeNote.id]);
+  });
 });
 
 function request(command: string, input: unknown) {
@@ -211,17 +321,12 @@ function request(command: string, input: unknown) {
   };
 }
 
-function successResult<T extends keyof CommandOutputMap>(response: McpBridgeResponse): CommandOutputMap[T] {
+function successResult<T extends CommandName>(response: McpBridgeResponse): CommandOutput<T> {
   if (!response.ok) {
     throw new Error(`Expected success, received ${response.error.code}`);
   }
-  return response.result as CommandOutputMap[T];
+  return response.result as CommandOutput<T>;
 }
-
-type CommandOutputMap = {
-  [Name in 'notex_status' | 'search_notes' | 'get_note' | 'get_note_block' | 'list_tags' | 'list_collections']:
-    CommandOutput<Name>;
-};
 
 function expectFailure(response: McpBridgeResponse, code: string) {
   expect(response.ok).toBe(false);

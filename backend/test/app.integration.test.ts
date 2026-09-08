@@ -91,7 +91,12 @@ describe('backend HTTP surface', () => {
     expect(resource.body).toMatchObject({
       resource: 'http://127.0.0.1:8080/mcp',
       authorization_servers: ['http://127.0.0.1:8080/api/auth'],
-      scopes_supported: expect.arrayContaining(['notex:read', 'notex:create', 'notex:edit']),
+      scopes_supported: expect.arrayContaining([
+        'notex:read',
+        'notex:create',
+        'notex:edit',
+        'notex:delete',
+      ]),
     });
   });
 

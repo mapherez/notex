@@ -80,6 +80,10 @@ export async function dispatchMcpCommand(
         }
         return success(request.requestId, 'get_note_block', noteBlockDetail(note, block));
       }
+      case 'get_trash_status': {
+        parseInput('get_trash_status', request.input);
+        return success(request.requestId, 'get_trash_status', await getTrashStatusCommand());
+      }
       case 'list_tags': {
         const input = parseInput('list_tags', request.input);
         return success(request.requestId, 'list_tags', {
@@ -123,6 +127,30 @@ export async function dispatchMcpCommand(
       case 'set_note_tags': {
         const input = parseInput('set_note_tags', request.input);
         return success(request.requestId, 'set_note_tags', await setNoteTagsCommand(request, input));
+      }
+      case 'move_note_to_trash': {
+        const input = parseInput('move_note_to_trash', request.input);
+        return success(
+          request.requestId,
+          'move_note_to_trash',
+          await moveNoteToTrashCommand(request, input),
+        );
+      }
+      case 'restore_note': {
+        const input = parseInput('restore_note', request.input);
+        return success(request.requestId, 'restore_note', await restoreNoteCommand(request, input));
+      }
+      case 'delete_note_permanently': {
+        const input = parseInput('delete_note_permanently', request.input);
+        return success(
+          request.requestId,
+          'delete_note_permanently',
+          await deleteNotePermanentlyCommand(request, input),
+        );
+      }
+      case 'clear_trash': {
+        const input = parseInput('clear_trash', request.input);
+        return success(request.requestId, 'clear_trash', await clearTrashCommand(request, input));
       }
       default:
         return failure(request.requestId, 'INTERNAL');
@@ -245,7 +273,7 @@ async function updateNoteHeaderCommand(
     update.collectionId = input.collectionId;
   }
 
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, async () => {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
     await useNotesStore.getState().updateNoteHeader(input.noteId, update);
     return currentMutationResult(input.noteId);
   });
@@ -258,7 +286,7 @@ async function addNoteBlockCommand(
   const title = input.title ? parseMcpInlineRichText(input.title) : '';
   const content = input.content ? parseMcpBlockRichText(input.content) : undefined;
 
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, async () => {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
     const block = await useNotesStore.getState().addBlock(input.noteId, {
       title,
       ...(content ?? {}),
@@ -289,7 +317,7 @@ async function updateNoteBlockCommand(
     Object.assign(update, parseMcpBlockRichText(input.content));
   }
 
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, async (note) => {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
     if (!(note.blocks ?? []).some((block) => block.id === input.blockId)) {
       throw new CommandFailure('NOT_FOUND');
     }
@@ -306,20 +334,91 @@ async function setNoteTagsCommand(
   input: CommandInput<'set_note_tags'>,
 ): Promise<CommandOutput<'set_note_tags'>> {
   const tagIds = validateTagIds(input.tagIds);
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, async () => {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
     await useNotesStore.getState().updateNoteTags(input.noteId, tagIds);
     return currentMutationResult(input.noteId);
   });
+}
+
+async function moveNoteToTrashCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'move_note_to_trash'>,
+): Promise<CommandOutput<'move_note_to_trash'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
+    await useNotesStore.getState().moveNoteToTrash(input.noteId);
+    return currentMutationResult(input.noteId);
+  });
+}
+
+async function restoreNoteCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'restore_note'>,
+): Promise<CommandOutput<'restore_note'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'trash', async () => {
+    await useNotesStore.getState().restoreNote(input.noteId);
+    return currentMutationResult(input.noteId);
+  });
+}
+
+async function deleteNotePermanentlyCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'delete_note_permanently'>,
+): Promise<CommandOutput<'delete_note_permanently'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'trash', async () => {
+    await useNotesStore.getState().deleteNotesPermanently([input.noteId]);
+    return { noteId: input.noteId, deleted: true };
+  });
+}
+
+async function clearTrashCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'clear_trash'>,
+): Promise<CommandOutput<'clear_trash'>> {
+  ensureDeadline(request.deadlineAt);
+  const initialSnapshot = await createTrashSnapshot();
+  if (initialSnapshot.stateToken !== input.expectedStateToken) {
+    throw new CommandFailure('CONFLICT', true);
+  }
+
+  const leases: Array<ReturnType<typeof tryBeginMcpMutation> & { acquired: true }> = [];
+  try {
+    for (const noteId of initialSnapshot.noteIds) {
+      const lease = tryBeginMcpMutation(noteId);
+      if (!lease.acquired) {
+        const currentVersion = findNote(noteId)?.version;
+        if (lease.blockedBy === 'local') {
+          throw new CommandFailure('LOCAL_EDITS_PENDING', true, currentVersion);
+        }
+        throw new CommandFailure('CONFLICT', true, currentVersion);
+      }
+      leases.push(lease);
+    }
+
+    ensureDeadline(request.deadlineAt);
+    const currentSnapshot = await createTrashSnapshot();
+    if (currentSnapshot.stateToken !== input.expectedStateToken) {
+      throw new CommandFailure('CONFLICT', true);
+    }
+    await useNotesStore.getState().deleteNotesPermanently(initialSnapshot.noteIds);
+    return {
+      deletedCount: initialSnapshot.noteIds.length,
+    };
+  } finally {
+    for (const lease of leases) {
+      lease.release();
+    }
+  }
 }
 
 async function mutateExistingNote<T>(
   request: McpBridgeRequest,
   noteId: string,
   expectedVersion: number,
+  requiredLocation: 'active' | 'trash',
   mutation: (note: Note) => Promise<T>,
 ): Promise<T> {
   ensureDeadline(request.deadlineAt);
-  assertMutableNote(noteId, expectedVersion);
+  assertNoteForMutation(noteId, expectedVersion, requiredLocation);
 
   const lease = tryBeginMcpMutation(noteId);
   if (!lease.acquired) {
@@ -332,25 +431,52 @@ async function mutateExistingNote<T>(
 
   try {
     ensureDeadline(request.deadlineAt);
-    const note = assertMutableNote(noteId, expectedVersion);
+    const note = assertNoteForMutation(noteId, expectedVersion, requiredLocation);
     return await mutation(note);
   } finally {
     lease.release();
   }
 }
 
-function assertMutableNote(noteId: string, expectedVersion: number) {
+function assertNoteForMutation(
+  noteId: string,
+  expectedVersion: number,
+  requiredLocation: 'active' | 'trash',
+) {
   const note = findNote(noteId);
   if (!note) {
     throw new CommandFailure('NOT_FOUND');
   }
-  if (note.isTrashed) {
-    throw new CommandFailure('READ_ONLY_TRASH');
-  }
   if (note.version !== expectedVersion) {
     throw new CommandFailure('CONFLICT', false, note.version);
   }
+  if (requiredLocation === 'active' && note.isTrashed) {
+    throw new CommandFailure('READ_ONLY_TRASH');
+  }
+  if (requiredLocation === 'trash' && !note.isTrashed) {
+    throw new CommandFailure('INVALID_INPUT');
+  }
   return note;
+}
+
+async function getTrashStatusCommand(): Promise<CommandOutput<'get_trash_status'>> {
+  const snapshot = await createTrashSnapshot();
+  return { noteCount: snapshot.noteIds.length, stateToken: snapshot.stateToken };
+}
+
+async function createTrashSnapshot() {
+  const notes = useNotesStore
+    .getState()
+    .notes.filter((note) => note.isTrashed)
+    .sort((left, right) => left.id.localeCompare(right.id));
+  const encodedState = new TextEncoder().encode(
+    JSON.stringify(notes.map((note) => [note.id, note.version])),
+  );
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', encodedState);
+  const stateToken = [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  return { noteIds: notes.map((note) => note.id), stateToken };
 }
 
 function currentMutationResult(noteId: string) {

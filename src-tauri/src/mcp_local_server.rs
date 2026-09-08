@@ -43,7 +43,7 @@ const TOOL_MANIFEST_JSON: &str =
     include_str!("../../packages/notex-mcp-contract/generated/tool-manifest.json");
 const TOOL_MANIFEST_SCHEMA_VERSION: u8 = 1;
 const BRIDGE_PROTOCOL_VERSION: &str = "1.0";
-const EXPECTED_TOOL_COUNT: usize = 11;
+const EXPECTED_TOOL_COUNT: usize = 16;
 const MAX_REQUEST_BODY_BYTES: usize = 2 * 1024 * 1024;
 const MIN_PORT: u16 = 1024;
 
@@ -651,13 +651,16 @@ mod tests {
     }
 
     #[test]
-    fn manifest_exposes_six_reads_and_five_writes() {
+    fn manifest_exposes_seven_reads_and_nine_writes() {
         let tools = load_tools().unwrap();
-        assert_eq!(tools.len(), 11);
+        assert_eq!(tools.len(), 16);
         let value = serde_json::to_value(tools).unwrap();
         let reads = value.as_array().unwrap().iter()
             .filter(|tool| tool["annotations"]["readOnlyHint"] == true).count();
-        assert_eq!(reads, 6);
+        assert_eq!(reads, 7);
+        let destructive = value.as_array().unwrap().iter()
+            .filter(|tool| tool["annotations"]["destructiveHint"] == true).count();
+        assert_eq!(destructive, 3);
     }
 }
 

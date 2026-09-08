@@ -200,7 +200,14 @@ describe('authenticated MCP protocol handler', () => {
     });
     const tools = (listed.result as { tools: Array<{ name: string }> }).tools;
     expect(tools.map((tool) => tool.name)).toEqual(
-      expect.arrayContaining(['notex_status', 'search_notes', 'create_note', 'update_note_block']),
+      expect.arrayContaining([
+        'notex_status',
+        'search_notes',
+        'create_note',
+        'update_note_block',
+        'delete_note_permanently',
+        'clear_trash',
+      ]),
     );
 
     const called = await sendMcp(harness, {

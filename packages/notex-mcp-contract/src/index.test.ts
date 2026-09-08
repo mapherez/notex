@@ -6,10 +6,12 @@ import {
   bridgeErrorMessages,
   bridgePresenceSchema,
   bridgeReadySchema,
+  commandScope,
   commandInputSchemas,
   parseDesktopBridgeFrame,
   parseCommandInput,
   parseServerBridgeFrame,
+  toolMetadata,
 } from './index.js';
 
 describe('NoteX MCP contract', () => {
@@ -25,6 +27,19 @@ describe('NoteX MCP contract', () => {
     expect(() =>
       commandInputSchemas.update_note_header.parse({ noteId: 'note-1', expectedVersion: 1 }),
     ).toThrow();
+  });
+
+  it('validates trash mutations and marks destructive tools', () => {
+    expect(parseCommandInput('move_note_to_trash', { noteId: 'note-1', expectedVersion: 2 })).toEqual({
+      noteId: 'note-1',
+      expectedVersion: 2,
+    });
+    expect(() => parseCommandInput('clear_trash', { expectedStateToken: 'invalid' })).toThrow();
+    expect(commandScope.delete_note_permanently).toBe('notex:delete');
+    expect(toolMetadata.move_note_to_trash.annotations.destructiveHint).toBe(true);
+    expect(toolMetadata.restore_note.annotations.destructiveHint).toBe(false);
+    expect(toolMetadata.delete_note_permanently.annotations.destructiveHint).toBe(true);
+    expect(toolMetadata.clear_trash.annotations.destructiveHint).toBe(true);
   });
 
   it('rejects incompatible bridge versions', () => {
