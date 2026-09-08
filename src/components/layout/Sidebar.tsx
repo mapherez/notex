@@ -143,9 +143,17 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
         <div className="sidebar-spacer" />
         <nav className="sidebar-legal-links" aria-label={t('legal.navigationLabel')}>
           {navigationSettings.legalLinks.map((link) => (
-            <NavLink className="sidebar-legal-link" key={link.to} to={link.to} onClick={onClose}>
+            <Link
+              className={clsx('sidebar-legal-link', searchParams.get('modal') === link.modal && 'active')}
+              key={link.modal}
+              to={{
+                pathname: location.pathname,
+                search: buildLegalModalSearch(location.search, link.modal),
+              }}
+              onClick={onClose}
+            >
               {t(link.labelKey)}
-            </NavLink>
+            </Link>
           ))}
         </nav>
         <div className="sidebar-runtime-status">
@@ -168,5 +176,11 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
       <PatchNotesModal open={patchNotesOpen} onClose={() => setPatchNotesOpen(false)} />
     </>
   );
+}
+
+function buildLegalModalSearch(currentSearch: string, modal: string) {
+  const searchParams = new URLSearchParams(currentSearch);
+  searchParams.set('modal', modal);
+  return `?${searchParams.toString()}`;
 }
 

@@ -1,4 +1,5 @@
 import { Trash2, X } from 'lucide-react';
+import { AppModal } from './AppModal';
 
 export function DeleteConfirmModal({
   cancelLabel,
@@ -16,21 +17,24 @@ export function DeleteConfirmModal({
   title: string;
 }) {
   return (
-    <div className="modal-backdrop">
-      <section className="choice-modal delete-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
-        <h2 id="delete-confirm-title">{title}</h2>
-        <p>{description}</p>
-        <div className="choice-modal-actions two-column-actions">
-          <button type="button" onClick={onCancel}>
-            <X />
-            <span>{cancelLabel}</span>
-          </button>
-          <button type="button" onClick={onConfirm}>
-            <Trash2 />
-            <span>{confirmLabel}</span>
-          </button>
-        </div>
-      </section>
-    </div>
+    <AppModal
+      className="choice-modal delete-confirm-modal"
+      labelledBy="delete-confirm-title"
+      onClose={onCancel}
+      open
+    >
+      <h2 id="delete-confirm-title">{title}</h2>
+      <p>{description}</p>
+      <div className="choice-modal-actions two-column-actions">
+        <button type="button" onClick={onCancel}>
+          <X />
+          <span>{cancelLabel}</span>
+        </button>
+        <button type="button" onClick={onConfirm}>
+          <Trash2 />
+          <span>{confirmLabel}</span>
+        </button>
+      </div>
+    </AppModal>
   );
 }

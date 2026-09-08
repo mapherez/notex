@@ -1,4 +1,4 @@
-import { Copy, Save, X } from 'lucide-react';
+import { Copy, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   MAX_LOCAL_MCP_PORT,
@@ -9,6 +9,7 @@ import {
 import { useI18n } from '../../i18n/I18nProvider';
 import { useLocalMcpStore } from '../../store/useLocalMcpStore';
 import { useToastStore } from '../../store/useToastStore';
+import { AppModal } from '../ui/AppModal';
 
 export function McpConfigurationModal({
   onClose,
@@ -31,22 +32,6 @@ export function McpConfigurationModal({
   const parsedPort = Number(portInput);
   const portValid = portInput.trim() !== '' && isValidLocalMcpPort(parsedPort);
   const portChanged = portInput !== String(configuredPort);
-
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, open]);
 
   useEffect(() => {
     if (open) {
@@ -92,24 +77,15 @@ export function McpConfigurationModal({
   }
 
   return (
-    <div className="modal-backdrop">
-      <section
-        className="choice-modal mcp-configuration-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="mcp-configuration-title"
-      >
+    <AppModal
+      className="choice-modal mcp-configuration-modal"
+      dismissible={!savingPort}
+      labelledBy="mcp-configuration-title"
+      onClose={onClose}
+      open={open}
+    >
         <header className="mcp-configuration-modal__header">
           <h2 id="mcp-configuration-title">{t('profile.mcp.configuration.title')}</h2>
-          <button
-            className="icon-button"
-            type="button"
-            aria-label={t('common.close')}
-            title={t('common.close')}
-            onClick={onClose}
-          >
-            <X />
-          </button>
         </header>
 
         <dl className="mcp-configuration-list">
@@ -194,8 +170,7 @@ export function McpConfigurationModal({
             <span>{t('profile.mcp.configuration.copyConfiguration')}</span>
           </button>
         </div>
-      </section>
-    </div>
+    </AppModal>
   );
 }
 

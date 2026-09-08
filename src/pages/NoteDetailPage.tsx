@@ -28,6 +28,7 @@ import {
 import { ColorPicker } from '../components/ui/ColorPicker';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
+import { AppModal } from '../components/ui/AppModal';
 import { EmptyState } from '../components/ui/EmptyState';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
@@ -912,35 +913,34 @@ function ExportNoteConfirmModal({
   }
 
   return (
-    <div className="modal-backdrop">
-      <section
-        className="choice-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="export-note-title"
-      >
-        <h2 id="export-note-title">{t('notes.exportNoteModalTitle')}</h2>
-        <p>{t('notes.exportNoteModalDescription')}</p>
-        <label className="choice-modal-checkbox">
-          <input
-            type="checkbox"
-            checked={skipConfirm}
-            disabled={disabled}
-            onChange={(event) => onSkipConfirmChange(event.currentTarget.checked)}
-          />
-          <span>{t('notes.exportNoteDontShowAgain')}</span>
-        </label>
-        <div className="choice-modal-actions two-column-actions">
-          <button type="button" disabled={disabled} onClick={onCancel}>
-            <span>{t('common.cancel')}</span>
-          </button>
-          <button type="button" disabled={disabled} onClick={onConfirm}>
-            <Download />
-            <span>{t('common.export')}</span>
-          </button>
-        </div>
-      </section>
-    </div>
+    <AppModal
+      className="choice-modal"
+      dismissible={!disabled}
+      labelledBy="export-note-title"
+      onClose={onCancel}
+      open={open}
+    >
+      <h2 id="export-note-title">{t('notes.exportNoteModalTitle')}</h2>
+      <p>{t('notes.exportNoteModalDescription')}</p>
+      <label className="choice-modal-checkbox">
+        <input
+          type="checkbox"
+          checked={skipConfirm}
+          disabled={disabled}
+          onChange={(event) => onSkipConfirmChange(event.currentTarget.checked)}
+        />
+        <span>{t('notes.exportNoteDontShowAgain')}</span>
+      </label>
+      <div className="choice-modal-actions two-column-actions">
+        <button type="button" disabled={disabled} onClick={onCancel}>
+          <span>{t('common.cancel')}</span>
+        </button>
+        <button type="button" disabled={disabled} onClick={onConfirm}>
+          <Download />
+          <span>{t('common.export')}</span>
+        </button>
+      </div>
+    </AppModal>
   );
 }
 

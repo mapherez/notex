@@ -7,7 +7,6 @@ import { initializeStorage } from './core/services/storageBootstrap';
 import { I18nProvider } from './i18n/I18nProvider';
 import { DashboardPage } from './pages/DashboardPage';
 import { CollectionsPage, NotesListPage } from './pages/NotesListPage';
-import { LegalPage } from './pages/LegalPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { TagsPage } from './pages/TagsPage';
 import { useAppStore } from './store/useAppStore';
@@ -106,8 +105,8 @@ export function App() {
               <Route path="/trash" element={<NotesListPage mode="trash" />} />
               <Route path="/collections" element={<CollectionsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/privacy" element={<LegalPage kind="privacy" />} />
-              <Route path="/terms" element={<LegalPage kind="terms" />} />
+              <Route path="/privacy" element={<Navigate to="/?modal=privacy" replace />} />
+              <Route path="/terms" element={<Navigate to="/?modal=terms" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>

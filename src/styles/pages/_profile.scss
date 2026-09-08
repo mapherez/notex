@@ -445,11 +445,10 @@ button.security-row:hover {
 .mcp-configuration-modal__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--nx-space-3);
+  padding-right: calc(2.25rem + var(--nx-space-2));
 }
 
-.mcp-configuration-modal__header .icon-button,
 .mcp-configuration-copy-url,
 .mcp-configuration-save-port {
   width: 2.25rem;

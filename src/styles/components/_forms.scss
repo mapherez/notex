@@ -49,24 +49,3 @@
 .page-subtitle.empty {
   margin: 0;
 }
-
-.legal-page {
-  width: min(100%, 58rem);
-}
-
-.legal-card {
-  display: grid;
-  gap: var(--nx-space-5);
-  padding: var(--nx-space-6);
-}
-
-.legal-copy {
-  display: grid;
-  gap: var(--nx-space-4);
-  color: var(--nx-color-text-muted);
-  line-height: 1.65;
-}
-
-.legal-copy p {
-  margin: 0;
-}

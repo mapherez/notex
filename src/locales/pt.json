@@ -617,7 +617,28 @@
   "legal": {
     "navigationLabel": "Legal",
     "privacyLink": "Privacidade",
-    "termsLink": "Termos"
+    "termsLink": "Termos",
+    "privacy": {
+      "title": "Política de Privacidade",
+      "paragraphs": [
+        "O NoteX é uma aplicação desktop local e offline-first. As suas notas, etiquetas, coleções, definições e restantes dados da aplicação são guardados numa base de dados SQLite local no seu dispositivo.",
+        "O NoteX não requer uma conta e não envia a sua base de conhecimento para um servidor do NoteX.",
+        "Quando exporta os seus dados, o NoteX cria localmente um pacote .notex com a sua base de dados e os ficheiros anexados. É da sua responsabilidade decidir onde guarda ou partilha esse pacote exportado.",
+        "Quando importa um pacote, o NoteX substitui a base de dados local e a pasta de ficheiros atuais pelo pacote .notex selecionado.",
+        "O NoteX não vende os seus dados, não utiliza as suas notas para publicidade e não partilha a sua base de dados local com terceiros."
+      ]
+    },
+    "terms": {
+      "title": "Termos de Serviço",
+      "paragraphs": [
+        "O NoteX é disponibilizado como software desktop local para gestão de conhecimento pessoal.",
+        "É responsável pelas suas notas, cópias de segurança, pacotes exportados e por quaisquer dados que decida importar ou substituir.",
+        "A importação de um pacote .notex substitui a base de dados local e a pasta de ficheiros atuais. Confirme as suas cópias de segurança antes de importar.",
+        "Deve manter as suas próprias cópias de segurança se as suas notas forem importantes. O NoteX não consegue recuperar dados eliminados, substituídos ou perdidos fora da aplicação.",
+        "A aplicação é fornecida tal como está, sem garantia de que estará livre de erros ou será adequada a todos os fluxos de trabalho.",
+        "Ao utilizar o NoteX, concorda em fazê-lo de forma responsável e em manter a sua própria rotina de cópias de segurança."
+      ]
+    }
   },
   "patchNotes": {
     "title": "Notas da versão",

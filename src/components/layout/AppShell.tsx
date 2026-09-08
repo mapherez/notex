@@ -1,6 +1,6 @@
 import { Plus, X } from 'lucide-react';
 import { isTauri } from '@tauri-apps/api/core';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
 import type { Note } from '../../core/models/models';
 import { richTextToPlainText } from '../../core/utils/richText';
@@ -8,6 +8,8 @@ import { isPrimaryShortcut } from '../../core/utils/keyboardShortcuts';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useNotesStore } from '../../store/useNotesStore';
+import { AppModal } from '../ui/AppModal';
+import { LegalModal, type LegalModalKind } from '../ui/LegalModal';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { WindowTitleBar } from './WindowTitleBar';
@@ -20,6 +22,7 @@ export function AppShell() {
   const [creatingNote, setCreatingNote] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const primaryCollectionId = useAppStore((state) => state.settings.primaryCollectionId);
   const notes = useNotesStore((state) => state.notes);
   const createNote = useNotesStore((state) => state.createNote);
@@ -82,6 +85,14 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', handleGlobalShortcut);
   }, [navigate, requestNewNote]);
 
+  const legalModalKind = readLegalModalKind(searchParams.get('modal'));
+
+  function closeLegalModal() {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete('modal');
+    setSearchParams(nextSearchParams, { replace: true });
+  }
+
   return (
     <div className={hasWindowTitleBar ? 'app-frame app-frame--custom-titlebar' : 'app-frame'}>
       <WindowTitleBar />
@@ -91,27 +102,34 @@ export function AppShell() {
           <TopBar showSearch onMenuClick={() => setSidebarOpen(true)} />
           <Outlet />
         </main>
-        {confirmNewNoteOpen ? (
-          <div className="modal-backdrop">
-            <section className="choice-modal" role="dialog" aria-modal="true" aria-labelledby="new-note-confirm-title">
-              <h2 id="new-note-confirm-title">{t('notes.newNoteConfirmTitle')}</h2>
-              <p>{t('notes.newNoteConfirmDescription')}</p>
-              <div className="choice-modal-actions two-column-actions">
-                <button type="button" onClick={() => setConfirmNewNoteOpen(false)}>
-                  <X />
-                  <span>{t('common.cancel')}</span>
-                </button>
-                <button type="button" disabled={creatingNote} onClick={() => void createAndOpenNote()}>
-                  <Plus />
-                  <span>{t('navigation.newNote')}</span>
-                </button>
-              </div>
-            </section>
+        <AppModal
+          className="choice-modal"
+          dismissible={!creatingNote}
+          labelledBy="new-note-confirm-title"
+          onClose={() => setConfirmNewNoteOpen(false)}
+          open={confirmNewNoteOpen}
+        >
+          <h2 id="new-note-confirm-title">{t('notes.newNoteConfirmTitle')}</h2>
+          <p>{t('notes.newNoteConfirmDescription')}</p>
+          <div className="choice-modal-actions two-column-actions">
+            <button type="button" disabled={creatingNote} onClick={() => setConfirmNewNoteOpen(false)}>
+              <X />
+              <span>{t('common.cancel')}</span>
+            </button>
+            <button type="button" disabled={creatingNote} onClick={() => void createAndOpenNote()}>
+              <Plus />
+              <span>{t('navigation.newNote')}</span>
+            </button>
           </div>
-        ) : null}
+        </AppModal>
+        <LegalModal kind={legalModalKind} onClose={closeLegalModal} />
       </div>
     </div>
   );
+}
+
+function readLegalModalKind(value: string | null): LegalModalKind | null {
+  return value === 'privacy' || value === 'terms' ? value : null;
 }
 
 function noteHasContent(note: Note) {

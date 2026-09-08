@@ -158,11 +158,11 @@
     ],
     "legalLinks": [
       {
-        "to": "/privacy",
+        "modal": "privacy",
         "labelKey": "legal.privacyLink"
       },
       {
-        "to": "/terms",
+        "modal": "terms",
         "labelKey": "legal.termsLink"
       }
     ]
