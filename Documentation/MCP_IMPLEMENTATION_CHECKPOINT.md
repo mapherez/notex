@@ -1,14 +1,17 @@
 # MCP Implementation Checkpoint
 
-Date: 2026-09-07
+Date: 2026-09-08
 
 ## Latest Handoff (Overrides Historical Status Below)
 
+- On 2026-09-08 the user confirmed a real Codex-to-NoteX local connection works. Focused validation then passed: 11 frontend concurrency/transaction tests, 3 rich-text tests, and all 11 Rust tests.
+- A live isolated NoteX instance also passed local HTTP guard checks without invoking note tools: valid MCP initialization, invalid Host rejection, Origin rejection, 2 MiB payload rejection, rate limiting and recovery, occupied-port detection, UI stop, and confirmed port closure. The isolated app and Vite process were closed afterwards.
+- The shared contract now describes note title/subtitle, block title/body, patch omission semantics, complete body replacement, IDs, optimistic versions, collections and tag replacement. The generated Rust tool manifest was rebuilt successfully. Flexible search remains deliberately postponed until the end.
 - The user has redirected work to finishing implementation before further testing. Do not run test suites or automated note actions without a new request. Launching the development app is for the user to try the implementation, not another validation campaign.
 - Five write tools were exercised successfully through the real local endpoint on the isolated database: create, header update, block append, block update and tags. The resulting note had three blocks, version 5, and preserved omitted fields.
 - Implemented in the current uncommitted work: local HTTP rate limiting (60 requests/second with HTTP 429 and Retry-After), preservation of conflict currentVersion/retryable metadata, a broker pending-request check before renderer execution, rejection of calls on cancelled server handlers, protection of running-server state against invalid start attempts, and bounded HTTP shutdown.
 - Added Windows frontend/contract/Rust CI, generated-manifest drift checking, a local-only release compilation gate, and made the remote backend URL optional in the release workflow. Added MCP_LOCAL_USER_GUIDE.md.
-- Added focused rich-text, draft coordination, dispatcher transaction and broker cancellation tests. Earlier in this session 23 frontend tests, 10 Rust tests, the frontend build and styles passed. Subsequent dispatcher/broker tests and the final lifecycle changes have NOT been validated; those results must not be represented as final coverage.
+- Added focused rich-text, draft coordination, dispatcher transaction and broker cancellation tests. The focused final tests now pass; a full release build and installed-package acceptance still remain and must not be represented as complete.
 - The real write-boundary validator was not executed. Automatic approval review rejected it; the user then stopped further testing. Rich-text inputs, same-note concurrency, dirty-draft UI, interrupted writes, timeout/no-replay, full SQLite row-content integrity and packaged release verification remain validation gates.
 - The pending-request check prevents already-cancelled local events from starting. It cannot roll back SQLite work already submitted or eliminate a cancellation race after the check. Do not claim guaranteed rollback on disconnect.
 - Removed the global SQLite transaction context. Each transaction callback now receives its own bound database adapter; all existing transaction call sites use that adapter. Concurrent batches and standalone writes no longer accidentally join another batch. SQLite schema, tables and Rust persistence commands are unchanged.

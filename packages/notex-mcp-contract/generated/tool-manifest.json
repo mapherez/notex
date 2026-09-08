@@ -197,17 +197,20 @@
                 "enum": [
                   "text",
                   "html"
-                ]
+                ],
+                "description": "Format used to interpret value."
               },
               "value": {
                 "type": "string",
-                "maxLength": 500000
+                "maxLength": 500000,
+                "description": "Complete text or supported HTML value for this field."
               }
             },
             "required": [
               "format",
               "value"
-            ]
+            ],
+            "description": "Title of the new note. Omit to create an empty note title."
           },
           "subtitle": {
             "type": "object",
@@ -217,17 +220,20 @@
                 "enum": [
                   "text",
                   "html"
-                ]
+                ],
+                "description": "Format used to interpret value."
               },
               "value": {
                 "type": "string",
-                "maxLength": 500000
+                "maxLength": 500000,
+                "description": "Complete text or supported HTML value for this field."
               }
             },
             "required": [
               "format",
               "value"
-            ]
+            ],
+            "description": "Subtitle of the new note. Omit to create an empty note subtitle."
           },
           "collectionId": {
             "anyOf": [
@@ -239,7 +245,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Existing collection ID for the new note. Omit or use null for no collection."
           },
           "tagIds": {
             "default": [],
@@ -249,7 +256,8 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 128
-            }
+            },
+            "description": "Existing tag IDs to assign to the new note. Omit for no tags."
           },
           "blocks": {
             "default": [],
@@ -266,17 +274,20 @@
                       "enum": [
                         "text",
                         "html"
-                      ]
+                      ],
+                      "description": "Format used to interpret value."
                     },
                     "value": {
                       "type": "string",
-                      "maxLength": 500000
+                      "maxLength": 500000,
+                      "description": "Complete text or supported HTML value for this field."
                     }
                   },
                   "required": [
                     "format",
                     "value"
-                  ]
+                  ],
+                  "description": "Optional title of this new block."
                 },
                 "content": {
                   "type": "object",
@@ -286,20 +297,24 @@
                       "enum": [
                         "text",
                         "html"
-                      ]
+                      ],
+                      "description": "Format used to interpret value."
                     },
                     "value": {
                       "type": "string",
-                      "maxLength": 500000
+                      "maxLength": 500000,
+                      "description": "Complete text or supported HTML value for this field."
                     }
                   },
                   "required": [
                     "format",
                     "value"
-                  ]
+                  ],
+                  "description": "Optional body of this new block."
                 }
               }
-            }
+            },
+            "description": "Ordered blocks to create in the new note. Omit to create the note without blocks."
           }
         }
       }
@@ -322,12 +337,14 @@
           "noteId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 128
+            "maxLength": 128,
+            "description": "ID of the note whose header will be updated."
           },
           "expectedVersion": {
             "type": "integer",
             "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
           },
           "title": {
             "type": "object",
@@ -337,17 +354,20 @@
                 "enum": [
                   "text",
                   "html"
-                ]
+                ],
+                "description": "Format used to interpret value."
               },
               "value": {
                 "type": "string",
-                "maxLength": 500000
+                "maxLength": 500000,
+                "description": "Complete text or supported HTML value for this field."
               }
             },
             "required": [
               "format",
               "value"
-            ]
+            ],
+            "description": "Complete new note title. Omit this field to preserve the current note title."
           },
           "subtitle": {
             "type": "object",
@@ -357,17 +377,20 @@
                 "enum": [
                   "text",
                   "html"
-                ]
+                ],
+                "description": "Format used to interpret value."
               },
               "value": {
                 "type": "string",
-                "maxLength": 500000
+                "maxLength": 500000,
+                "description": "Complete text or supported HTML value for this field."
               }
             },
             "required": [
               "format",
               "value"
-            ]
+            ],
+            "description": "Complete new note subtitle. Omit this field to preserve the current note subtitle."
           },
           "collectionId": {
             "anyOf": [
@@ -379,7 +402,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "Existing collection ID for the note. Omit to preserve the current collection; use null to remove it."
           }
         },
         "required": [
@@ -406,12 +430,14 @@
           "noteId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 128
+            "maxLength": 128,
+            "description": "ID of the note that will receive the new block."
           },
           "expectedVersion": {
             "type": "integer",
             "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
           },
           "title": {
             "type": "object",
@@ -421,17 +447,20 @@
                 "enum": [
                   "text",
                   "html"
-                ]
+                ],
+                "description": "Format used to interpret value."
               },
               "value": {
                 "type": "string",
-                "maxLength": 500000
+                "maxLength": 500000,
+                "description": "Complete text or supported HTML value for this field."
               }
             },
             "required": [
               "format",
               "value"
-            ]
+            ],
+            "description": "Optional title of the new block. Omit for an empty block title."
           },
           "content": {
             "type": "object",
@@ -441,17 +470,20 @@
                 "enum": [
                   "text",
                   "html"
-                ]
+                ],
+                "description": "Format used to interpret value."
               },
               "value": {
                 "type": "string",
-                "maxLength": 500000
+                "maxLength": 500000,
+                "description": "Complete text or supported HTML value for this field."
               }
             },
             "required": [
               "format",
               "value"
-            ]
+            ],
+            "description": "Optional body of the new block. Omit for an empty block body."
           }
         },
         "required": [
@@ -478,17 +510,20 @@
           "noteId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 128
+            "maxLength": 128,
+            "description": "ID of the note containing the block."
           },
           "blockId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 128
+            "maxLength": 128,
+            "description": "ID of the exact block to update, obtained from get_note or add_note_block."
           },
           "expectedVersion": {
             "type": "integer",
             "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
           },
           "title": {
             "type": "object",
@@ -498,17 +533,20 @@
                 "enum": [
                   "text",
                   "html"
-                ]
+                ],
+                "description": "Format used to interpret value."
               },
               "value": {
                 "type": "string",
-                "maxLength": 500000
+                "maxLength": 500000,
+                "description": "Complete text or supported HTML value for this field."
               }
             },
             "required": [
               "format",
               "value"
-            ]
+            ],
+            "description": "Complete new title of this block. Omit this field to preserve the current block title."
           },
           "content": {
             "type": "object",
@@ -518,17 +556,20 @@
                 "enum": [
                   "text",
                   "html"
-                ]
+                ],
+                "description": "Format used to interpret value."
               },
               "value": {
                 "type": "string",
-                "maxLength": 500000
+                "maxLength": 500000,
+                "description": "Complete text or supported HTML value for this field."
               }
             },
             "required": [
               "format",
               "value"
-            ]
+            ],
+            "description": "Complete new body of this block. Omit this field to preserve the current block body."
           }
         },
         "required": [
@@ -556,12 +597,14 @@
           "noteId": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 128
+            "maxLength": 128,
+            "description": "ID of the note whose tags will be replaced."
           },
           "expectedVersion": {
             "type": "integer",
             "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
           },
           "tagIds": {
             "maxItems": 50,
@@ -570,7 +613,8 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 128
-            }
+            },
+            "description": "Complete replacement set of existing tag IDs. Use an empty array to remove all tags."
           }
         },
         "required": [

@@ -90,8 +90,8 @@ export type BridgePresence = z.infer<typeof bridgePresenceSchema>;
 
 export const entityIdSchema = z.string().min(1).max(128);
 export const richTextInputSchema = z.object({
-  format: z.enum(['text', 'html']),
-  value: z.string().max(500_000),
+  format: z.enum(['text', 'html']).describe('Format used to interpret value.'),
+  value: z.string().max(500_000).describe('Complete text or supported HTML value for this field.'),
 });
 export const richTextOutputSchema = z.object({
   html: z.string(),
@@ -162,15 +162,26 @@ export const noteBlockDetailSchema = z.object({
 });
 
 const emptyInputSchema = z.object({}).strict();
-const expectedVersionSchema = z.number().int().positive();
+const expectedVersionSchema = z
+  .number()
+  .int()
+  .positive()
+  .describe('Current note version returned by get_note or get_note_block. The write fails if it is stale.');
 
 const updateNoteHeaderInputSchema = z
   .object({
-    noteId: entityIdSchema,
+    noteId: entityIdSchema.describe('ID of the note whose header will be updated.'),
     expectedVersion: expectedVersionSchema,
-    title: richTextInputSchema.optional(),
-    subtitle: richTextInputSchema.optional(),
-    collectionId: entityIdSchema.nullable().optional(),
+    title: richTextInputSchema
+      .describe('Complete new note title. Omit this field to preserve the current note title.')
+      .optional(),
+    subtitle: richTextInputSchema
+      .describe('Complete new note subtitle. Omit this field to preserve the current note subtitle.')
+      .optional(),
+    collectionId: entityIdSchema
+      .nullable()
+      .describe('Existing collection ID for the note. Omit to preserve the current collection; use null to remove it.')
+      .optional(),
   })
   .refine(
     (input) => input.title !== undefined || input.subtitle !== undefined || input.collectionId !== undefined,
@@ -179,11 +190,15 @@ const updateNoteHeaderInputSchema = z
 
 const updateNoteBlockInputSchema = z
   .object({
-    noteId: entityIdSchema,
-    blockId: entityIdSchema,
+    noteId: entityIdSchema.describe('ID of the note containing the block.'),
+    blockId: entityIdSchema.describe('ID of the exact block to update, obtained from get_note or add_note_block.'),
     expectedVersion: expectedVersionSchema,
-    title: richTextInputSchema.optional(),
-    content: richTextInputSchema.optional(),
+    title: richTextInputSchema
+      .describe('Complete new title of this block. Omit this field to preserve the current block title.')
+      .optional(),
+    content: richTextInputSchema
+      .describe('Complete new body of this block. Omit this field to preserve the current block body.')
+      .optional(),
   })
   .refine((input) => input.title !== undefined || input.content !== undefined, {
     message: 'At least one block field is required.',
@@ -207,32 +222,43 @@ export const commandInputSchemas = {
     limit: z.number().int().min(1).max(100).default(100),
   }),
   create_note: z.object({
-    title: richTextInputSchema.optional(),
-    subtitle: richTextInputSchema.optional(),
-    collectionId: entityIdSchema.nullable().optional(),
-    tagIds: z.array(entityIdSchema).max(50).default([]),
+    title: richTextInputSchema.describe('Title of the new note. Omit to create an empty note title.').optional(),
+    subtitle: richTextInputSchema.describe('Subtitle of the new note. Omit to create an empty note subtitle.').optional(),
+    collectionId: entityIdSchema
+      .nullable()
+      .describe('Existing collection ID for the new note. Omit or use null for no collection.')
+      .optional(),
+    tagIds: z
+      .array(entityIdSchema)
+      .max(50)
+      .describe('Existing tag IDs to assign to the new note. Omit for no tags.')
+      .default([]),
     blocks: z
       .array(
         z.object({
-          title: richTextInputSchema.optional(),
-          content: richTextInputSchema.optional(),
+          title: richTextInputSchema.describe('Optional title of this new block.').optional(),
+          content: richTextInputSchema.describe('Optional body of this new block.').optional(),
         }),
       )
       .max(100)
+      .describe('Ordered blocks to create in the new note. Omit to create the note without blocks.')
       .default([]),
   }),
   update_note_header: updateNoteHeaderInputSchema,
   add_note_block: z.object({
-    noteId: entityIdSchema,
+    noteId: entityIdSchema.describe('ID of the note that will receive the new block.'),
     expectedVersion: expectedVersionSchema,
-    title: richTextInputSchema.optional(),
-    content: richTextInputSchema.optional(),
+    title: richTextInputSchema.describe('Optional title of the new block. Omit for an empty block title.').optional(),
+    content: richTextInputSchema.describe('Optional body of the new block. Omit for an empty block body.').optional(),
   }),
   update_note_block: updateNoteBlockInputSchema,
   set_note_tags: z.object({
-    noteId: entityIdSchema,
+    noteId: entityIdSchema.describe('ID of the note whose tags will be replaced.'),
     expectedVersion: expectedVersionSchema,
-    tagIds: z.array(entityIdSchema).max(50),
+    tagIds: z
+      .array(entityIdSchema)
+      .max(50)
+      .describe('Complete replacement set of existing tag IDs. Use an empty array to remove all tags.'),
   }),
 } as const;
 
