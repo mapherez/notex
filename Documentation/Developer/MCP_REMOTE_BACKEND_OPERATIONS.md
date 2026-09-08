@@ -7,7 +7,7 @@
 - Persist only `/data/notex-mcp.sqlite`. This database contains identity and OAuth metadata, never notes or tool payloads.
 - A backend restart intentionally fails live tool calls and disconnects NoteX Desktop. Nothing is replayed when either side reconnects.
 
-The runnable configuration reference and Docker commands are in [`backend/README.md`](../backend/README.md).
+The runnable configuration reference and Docker commands are in [`backend/README.md`](../../backend/README.md).
 
 ## Reverse Proxy
 

@@ -1,7 +1,7 @@
 {
   "name": "notex",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.2.0",
   "type": "module",
   "scripts": {
     "build:mcp-contract": "npm --prefix packages/notex-mcp-contract run build",
@@ -9,6 +9,7 @@
     "tauri:build": "tauri build",
     "tauri:icon": "tauri icon ./public/assets/notex_logo_small.webp",
     "release:tauri": "node .github/scripts/tauri-release.mjs",
+    "version:set": "node scripts/set-version.mjs",
     "dev": "vite --host 0.0.0.0",
     "prebuild": "npm run build:mcp-contract",
     "build": "tsc -b && vite build",

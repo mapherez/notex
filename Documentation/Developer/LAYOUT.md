@@ -10,7 +10,8 @@ Contains:
 - New note action
 - Primary navigation
 - Collections
-- Local app version and legal links
+- Local MCP status linked to the Profile MCP section
+- Local app version and patch notes
 - Privacy and terms links
 
 ## Top Bar

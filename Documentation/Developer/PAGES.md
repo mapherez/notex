@@ -33,7 +33,10 @@ Includes:
 - Preferences
 - SQLite database path
 - Local `.notex` package export/import and local data management
+- Local MCP start, stop, status, and connection configuration
+- Manual update checking
 
 ## Legal
 
-`/privacy` and `/terms` render the app privacy and terms content.
+Privacy and Terms open as global modals over the current page. Their legacy
+routes redirect to the equivalent modal URL.

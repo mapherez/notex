@@ -1,3 +1,20 @@
+# 2.2.0
+
+## What's New in NoteX
+
+This release adds local MCP support, making it possible to connect compatible AI clients directly to NoteX while keeping notes stored locally.
+
+### Highlights
+
+- Added a local MCP server for searching, reading, creating, and editing notes through compatible AI clients.
+- Added MCP controls, connection status, and configuration options to the Profile page and sidebar.
+- Improved search with independent search terms, broader note-field matching, and relevance-based results.
+- Introduced a shared modal system for a more consistent experience across the app.
+- Moved Privacy and Terms into in-app modals without leaving the current page.
+- Refined the Profile layout and added manual update checking.
+
+---
+
 # 2.1.0
 
 ## What's New in NoteX

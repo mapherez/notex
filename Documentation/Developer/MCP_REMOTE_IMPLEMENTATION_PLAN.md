@@ -1,6 +1,6 @@
-# Plano de Implementação MCP para o NoteX
+# Plano de Implementação MCP Remoto para o NoteX
 
-> **Estado:** plano remoto preservado para trabalho futuro. A prioridade atual é o servidor MCP local embutido definido em [`MCP_LOCAL_IMPLEMENTATION_PLAN.md`](./MCP_LOCAL_IMPLEMENTATION_PLAN.md). O diretório `backend/` e esta arquitetura não devem ser removidos.
+> **Estado:** plano remoto preservado para trabalho futuro. O servidor MCP local embutido já está implementado e documentado no [guia de utilização](../MCP_LOCAL_USER_GUIDE.md). O diretório `backend/` e esta arquitetura devem permanecer separados desse fluxo local.
 
 ## Resumo
 

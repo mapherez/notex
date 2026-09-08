@@ -1,4 +1,4 @@
-# NoteX MCP Architecture
+# NoteX Remote MCP Architecture
 
 ## Invariants
 
@@ -79,7 +79,3 @@ The desktop bridge protocol is versioned independently from MCP. Both peers must
 - No transport may retain a request for later delivery. Reconnection creates a new execution opportunity; it never resumes an earlier request.
 - No NoteX database schema change is permitted for MCP. Backend migrations target only the independent backend database.
 - Before any future editor implementation, reread audit `16` from commit `8f86a62`. CSS work remains governed by audit `99` from commit `617bf8a`. MCP work must not include editor selector, TOC, CSS ownership, or redesign changes.
-
-## Phase 0 Gate
-
-Phase 0 is complete when the shared contract typechecks/builds, its contract tests pass once from source, no test files are emitted to `dist`, this threat model is recorded, and all architecture invariants above are explicit. The completed validation is recorded in `MCP_IMPLEMENTATION_CHECKPOINT.md`.
