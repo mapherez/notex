@@ -624,6 +624,7 @@
       "paragraphs": [
         "O NoteX é uma aplicação desktop local e offline-first. As suas notas, etiquetas, coleções, definições e restantes dados da aplicação são guardados numa base de dados SQLite local no seu dispositivo.",
         "O NoteX não requer uma conta e não envia a sua base de conhecimento para um servidor do NoteX.",
+        "Quando inicia o MCP local e liga um cliente de AI, os dados das notas pedidos por esse cliente são enviados através da ligação MCP local. O NoteX não guarda uma cópia adicional dessa troca, mas o cliente de AI ligado pode processar o conteúdo de acordo com a sua própria política de privacidade.",
         "Quando exporta os seus dados, o NoteX cria localmente um pacote .notex com a sua base de dados e os ficheiros anexados. É da sua responsabilidade decidir onde guarda ou partilha esse pacote exportado.",
         "Quando importa um pacote, o NoteX substitui a base de dados local e a pasta de ficheiros atuais pelo pacote .notex selecionado.",
         "O NoteX não vende os seus dados, não utiliza as suas notas para publicidade e não partilha a sua base de dados local com terceiros."
