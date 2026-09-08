@@ -624,6 +624,7 @@
       "paragraphs": [
         "NoteX is a local/offline-first desktop app. Your notes, tags, collections, settings, and app data are stored in a local SQLite database on your device.",
         "NoteX does not require an account and does not send your knowledge base to a NoteX server.",
+        "When you start local MCP and connect an AI client, note data requested by that client is sent through the local MCP connection. NoteX does not store an additional copy of that exchange, but the connected AI client may process the content under its own privacy policy.",
         "When you export your data, NoteX creates a .notex package locally with your database and attached files. You are responsible for where you store or share that exported package.",
         "When you import a package, NoteX replaces the current local database and files folder with the selected .notex package.",
         "NoteX does not sell your data, use your notes for advertising, or share your local database with third parties."

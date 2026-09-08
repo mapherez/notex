@@ -3,210 +3,237 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NoteX - Offline knowledge management for Windows</title>
+    <title>NoteX - Local-first notes for Windows</title>
     <meta
       name="description"
-      content="NoteX is a local-first knowledge management app for Windows, built around structured notes, tags, collections, and fast daily reference."
+      content="NoteX is a local-first Windows app for structured notes, rich content, tags, collections, attachments, and direct AI workflows through MCP."
     />
-    <meta name="theme-color" content="#080b12" />
-    <meta property="og:title" content="NoteX" />
+    <meta name="theme-color" content="#090a0c" />
+    <meta property="og:title" content="NoteX - Local-first notes for Windows" />
     <meta
       property="og:description"
-      content="A local-first knowledge base for structured notes, references, and daily work."
+      content="Build a private knowledge base on your computer and connect compatible AI clients through local MCP."
     />
     <meta property="og:type" content="website" />
-    <link rel="icon" href="./assets/notex-mark.svg" type="image/svg+xml" />
+    <meta property="og:url" content="https://notex.mapherez.com/" />
+    <meta property="og:image" content="https://notex.mapherez.com/assets/notex-logo.webp" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="canonical" href="https://notex.mapherez.com/" />
+    <link rel="icon" href="./assets/notex-logo.webp" type="image/webp" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
     <header class="site-nav">
-      <a class="brand" href="#top" aria-label="NoteX home">
-        <img src="./assets/notex-mark.svg" alt="" width="34" height="34" />
-        <span>NoteX</span>
-      </a>
-      <nav aria-label="Primary navigation">
-        <a href="#features">Features</a>
-        <a href="#screenshots">Screenshots</a>
-        <a href="#download">Download</a>
-        <a href="https://github.com/mapherez/notex">GitHub</a>
-      </nav>
+      <div class="nav-inner">
+        <a class="brand" href="#top" aria-label="NoteX home">
+          <img src="./assets/notex-logo.webp" alt="" width="38" height="38" />
+          <span>NoteX</span>
+        </a>
+        <nav aria-label="Primary navigation">
+          <a href="#features">Features</a>
+          <a href="#mcp">Local MCP</a>
+          <a href="#download">Download</a>
+          <a href="https://github.com/mapherez/notex">GitHub</a>
+        </nav>
+      </div>
     </header>
 
-    <main id="top">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-grid" aria-hidden="true"></div>
-        <div class="hero-preview" aria-hidden="true">
-          <div class="window-bar">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-          <div class="preview-shell">
-            <aside>
-              <b>NoteX</b>
-              <span>Dashboard</span>
-              <span>Notes</span>
-              <span>Collections</span>
-              <span>Tags</span>
-            </aside>
-            <div class="preview-main">
-              <div class="preview-search"></div>
-              <div class="preview-stats">
-                <span></span>
-                <span></span>
-                <span></span>
+    <main id="main-content">
+      <section id="top" class="hero" aria-labelledby="hero-title">
+        <div class="hero-inner">
+          <div class="hero-content">
+            <p class="eyebrow">Local-first knowledge management</p>
+            <h1 id="hero-title">NoteX</h1>
+            <p class="hero-copy">
+              A focused Windows app for structured notes, rich content, fast retrieval, and a
+              knowledge base that stays on your computer.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="https://github.com/mapherez/notex/releases/latest">
+                Download for Windows
+              </a>
+              <a class="button button-secondary" href="#mcp">Explore local MCP</a>
+            </div>
+            <dl class="hero-facts">
+              <div>
+                <dt>Local</dt>
+                <dd>SQLite storage on your device</dd>
               </div>
-              <article>
-                <small>#grammar</small>
-                <strong>Linguistic doubt</strong>
-                <p>Structured notes for translation, proofreading, and reference.</p>
-              </article>
-              <article>
-                <small>#research</small>
-                <strong>Knowledge entry</strong>
-                <p>Examples, explanations, tips, related notes, and links.</p>
-              </article>
-            </div>
+              <div>
+                <dt>Connected</dt>
+                <dd>Direct AI workflows through MCP</dd>
+              </div>
+              <div>
+                <dt>Portable</dt>
+                <dd>Database and files in `.notex` packages</dd>
+              </div>
+            </dl>
           </div>
-        </div>
 
-        <div class="hero-content">
-          <p class="eyebrow">Local-first knowledge management</p>
-          <h1 id="hero-title">NoteX</h1>
-          <p class="hero-copy">
-            A quiet Windows desktop app for building a personal knowledge base with structured notes,
-            collections, tags, examples, and fast reference workflows.
-          </p>
-          <div class="hero-actions">
-            <a class="button button-primary" href="https://github.com/mapherez/notex/releases/latest">
-              Download for Windows
-            </a>
-            <a class="button button-secondary" href="https://github.com/mapherez/notex">View on GitHub</a>
+          <div class="product-stage" aria-hidden="true">
+            <div class="window-titlebar">
+              <div class="window-brand">
+                <img src="./assets/notex-logo.webp" alt="" width="24" height="24" />
+                <span>NoteX</span>
+              </div>
+              <div class="window-controls"><i></i><i></i><i></i></div>
+            </div>
+            <div class="app-shell-preview">
+              <aside class="app-sidebar-preview">
+                <strong>NoteX</strong>
+                <span class="active">Dashboard</span>
+                <span>Notes</span>
+                <span>Favorites</span>
+                <span>Collections</span>
+                <span>Tags</span>
+                <small><i></i> MCP Online</small>
+              </aside>
+              <div class="app-main-preview">
+                <div class="preview-topbar"><span>Search your notes</span><b>EN</b></div>
+                <div class="preview-heading">
+                  <div><small>GOOD MORNING</small><strong>Your knowledge, in one place.</strong></div>
+                  <button type="button" tabindex="-1">New note</button>
+                </div>
+                <div class="preview-stats"><span></span><span></span><span></span><span></span></div>
+                <div class="preview-notes">
+                  <article>
+                    <small>REFERENCE</small>
+                    <strong>Doubt about terminology</strong>
+                    <p>Examples, context, links, and related notes.</p>
+                    <div><i></i><i></i><i></i></div>
+                  </article>
+                  <article>
+                    <small>PROJECT</small>
+                    <strong>Release notes</strong>
+                    <p>Tasks, decisions, and implementation details.</p>
+                    <div><i></i><i></i></div>
+                  </article>
+                </div>
+              </div>
+            </div>
           </div>
-          <dl class="hero-facts">
-            <div>
-              <dt>Offline</dt>
-              <dd>Data stays on your device</dd>
-            </div>
-            <div>
-              <dt>Structured</dt>
-              <dd>Fields for real knowledge work</dd>
-            </div>
-            <div>
-              <dt>Portable</dt>
-              <dd>SQLite backups are portable</dd>
-            </div>
-          </dl>
         </div>
       </section>
 
-      <section id="features" class="section">
+      <section id="features" class="section" aria-labelledby="features-title">
         <div class="section-heading">
-          <p class="eyebrow">Feature highlights</p>
-          <h2>Built for daily reference, not content feeds.</h2>
+          <p class="eyebrow">The workspace</p>
+          <h2 id="features-title">Made for knowledge you return to.</h2>
+          <p>
+            NoteX combines flexible writing with enough structure to keep growing collections
+            useful over time.
+          </p>
         </div>
         <div class="feature-grid">
-          <article class="feature-card">
-            <span class="feature-icon icon-note"></span>
-            <h3>Structured notes</h3>
-            <p>Capture explanations, summaries, examples, tips, links, and related notes without losing context.</p>
+          <article class="feature-card feature-blue">
+            <span class="feature-number">01</span>
+            <h3>Block-based notes</h3>
+            <p>Build each note from ordered content blocks with individual titles and rich text.</p>
           </article>
-          <article class="feature-card">
-            <span class="feature-icon icon-tag"></span>
-            <h3>Tags and collections</h3>
-            <p>Group knowledge by project, area, or topic while keeping notes easy to filter and reopen.</p>
+          <article class="feature-card feature-pink">
+            <span class="feature-number">02</span>
+            <h3>Rich content</h3>
+            <p>Use headings, lists, tables, links, colors, highlights, images, and attachments.</p>
           </article>
-          <article class="feature-card">
-            <span class="feature-icon icon-table"></span>
-            <h3>Tables and examples</h3>
-            <p>Use editable example tables for language notes, terminology, source material, and repeatable patterns.</p>
+          <article class="feature-card feature-green">
+            <span class="feature-number">03</span>
+            <h3>Search across context</h3>
+            <p>Find matches across note headers, blocks, tags, and collections, ranked by relevance.</p>
           </article>
-          <article class="feature-card">
-            <span class="feature-icon icon-lock"></span>
-            <h3>Local-first storage</h3>
-            <p>NoteX is moving toward a true desktop workflow with local persistence and portable backups.</p>
+          <article class="feature-card feature-amber">
+            <span class="feature-number">04</span>
+            <h3>Organize naturally</h3>
+            <p>Combine tags, collections, favorites, pins, recent activity, and trash.</p>
+          </article>
+          <article class="feature-card feature-mint">
+            <span class="feature-number">05</span>
+            <h3>Local by default</h3>
+            <p>No account is required. Your working database and attachments stay on your computer.</p>
+          </article>
+          <article class="feature-card feature-neutral">
+            <span class="feature-number">06</span>
+            <h3>Portable backups</h3>
+            <p>Export the complete workspace or individual notes as local `.notex` packages.</p>
           </article>
         </div>
       </section>
 
-      <section id="screenshots" class="section screenshots-section">
+      <section id="mcp" class="mcp-band" aria-labelledby="mcp-title">
+        <div class="mcp-inner">
+          <div class="mcp-copy">
+            <p class="eyebrow">Local MCP</p>
+            <h2 id="mcp-title">Let compatible AI clients work with your notes.</h2>
+            <p>
+              Start the embedded MCP server from Profile, copy the generic connection details,
+              and use supported AI clients to search, read, create, and edit notes.
+            </p>
+            <ul class="check-list">
+              <li>No NoteX account or cloud synchronization</li>
+              <li>Available only while NoteX and MCP are running</li>
+              <li>Local Streamable HTTP connection on your computer</li>
+            </ul>
+          </div>
+          <div class="connection-panel" aria-label="Example local MCP configuration">
+            <div class="connection-header">
+              <span>Connection</span>
+              <small><i></i> Online</small>
+            </div>
+            <dl>
+              <div><dt>Name</dt><dd>NoteX</dd></div>
+              <div><dt>Transport</dt><dd>Streamable HTTP</dd></div>
+              <div><dt>URL</dt><dd>http://127.0.0.1:47321/mcp</dd></div>
+              <div><dt>Authentication</dt><dd>None</dd></div>
+            </dl>
+            <p>Always copy the current configuration from NoteX.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section local-section" aria-labelledby="local-title">
         <div class="section-heading">
-          <p class="eyebrow">Screenshots</p>
-          <h2>Interface previews will live here.</h2>
+          <p class="eyebrow">Your data</p>
+          <h2 id="local-title">A desktop app first.</h2>
         </div>
-        <div class="screenshot-grid">
-          <article class="screenshot-placeholder">
-            <div class="screenshot-toolbar"></div>
-            <div class="screenshot-lines">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-            <strong>Dashboard</strong>
-          </article>
-          <article class="screenshot-placeholder wide">
-            <div class="screenshot-toolbar"></div>
-            <div class="note-layout">
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-            <strong>Note editor</strong>
-          </article>
-          <article class="screenshot-placeholder">
-            <div class="screenshot-toolbar"></div>
-            <div class="tag-stack">
-              <span>#grammar</span>
-              <span>#doubt</span>
-              <span>#research</span>
-            </div>
-            <strong>Tags and collections</strong>
-          </article>
+        <div class="local-grid">
+          <div>
+            <strong>SQLite is the source of truth</strong>
+            <p>Your notes are stored in the existing local database, not mirrored to a NoteX cloud.</p>
+          </div>
+          <div>
+            <strong>You control AI access</strong>
+            <p>Local MCP starts only when you enable it and stops when you choose or close NoteX.</p>
+          </div>
+          <div>
+            <strong>Bring the whole workspace</strong>
+            <p>Exported packages keep the database and attached files together for local backups.</p>
+          </div>
         </div>
       </section>
 
-      <section id="download" class="download-band">
+      <section id="download" class="download-band" aria-labelledby="download-title">
         <div>
-          <p class="eyebrow">Download</p>
-          <h2>Install NoteX for Windows.</h2>
-          <p>
-            Get the latest desktop release from GitHub Releases. Future updates are delivered through
-            the app updater.
-          </p>
+          <p class="eyebrow">Windows desktop</p>
+          <h2 id="download-title">Keep your knowledge close.</h2>
+          <p>Download the latest release from GitHub. Future releases can be installed through the built-in updater.</p>
         </div>
         <a class="button button-primary" href="https://github.com/mapherez/notex/releases/latest">
-          Download for Windows
+          Download NoteX
         </a>
-      </section>
-
-      <section class="section links-section" aria-labelledby="links-title">
-        <div class="section-heading">
-          <p class="eyebrow">Project links</p>
-          <h2 id="links-title">Source, releases, and issue tracking.</h2>
-        </div>
-        <div class="link-list">
-          <a href="https://github.com/mapherez/notex">
-            <span>GitHub repository</span>
-            <small>Read the source and follow development.</small>
-          </a>
-          <a href="https://github.com/mapherez/notex/releases/latest">
-            <span>Latest release</span>
-            <small>Download the newest Windows build.</small>
-          </a>
-          <a href="https://github.com/mapherez/notex/issues">
-            <span>Issues</span>
-            <small>Report bugs or track planned fixes.</small>
-          </a>
-        </div>
       </section>
     </main>
 
     <footer class="site-footer">
-      <span>NoteX</span>
-      <nav aria-label="Footer links">
-        <a href="https://github.com/mapherez/notex/releases/latest">Download</a>
+      <a class="brand footer-brand" href="#top" aria-label="NoteX home">
+        <img src="./assets/notex-logo.webp" alt="" width="30" height="30" />
+        <span>NoteX</span>
+      </a>
+      <nav aria-label="Project links">
         <a href="https://github.com/mapherez/notex">GitHub</a>
+        <a href="https://github.com/mapherez/notex/issues">Issues</a>
+        <a href="./privacy.html">Privacy</a>
+        <a href="./terms.html">Terms</a>
       </nav>
     </footer>
   </body>
