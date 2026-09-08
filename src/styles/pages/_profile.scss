@@ -37,6 +37,82 @@
   height: 100%;
 }
 
+.profile-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--nx-space-4);
+}
+
+.profile-page-header > div {
+  min-width: 0;
+}
+
+.profile-update-button {
+  align-self: flex-end;
+  flex: 0 0 auto;
+  border-color: var(--nx-color-border);
+  background: var(--nx-color-surface);
+}
+
+.profile-update-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.profile-update-button .spinning {
+  animation: spin 900ms linear infinite;
+}
+
+@media (min-width: 1181px) {
+  .profile-layout {
+    grid-template-columns: 15.3rem minmax(0, 1fr) minmax(20rem, 24.5rem);
+    grid-template-rows: repeat(3, auto);
+    align-items: stretch;
+  }
+
+  .profile-left,
+  .profile-main,
+  .profile-top-row {
+    display: contents;
+  }
+
+  .profile-card {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .profile-shortcuts-section {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .mcp-profile-section {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .profile-preferences-section {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .profile-data-section {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .database-management-card {
+    grid-column: 2 / 4;
+    grid-row: 2;
+  }
+
+  .profile-statistics-section {
+    grid-column: 2 / 4;
+    grid-row: 3;
+  }
+}
+
 .profile-section {
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-card);
@@ -325,7 +401,7 @@ button.security-row:hover {
 }
 
 .mcp-profile-section__header {
-  align-items: flex-start;
+  align-items: center;
   gap: var(--nx-space-3);
 }
 
@@ -388,7 +464,16 @@ button.security-row:hover {
 
 .mcp-local-actions {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: var(--nx-space-2);
+}
+
+.mcp-configure-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-color: var(--nx-color-border);
+  background: var(--nx-color-surface-subtle);
 }
 
 .mcp-session-actions {

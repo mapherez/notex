@@ -358,6 +358,7 @@
     "localUser": "Utilizador local",
     "mcp": {
       "title": "MCP",
+      "openSection": "Abrir definições MCP ({{status}})",
       "account": "Conta MCP",
       "noAccount": "Sem conta autenticada",
       "online": "Online",
@@ -653,6 +654,9 @@
     "installing": "A instalar...",
     "installingProgress": "A instalar... {{percent}}%",
     "later": "Mais tarde",
+    "checkNow": "Procurar atualizações",
+    "checking": "A procurar atualizações",
+    "upToDate": "O NoteX está atualizado",
     "checkFailed": "Não foi possível verificar atualizações",
     "installFailed": "Não foi possível instalar a atualização",
     "unknownVersion": "desconhecida"

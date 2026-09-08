@@ -62,7 +62,7 @@ export function McpProfileSection() {
   const ActionIcon = transitioning ? Loader2 : serverRunning ? Square : Play;
 
   return (
-    <section className="profile-section mcp-profile-section">
+    <section className="profile-section mcp-profile-section" id="mcp">
       <div className="profile-section-header mcp-profile-section__header">
         <h2 className="profile-section-title">{t('profile.mcp.title')}</h2>
         <span className={online ? 'mcp-status mcp-status--online' : 'mcp-status'}>
@@ -98,12 +98,13 @@ export function McpProfileSection() {
           <span>{actionLabel()}</span>
         </button>
         <button
-          className="mcp-command-button"
+          className="icon-button mcp-configure-button"
           type="button"
+          aria-label={t('profile.mcp.configureServer')}
+          title={t('profile.mcp.configureServer')}
           onClick={() => setConfigurationOpen(true)}
         >
           <Settings2 />
-          <span>{t('profile.mcp.configureServer')}</span>
         </button>
       </div>
 

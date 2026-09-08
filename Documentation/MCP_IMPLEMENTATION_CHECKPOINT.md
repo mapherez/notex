@@ -4,6 +4,10 @@ Date: 2026-09-08
 
 ## Latest Handoff (Overrides Historical Status Below)
 
+- Profile follow-up implemented on 2026-09-08: the desktop layout now uses one aligned three-column grid, while the existing two-column and single-column responsive layouts remain unchanged below 1181px. The user, shortcuts and MCP cards align by row with preferences/export, database management and statistics.
+- The local MCP start/stop action and icon-only generic configuration action now share one row. The MCP title and Online/Offline state are vertically centered.
+- Manual update checking is available from an icon button in the Profile header. Startup checks, manual checks, the existing non-blocking update banner, install progress and dismiss behavior now share one transient Zustand store. No Rust updater or release configuration changed.
+- The updater store has three focused passing tests for concurrent-check deduplication, dismissal/resource release and install-failure recovery. `npm run typecheck`, `npm run check:styles` and `npm run build` passed after the Profile follow-up.
 - Shared search now applies OR semantics to independent query terms across note titles, subtitles, block titles, block bodies, tags, and collections. Results rank by distinct matched-term count, then the existing source priority and update time. The UI and MCP still use the same implementation. The examples `duvida doce` and `linguistica arroz test` are covered. All 17 focused search/dispatcher tests and the global TypeScript typecheck passed on 2026-09-08.
 - On 2026-09-08 the user confirmed a real Codex-to-NoteX local connection works. Focused validation then passed: 11 frontend concurrency/transaction tests, 3 rich-text tests, and all 11 Rust tests.
 - A live isolated NoteX instance also passed local HTTP guard checks without invoking note tools: valid MCP initialization, invalid Host rejection, Origin rejection, 2 MiB payload rejection, rate limiting and recovery, occupied-port detection, UI stop, and confirmed port closure. The isolated app and Vite process were closed afterwards.

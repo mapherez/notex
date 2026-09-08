@@ -58,6 +58,15 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
     onCreateNote();
   }
 
+  function openMcpProfile() {
+    onClose();
+    if (location.pathname === '/profile' && location.hash === '#mcp') {
+      window.requestAnimationFrame(() => {
+        document.getElementById('mcp')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    }
+  }
+
   return (
     <>
       {open ? (
@@ -167,10 +176,17 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
               v{appVersion}
             </button>
           ) : null}
-          <span className={mcpOnline ? 'sidebar-mcp-status sidebar-mcp-status--online' : 'sidebar-mcp-status'}>
+          <Link
+            className={mcpOnline ? 'sidebar-mcp-status sidebar-mcp-status--online' : 'sidebar-mcp-status'}
+            to="/profile#mcp"
+            aria-label={t('profile.mcp.openSection', {
+              status: t(mcpOnline ? 'profile.mcp.online' : 'profile.mcp.offline'),
+            })}
+            onClick={openMcpProfile}
+          >
             <span className="sidebar-mcp-status__dot" aria-hidden="true" />
             {t(mcpOnline ? 'profile.mcp.online' : 'profile.mcp.offline')}
-          </span>
+          </Link>
         </div>
       </aside>
       <PatchNotesModal open={patchNotesOpen} onClose={() => setPatchNotesOpen(false)} />

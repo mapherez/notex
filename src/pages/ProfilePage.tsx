@@ -10,6 +10,7 @@ import {
   HardDrive,
   Keyboard,
   Loader2,
+  RefreshCw,
   Star,
   Upload,
   UserRound,
@@ -21,7 +22,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AppModal } from "../components/ui/AppModal";
 import { CustomSelect } from "../components/ui/CustomSelect";
 import { IconBadge } from "../components/ui/IconBadge";
@@ -52,6 +53,7 @@ import { richTextToPlainText } from "../core/utils/richText";
 import { formatShortcutForDisplay } from "../core/utils/shortcutFormatting";
 import { useI18n } from "../i18n/I18nProvider";
 import { useAppStore } from "../store/useAppStore";
+import { useAppUpdaterStore } from "../store/useAppUpdaterStore";
 import { useNotesStore } from "../store/useNotesStore";
 import { useKnowledgeStore } from "../store/useKnowledgeStore";
 import { useToastStore } from "../store/useToastStore";
@@ -65,6 +67,7 @@ type ExportModalState =
 
 export function ProfilePage() {
   const { locale, t } = useI18n();
+  const location = useLocation();
   const navigate = useNavigate();
   const [databaseInfo, setDatabaseInfo] = useState<SqliteDatabaseInfo | null>(
     null,
@@ -87,6 +90,11 @@ export function ProfilePage() {
   const refreshKnowledge = useKnowledgeStore((state) => state.refreshKnowledge);
   const refreshNotes = useNotesStore((state) => state.refreshNotes);
   const pushToast = useToastStore((state) => state.pushToast);
+  const checkForUpdates = useAppUpdaterStore((state) => state.check);
+  const updaterStatus = useAppUpdaterStore((state) => state.status);
+  const checkingForUpdates = updaterStatus === "checking";
+  const updateActionDisabled =
+    checkingForUpdates || updaterStatus === "available" || updaterStatus === "installing";
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const favoriteNotes = activeNotes.filter((note) => note.isFavorite);
   const mostRecentNote = filterNotes(notes, { mode: "recent" })[0];
@@ -122,6 +130,20 @@ export function ProfilePage() {
       cancelled = true;
     };
   }, [pushToast, t]);
+
+  useEffect(() => {
+    if (location.hash !== "#mcp") {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("mcp")?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [location.hash]);
 
   async function handleCreateDatabaseExport() {
     setExportModal({ phase: "exporting" });
@@ -256,11 +278,37 @@ export function ProfilePage() {
     }
   }
 
+  async function handleCheckForUpdates() {
+    try {
+      const updateInfo = await checkForUpdates();
+      if (!updateInfo) {
+        pushToast(t("updater.upToDate"), "success");
+      }
+    } catch (error) {
+      pushToast(
+        error instanceof Error ? error.message : t("updater.checkFailed"),
+        "warning",
+      );
+    }
+  }
+
   return (
     <div className="page-content list-page-grid">
-      <header>
-        <h1 className="page-title">{t("profile.title")}</h1>
-        <p className="page-subtitle">{t("profile.subtitle")}</p>
+      <header className="profile-page-header">
+        <div>
+          <h1 className="page-title">{t("profile.title")}</h1>
+          <p className="page-subtitle">{t("profile.subtitle")}</p>
+        </div>
+        <button
+          className="icon-button profile-update-button"
+          type="button"
+          aria-label={t(checkingForUpdates ? "updater.checking" : "updater.checkNow")}
+          title={t(checkingForUpdates ? "updater.checking" : "updater.checkNow")}
+          disabled={updateActionDisabled}
+          onClick={() => void handleCheckForUpdates()}
+        >
+          <RefreshCw className={checkingForUpdates ? "spinning" : undefined} />
+        </button>
       </header>
 
       <div className="profile-layout">
@@ -286,7 +334,7 @@ export function ProfilePage() {
             <div className="connected">{t("profile.localAccount")}</div>
           </article>
 
-          <ProfileSection title={t("profile.shortcuts.title")}>
+          <ProfileSection className="profile-shortcuts-section" title={t("profile.shortcuts.title")}>
             <button
               className="profile-action-row shortcuts-button"
               type="button"
@@ -306,7 +354,7 @@ export function ProfilePage() {
         <section className="profile-main">
           <div className="profile-top-row">
             <ProfileSection
-              className="profile-top-card"
+              className="profile-top-card profile-preferences-section"
               title={t("profile.preferences.title")}
             >
               <PreferenceSelect
@@ -341,7 +389,7 @@ export function ProfilePage() {
               />
             </ProfileSection>
 
-            <ProfileSection title={t("profile.dataManagement.title")}>
+            <ProfileSection className="profile-data-section" title={t("profile.dataManagement.title")}>
               <button
                 className="profile-action-row"
                 type="button"
@@ -411,7 +459,7 @@ export function ProfilePage() {
             </div>
           </ProfileSection>
 
-          <ProfileSection title={t("profile.statistics")}>
+          <ProfileSection className="profile-statistics-section" title={t("profile.statistics")}>
             <div className="meta-list profile-stat-grid">
               <Metric
                 icon={CalendarClock}

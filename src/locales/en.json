@@ -358,6 +358,7 @@
     "localUser": "Local user",
     "mcp": {
       "title": "MCP",
+      "openSection": "Open MCP settings ({{status}})",
       "account": "MCP account",
       "noAccount": "No authenticated account",
       "online": "Online",
@@ -653,6 +654,9 @@
     "installing": "Installing...",
     "installingProgress": "Installing... {{percent}}%",
     "later": "Later",
+    "checkNow": "Check for updates",
+    "checking": "Checking for updates",
+    "upToDate": "NoteX is up to date",
     "checkFailed": "Could not check for updates",
     "installFailed": "Could not install update",
     "unknownVersion": "unknown"
