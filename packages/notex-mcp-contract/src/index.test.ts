@@ -8,6 +8,7 @@ import {
   bridgeReadySchema,
   commandScope,
   commandInputSchemas,
+  createToolManifest,
   parseDesktopBridgeFrame,
   parseCommandInput,
   parseServerBridgeFrame,
@@ -40,6 +41,15 @@ describe('NoteX MCP contract', () => {
     expect(toolMetadata.restore_note.annotations.destructiveHint).toBe(false);
     expect(toolMetadata.delete_note_permanently.annotations.destructiveHint).toBe(true);
     expect(toolMetadata.clear_trash.annotations.destructiveHint).toBe(true);
+  });
+
+  it('publishes rich-text syntax in the generated tool schemas', () => {
+    const manifest = JSON.stringify(createToolManifest());
+    expect(manifest).toContain('var(--nx-color-NAME)');
+    expect(manifest).toContain('data-type=\\"taskList\\"');
+    expect(manifest).toContain('<notex-tip title=\\"Tip\\">');
+    expect(manifest).toContain('one <tr> per row');
+    expect(manifest).toContain('Content is the complete new body.');
   });
 
   it('rejects incompatible bridge versions', () => {

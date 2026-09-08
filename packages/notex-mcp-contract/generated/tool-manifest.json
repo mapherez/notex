@@ -197,7 +197,7 @@
       "name": "create_note",
       "scope": "notex:create",
       "title": "create note",
-      "description": "Create a NoteX note, optionally with blocks and existing tags.",
+      "description": "Create a NoteX note, optionally with rich-text blocks and existing tags.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -217,12 +217,12 @@
                   "text",
                   "html"
                 ],
-                "description": "Format used to interpret value."
+                "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
                 "type": "string",
                 "maxLength": 500000,
-                "description": "Complete text or supported HTML value for this field."
+                "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
               }
             },
             "required": [
@@ -240,12 +240,12 @@
                   "text",
                   "html"
                 ],
-                "description": "Format used to interpret value."
+                "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
                 "type": "string",
                 "maxLength": 500000,
-                "description": "Complete text or supported HTML value for this field."
+                "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
               }
             },
             "required": [
@@ -294,12 +294,12 @@
                         "text",
                         "html"
                       ],
-                      "description": "Format used to interpret value."
+                      "description": "Use text for literal plain text or html for supported NoteX rich text."
                     },
                     "value": {
                       "type": "string",
                       "maxLength": 500000,
-                      "description": "Complete text or supported HTML value for this field."
+                      "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
                     }
                   },
                   "required": [
@@ -317,12 +317,12 @@
                         "text",
                         "html"
                       ],
-                      "description": "Format used to interpret value."
+                      "description": "Use text for literal plain text or html for supported NoteX rich text."
                     },
                     "value": {
                       "type": "string",
                       "maxLength": 500000,
-                      "description": "Complete text or supported HTML value for this field."
+                      "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent). Block bodies additionally support paragraphs and line breaks (<p>, <br>), headings (<h1> through <h6>), bullet and ordered lists (<ul>, <ol>, <li>), quotes (<blockquote>), code blocks (<pre><code>), horizontal rules (<hr>), and text alignment via style=\"text-align: left|center|right|justify\" on paragraphs or headings. For a checklist, use <ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"true|false\"><p>Item</p></li></ul>. For a NoteX tip, use <notex-tip title=\"Tip\"><p>Content</p></notex-tip>. For a table, use <table> with one <tr> per row and one <th> or <td> per column; wrap cell content in <p>. Table cells may use colspan and rowspan. Images, files, scripts, embedded content, and unsafe link protocols are not supported."
                     }
                   },
                   "required": [
@@ -342,7 +342,7 @@
       "name": "update_note_header",
       "scope": "notex:edit",
       "title": "update note header",
-      "description": "Update selected header fields of a NoteX note using optimistic versioning.",
+      "description": "Update selected inline-rich-text header fields using optimistic versioning.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -374,12 +374,12 @@
                   "text",
                   "html"
                 ],
-                "description": "Format used to interpret value."
+                "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
                 "type": "string",
                 "maxLength": 500000,
-                "description": "Complete text or supported HTML value for this field."
+                "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
               }
             },
             "required": [
@@ -397,12 +397,12 @@
                   "text",
                   "html"
                 ],
-                "description": "Format used to interpret value."
+                "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
                 "type": "string",
                 "maxLength": 500000,
-                "description": "Complete text or supported HTML value for this field."
+                "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
               }
             },
             "required": [
@@ -435,7 +435,7 @@
       "name": "add_note_block",
       "scope": "notex:edit",
       "title": "add note block",
-      "description": "Append a block to a NoteX note using optimistic versioning.",
+      "description": "Append a rich-text block to a NoteX note using optimistic versioning.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -467,12 +467,12 @@
                   "text",
                   "html"
                 ],
-                "description": "Format used to interpret value."
+                "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
                 "type": "string",
                 "maxLength": 500000,
-                "description": "Complete text or supported HTML value for this field."
+                "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
               }
             },
             "required": [
@@ -490,12 +490,12 @@
                   "text",
                   "html"
                 ],
-                "description": "Format used to interpret value."
+                "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
                 "type": "string",
                 "maxLength": 500000,
-                "description": "Complete text or supported HTML value for this field."
+                "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent). Block bodies additionally support paragraphs and line breaks (<p>, <br>), headings (<h1> through <h6>), bullet and ordered lists (<ul>, <ol>, <li>), quotes (<blockquote>), code blocks (<pre><code>), horizontal rules (<hr>), and text alignment via style=\"text-align: left|center|right|justify\" on paragraphs or headings. For a checklist, use <ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"true|false\"><p>Item</p></li></ul>. For a NoteX tip, use <notex-tip title=\"Tip\"><p>Content</p></notex-tip>. For a table, use <table> with one <tr> per row and one <th> or <td> per column; wrap cell content in <p>. Table cells may use colspan and rowspan. Images, files, scripts, embedded content, and unsafe link protocols are not supported."
               }
             },
             "required": [
@@ -515,7 +515,7 @@
       "name": "update_note_block",
       "scope": "notex:edit",
       "title": "update note block",
-      "description": "Update selected fields of a NoteX block using optimistic versioning.",
+      "description": "Replace selected block fields using optimistic versioning. Content is the complete new body.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -553,12 +553,12 @@
                   "text",
                   "html"
                 ],
-                "description": "Format used to interpret value."
+                "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
                 "type": "string",
                 "maxLength": 500000,
-                "description": "Complete text or supported HTML value for this field."
+                "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
               }
             },
             "required": [
@@ -576,12 +576,12 @@
                   "text",
                   "html"
                 ],
-                "description": "Format used to interpret value."
+                "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
                 "type": "string",
                 "maxLength": 500000,
-                "description": "Complete text or supported HTML value for this field."
+                "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent). Block bodies additionally support paragraphs and line breaks (<p>, <br>), headings (<h1> through <h6>), bullet and ordered lists (<ul>, <ol>, <li>), quotes (<blockquote>), code blocks (<pre><code>), horizontal rules (<hr>), and text alignment via style=\"text-align: left|center|right|justify\" on paragraphs or headings. For a checklist, use <ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"true|false\"><p>Item</p></li></ul>. For a NoteX tip, use <notex-tip title=\"Tip\"><p>Content</p></notex-tip>. For a table, use <table> with one <tr> per row and one <th> or <td> per column; wrap cell content in <p>. Table cells may use colspan and rowspan. Images, files, scripts, embedded content, and unsafe link protocols are not supported."
               }
             },
             "required": [

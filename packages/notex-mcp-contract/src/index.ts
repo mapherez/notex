@@ -89,10 +89,39 @@ export const bridgePresenceSchema = z
 export type BridgePresence = z.infer<typeof bridgePresenceSchema>;
 
 export const entityIdSchema = z.string().min(1).max(128);
-export const richTextInputSchema = z.object({
-  format: z.enum(['text', 'html']).describe('Format used to interpret value.'),
-  value: z.string().max(500_000).describe('Complete text or supported HTML value for this field.'),
-});
+const richTextFormatSchema = z
+  .enum(['text', 'html'])
+  .describe('Use text for literal plain text or html for supported NoteX rich text.');
+
+export const mcpInlineRichTextGuide =
+  'For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href="...">, ' +
+  '<span style="color: ...">, and <mark style="background-color: ...">. ' +
+  'Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, ' +
+  'violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. ' +
+  'For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent).';
+
+export const mcpBlockRichTextGuide =
+  `${mcpInlineRichTextGuide} Block bodies additionally support paragraphs and line breaks (<p>, <br>), ` +
+  'headings (<h1> through <h6>), bullet and ordered lists (<ul>, <ol>, <li>), quotes (<blockquote>), ' +
+  'code blocks (<pre><code>), horizontal rules (<hr>), and text alignment via style="text-align: left|center|right|justify" ' +
+  'on paragraphs or headings. For a checklist, use <ul data-type="taskList"><li data-type="taskItem" ' +
+  'data-checked="true|false"><p>Item</p></li></ul>. For a NoteX tip, use <notex-tip title="Tip"><p>Content</p>' +
+  '</notex-tip>. For a table, use <table> with one <tr> per row and one <th> or <td> per column; wrap cell ' +
+  'content in <p>. Table cells may use colspan and rowspan. Images, files, scripts, embedded content, and unsafe ' +
+  'link protocols are not supported.';
+
+function createRichTextInputSchema(valueDescription: string) {
+  return z.object({
+    format: richTextFormatSchema,
+    value: z.string().max(500_000).describe(valueDescription),
+  });
+}
+
+export const richTextInputSchema = createRichTextInputSchema(
+  'Complete literal text or supported NoteX HTML value for this field.',
+);
+export const inlineRichTextInputSchema = createRichTextInputSchema(mcpInlineRichTextGuide);
+export const blockRichTextInputSchema = createRichTextInputSchema(mcpBlockRichTextGuide);
 export const richTextOutputSchema = z.object({
   html: z.string(),
   text: z.string(),
@@ -172,10 +201,10 @@ const updateNoteHeaderInputSchema = z
   .object({
     noteId: entityIdSchema.describe('ID of the note whose header will be updated.'),
     expectedVersion: expectedVersionSchema,
-    title: richTextInputSchema
+    title: inlineRichTextInputSchema
       .describe('Complete new note title. Omit this field to preserve the current note title.')
       .optional(),
-    subtitle: richTextInputSchema
+    subtitle: inlineRichTextInputSchema
       .describe('Complete new note subtitle. Omit this field to preserve the current note subtitle.')
       .optional(),
     collectionId: entityIdSchema
@@ -193,10 +222,10 @@ const updateNoteBlockInputSchema = z
     noteId: entityIdSchema.describe('ID of the note containing the block.'),
     blockId: entityIdSchema.describe('ID of the exact block to update, obtained from get_note or add_note_block.'),
     expectedVersion: expectedVersionSchema,
-    title: richTextInputSchema
+    title: inlineRichTextInputSchema
       .describe('Complete new title of this block. Omit this field to preserve the current block title.')
       .optional(),
-    content: richTextInputSchema
+    content: blockRichTextInputSchema
       .describe('Complete new body of this block. Omit this field to preserve the current block body.')
       .optional(),
   })
@@ -238,8 +267,10 @@ export const commandInputSchemas = {
     limit: z.number().int().min(1).max(100).default(100),
   }),
   create_note: z.object({
-    title: richTextInputSchema.describe('Title of the new note. Omit to create an empty note title.').optional(),
-    subtitle: richTextInputSchema.describe('Subtitle of the new note. Omit to create an empty note subtitle.').optional(),
+    title: inlineRichTextInputSchema.describe('Title of the new note. Omit to create an empty note title.').optional(),
+    subtitle: inlineRichTextInputSchema
+      .describe('Subtitle of the new note. Omit to create an empty note subtitle.')
+      .optional(),
     collectionId: entityIdSchema
       .nullable()
       .describe('Existing collection ID for the new note. Omit or use null for no collection.')
@@ -252,8 +283,8 @@ export const commandInputSchemas = {
     blocks: z
       .array(
         z.object({
-          title: richTextInputSchema.describe('Optional title of this new block.').optional(),
-          content: richTextInputSchema.describe('Optional body of this new block.').optional(),
+          title: inlineRichTextInputSchema.describe('Optional title of this new block.').optional(),
+          content: blockRichTextInputSchema.describe('Optional body of this new block.').optional(),
         }),
       )
       .max(100)
@@ -264,8 +295,12 @@ export const commandInputSchemas = {
   add_note_block: z.object({
     noteId: entityIdSchema.describe('ID of the note that will receive the new block.'),
     expectedVersion: expectedVersionSchema,
-    title: richTextInputSchema.describe('Optional title of the new block. Omit for an empty block title.').optional(),
-    content: richTextInputSchema.describe('Optional body of the new block. Omit for an empty block body.').optional(),
+    title: inlineRichTextInputSchema
+      .describe('Optional title of the new block. Omit for an empty block title.')
+      .optional(),
+    content: blockRichTextInputSchema
+      .describe('Optional body of the new block. Omit for an empty block body.')
+      .optional(),
   }),
   update_note_block: updateNoteBlockInputSchema,
   set_note_tags: z.object({
@@ -366,10 +401,10 @@ const toolDescriptions: Record<CommandName, string> = {
   get_trash_status: 'Read the current trash count and state token required by clear_trash.',
   list_tags: 'List existing NoteX tags. Use returned IDs in write tools.',
   list_collections: 'List existing NoteX collections. Use returned IDs in write tools.',
-  create_note: 'Create a NoteX note, optionally with blocks and existing tags.',
-  update_note_header: 'Update selected header fields of a NoteX note using optimistic versioning.',
-  add_note_block: 'Append a block to a NoteX note using optimistic versioning.',
-  update_note_block: 'Update selected fields of a NoteX block using optimistic versioning.',
+  create_note: 'Create a NoteX note, optionally with rich-text blocks and existing tags.',
+  update_note_header: 'Update selected inline-rich-text header fields using optimistic versioning.',
+  add_note_block: 'Append a rich-text block to a NoteX note using optimistic versioning.',
+  update_note_block: 'Replace selected block fields using optimistic versioning. Content is the complete new body.',
   set_note_tags: 'Replace a NoteX note tag set with existing tag IDs using optimistic versioning.',
   move_note_to_trash: 'Move an active NoteX note to trash using optimistic versioning.',
   restore_note: 'Restore a NoteX note from trash using optimistic versioning.',

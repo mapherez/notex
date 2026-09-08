@@ -53,6 +53,24 @@ clear call fails without deleting anything and the client must check it again.
 Text and supported HTML formatting are accepted. Attachments and images are not
 accepted through MCP. Tags and collections must already exist in NoteX.
 
+### Rich text
+
+Use `{ "format": "text", "value": "..." }` for literal text or
+`{ "format": "html", "value": "..." }` for formatting. Note and block
+headers support inline formatting: bold, italic, underline, strike, inline code,
+links, text color, and highlights.
+
+Block bodies additionally support headings, alignment, bullet and ordered
+lists, checklists, quotes, tips, code blocks, horizontal rules, and tables. Use
+one `<tr>` per table row and one `<th>` or `<td>` per column, with cell content
+inside `<p>`. Checklists use `data-type="taskList"` and
+`data-type="taskItem"`; tips use `<notex-tip title="Tip">`.
+
+Rich-text values sent to an update tool replace that complete field. Read the
+current block first, preserve the parts that should remain, and then submit the
+complete updated HTML. The exact supported syntax and NoteX color palette are
+also published in each relevant MCP tool schema.
+
 ## Local Access
 
 There is no authentication token in this version. Any local process able to
