@@ -10,6 +10,7 @@ import {
   HardDrive,
   Keyboard,
   Loader2,
+  RefreshCw,
   Star,
   Upload,
   UserRound,
@@ -21,9 +22,11 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { AppModal } from "../components/ui/AppModal";
 import { CustomSelect } from "../components/ui/CustomSelect";
 import { IconBadge } from "../components/ui/IconBadge";
+import { McpProfileSection } from "../components/profile/McpProfileSection";
 import { appLimits, editorSettings } from "../config/appSettings";
 import {
   openSqliteDatabaseFolder,
@@ -50,6 +53,7 @@ import { richTextToPlainText } from "../core/utils/richText";
 import { formatShortcutForDisplay } from "../core/utils/shortcutFormatting";
 import { useI18n } from "../i18n/I18nProvider";
 import { useAppStore } from "../store/useAppStore";
+import { useAppUpdaterStore } from "../store/useAppUpdaterStore";
 import { useNotesStore } from "../store/useNotesStore";
 import { useKnowledgeStore } from "../store/useKnowledgeStore";
 import { useToastStore } from "../store/useToastStore";
@@ -63,6 +67,7 @@ type ExportModalState =
 
 export function ProfilePage() {
   const { locale, t } = useI18n();
+  const location = useLocation();
   const navigate = useNavigate();
   const [databaseInfo, setDatabaseInfo] = useState<SqliteDatabaseInfo | null>(
     null,
@@ -85,6 +90,11 @@ export function ProfilePage() {
   const refreshKnowledge = useKnowledgeStore((state) => state.refreshKnowledge);
   const refreshNotes = useNotesStore((state) => state.refreshNotes);
   const pushToast = useToastStore((state) => state.pushToast);
+  const checkForUpdates = useAppUpdaterStore((state) => state.check);
+  const updaterStatus = useAppUpdaterStore((state) => state.status);
+  const checkingForUpdates = updaterStatus === "checking";
+  const updateActionDisabled =
+    checkingForUpdates || updaterStatus === "available" || updaterStatus === "installing";
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const favoriteNotes = activeNotes.filter((note) => note.isFavorite);
   const mostRecentNote = filterNotes(notes, { mode: "recent" })[0];
@@ -120,6 +130,20 @@ export function ProfilePage() {
       cancelled = true;
     };
   }, [pushToast, t]);
+
+  useEffect(() => {
+    if (location.hash !== "#mcp") {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("mcp")?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [location.hash]);
 
   async function handleCreateDatabaseExport() {
     setExportModal({ phase: "exporting" });
@@ -254,11 +278,37 @@ export function ProfilePage() {
     }
   }
 
+  async function handleCheckForUpdates() {
+    try {
+      const updateInfo = await checkForUpdates();
+      if (!updateInfo) {
+        pushToast(t("updater.upToDate"), "success");
+      }
+    } catch (error) {
+      pushToast(
+        error instanceof Error ? error.message : t("updater.checkFailed"),
+        "warning",
+      );
+    }
+  }
+
   return (
     <div className="page-content list-page-grid">
-      <header>
-        <h1 className="page-title">{t("profile.title")}</h1>
-        <p className="page-subtitle">{t("profile.subtitle")}</p>
+      <header className="profile-page-header">
+        <div>
+          <h1 className="page-title">{t("profile.title")}</h1>
+          <p className="page-subtitle">{t("profile.subtitle")}</p>
+        </div>
+        <button
+          className="icon-button profile-update-button"
+          type="button"
+          aria-label={t(checkingForUpdates ? "updater.checking" : "updater.checkNow")}
+          title={t(checkingForUpdates ? "updater.checking" : "updater.checkNow")}
+          disabled={updateActionDisabled}
+          onClick={() => void handleCheckForUpdates()}
+        >
+          <RefreshCw className={checkingForUpdates ? "spinning" : undefined} />
+        </button>
       </header>
 
       <div className="profile-layout">
@@ -284,7 +334,7 @@ export function ProfilePage() {
             <div className="connected">{t("profile.localAccount")}</div>
           </article>
 
-          <ProfileSection title={t("profile.shortcuts.title")}>
+          <ProfileSection className="profile-shortcuts-section" title={t("profile.shortcuts.title")}>
             <button
               className="profile-action-row shortcuts-button"
               type="button"
@@ -297,12 +347,14 @@ export function ProfilePage() {
               <ChevronRight />
             </button>
           </ProfileSection>
+
+          <McpProfileSection />
         </section>
 
         <section className="profile-main">
           <div className="profile-top-row">
             <ProfileSection
-              className="profile-top-card"
+              className="profile-top-card profile-preferences-section"
               title={t("profile.preferences.title")}
             >
               <PreferenceSelect
@@ -337,7 +389,7 @@ export function ProfilePage() {
               />
             </ProfileSection>
 
-            <ProfileSection title={t("profile.dataManagement.title")}>
+            <ProfileSection className="profile-data-section" title={t("profile.dataManagement.title")}>
               <button
                 className="profile-action-row"
                 type="button"
@@ -407,7 +459,7 @@ export function ProfilePage() {
             </div>
           </ProfileSection>
 
-          <ProfileSection title={t("profile.statistics")}>
+          <ProfileSection className="profile-statistics-section" title={t("profile.statistics")}>
             <div className="meta-list profile-stat-grid">
               <Metric
                 icon={CalendarClock}
@@ -619,63 +671,59 @@ function ExportDatabaseModal({
   }
 
   return (
-    <div className="modal-backdrop">
-      <section
-        className="choice-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="export-db-title"
-      >
-        <h2 id="export-db-title">
-          {t("profile.dataManagement.exportModalTitle")}
-        </h2>
-        {modal.phase === "confirm" ? (
-          <>
-            <p>{t("profile.dataManagement.exportModalDescription")}</p>
-            <div className="choice-modal-actions two-column-actions">
-              <button type="button" onClick={onCancel}>
-                <span>{t("common.no")}</span>
-              </button>
-              <button type="button" onClick={onConfirm}>
-                <Download />
-                <span>{t("common.yes")}</span>
-              </button>
-            </div>
-          </>
-        ) : null}
-        {modal.phase === "exporting" ? (
-          <div className="choice-modal-status">
-            <Loader2 />
-            <span>{t("profile.dataManagement.exporting")}</span>
+    <AppModal
+      className="choice-modal"
+      dismissible={modal.phase !== "exporting"}
+      labelledBy="export-db-title"
+      onClose={onCancel}
+      open
+    >
+      <h2 id="export-db-title">
+        {t("profile.dataManagement.exportModalTitle")}
+      </h2>
+      {modal.phase === "confirm" ? (
+        <>
+          <p>{t("profile.dataManagement.exportModalDescription")}</p>
+          <div className="choice-modal-actions two-column-actions">
+            <button type="button" onClick={onCancel}>
+              <span>{t("common.no")}</span>
+            </button>
+            <button type="button" onClick={onConfirm}>
+              <Download />
+              <span>{t("common.yes")}</span>
+            </button>
           </div>
-        ) : null}
-        {modal.phase === "ready" ? (
-          <>
-            <p>{t("profile.dataManagement.exportReadyDescription")}</p>
-            <div
-              className="choice-modal-path"
-              title={modal.exportInfo.tempPath}
-            >
-              {modal.exportInfo.tempPath}
-            </div>
-            <div className="choice-modal-actions">
-              <button type="button" onClick={() => onSave(modal.exportInfo)}>
-                <FolderOpen />
+        </>
+      ) : null}
+      {modal.phase === "exporting" ? (
+        <div className="choice-modal-status">
+          <Loader2 />
+          <span>{t("profile.dataManagement.exporting")}</span>
+        </div>
+      ) : null}
+      {modal.phase === "ready" ? (
+        <>
+          <p>{t("profile.dataManagement.exportReadyDescription")}</p>
+          <div
+            className="choice-modal-path"
+            title={modal.exportInfo.tempPath}
+          >
+            {modal.exportInfo.tempPath}
+          </div>
+          <div className="choice-modal-actions">
+            <button type="button" onClick={() => onSave(modal.exportInfo)}>
+              <FolderOpen />
+              <span>
+                <span>{t("profile.dataManagement.downloadExport")}</span>
                 <span>
-                  <span>{t("profile.dataManagement.downloadExport")}</span>
-                  <span>
-                    {t("profile.dataManagement.downloadExportDescription")}
-                  </span>
+                  {t("profile.dataManagement.downloadExportDescription")}
                 </span>
-              </button>
-              <button type="button" onClick={onCancel}>
-                <span>{t("common.close")}</span>
-              </button>
-            </div>
-          </>
-        ) : null}
-      </section>
-    </div>
+              </span>
+            </button>
+          </div>
+        </>
+      ) : null}
+    </AppModal>
   );
 }
 
@@ -699,54 +747,53 @@ function ImportChoiceModal({
   }
 
   return (
-    <div className="modal-backdrop">
-      <section
-        className="choice-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="import-choice-title"
-      >
-        <h2 id="import-choice-title">
-          {t("profile.dataManagement.importChoiceTitle")}
-        </h2>
-        <p>{t("profile.dataManagement.importChoiceDescription")}</p>
-        {isImportingNote ? (
-          <div className="choice-modal-status">
-            <Loader2 />
-            <span>{t("profile.dataManagement.importingNote")}</span>
-          </div>
-        ) : null}
-        <div className="choice-modal-actions">
-          <button
-            type="button"
-            disabled={isImportingNote}
-            onClick={onImportNote}
-          >
-            <FileText />
-            <span>
-              <span>{t("profile.dataManagement.importNoteData")}</span>
-              <span>{t("profile.dataManagement.importNoteDescription")}</span>
-            </span>
-          </button>
-          <button
-            type="button"
-            disabled={isImportingNote}
-            onClick={onImportPackage}
-          >
-            <Upload />
-            <span>
-              <span>{t("profile.dataManagement.chooseImportDatabase")}</span>
-              <span>
-                {t("profile.dataManagement.chooseImportDatabaseDescription")}
-              </span>
-            </span>
-          </button>
-          <button type="button" disabled={isImportingNote} onClick={onCancel}>
-            <span>{t("common.cancel")}</span>
-          </button>
+    <AppModal
+      className="choice-modal"
+      dismissible={!isImportingNote}
+      labelledBy="import-choice-title"
+      onClose={onCancel}
+      open={open}
+    >
+      <h2 id="import-choice-title">
+        {t("profile.dataManagement.importChoiceTitle")}
+      </h2>
+      <p>{t("profile.dataManagement.importChoiceDescription")}</p>
+      {isImportingNote ? (
+        <div className="choice-modal-status">
+          <Loader2 />
+          <span>{t("profile.dataManagement.importingNote")}</span>
         </div>
-      </section>
-    </div>
+      ) : null}
+      <div className="choice-modal-actions">
+        <button
+          type="button"
+          disabled={isImportingNote}
+          onClick={onImportNote}
+        >
+          <FileText />
+          <span>
+            <span>{t("profile.dataManagement.importNoteData")}</span>
+            <span>{t("profile.dataManagement.importNoteDescription")}</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          disabled={isImportingNote}
+          onClick={onImportPackage}
+        >
+          <Upload />
+          <span>
+            <span>{t("profile.dataManagement.chooseImportDatabase")}</span>
+            <span>
+              {t("profile.dataManagement.chooseImportDatabaseDescription")}
+            </span>
+          </span>
+        </button>
+        <button type="button" disabled={isImportingNote} onClick={onCancel}>
+          <span>{t("common.cancel")}</span>
+        </button>
+      </div>
+    </AppModal>
   );
 }
 
@@ -770,56 +817,55 @@ function ImportDatabaseModal({
   }
 
   return (
-    <div className="modal-backdrop">
-      <section
-        className="choice-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="import-db-title"
-      >
-        <h2 id="import-db-title">
-          {t("profile.dataManagement.importModalTitle")}
-        </h2>
-        <p>{t("profile.dataManagement.importModalDescription")}</p>
-        {isImporting ? (
-          <div className="choice-modal-status">
-            <Loader2 />
-            <span>{t("profile.dataManagement.importing")}</span>
-          </div>
-        ) : null}
-        <div className="choice-modal-actions">
-          <button
-            type="button"
-            disabled={isImporting}
-            onClick={onExportCurrent}
-          >
-            <Download />
-            <span>
-              <span>
-                {t("profile.dataManagement.exportCurrentBeforeImport")}
-              </span>
-              <span>
-                {t(
-                  "profile.dataManagement.exportCurrentBeforeImportDescription",
-                )}
-              </span>
-            </span>
-          </button>
-          <button type="button" disabled={isImporting} onClick={onImport}>
-            <Upload />
-            <span>
-              <span>{t("profile.dataManagement.chooseImportDatabase")}</span>
-              <span>
-                {t("profile.dataManagement.chooseImportDatabaseDescription")}
-              </span>
-            </span>
-          </button>
-          <button type="button" disabled={isImporting} onClick={onCancel}>
-            <span>{t("common.cancel")}</span>
-          </button>
+    <AppModal
+      className="choice-modal"
+      dismissible={!isImporting}
+      labelledBy="import-db-title"
+      onClose={onCancel}
+      open={open}
+    >
+      <h2 id="import-db-title">
+        {t("profile.dataManagement.importModalTitle")}
+      </h2>
+      <p>{t("profile.dataManagement.importModalDescription")}</p>
+      {isImporting ? (
+        <div className="choice-modal-status">
+          <Loader2 />
+          <span>{t("profile.dataManagement.importing")}</span>
         </div>
-      </section>
-    </div>
+      ) : null}
+      <div className="choice-modal-actions">
+        <button
+          type="button"
+          disabled={isImporting}
+          onClick={onExportCurrent}
+        >
+          <Download />
+          <span>
+            <span>
+              {t("profile.dataManagement.exportCurrentBeforeImport")}
+            </span>
+            <span>
+              {t(
+                "profile.dataManagement.exportCurrentBeforeImportDescription",
+              )}
+            </span>
+          </span>
+        </button>
+        <button type="button" disabled={isImporting} onClick={onImport}>
+          <Upload />
+          <span>
+            <span>{t("profile.dataManagement.chooseImportDatabase")}</span>
+            <span>
+              {t("profile.dataManagement.chooseImportDatabaseDescription")}
+            </span>
+          </span>
+        </button>
+        <button type="button" disabled={isImporting} onClick={onCancel}>
+          <span>{t("common.cancel")}</span>
+        </button>
+      </div>
+    </AppModal>
   );
 }
 
@@ -860,36 +906,29 @@ function NoteImportSummaryModal({
     richTextToPlainText(importInfo.title).trim() || t("notes.untitled");
 
   return (
-    <div className="modal-backdrop">
-      <section
-        className="choice-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="note-import-summary-title"
-      >
-        <h2 id="note-import-summary-title">
-          {t("profile.dataManagement.noteImportSummaryTitle")}
-        </h2>
-        <p>
-          {t("profile.dataManagement.noteImportSummaryDescription", {
-            title,
-          })}
-        </p>
-        <div className="choice-modal-summary-list">
-          {skippedItems.map((item) => (
-            <div className="choice-modal-summary-row" key={item.label}>
-              <span>{item.label}</span>
-              <span>{item.value}</span>
-            </div>
-          ))}
-        </div>
-        <div className="choice-modal-actions">
-          <button type="button" onClick={onClose}>
-            <span>{t("common.close")}</span>
-          </button>
-        </div>
-      </section>
-    </div>
+    <AppModal
+      className="choice-modal"
+      labelledBy="note-import-summary-title"
+      onClose={onClose}
+      open
+    >
+      <h2 id="note-import-summary-title">
+        {t("profile.dataManagement.noteImportSummaryTitle")}
+      </h2>
+      <p>
+        {t("profile.dataManagement.noteImportSummaryDescription", {
+          title,
+        })}
+      </p>
+      <div className="choice-modal-summary-list">
+        {skippedItems.map((item) => (
+          <div className="choice-modal-summary-row" key={item.label}>
+            <span>{item.label}</span>
+            <span>{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </AppModal>
   );
 }
 
@@ -902,22 +941,6 @@ function ShortcutHelpModal({
   onClose: () => void;
   t: ReturnType<typeof useI18n>["t"];
 }) {
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, open]);
-
   if (!open) {
     return null;
   }
@@ -925,48 +948,41 @@ function ShortcutHelpModal({
   const groups = buildShortcutHelpGroups(t);
 
   return (
-    <div className="modal-backdrop">
-      <section
-        className="choice-modal shortcut-help-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="shortcut-help-title"
-      >
-        <div>
-          <h2 id="shortcut-help-title">{t("profile.shortcuts.modalTitle")}</h2>
-          <p>{t("profile.shortcuts.modalDescription")}</p>
-        </div>
-        <div className="shortcut-help-list">
-          {groups.map((group) => (
-            <section className="shortcut-help-group" key={group.title}>
-              <h3>{group.title}</h3>
-              <div className="shortcut-help-rows">
-                {group.items.map((item) => (
-                  <div
-                    className="shortcut-help-row"
-                    key={`${group.title}-${item.description}`}
-                  >
-                    <span className="shortcut-help-keys">
-                      {item.keys.map((key) => (
-                        <kbd className="kbd" key={key}>
-                          {key}
-                        </kbd>
-                      ))}
-                    </span>
-                    <span>{item.description}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-        <div className="choice-modal-actions">
-          <button type="button" onClick={onClose}>
-            <span>{t("common.close")}</span>
-          </button>
-        </div>
-      </section>
-    </div>
+    <AppModal
+      className="choice-modal shortcut-help-modal"
+      labelledBy="shortcut-help-title"
+      onClose={onClose}
+      open={open}
+    >
+      <div>
+        <h2 id="shortcut-help-title">{t("profile.shortcuts.modalTitle")}</h2>
+        <p>{t("profile.shortcuts.modalDescription")}</p>
+      </div>
+      <div className="shortcut-help-list">
+        {groups.map((group) => (
+          <section className="shortcut-help-group" key={group.title}>
+            <h3>{group.title}</h3>
+            <div className="shortcut-help-rows">
+              {group.items.map((item) => (
+                <div
+                  className="shortcut-help-row"
+                  key={`${group.title}-${item.description}`}
+                >
+                  <span className="shortcut-help-keys">
+                    {item.keys.map((key) => (
+                      <kbd className="kbd" key={key}>
+                        {key}
+                      </kbd>
+                    ))}
+                  </span>
+                  <span>{item.description}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </AppModal>
   );
 }
 

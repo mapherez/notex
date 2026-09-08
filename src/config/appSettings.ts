@@ -35,6 +35,7 @@ export const defaultUserSettings: UserSettings = {
   id: 'local-user-settings',
   theme: userSettingsDefaults.theme as UserSettings['theme'],
   language: userSettingsDefaults.language as UserSettings['language'],
+  mcpPort: userSettingsDefaults.mcpPort,
   username: userSettingsDefaults.username,
   startupPage: userSettingsDefaults.startupPage as StartupPage,
   preferredLayout: userSettingsDefaults.preferredLayout as UserSettings['preferredLayout'],

@@ -135,6 +135,7 @@ export type UserSettings = {
   id: string;
   theme: ThemePreference;
   language: Locale;
+  mcpPort: number;
   username: string;
   startupPage: StartupPage | string;
   preferredLayout: PreferredLayout;

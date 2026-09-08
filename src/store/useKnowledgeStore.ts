@@ -54,7 +54,7 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     });
   },
   setUser: async (user) => {
-    await db.transaction('rw', [db.users], async () => {
+    await db.transaction('rw', [db.users], async (db) => {
       await db.users.clear();
       await db.users.put(user);
     });
@@ -172,7 +172,7 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     await db.transaction(
       'rw',
       [db.notes, db.noteBlocks, db.noteFiles, db.tags, db.collections, db.users, db.activities, db.userSettings],
-      async () => {
+      async (db) => {
         await db.notes.clear();
         await db.noteBlocks.clear();
         await db.noteFiles.clear();

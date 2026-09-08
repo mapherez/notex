@@ -22,6 +22,7 @@
     "userSettings": {
       "theme": "dark",
       "language": "pt",
+      "mcpPort": 47321,
       "username": "Local user",
       "startupPage": "/",
       "preferredLayout": "list",
@@ -157,11 +158,11 @@
     ],
     "legalLinks": [
       {
-        "to": "/privacy",
+        "modal": "privacy",
         "labelKey": "legal.privacyLink"
       },
       {
-        "to": "/terms",
+        "modal": "terms",
         "labelKey": "legal.termsLink"
       }
     ]

@@ -344,6 +344,11 @@
     grid-column: 2;
     width: 100%;
   }
+
+  .mcp-configuration-list__row {
+    grid-template-columns: 1fr;
+    gap: var(--nx-space-2);
+  }
 }
 
 

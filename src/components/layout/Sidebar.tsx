@@ -18,6 +18,7 @@ import { appSettings, navigationSettings } from '../../config/appSettings';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useNotesStore } from '../../store/useNotesStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
+import { useLocalMcpStore } from '../../store/useLocalMcpStore';
 import { latestPatchNoteVersion, PatchNotesModal } from '../ui/PatchNotesModal';
 
 const navIcons = {
@@ -38,6 +39,9 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
   const collections = useKnowledgeStore((state) => state.collections);
   const hasTrashedNotes = useNotesStore((state) => state.notes.some((note) => note.isTrashed));
   const activeCollectionId = searchParams.get('collection');
+  const mcpOnline = useLocalMcpStore(
+    (state) => state.connection.state === 'running' && state.connection.rendererReady,
+  );
 
   useEffect(() => {
     if (!isTauri()) {
@@ -52,6 +56,15 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
   function createNote() {
     onClose();
     onCreateNote();
+  }
+
+  function openMcpProfile() {
+    onClose();
+    if (location.pathname === '/profile' && location.hash === '#mcp') {
+      window.requestAnimationFrame(() => {
+        document.getElementById('mcp')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    }
   }
 
   return (
@@ -139,24 +152,51 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
         <div className="sidebar-spacer" />
         <nav className="sidebar-legal-links" aria-label={t('legal.navigationLabel')}>
           {navigationSettings.legalLinks.map((link) => (
-            <NavLink className="sidebar-legal-link" key={link.to} to={link.to} onClick={onClose}>
+            <Link
+              className={clsx('sidebar-legal-link', searchParams.get('modal') === link.modal && 'active')}
+              key={link.modal}
+              to={{
+                pathname: location.pathname,
+                search: buildLegalModalSearch(location.search, link.modal),
+              }}
+              onClick={onClose}
+            >
               {t(link.labelKey)}
-            </NavLink>
+            </Link>
           ))}
         </nav>
-        {appVersion ? (
-          <button
-            className="sidebar-version"
-            type="button"
-            aria-label={t('patchNotes.open', { version: appVersion })}
-            onClick={() => setPatchNotesOpen(true)}
+        <div className="sidebar-runtime-status">
+          {appVersion ? (
+            <button
+              className="sidebar-version"
+              type="button"
+              aria-label={t('patchNotes.open', { version: appVersion })}
+              onClick={() => setPatchNotesOpen(true)}
+            >
+              v{appVersion}
+            </button>
+          ) : null}
+          <Link
+            className={mcpOnline ? 'sidebar-mcp-status sidebar-mcp-status--online' : 'sidebar-mcp-status'}
+            to="/profile#mcp"
+            aria-label={t('profile.mcp.openSection', {
+              status: t(mcpOnline ? 'profile.mcp.online' : 'profile.mcp.offline'),
+            })}
+            onClick={openMcpProfile}
           >
-            v{appVersion}
-          </button>
-        ) : null}
+            <span className="sidebar-mcp-status__dot" aria-hidden="true" />
+            {t(mcpOnline ? 'profile.mcp.online' : 'profile.mcp.offline')}
+          </Link>
+        </div>
       </aside>
       <PatchNotesModal open={patchNotesOpen} onClose={() => setPatchNotesOpen(false)} />
     </>
   );
+}
+
+function buildLegalModalSearch(currentSearch: string, modal: string) {
+  const searchParams = new URLSearchParams(currentSearch);
+  searchParams.set('modal', modal);
+  return `?${searchParams.toString()}`;
 }
 

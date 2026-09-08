@@ -40,22 +40,9 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
-import { Node, mergeAttributes, wrappingInputRule, type Editor, type JSONContent } from '@tiptap/core';
+import { type Editor, type JSONContent } from '@tiptap/core';
 import { EditorContent, NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type ReactNodeViewProps } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import UnderlineExtension from '@tiptap/extension-underline';
-import Link from '@tiptap/extension-link';
-import TextAlign from '@tiptap/extension-text-align';
-import Highlight from '@tiptap/extension-highlight';
-import Color from '@tiptap/extension-color';
-import { TextStyle } from '@tiptap/extension-text-style';
-import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
-import TaskList from '@tiptap/extension-task-list';
-import TaskItem from '@tiptap/extension-task-item';
-import { BulletList, OrderedList, bulletListInputRegex, orderedListInputRegex } from '@tiptap/extension-list';
-import type { Node as ProseMirrorNode, NodeType } from '@tiptap/pm/model';
 import { layout, prepare } from '@chenglou/pretext';
 import { TextStyleToolbar } from '../editing/TextStyleToolbar';
 import type { InlineStyleColor, InlineStyleKind } from '../../core/utils/inlineFormatting';
@@ -68,6 +55,12 @@ import { formatShortcutForDisplay } from '../../core/utils/shortcutFormatting';
 import { useI18n } from '../../i18n/I18nProvider';
 import { emptyTiptapDocument } from '../../store/useNotesStore';
 import { editorSettings } from '../../config/appSettings';
+import {
+  createNoteContentExtensions,
+  createNoteInlineExtensions,
+  NoteFileNode,
+  NoteTipNode,
+} from '../../core/editor/noteEditorExtensions';
 
 type NoteTiptapEditorProps = {
   autoFocus?: boolean;
@@ -183,185 +176,19 @@ const suppressedDefaultShortcutBindings = [
 ].map(parseShortcut).filter((binding): binding is ShortcutBinding => Boolean(binding))
   .filter((binding) => !configuredShortcutSignatures.has(shortcutSignature(binding)));
 
-const FileNode = Node.create({
-  name: 'noteFile',
-  group: 'block',
-  atom: true,
-  draggable: true,
-
-  addAttributes() {
-    return {
-      id: { default: null },
-      noteId: { default: null },
-      blockId: { default: null },
-      kind: { default: 'attachment' },
-      originalName: { default: '' },
-      mimeType: { default: 'application/octet-stream' },
-      sizeBytes: { default: 0 },
-      checksum: { default: '' },
-      relativePath: { default: '' },
-      createdAt: { default: '' },
-      align: { default: 'center' },
-      width: { default: 420 },
-      wrap: { default: 'none' },
-    };
-  },
-
-  parseHTML() {
-    return [{ tag: 'notex-file' }];
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    return ['notex-file', mergeAttributes(HTMLAttributes)];
-  },
-
+const FileNode = NoteFileNode.extend({
   addNodeView() {
     return ReactNodeViewRenderer(FileNodeView);
   },
 });
 
-const TipNode = Node.create({
-  name: 'noteTip',
-  group: 'block',
-  content: 'block+',
-  defining: true,
-  isolating: true,
-
-  addAttributes() {
-    return {
-      title: { default: 'Tip' },
-    };
-  },
-
-  parseHTML() {
-    return [{ tag: 'notex-tip' }];
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    return ['notex-tip', mergeAttributes(HTMLAttributes), 0];
-  },
-
+const TipNode = NoteTipNode.extend({
   addNodeView() {
     return ReactNodeViewRenderer(TipNodeView);
   },
 });
 
-const dotBulletListInputRegex = /^\s*(\.)\s$/;
-const numberSpaceOrderedListInputRegex = /^(\d+)\s$/;
-
-const ShortcutBulletList = BulletList.extend({
-  addKeyboardShortcuts() {
-    return {};
-  },
-
-  addInputRules() {
-    return [
-      wrappingInputRule({
-        find: bulletListInputRegex,
-        type: this.type,
-      }),
-      wrappingInputRule({
-        find: dotBulletListInputRegex,
-        type: this.type,
-      }),
-    ];
-  },
-});
-
-const ShortcutOrderedList = OrderedList.extend({
-  addKeyboardShortcuts() {
-    return {};
-  },
-
-  addInputRules() {
-    return [
-      createOrderedListInputRule(orderedListInputRegex, this.type),
-      createOrderedListInputRule(numberSpaceOrderedListInputRegex, this.type),
-    ];
-  },
-});
-
-const ShortcutTaskList = TaskList.extend({
-  addKeyboardShortcuts() {
-    return {};
-  },
-});
-
-const ShortcutTaskItem = TaskItem.extend({
-  addInputRules() {
-    return [];
-  },
-});
-
-const ShortcutTextAlign = TextAlign.extend({
-  addKeyboardShortcuts() {
-    return {};
-  },
-});
-
-function createOrderedListInputRule(find: RegExp, type: NodeType) {
-  return wrappingInputRule({
-    find,
-    type,
-    getAttributes: (match) => ({ start: Number(match[1]) }),
-    joinPredicate: (match, node: ProseMirrorNode) => node.childCount + node.attrs.start === Number(match[1]),
-  });
-}
-
-const extensions = [
-  StarterKit.configure({
-    bulletList: false,
-    link: false,
-    orderedList: false,
-  }),
-  Placeholder.configure({
-    placeholder: '',
-  }),
-  UnderlineExtension,
-  Link.configure({
-    openOnClick: false,
-    autolink: true,
-    defaultProtocol: 'https',
-  }),
-  ShortcutTextAlign.configure({
-    types: ['heading', 'paragraph'],
-  }),
-  TextStyle,
-  Color,
-  Highlight.configure({ multicolor: true }),
-  Table.configure({ resizable: true }),
-  TableRow,
-  TableHeader,
-  TableCell,
-  ShortcutBulletList,
-  ShortcutOrderedList,
-  ShortcutTaskList,
-  ShortcutTaskItem.configure({ nested: true }),
-  TipNode,
-  FileNode,
-];
-
-const inlineExtensions = [
-  StarterKit.configure({
-    blockquote: false,
-    bulletList: false,
-    codeBlock: false,
-    heading: false,
-    horizontalRule: false,
-    link: false,
-    listItem: false,
-    orderedList: false,
-  }),
-  UnderlineExtension,
-  Link.configure({
-    openOnClick: false,
-    autolink: true,
-    defaultProtocol: 'https',
-  }),
-  TextStyle,
-  Color,
-  Highlight.configure({ multicolor: true }),
-];
+const extensions = createNoteContentExtensions({ fileNode: FileNode, tipNode: TipNode });
 
 export function NoteTiptapEditor({
   autoFocus = false,
@@ -611,15 +438,7 @@ export function NoteInlineTiptapEditor({
 }) {
   const [contentKey, setContentKey] = useState(() => value);
   const lastInsertTextNonceRef = useRef<number | null>(null);
-  const fieldExtensions = useMemo(
-    () => [
-      ...inlineExtensions,
-      Placeholder.configure({
-        placeholder,
-      }),
-    ],
-    [placeholder],
-  );
+  const fieldExtensions = useMemo(() => createNoteInlineExtensions(placeholder), [placeholder]);
   const editor = useEditor(
     {
       editable: !disabled,

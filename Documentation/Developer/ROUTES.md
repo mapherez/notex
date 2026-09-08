@@ -9,5 +9,7 @@
 - `/trash` - trashed notes
 - `/collections` - collection management
 - `/profile` - profile and account settings
-- `/privacy` - privacy policy
-- `/terms` - terms of service
+- `/profile#mcp` - profile with the local MCP section in view
+- `?modal=privacy` - privacy policy over the current page
+- `?modal=terms` - terms of service over the current page
+- `/privacy` and `/terms` - legacy redirects to the corresponding modal

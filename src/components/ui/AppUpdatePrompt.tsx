@@ -1,23 +1,21 @@
 import { RefreshCw } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import {
-  checkForAppUpdate,
-  closeAppUpdate,
-  installAppUpdate,
-  type AppUpdateInfo,
-  type UpdateInstallProgress,
-} from '../../core/services/appUpdater';
+import { useEffect, useRef } from 'react';
 import { updaterSettings } from '../../config/appSettings';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useAppUpdaterStore } from '../../store/useAppUpdaterStore';
 import { useToastStore } from '../../store/useToastStore';
 
 export function AppUpdatePrompt({ enabled }: { enabled: boolean }) {
   const { t } = useI18n();
   const pushToast = useToastStore((state) => state.pushToast);
   const checkStartedRef = useRef(false);
-  const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
-  const [installing, setInstalling] = useState(false);
-  const [progress, setProgress] = useState<UpdateInstallProgress | null>(null);
+  const check = useAppUpdaterStore((state) => state.check);
+  const dismiss = useAppUpdaterStore((state) => state.dismiss);
+  const install = useAppUpdaterStore((state) => state.install);
+  const progress = useAppUpdaterStore((state) => state.progress);
+  const status = useAppUpdaterStore((state) => state.status);
+  const updateInfo = useAppUpdaterStore((state) => state.updateInfo);
+  const installing = status === 'installing';
 
   useEffect(() => {
     if (!enabled || !updaterSettings.checkOnStartup || checkStartedRef.current) {
@@ -25,45 +23,24 @@ export function AppUpdatePrompt({ enabled }: { enabled: boolean }) {
     }
 
     checkStartedRef.current = true;
-    void checkForAppUpdate()
-      .then((availableUpdate) => {
-        setUpdateInfo(availableUpdate);
-      })
+    void check()
       .catch((error) => {
         pushToast(error instanceof Error ? error.message : t('updater.checkFailed'), 'warning');
       });
-  }, [enabled, pushToast, t]);
+  }, [check, enabled, pushToast, t]);
 
   if (!updateInfo) {
     return null;
   }
 
   async function dismissUpdate() {
-    const update = updateInfo?.update;
-    setUpdateInfo(null);
-    setProgress(null);
-
-    if (update) {
-      try {
-        await closeAppUpdate(update);
-      } catch {
-        // Closing the updater resource is best-effort after the user dismisses the prompt.
-      }
-    }
+    await dismiss();
   }
 
   async function installUpdate() {
-    if (!updateInfo || installing) {
-      return;
-    }
-
-    setInstalling(true);
-    setProgress(null);
-
     try {
-      await installAppUpdate(updateInfo.update, setProgress);
+      await install();
     } catch (error) {
-      setInstalling(false);
       pushToast(error instanceof Error ? error.message : t('updater.installFailed'), 'warning');
     }
   }

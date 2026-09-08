@@ -1,5 +1,4 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
 import patchNotesMarkdown from "../../content/patch-notes.md?raw";
 import {
   parseMarkdown,
@@ -8,6 +7,7 @@ import {
 } from "../../core/utils/markdown";
 import { useI18n } from "../../i18n/I18nProvider";
 import { renderInlineText } from "../editing/InlineFormattedText";
+import { AppModal } from "./AppModal";
 
 type PatchNoteVersion = {
   blockIndex: number;
@@ -44,17 +44,7 @@ export function PatchNotesModal({
     }
 
     setActiveId(versions[0]?.id ?? null);
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, open, versions]);
+  }, [open, versions]);
 
   if (!open) {
     return null;
@@ -73,23 +63,14 @@ export function PatchNotesModal({
   }
 
   return (
-    <div className="modal-backdrop">
-      <section
-        className="choice-modal patch-notes-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="patch-notes-title"
-      >
+    <AppModal
+      className="choice-modal patch-notes-modal"
+      labelledBy="patch-notes-title"
+      onClose={onClose}
+      open={open}
+    >
         <header className="patch-notes-modal__header">
           <h2 id="patch-notes-title">{t("patchNotes.title")}</h2>
-          <button
-            className="icon-button"
-            type="button"
-            aria-label={t("common.close")}
-            onClick={onClose}
-          >
-            <X />
-          </button>
         </header>
 
         <div className="patch-notes-modal__layout">
@@ -129,8 +110,7 @@ export function PatchNotesModal({
             )}
           </div>
         </div>
-      </section>
-    </div>
+    </AppModal>
   );
 }
 

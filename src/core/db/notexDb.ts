@@ -53,7 +53,7 @@ type NoteXStorageDatabase = {
   users: StorageTable<User>;
   activities: StorageTable<ActivityItem>;
   userSettings: StorageTable<UserSettings>;
-  transaction: <T>(mode: string, tables: unknown[], scope: () => Promise<T>) => Promise<T>;
+  transaction: <T>(mode: string, tables: unknown[], scope: (transaction: NoteXStorageDatabase) => Promise<T>) => Promise<T>;
 };
 
 type SqliteOperation =
@@ -68,39 +68,50 @@ type SqliteTransactionContext = {
   operations: SqliteOperation[];
 };
 
-let sqliteTransactionContext: SqliteTransactionContext | null = null;
-
 class SqliteStorageAdapter implements NoteXStorageDatabase {
-  notes = new SqliteTable<Note>('notes');
-  noteBlocks = new SqliteTable<NoteBlock>('noteBlocks');
-  noteFiles = new SqliteTable<NoteFile>('noteFiles');
-  tags = new SqliteTable<Tag>('tags');
-  collections = new SqliteTable<Collection>('collections');
-  users = new SqliteTable<User>('users');
-  activities = new SqliteTable<ActivityItem>('activities');
-  userSettings = new SqliteTable<UserSettings>('userSettings');
+  notes: StorageTable<Note>;
+  noteBlocks: StorageTable<NoteBlock>;
+  noteFiles: StorageTable<NoteFile>;
+  tags: StorageTable<Tag>;
+  collections: StorageTable<Collection>;
+  users: StorageTable<User>;
+  activities: StorageTable<ActivityItem>;
+  userSettings: StorageTable<UserSettings>;
 
-  async transaction<T>(_mode: string, _tables: unknown[], scope: () => Promise<T>) {
-    if (sqliteTransactionContext) {
-      return scope();
+  constructor(private readonly context?: SqliteTransactionContext) {
+    this.notes = new SqliteTable<Note>("notes", context);
+    this.noteBlocks = new SqliteTable<NoteBlock>("noteBlocks", context);
+    this.noteFiles = new SqliteTable<NoteFile>("noteFiles", context);
+    this.tags = new SqliteTable<Tag>("tags", context);
+    this.collections = new SqliteTable<Collection>("collections", context);
+    this.users = new SqliteTable<User>("users", context);
+    this.activities = new SqliteTable<ActivityItem>("activities", context);
+    this.userSettings = new SqliteTable<UserSettings>("userSettings", context);
+  }
+
+  async transaction<T>(
+    _mode: string,
+    _tables: unknown[],
+    scope: (transaction: NoteXStorageDatabase) => Promise<T>,
+  ): Promise<T> {
+    if (this.context) {
+      return scope(this);
     }
 
     const context: SqliteTransactionContext = { operations: [] };
-    sqliteTransactionContext = context;
-    try {
-      const result = await scope();
-      if (context.operations.length) {
-        await invoke('notex_sqlite_transaction', { operations: context.operations });
-      }
-      return result;
-    } finally {
-      sqliteTransactionContext = null;
+    // Each callback owns its batch; unrelated async writes cannot join it.
+    const result = await scope(new SqliteStorageAdapter(context));
+    if (context.operations.length) {
+      await invoke("notex_sqlite_transaction", {
+        operations: context.operations,
+      });
     }
+    return result;
   }
 }
 
 class SqliteTable<T> implements StorageTable<T> {
-  constructor(private readonly table: TableName) {}
+  constructor(private readonly table: TableName, private readonly context?: SqliteTransactionContext) {}
 
   async get(key: string) {
     return (await invoke<T | null>('notex_sqlite_get', { table: this.table, key })) ?? undefined;
@@ -143,12 +154,12 @@ class SqliteTable<T> implements StorageTable<T> {
   }
 
   where(index: string): WhereClause<T> {
-    return new SqliteWhereClause<T>(this.table, index);
+    return new SqliteWhereClause<T>(this.table, index, this.context);
   }
 
   private async write(operation: SqliteOperation) {
-    if (sqliteTransactionContext) {
-      sqliteTransactionContext.operations.push(operation);
+    if (this.context) {
+      this.context.operations.push(operation);
       return;
     }
 
@@ -160,14 +171,15 @@ class SqliteWhereClause<T> implements WhereClause<T> {
   constructor(
     private readonly table: TableName,
     private readonly index: string,
+    private readonly context?: SqliteTransactionContext,
   ) {}
 
   equals(value: unknown): WhereQuery<T> {
-    return new SqliteWhereQuery<T>(this.table, this.index, [value]);
+    return new SqliteWhereQuery<T>(this.table, this.index, [value], this.context);
   }
 
   anyOf(values: unknown[]): WhereQuery<T> {
-    return new SqliteWhereQuery<T>(this.table, this.index, values);
+    return new SqliteWhereQuery<T>(this.table, this.index, values, this.context);
   }
 }
 
@@ -176,6 +188,7 @@ class SqliteWhereQuery<T> implements WhereQuery<T> {
     private readonly table: TableName,
     private readonly index: string,
     private readonly values: unknown[],
+    private readonly context?: SqliteTransactionContext,
   ) {}
 
   async delete() {
@@ -190,8 +203,8 @@ class SqliteWhereQuery<T> implements WhereQuery<T> {
       values: this.values,
     };
 
-    if (sqliteTransactionContext) {
-      sqliteTransactionContext.operations.push(operation);
+    if (this.context) {
+      this.context.operations.push(operation);
       return;
     }
 
@@ -231,7 +244,7 @@ export async function seedDatabaseIfEmpty(bundle: MockDataBundle, settings: User
     return;
   }
 
-  await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles, db.tags, db.collections, db.users, db.activities, db.userSettings], async () => {
+  await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles, db.tags, db.collections, db.users, db.activities, db.userSettings], async (db) => {
     await db.notes.bulkPut(bundle.notes.map(stripNoteRelations));
     await db.noteBlocks.bulkPut(bundle.noteBlocks);
     await db.noteFiles.bulkPut(bundle.noteFiles);

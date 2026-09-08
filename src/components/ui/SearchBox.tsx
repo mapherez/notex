@@ -2,25 +2,16 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as Reac
 import { Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { appLimits } from '../../config/appSettings';
-import { stripInlineFormatting } from '../../core/utils/inlineFormatting';
 import { isPrimaryShortcut } from '../../core/utils/keyboardShortcuts';
+import { normalizeSearchValue, searchNotes } from '../../core/utils/noteSearch';
 import { richTextToPlainText } from '../../core/utils/richText';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useKeyboardListNavigation } from '../../core/utils/useKeyboardListNavigation';
-import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useNotesStore } from '../../store/useNotesStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { InlineFormattedText } from '../editing/InlineFormattedText';
 import { NoteThumbnail } from './NoteThumbnail';
-import type { Collection, Note, Tag } from '../../core/models/models';
-
-type SearchResult = {
-  collectionName?: string;
-  matchType: 'collection' | 'tag' | 'title';
-  note: Note;
-  tagNames: string[];
-};
 
 export function SearchBox({ className }: { className?: string }) {
   const { t } = useI18n();
@@ -35,8 +26,8 @@ export function SearchBox({ className }: { className?: string }) {
   const collections = useKnowledgeStore((state) => state.collections);
   const normalizedQuery = normalizeSearchValue(query);
   const results = useMemo(
-    () => buildSearchResults({ collections, normalizedQuery, notes, tags }),
-    [collections, normalizedQuery, notes, tags],
+    () => searchNotes({ collections, limit: appLimits.searchResults, notes, query, tags }),
+    [collections, notes, query, tags],
   );
   const showResults = resultsOpen && Boolean(normalizedQuery);
   const resultNavigation = useKeyboardListNavigation({
@@ -144,75 +135,4 @@ export function SearchBox({ className }: { className?: string }) {
       ) : null}
     </div>
   );
-}
-
-function buildSearchResults({
-  collections,
-  normalizedQuery,
-  notes,
-  tags,
-}: {
-  collections: Collection[];
-  normalizedQuery: string;
-  notes: Note[];
-  tags: Tag[];
-}): SearchResult[] {
-  if (!normalizedQuery) {
-    return [];
-  }
-
-  const tagById = new Map(tags.map((tag) => [tag.id, tag]));
-  const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
-
-  return notes
-    .flatMap((note) => {
-      if (note.isTrashed) {
-        return [];
-      }
-
-      const noteTags = sortTagsByName(note.tagIds.flatMap((tagId) => tagById.get(tagId) ?? []));
-      const collection = note.collectionId ? collectionById.get(note.collectionId) : undefined;
-      const titleMatches = normalizeSearchValue(
-        [
-          richTextToPlainText(note.title),
-          richTextToPlainText(note.subtitle),
-          ...(note.blocks?.map((block) => `${richTextToPlainText(block.title)} ${block.contentText}`) ?? []),
-        ].join(' '),
-      ).includes(normalizedQuery);
-      const matchedTags = sortTagsByName(noteTags.filter((tag) => normalizeSearchValue(tag.name).includes(normalizedQuery)));
-      const collectionMatches = collection ? normalizeSearchValue(collection.name).includes(normalizedQuery) : false;
-
-      if (!titleMatches && !matchedTags.length && !collectionMatches) {
-        return [];
-      }
-
-      return [
-        {
-          collectionName: collection?.name,
-          matchType: titleMatches ? 'title' : matchedTags.length ? 'tag' : 'collection',
-          note,
-          tagNames: matchedTags.length ? matchedTags.map((tag) => tag.name) : noteTags.map((tag) => tag.name),
-        } satisfies SearchResult,
-      ];
-    })
-    .sort((a, b) => searchResultScore(a) - searchResultScore(b) || b.note.updatedAt.localeCompare(a.note.updatedAt))
-    .slice(0, appLimits.searchResults);
-}
-
-function searchResultScore(result: SearchResult) {
-  if (result.matchType === 'title') {
-    return 0;
-  }
-  if (result.matchType === 'tag') {
-    return 1;
-  }
-  return 2;
-}
-
-function normalizeSearchValue(value: string) {
-  return richTextToPlainText(stripInlineFormatting(value))
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
 }

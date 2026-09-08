@@ -2,6 +2,7 @@ import { ChevronDown, Tag as TagIcon, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { NoteRow } from '../components/notes/NoteRow';
+import { AppModal } from '../components/ui/AppModal';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { EmptyState } from '../components/ui/EmptyState';
 import { NotesFilterRow } from '../components/ui/NotesFilterRow';
@@ -549,22 +550,20 @@ function TrashConfirmModal({
       : t('notes.deleteForeverConfirm', { title: confirmState.title ?? t('notes.untitled') });
 
   return (
-    <div className="modal-backdrop">
-      <section className="choice-modal" role="dialog" aria-modal="true" aria-labelledby="trash-confirm-title">
-        <h2 id="trash-confirm-title">{title}</h2>
-        <p>{description}</p>
-        <div className="choice-modal-actions two-column-actions">
-          <button type="button" onClick={onCancel}>
-            <X />
-            <span>{t('common.cancel')}</span>
-          </button>
-          <button type="button" onClick={onConfirm}>
-            <Trash2 />
-            <span>{t('common.delete')}</span>
-          </button>
-        </div>
-      </section>
-    </div>
+    <AppModal className="choice-modal" labelledBy="trash-confirm-title" onClose={onCancel} open>
+      <h2 id="trash-confirm-title">{title}</h2>
+      <p>{description}</p>
+      <div className="choice-modal-actions two-column-actions">
+        <button type="button" onClick={onCancel}>
+          <X />
+          <span>{t('common.cancel')}</span>
+        </button>
+        <button type="button" onClick={onConfirm}>
+          <Trash2 />
+          <span>{t('common.delete')}</span>
+        </button>
+      </div>
+    </AppModal>
   );
 }
 

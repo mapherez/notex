@@ -1,18 +1,15 @@
-# NoteX
+# NoteX Documentation
 
-Offline-first knowledge management app built around block-based notes, tags, collections, quick pins, file attachments, and SQLite persistence.
+NoteX is a local-first knowledge management app. Notes, attachments, settings,
+tags, and collections remain stored on the user's computer in the local SQLite
+database.
 
-Current scope:
+## User Guides
 
-- Local-first editing backed by SQLite in the Tauri desktop app
-- Block-based notes with Tiptap content, inline images, file attachments, and `.notex` package export/import
-- Tags, collections, favorites, trash, quick capture, and quick pins
-- Static landing page deployment is separate from the desktop app
+- [Local MCP](MCP_LOCAL_USER_GUIDE.md): connect a compatible AI client directly
+  to NoteX, review the available tools, and understand the local access model.
 
-Operational notes:
+## Developer Documentation
 
-- The app must remain usable without an account.
-- The desktop app uses SQLite as the official storage layer.
-- SQLite is the primary working store.
-- Runtime SQLite data lives in the Tauri app data directory and must not be committed.
-- User-facing text should stay in `src/locales/en.json` and `src/locales/pt.json`.
+Architecture references and future implementation plans are kept separately in
+[Developer](Developer/README.md).

@@ -9,6 +9,7 @@ type AppStore = {
   hydrateSettings: () => Promise<void>;
   setTheme: (theme: ThemePreference) => Promise<void>;
   setLanguage: (language: Locale) => Promise<void>;
+  setMcpPort: (mcpPort: number) => Promise<void>;
   setPreferredLayout: (layout: PreferredLayout) => Promise<void>;
   setStartupPage: (startupPage: string) => Promise<void>;
   setPrimaryCollection: (primaryCollectionId: string) => Promise<void>;
@@ -38,6 +39,7 @@ function normalizeSettings(settings?: Partial<UserSettings> | null): UserSetting
     id: source.id ?? defaultUserSettings.id,
     theme: source.theme ?? defaultUserSettings.theme,
     language: source.language ?? defaultUserSettings.language,
+    mcpPort: normalizeMcpPort(source.mcpPort),
     username: source.username ?? defaultUserSettings.username,
     startupPage: source.startupPage ?? defaultUserSettings.startupPage,
     preferredLayout: source.preferredLayout ?? defaultUserSettings.preferredLayout,
@@ -72,6 +74,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
   setLanguage: async (language) => {
     const settings = { ...get().settings, language };
+    await updateSettings(set, settings);
+  },
+  setMcpPort: async (mcpPort) => {
+    const settings = { ...get().settings, mcpPort };
     await updateSettings(set, settings);
   },
   setPreferredLayout: async (preferredLayout) => {
@@ -149,4 +155,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 function uniqueIds(ids: string[]) {
   return [...new Set(ids)];
+}
+
+function normalizeMcpPort(value: unknown) {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1024 && value <= 65535
+    ? value
+    : defaultUserSettings.mcpPort;
 }

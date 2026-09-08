@@ -7,12 +7,12 @@ import { initializeStorage } from './core/services/storageBootstrap';
 import { I18nProvider } from './i18n/I18nProvider';
 import { DashboardPage } from './pages/DashboardPage';
 import { CollectionsPage, NotesListPage } from './pages/NotesListPage';
-import { LegalPage } from './pages/LegalPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { TagsPage } from './pages/TagsPage';
 import { useAppStore } from './store/useAppStore';
 import { useNotesStore } from './store/useNotesStore';
 import { useKnowledgeStore } from './store/useKnowledgeStore';
+import { useLocalMcpStore } from './store/useLocalMcpStore';
 import { useToastStore } from './store/useToastStore';
 
 const NoteDetailPage = lazy(() =>
@@ -29,6 +29,7 @@ export function App() {
   const initializeNotes = useNotesStore((state) => state.initialize);
   const notesReady = useNotesStore((state) => state.isReady);
   const pushToast = useToastStore((state) => state.pushToast);
+  const initializeLocalMcp = useLocalMcpStore((state) => state.initialize);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +77,12 @@ export function App() {
 
   const appReady = isStorageReady && isHydrated && isReady && notesReady;
 
+  useEffect(() => {
+    if (appReady) {
+      void initializeLocalMcp();
+    }
+  }, [appReady, initializeLocalMcp]);
+
   return (
     <I18nProvider locale={settings.language}>
       <BrowserRouter>
@@ -98,8 +105,8 @@ export function App() {
               <Route path="/trash" element={<NotesListPage mode="trash" />} />
               <Route path="/collections" element={<CollectionsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/privacy" element={<LegalPage kind="privacy" />} />
-              <Route path="/terms" element={<LegalPage kind="terms" />} />
+              <Route path="/privacy" element={<Navigate to="/?modal=privacy" replace />} />
+              <Route path="/terms" element={<Navigate to="/?modal=terms" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
