@@ -1,3 +1,19 @@
+# 2.2.1
+
+## What's New in NoteX
+
+This release expands local MCP automation and refreshes the public NoteX website.
+
+### Highlights
+
+- Added MCP actions to move notes to trash, restore them, delete them permanently, and clear the entire trash.
+- Added version and trash-state checks for safer destructive MCP operations.
+- Permanent note deletion now also removes associated local attachment files.
+- Improved MCP rich-text guidance for formatting, colors, alignment, checklists, tips, and tables with custom dimensions.
+- Refreshed the NoteX landing page and added standalone public Privacy Policy and Terms of Service pages.
+
+---
+
 # 2.2.0
 
 ## What's New in NoteX
