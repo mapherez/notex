@@ -12,5 +12,7 @@
 !packages/notex-mcp-contract/package.json
 !packages/notex-mcp-contract/package-lock.json
 !packages/notex-mcp-contract/tsconfig.json
+!packages/notex-mcp-contract/scripts
+!packages/notex-mcp-contract/scripts/**
 !packages/notex-mcp-contract/src
 !packages/notex-mcp-contract/src/**

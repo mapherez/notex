@@ -16,6 +16,7 @@ COPY packages/notex-mcp-contract/package.json packages/notex-mcp-contract/packag
 RUN npm ci --prefix packages/notex-mcp-contract
 
 COPY packages/notex-mcp-contract/tsconfig.json ./packages/notex-mcp-contract/tsconfig.json
+COPY packages/notex-mcp-contract/scripts ./packages/notex-mcp-contract/scripts
 COPY packages/notex-mcp-contract/src ./packages/notex-mcp-contract/src
 RUN npm run build --prefix packages/notex-mcp-contract
 
