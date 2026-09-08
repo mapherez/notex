@@ -28,6 +28,11 @@ to an AI client is subject to that client's own processing and privacy settings.
 Read tools: `notex_status`, `search_notes`, `get_note`, `get_note_block`,
 `list_tags`, and `list_collections`.
 
+`search_notes` treats each word as an independent search term. A note is
+included when any term appears in its title, subtitle, block titles, block
+content, tags, or collection. Notes matching more distinct terms are ranked
+first, followed by match source and most recent update.
+
 Write tools: `create_note`, `update_note_header`, `add_note_block`,
 `update_note_block`, and `set_note_tags`.
 

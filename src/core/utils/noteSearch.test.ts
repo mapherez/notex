@@ -55,6 +55,47 @@ describe('searchNotes', () => {
     ]);
   });
 
+  it('matches every query term independently across notes', () => {
+    const notes = [
+      note({ id: 'linguistic', title: 'Dúvida linguística', updatedAt: '2026-01-03T00:00:00.000Z' }),
+      note({ id: 'rice', title: 'Arroz-doce', updatedAt: '2026-01-02T00:00:00.000Z' }),
+      note({ id: 'test', title: 'Test note', updatedAt: '2026-01-01T00:00:00.000Z' }),
+    ];
+
+    expect(searchNotes({ collections, limit: 10, notes, query: 'duvida doce', tags }).map(resultId)).toEqual([
+      'linguistic',
+      'rice',
+    ]);
+    expect(searchNotes({ collections, limit: 10, notes, query: 'linguistica arroz test', tags }).map(resultId)).toEqual([
+      'linguistic',
+      'rice',
+      'test',
+    ]);
+  });
+
+  it('searches independent terms in subtitles and block titles', () => {
+    const notes = [
+      note({ id: 'subtitle', subtitle: 'Hidden subtitle match' }),
+      note({ id: 'block-title', blockTitle: 'Separate block heading' }),
+    ];
+
+    expect(searchNotes({ collections, limit: 10, notes, query: 'hidden heading', tags }).map(resultId).sort()).toEqual([
+      'block-title',
+      'subtitle',
+    ]);
+  });
+
+  it('ranks notes matching more distinct terms first', () => {
+    const notes = [
+      note({ id: 'one', title: 'Test only', updatedAt: '2026-01-03T00:00:00.000Z' }),
+      note({ id: 'three', title: 'Linguística arroz test', updatedAt: '2026-01-01T00:00:00.000Z' }),
+    ];
+
+    const results = searchNotes({ collections, limit: 10, notes, query: 'linguistica arroz test', tags });
+    expect(results.map(resultId)).toEqual(['three', 'one']);
+    expect(results.map((result) => result.matchedTermCount)).toEqual([3, 1]);
+  });
+
   it('returns a bounded plain-text snippet', () => {
     const result = searchNotes({
       collections,
@@ -75,6 +116,7 @@ function resultId(result: { note: Note }) {
 }
 
 function note({
+  blockTitle = '',
   collectionId = null,
   contentText = '',
   id,
@@ -84,6 +126,7 @@ function note({
   title = 'Note',
   updatedAt = '2026-01-01T00:00:00.000Z',
 }: {
+  blockTitle?: string;
   collectionId?: string | null;
   contentText?: string;
   id: string;
@@ -114,7 +157,7 @@ function note({
         id: `${id}-block`,
         noteId: id,
         sortOrder: 0,
-        title: '',
+        title: blockTitle,
         kind: 'content',
         contentJson: { type: 'doc', content: [{ type: 'paragraph' }] },
         contentText,

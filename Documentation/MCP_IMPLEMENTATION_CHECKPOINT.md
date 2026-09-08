@@ -4,6 +4,7 @@ Date: 2026-09-08
 
 ## Latest Handoff (Overrides Historical Status Below)
 
+- Shared search now applies OR semantics to independent query terms across note titles, subtitles, block titles, block bodies, tags, and collections. Results rank by distinct matched-term count, then the existing source priority and update time. The UI and MCP still use the same implementation. The examples `duvida doce` and `linguistica arroz test` are covered. All 17 focused search/dispatcher tests and the global TypeScript typecheck passed on 2026-09-08.
 - On 2026-09-08 the user confirmed a real Codex-to-NoteX local connection works. Focused validation then passed: 11 frontend concurrency/transaction tests, 3 rich-text tests, and all 11 Rust tests.
 - A live isolated NoteX instance also passed local HTTP guard checks without invoking note tools: valid MCP initialization, invalid Host rejection, Origin rejection, 2 MiB payload rejection, rate limiting and recovery, occupied-port detection, UI stop, and confirmed port closure. The isolated app and Vite process were closed afterwards.
 - The shared contract now describes note title/subtitle, block title/body, patch omission semantics, complete body replacement, IDs, optimistic versions, collections and tag replacement. The generated Rust tool manifest was rebuilt successfully. Flexible search remains deliberately postponed until the end.

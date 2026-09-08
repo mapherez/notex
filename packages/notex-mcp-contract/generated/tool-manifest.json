@@ -24,7 +24,7 @@
       "name": "search_notes",
       "scope": "notex:read",
       "title": "search notes",
-      "description": "Search NoteX notes by text, including active notes or trash when requested.",
+      "description": "Search NoteX notes by independent terms across note headers, blocks, tags, and collections, ranked by relevance.",
       "annotations": {
         "readOnlyHint": true,
         "destructiveHint": false,
@@ -38,7 +38,8 @@
           "query": {
             "default": "",
             "type": "string",
-            "maxLength": 500
+            "maxLength": 500,
+            "description": "Search terms. A note matches when any term appears in its header, blocks, tags, or collection."
           },
           "location": {
             "default": "active",

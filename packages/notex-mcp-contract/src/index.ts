@@ -207,7 +207,11 @@ const updateNoteBlockInputSchema = z
 export const commandInputSchemas = {
   notex_status: emptyInputSchema,
   search_notes: z.object({
-    query: z.string().max(500).default(''),
+    query: z
+      .string()
+      .max(500)
+      .describe('Search terms. A note matches when any term appears in its header, blocks, tags, or collection.')
+      .default(''),
     location: noteLocationSchema.default('active'),
     limit: z.number().int().min(1).max(50).default(20),
   }),
@@ -320,7 +324,7 @@ export type ToolMetadata = {
 
 const toolDescriptions: Record<CommandName, string> = {
   notex_status: 'Check whether NoteX is ready to handle MCP requests.',
-  search_notes: 'Search NoteX notes by text, including active notes or trash when requested.',
+  search_notes: 'Search NoteX notes by independent terms across note headers, blocks, tags, and collections, ranked by relevance.',
   get_note: 'Read one NoteX note header and its ordered block summaries.',
   get_note_block: 'Read the exact supported rich-text content of one NoteX note block.',
   list_tags: 'List existing NoteX tags. Use returned IDs in write tools.',

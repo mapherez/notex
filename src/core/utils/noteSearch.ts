@@ -8,6 +8,7 @@ export type NoteSearchLocation = 'active' | 'trash' | 'all';
 export type NoteSearchResult = {
   collectionName?: string;
   matchType: 'collection' | 'tag' | 'title';
+  matchedTermCount: number;
   note: Note;
   snippet: string;
   tagNames: string[];
@@ -28,7 +29,7 @@ export function searchNotes({
   query: string;
   tags: Tag[];
 }): NoteSearchResult[] {
-  const normalizedQuery = normalizeSearchValue(query);
+  const queryTerms = tokenizeSearchQuery(query);
   const tagById = new Map(tags.map((tag) => [tag.id, tag]));
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
 
@@ -41,31 +42,35 @@ export function searchNotes({
       const noteTags = sortTagsByName(note.tagIds.flatMap((tagId) => tagById.get(tagId) ?? []));
       const collection = note.collectionId ? collectionById.get(note.collectionId) : undefined;
       const searchableFields = noteSearchableFields(note);
-      const titleMatches =
-        !normalizedQuery || normalizeSearchValue(searchableFields.join(' ')).includes(normalizedQuery);
-      const matchedTags = normalizedQuery
-        ? sortTagsByName(noteTags.filter((tag) => normalizeSearchValue(tag.name).includes(normalizedQuery)))
+      const normalizedFields = searchableFields.map(normalizeSearchValue);
+      const noteMatchedTerms = matchedTerms(normalizedFields, queryTerms);
+      const matchedTags = queryTerms.length
+        ? sortTagsByName(noteTags.filter((tag) => matchesAnyTerm(normalizeSearchValue(tag.name), queryTerms)))
         : [];
-      const collectionMatches = normalizedQuery && collection
-        ? normalizeSearchValue(collection.name).includes(normalizedQuery)
-        : false;
+      const tagMatchedTerms = matchedTerms(matchedTags.map((tag) => normalizeSearchValue(tag.name)), queryTerms);
+      const collectionMatchedTerms = collection
+        ? matchedTerms([normalizeSearchValue(collection.name)], queryTerms)
+        : [];
+      const allMatchedTerms = new Set([...noteMatchedTerms, ...tagMatchedTerms, ...collectionMatchedTerms]);
 
-      if (!titleMatches && !matchedTags.length && !collectionMatches) {
+      if (queryTerms.length && !allMatchedTerms.size) {
         return [];
       }
 
       return [
         {
           collectionName: collection?.name,
-          matchType: titleMatches ? 'title' : matchedTags.length ? 'tag' : 'collection',
+          matchType: !queryTerms.length || noteMatchedTerms.length ? 'title' : matchedTags.length ? 'tag' : 'collection',
+          matchedTermCount: allMatchedTerms.size,
           note,
-          snippet: createSearchSnippet(searchableFields, normalizedQuery),
+          snippet: createSearchSnippet(searchableFields, queryTerms),
           tagNames: matchedTags.length ? matchedTags.map((tag) => tag.name) : noteTags.map((tag) => tag.name),
         } satisfies NoteSearchResult,
       ];
     })
     .sort(
       (left, right) =>
+        right.matchedTermCount - left.matchedTermCount ||
         searchResultScore(left) - searchResultScore(right) ||
         right.note.updatedAt.localeCompare(left.note.updatedAt) ||
         plainInlineText(left.note.title).localeCompare(plainInlineText(right.note.title), undefined, {
@@ -82,6 +87,12 @@ export function normalizeSearchValue(value: string) {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
+}
+
+export function tokenizeSearchQuery(value: string) {
+  const normalized = normalizeSearchValue(value);
+  const words = normalized.match(/[\p{L}\p{N}]+(?:[+#.][\p{L}\p{N}+#.]*)*/gu);
+  return [...new Set(words?.length ? words : normalized ? [normalized] : [])];
 }
 
 export function plainInlineText(value: string | null | undefined) {
@@ -103,10 +114,18 @@ function noteSearchableFields(note: Note) {
   ];
 }
 
-function createSearchSnippet(fields: string[], normalizedQuery: string) {
+function matchedTerms(fields: string[], terms: string[]) {
+  return terms.filter((term) => fields.some((field) => field.includes(term)));
+}
+
+function matchesAnyTerm(value: string, terms: string[]) {
+  return terms.some((term) => value.includes(term));
+}
+
+function createSearchSnippet(fields: string[], queryTerms: string[]) {
   const normalizedFields = fields.map((field) => normalizeWhitespace(field));
-  const matched = normalizedQuery
-    ? normalizedFields.find((field) => normalizeSearchValue(field).includes(normalizedQuery))
+  const matched = queryTerms.length
+    ? normalizedFields.find((field) => matchesAnyTerm(normalizeSearchValue(field), queryTerms))
     : normalizedFields.find((field, index) => index > 0 && Boolean(field));
   return truncateSnippet(matched ?? normalizedFields.find(Boolean) ?? '');
 }
