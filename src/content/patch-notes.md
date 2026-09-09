@@ -1,6 +1,8 @@
-# Unreleased
+# 2.2.2
 
 ## What's New in NoteX
+
+This release expands local MCP access across the remaining note organization and content-management features.
 
 ### Highlights
 
@@ -8,7 +10,6 @@
   linked notes, examples, related links, and block organization tools.
 - Added MCP block deletion and reordering with version checks and local-edit
   conflict protection.
-- Improved inline image controls, clarified alignment and text wrapping, and added automatic wrapping based on image drop position.
 - Deleting an inline image or attachment now also removes its stored file and database reference.
 
 ---
