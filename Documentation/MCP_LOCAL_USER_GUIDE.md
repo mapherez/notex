@@ -34,7 +34,18 @@ content, tags, or collection. Notes matching more distinct terms are ranked
 first, followed by match source and most recent update.
 
 Write tools: `create_note`, `update_note_header`, `add_note_block`,
-`update_note_block`, and `set_note_tags`.
+`update_note_block`, `delete_note_block`, `reorder_note_blocks`,
+`set_note_tags`, `set_note_favorite`, `set_note_pinned`, and
+`set_note_thumbnail`.
+
+Organization tools: `create_tag`, `update_tag`, `delete_tag`,
+`create_collection`, `update_collection`, and `delete_collection`.
+Deleting a tag removes it from affected notes. Deleting a collection leaves
+affected notes without a collection.
+
+Linked-content tools: `add_linked_note`, `remove_linked_note`,
+`add_note_example`, `update_note_example`, `delete_note_example`,
+`add_note_link`, and `delete_note_link`.
 
 Trash tools: `move_note_to_trash`, `restore_note`,
 `delete_note_permanently`, and `clear_trash`.
@@ -46,12 +57,19 @@ Notes in the trash can be read but their content cannot be edited through MCP.
 They can be restored or deleted permanently. Moving, restoring, and permanently
 deleting one note requires its current `expectedVersion`.
 
+`get_note` returns the IDs and ordered values needed by these operations,
+including note state, linked notes, examples, related links, and blocks. Linked
+notes are added and removed individually. They are directional; adding a link
+does not create a reciprocal link. Block reordering requires the complete
+ordered list of current block IDs.
+
 Permanent deletion cannot be undone. Before `clear_trash`, the client calls
 `get_trash_status` and passes its `stateToken`. If the trash has changed, the
 clear call fails without deleting anything and the client must check it again.
 
 Text and supported HTML formatting are accepted. Attachments and images are not
-accepted through MCP. Tags and collections must already exist in NoteX.
+accepted through MCP. Existing attachments are removed from local storage when
+their complete block is deleted.
 
 ### Rich text
 

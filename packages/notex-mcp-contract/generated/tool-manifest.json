@@ -194,6 +194,272 @@
       }
     },
     {
+      "name": "create_tag",
+      "scope": "notex:create",
+      "title": "create tag",
+      "description": "Create a NoteX tag with a name and optional palette color.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "color": {
+            "type": "string",
+            "enum": [
+              "amber",
+              "blue",
+              "brown",
+              "cyan",
+              "fuchsia",
+              "green",
+              "indigo",
+              "lime",
+              "mint",
+              "neutral",
+              "orange",
+              "pink",
+              "purple",
+              "red",
+              "rose",
+              "sky",
+              "slate",
+              "teal",
+              "violet",
+              "yellow"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "update_tag",
+      "scope": "notex:edit",
+      "title": "update tag",
+      "description": "Update selected fields of an existing NoteX tag.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "tagId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "color": {
+            "type": "string",
+            "enum": [
+              "amber",
+              "blue",
+              "brown",
+              "cyan",
+              "fuchsia",
+              "green",
+              "indigo",
+              "lime",
+              "mint",
+              "neutral",
+              "orange",
+              "pink",
+              "purple",
+              "red",
+              "rose",
+              "sky",
+              "slate",
+              "teal",
+              "violet",
+              "yellow"
+            ]
+          }
+        },
+        "required": [
+          "tagId"
+        ]
+      }
+    },
+    {
+      "name": "delete_tag",
+      "scope": "notex:delete",
+      "title": "delete tag",
+      "description": "Delete a NoteX tag and remove it from every note that uses it.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "tagId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "tagId"
+        ]
+      }
+    },
+    {
+      "name": "create_collection",
+      "scope": "notex:create",
+      "title": "create collection",
+      "description": "Create a NoteX collection with a name and optional palette color.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "color": {
+            "type": "string",
+            "enum": [
+              "amber",
+              "blue",
+              "brown",
+              "cyan",
+              "fuchsia",
+              "green",
+              "indigo",
+              "lime",
+              "mint",
+              "neutral",
+              "orange",
+              "pink",
+              "purple",
+              "red",
+              "rose",
+              "sky",
+              "slate",
+              "teal",
+              "violet",
+              "yellow"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "update_collection",
+      "scope": "notex:edit",
+      "title": "update collection",
+      "description": "Update selected fields of an existing NoteX collection.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "collectionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "color": {
+            "type": "string",
+            "enum": [
+              "amber",
+              "blue",
+              "brown",
+              "cyan",
+              "fuchsia",
+              "green",
+              "indigo",
+              "lime",
+              "mint",
+              "neutral",
+              "orange",
+              "pink",
+              "purple",
+              "red",
+              "rose",
+              "sky",
+              "slate",
+              "teal",
+              "violet",
+              "yellow"
+            ]
+          }
+        },
+        "required": [
+          "collectionId"
+        ]
+      }
+    },
+    {
+      "name": "delete_collection",
+      "scope": "notex:delete",
+      "title": "delete collection",
+      "description": "Delete a NoteX collection and unassign every note that uses it.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "collectionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "collectionId"
+        ]
+      }
+    },
+    {
       "name": "create_note",
       "scope": "notex:create",
       "title": "create note",
@@ -640,6 +906,513 @@
           "noteId",
           "expectedVersion",
           "tagIds"
+        ]
+      }
+    },
+    {
+      "name": "set_note_favorite",
+      "scope": "notex:edit",
+      "title": "set note favorite",
+      "description": "Set the exact favorite state of a NoteX note using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
+          },
+          "isFavorite": {
+            "type": "boolean",
+            "description": "Exact favorite state to apply."
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "isFavorite"
+        ]
+      }
+    },
+    {
+      "name": "set_note_pinned",
+      "scope": "notex:edit",
+      "title": "set note pinned",
+      "description": "Set the exact pinned state of a NoteX note using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
+          },
+          "isPinned": {
+            "type": "boolean",
+            "description": "Exact pinned state to apply."
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "isPinned"
+        ]
+      }
+    },
+    {
+      "name": "set_note_thumbnail",
+      "scope": "notex:edit",
+      "title": "set note thumbnail",
+      "description": "Set the thumbnail variant of a NoteX note using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
+          },
+          "variant": {
+            "type": "string",
+            "enum": [
+              "purple",
+              "paper",
+              "terminal",
+              "landscape",
+              "book",
+              "text",
+              "correct",
+              "wrong"
+            ],
+            "description": "Exact NoteX thumbnail variant to apply."
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "variant"
+        ]
+      }
+    },
+    {
+      "name": "add_linked_note",
+      "scope": "notex:edit",
+      "title": "add linked note",
+      "description": "Add one existing note to a NoteX note linked-note set using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
+          },
+          "linkedNoteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note to add to or remove from the linked-note set."
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "linkedNoteId"
+        ]
+      }
+    },
+    {
+      "name": "remove_linked_note",
+      "scope": "notex:delete",
+      "title": "remove linked note",
+      "description": "Remove one note from a NoteX note linked-note set using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
+          },
+          "linkedNoteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note to add to or remove from the linked-note set."
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "linkedNoteId"
+        ]
+      }
+    },
+    {
+      "name": "add_note_example",
+      "scope": "notex:edit",
+      "title": "add note example",
+      "description": "Append one additional example to a NoteX note using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
+          },
+          "example": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50000
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "example"
+        ]
+      }
+    },
+    {
+      "name": "update_note_example",
+      "scope": "notex:edit",
+      "title": "update note example",
+      "description": "Replace one additional example by its current index using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
+          },
+          "example": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50000
+          },
+          "exampleIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "example",
+          "exampleIndex"
+        ]
+      }
+    },
+    {
+      "name": "delete_note_example",
+      "scope": "notex:delete",
+      "title": "delete note example",
+      "description": "Delete one additional example by its current index using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
+          },
+          "exampleIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "exampleIndex"
+        ]
+      }
+    },
+    {
+      "name": "add_note_link",
+      "scope": "notex:edit",
+      "title": "add note link",
+      "description": "Add one HTTP or HTTPS related link to a NoteX note using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "href": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "format": "uri"
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "title",
+          "href"
+        ]
+      }
+    },
+    {
+      "name": "delete_note_link",
+      "scope": "notex:delete",
+      "title": "delete note link",
+      "description": "Delete one related link by its stable ID using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
+          },
+          "linkId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "linkId"
+        ]
+      }
+    },
+    {
+      "name": "delete_note_block",
+      "scope": "notex:delete",
+      "title": "delete note block",
+      "description": "Permanently delete one block from an active NoteX note using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
+          },
+          "blockId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "blockId"
+        ]
+      }
+    },
+    {
+      "name": "reorder_note_blocks",
+      "scope": "notex:edit",
+      "title": "reorder note blocks",
+      "description": "Apply a complete ordered list of block IDs to a NoteX note using optimistic versioning.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "ID of the note."
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
+          },
+          "blockIds": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "Complete ordered list of every current block ID in the note."
+          }
+        },
+        "required": [
+          "noteId",
+          "expectedVersion",
+          "blockIds"
         ]
       }
     },

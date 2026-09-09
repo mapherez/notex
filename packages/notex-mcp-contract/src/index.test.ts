@@ -6,11 +6,13 @@ import {
   bridgeErrorMessages,
   bridgePresenceSchema,
   bridgeReadySchema,
+  commandNames,
   commandScope,
   commandInputSchemas,
   createToolManifest,
   parseDesktopBridgeFrame,
   parseCommandInput,
+  parseCommandOutput,
   parseServerBridgeFrame,
   toolMetadata,
 } from './index.js';
@@ -28,6 +30,61 @@ describe('NoteX MCP contract', () => {
     expect(() =>
       commandInputSchemas.update_note_header.parse({ noteId: 'note-1', expectedVersion: 1 }),
     ).toThrow();
+    expect(() => parseCommandInput('update_tag', { tagId: 'tag-1' })).toThrow();
+    expect(() => parseCommandInput('update_collection', { collectionId: 'collection-1' })).toThrow();
+  });
+
+  it('validates the new entity and note-management inputs', () => {
+    expect(parseCommandInput('create_tag', { name: ' Work ', color: 'blue' })).toEqual({
+      name: 'Work',
+      color: 'blue',
+    });
+    expect(() => parseCommandInput('create_tag', { name: 'Work', color: 'unknown' })).toThrow();
+    expect(() => parseCommandInput('add_note_link', {
+      noteId: 'note-1', expectedVersion: 1, title: 'Local', href: 'file:///private.txt',
+    })).toThrow();
+    expect(() => parseCommandInput('reorder_note_blocks', {
+      noteId: 'note-1', expectedVersion: 1, blockIds: ['block-1', 'block-1'],
+    })).toThrow();
+    expect(parseCommandInput('set_note_favorite', {
+      noteId: 'note-1', expectedVersion: 2, isFavorite: true,
+    })).toEqual({ noteId: 'note-1', expectedVersion: 2, isFavorite: true });
+  });
+
+  it('publishes all feature-parity tools with the intended scopes and annotations', () => {
+    expect(commandNames).toHaveLength(34);
+    expect(commandScope.create_collection).toBe('notex:create');
+    expect(commandScope.update_collection).toBe('notex:edit');
+    expect(commandScope.delete_collection).toBe('notex:delete');
+    expect(toolMetadata.delete_note_block.annotations.destructiveHint).toBe(true);
+    expect(toolMetadata.reorder_note_blocks.annotations.destructiveHint).toBe(false);
+    expect(createToolManifest().tools.map((tool) => tool.name)).toContain('add_linked_note');
+  });
+
+  it('models the additional note fields required by the new tools', () => {
+    expect(parseCommandOutput('get_note', {
+      id: 'note-1',
+      title: { html: 'Title', text: 'Title' },
+      subtitle: { html: '', text: '' },
+      collectionId: null,
+      tagIds: ['tag-1'],
+      linkedNoteIds: ['note-2'],
+      additionalExamples: ['Example'],
+      relatedLinks: [{ id: 'link-1', title: 'Reference', href: 'https://example.com' }],
+      isFavorite: true,
+      isPinned: false,
+      thumbnail: { variant: 'paper' },
+      isTrashed: false,
+      readOnly: false,
+      createdAt: '2026-09-09T00:00:00.000Z',
+      updatedAt: '2026-09-09T00:00:00.000Z',
+      version: 3,
+      blocks: [],
+    })).toMatchObject({
+      linkedNoteIds: ['note-2'],
+      isFavorite: true,
+      thumbnail: { variant: 'paper' },
+    });
   });
 
   it('validates trash mutations and marks destructive tools', () => {

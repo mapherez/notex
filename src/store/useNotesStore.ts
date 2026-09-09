@@ -63,6 +63,8 @@ type NotesStore = {
   deleteAdditionalExample: (noteId: string, index: number) => Promise<void>;
   addRelatedLink: (noteId: string, title: string, href: string) => Promise<void>;
   deleteRelatedLink: (noteId: string, linkId: string) => Promise<void>;
+  setNoteFavorite: (noteId: string, isFavorite: boolean) => Promise<void>;
+  setNotePinned: (noteId: string, isPinned: boolean) => Promise<void>;
   toggleFavorite: (noteId: string) => Promise<void>;
   togglePinned: (noteId: string) => Promise<void>;
   addBlock: (noteId: string, input?: BlockInput) => Promise<NoteBlock | null>;
@@ -162,7 +164,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
   updateNoteThumbnail: async (noteId, thumbnail) => {
     const note = findNote(get().notes, noteId);
-    if (!note || !thumbnail) {
+    if (!note || !thumbnail || note.thumbnail?.variant === thumbnail.variant) {
       return;
     }
     const updated = finalizeNote({ ...note, thumbnail });
@@ -209,7 +211,11 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     if (!note) {
       return;
     }
-    const updated = finalizeNote({ ...note, linkedNoteIds: uniqueIds(linkedNoteIds).filter((id) => id !== noteId) });
+    const nextLinkedNoteIds = uniqueIds(linkedNoteIds).filter((id) => id !== noteId);
+    if (sameOrderedIds(note.linkedNoteIds, nextLinkedNoteIds)) {
+      return;
+    }
+    const updated = finalizeNote({ ...note, linkedNoteIds: nextLinkedNoteIds });
     await persistNote(updated);
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
@@ -281,23 +287,35 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     await persistNote(updated);
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
-  toggleFavorite: async (noteId) => {
+  setNoteFavorite: async (noteId, isFavorite) => {
     const note = findNote(get().notes, noteId);
-    if (!note) {
+    if (!note || note.isFavorite === isFavorite) {
       return;
     }
-    const updated = finalizeNote({ ...note, isFavorite: !note.isFavorite });
+    const updated = finalizeNote({ ...note, isFavorite });
     await persistNote(updated);
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
-  togglePinned: async (noteId) => {
+  setNotePinned: async (noteId, isPinned) => {
     const note = findNote(get().notes, noteId);
-    if (!note) {
+    if (!note || note.isPinned === isPinned) {
       return;
     }
-    const updated = finalizeNote({ ...note, isPinned: !note.isPinned });
+    const updated = finalizeNote({ ...note, isPinned });
     await persistNote(updated);
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+  },
+  toggleFavorite: async (noteId) => {
+    const note = findNote(get().notes, noteId);
+    if (note) {
+      await get().setNoteFavorite(noteId, !note.isFavorite);
+    }
+  },
+  togglePinned: async (noteId) => {
+    const note = findNote(get().notes, noteId);
+    if (note) {
+      await get().setNotePinned(noteId, !note.isPinned);
+    }
   },
   addBlock: async (noteId, input = {}) => {
     const note = findNote(get().notes, noteId);
@@ -358,6 +376,12 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     if (!note) {
       return;
     }
+    const currentBlockIds = [...(note.blocks ?? [])]
+      .sort((left, right) => left.sortOrder - right.sortOrder)
+      .map((block) => block.id);
+    if (sameOrderedIds(currentBlockIds, blockIds)) {
+      return;
+    }
     const blockMap = new Map((note.blocks ?? []).map((block) => [block.id, block]));
     const usedIds = new Set<string>();
     const reordered = blockIds.flatMap((blockId, index) => {
@@ -381,9 +405,10 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
   deleteBlock: async (noteId, blockId) => {
     const note = findNote(get().notes, noteId);
-    if (!note) {
+    if (!note || !(note.blocks ?? []).some((block) => block.id === blockId)) {
       return;
     }
+    const removedFiles = (note.files ?? []).filter((file) => file.blockId === blockId);
     const blocks = (note.blocks ?? [])
       .filter((block) => block.id !== blockId)
       .map((block, index) => ({ ...block, sortOrder: index }));
@@ -396,6 +421,11 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       await db.notes.put(stripNoteRelations(updated));
     });
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    await Promise.allSettled(
+      uniqueIds(removedFiles.map((file) => file.relativePath)).map((relativePath) =>
+        deleteNoteAttachment(relativePath),
+      ),
+    );
   },
   importFileForBlock: async (sourcePath, noteId, blockId) => {
     const note = findNote(get().notes, noteId);
@@ -662,4 +692,8 @@ function groupBy<T>(items: T[], key: (item: T) => string) {
 
 function createId() {
   return crypto.randomUUID();
+}
+
+function sameOrderedIds(left: string[], right: string[]) {
+  return left.length === right.length && left.every((id, index) => id === right[index]);
 }

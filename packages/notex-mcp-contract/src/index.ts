@@ -132,18 +132,60 @@ export type RichTextOutput = z.infer<typeof richTextOutputSchema>;
 export const noteLocationSchema = z.enum(['active', 'trash', 'all']);
 export type NoteLocation = z.infer<typeof noteLocationSchema>;
 
+export const tagColorSchema = z.enum([
+  'amber',
+  'blue',
+  'brown',
+  'cyan',
+  'fuchsia',
+  'green',
+  'indigo',
+  'lime',
+  'mint',
+  'neutral',
+  'orange',
+  'pink',
+  'purple',
+  'red',
+  'rose',
+  'sky',
+  'slate',
+  'teal',
+  'violet',
+  'yellow',
+]);
+export type TagColor = z.infer<typeof tagColorSchema>;
+
+export const noteThumbnailVariantSchema = z.enum([
+  'purple',
+  'paper',
+  'terminal',
+  'landscape',
+  'book',
+  'text',
+  'correct',
+  'wrong',
+]);
+export type NoteThumbnailVariant = z.infer<typeof noteThumbnailVariantSchema>;
+
 export const tagDtoSchema = z.object({
   id: entityIdSchema,
   name: z.string(),
-  color: z.string(),
+  color: tagColorSchema,
 });
 export const collectionDtoSchema = z.object({
   id: entityIdSchema,
   name: z.string(),
-  color: z.string(),
+  color: tagColorSchema,
+});
+export const relatedLinkDtoSchema = z.object({
+  id: entityIdSchema,
+  title: z.string(),
+  href: z.string(),
 });
 export type TagDto = z.infer<typeof tagDtoSchema>;
 export type CollectionDto = z.infer<typeof collectionDtoSchema>;
+export type RelatedLinkDto = z.infer<typeof relatedLinkDtoSchema>;
 
 export const noteSearchResultSchema = z.object({
   id: entityIdSchema,
@@ -171,6 +213,12 @@ export const noteDetailSchema = z.object({
   subtitle: richTextOutputSchema,
   collectionId: entityIdSchema.nullable(),
   tagIds: z.array(entityIdSchema),
+  linkedNoteIds: z.array(entityIdSchema),
+  additionalExamples: z.array(z.string()),
+  relatedLinks: z.array(relatedLinkDtoSchema),
+  isFavorite: z.boolean(),
+  isPinned: z.boolean(),
+  thumbnail: z.object({ variant: noteThumbnailVariantSchema }).nullable(),
   isTrashed: z.boolean(),
   readOnly: z.boolean(),
   createdAt: z.string(),
@@ -238,6 +286,59 @@ const noteVersionInputSchema = z.object({
   expectedVersion: expectedVersionSchema,
 });
 
+const entityNameSchema = z.string().trim().min(1).max(120);
+const createNamedEntityInputSchema = z.object({
+  name: entityNameSchema,
+  color: tagColorSchema.optional(),
+});
+const updateTagInputSchema = z
+  .object({
+    tagId: entityIdSchema,
+    name: entityNameSchema.optional(),
+    color: tagColorSchema.optional(),
+  })
+  .refine((input) => input.name !== undefined || input.color !== undefined, {
+    message: 'At least one field is required.',
+  });
+const updateCollectionInputSchema = z
+  .object({
+    collectionId: entityIdSchema,
+    name: entityNameSchema.optional(),
+    color: tagColorSchema.optional(),
+  })
+  .refine((input) => input.name !== undefined || input.color !== undefined, {
+    message: 'At least one field is required.',
+  });
+const httpUrlSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2048)
+  .url()
+  .refine((value) => /^https?:\/\//i.test(value), {
+    message: 'Only HTTP and HTTPS URLs are supported.',
+  });
+const linkedNoteInputSchema = noteVersionInputSchema.extend({
+  linkedNoteId: entityIdSchema.describe('ID of the note to add to or remove from the linked-note set.'),
+});
+const noteExampleInputSchema = noteVersionInputSchema.extend({
+  example: z.string().trim().min(1).max(50_000),
+});
+const indexedNoteExampleInputSchema = noteExampleInputSchema.extend({
+  exampleIndex: z.number().int().nonnegative(),
+});
+const deleteNoteExampleInputSchema = noteVersionInputSchema.extend({
+  exampleIndex: z.number().int().nonnegative(),
+});
+const blockOrderSchema = z
+  .array(entityIdSchema)
+  .max(100)
+  .superRefine((blockIds, context) => {
+    if (new Set(blockIds).size !== blockIds.length) {
+      context.addIssue({ code: 'custom', message: 'Block IDs must be unique.' });
+    }
+  });
+
 const trashStateTokenSchema = z
   .string()
   .length(64)
@@ -266,6 +367,12 @@ export const commandInputSchemas = {
     query: z.string().max(200).default(''),
     limit: z.number().int().min(1).max(100).default(100),
   }),
+  create_tag: createNamedEntityInputSchema,
+  update_tag: updateTagInputSchema,
+  delete_tag: z.object({ tagId: entityIdSchema }),
+  create_collection: createNamedEntityInputSchema,
+  update_collection: updateCollectionInputSchema,
+  delete_collection: z.object({ collectionId: entityIdSchema }),
   create_note: z.object({
     title: inlineRichTextInputSchema.describe('Title of the new note. Omit to create an empty note title.').optional(),
     subtitle: inlineRichTextInputSchema
@@ -311,6 +418,33 @@ export const commandInputSchemas = {
       .max(50)
       .describe('Complete replacement set of existing tag IDs. Use an empty array to remove all tags.'),
   }),
+  set_note_favorite: noteVersionInputSchema.extend({
+    isFavorite: z.boolean().describe('Exact favorite state to apply.'),
+  }),
+  set_note_pinned: noteVersionInputSchema.extend({
+    isPinned: z.boolean().describe('Exact pinned state to apply.'),
+  }),
+  set_note_thumbnail: noteVersionInputSchema.extend({
+    variant: noteThumbnailVariantSchema.describe('Exact NoteX thumbnail variant to apply.'),
+  }),
+  add_linked_note: linkedNoteInputSchema,
+  remove_linked_note: linkedNoteInputSchema,
+  add_note_example: noteExampleInputSchema,
+  update_note_example: indexedNoteExampleInputSchema,
+  delete_note_example: deleteNoteExampleInputSchema,
+  add_note_link: noteVersionInputSchema.extend({
+    title: z.string().trim().min(1).max(500),
+    href: httpUrlSchema,
+  }),
+  delete_note_link: noteVersionInputSchema.extend({
+    linkId: entityIdSchema,
+  }),
+  delete_note_block: noteVersionInputSchema.extend({
+    blockId: entityIdSchema,
+  }),
+  reorder_note_blocks: noteVersionInputSchema.extend({
+    blockIds: blockOrderSchema.describe('Complete ordered list of every current block ID in the note.'),
+  }),
   move_note_to_trash: noteVersionInputSchema,
   restore_note: noteVersionInputSchema,
   delete_note_permanently: noteVersionInputSchema,
@@ -323,6 +457,9 @@ export const mutationResultSchema = z.object({
   noteId: entityIdSchema,
   version: z.number().int().positive(),
 });
+
+const tagResultSchema = z.object({ tag: tagDtoSchema });
+const collectionResultSchema = z.object({ collection: collectionDtoSchema });
 
 export const commandOutputSchemas = {
   notex_status: z.object({
@@ -339,11 +476,46 @@ export const commandOutputSchemas = {
   }),
   list_tags: z.object({ tags: z.array(tagDtoSchema) }),
   list_collections: z.object({ collections: z.array(collectionDtoSchema) }),
+  create_tag: tagResultSchema,
+  update_tag: tagResultSchema,
+  delete_tag: z.object({
+    tagId: entityIdSchema,
+    deleted: z.literal(true),
+    affectedNoteCount: z.number().int().nonnegative(),
+  }),
+  create_collection: collectionResultSchema,
+  update_collection: collectionResultSchema,
+  delete_collection: z.object({
+    collectionId: entityIdSchema,
+    deleted: z.literal(true),
+    affectedNoteCount: z.number().int().nonnegative(),
+  }),
   create_note: mutationResultSchema.extend({ blockIds: z.array(entityIdSchema) }),
   update_note_header: mutationResultSchema,
   add_note_block: mutationResultSchema.extend({ blockId: entityIdSchema }),
   update_note_block: mutationResultSchema.extend({ blockId: entityIdSchema }),
   set_note_tags: mutationResultSchema,
+  set_note_favorite: mutationResultSchema,
+  set_note_pinned: mutationResultSchema,
+  set_note_thumbnail: mutationResultSchema,
+  add_linked_note: mutationResultSchema.extend({ linkedNoteId: entityIdSchema }),
+  remove_linked_note: mutationResultSchema.extend({ linkedNoteId: entityIdSchema }),
+  add_note_example: mutationResultSchema.extend({ exampleIndex: z.number().int().nonnegative() }),
+  update_note_example: mutationResultSchema.extend({ exampleIndex: z.number().int().nonnegative() }),
+  delete_note_example: mutationResultSchema.extend({
+    exampleIndex: z.number().int().nonnegative(),
+    deleted: z.literal(true),
+  }),
+  add_note_link: mutationResultSchema.extend({ link: relatedLinkDtoSchema }),
+  delete_note_link: mutationResultSchema.extend({
+    linkId: entityIdSchema,
+    deleted: z.literal(true),
+  }),
+  delete_note_block: mutationResultSchema.extend({
+    blockId: entityIdSchema,
+    deleted: z.literal(true),
+  }),
+  reorder_note_blocks: mutationResultSchema.extend({ blockIds: z.array(entityIdSchema) }),
   move_note_to_trash: mutationResultSchema,
   restore_note: mutationResultSchema,
   delete_note_permanently: z.object({
@@ -369,11 +541,29 @@ export const commandScope: Record<CommandName, McpScope> = {
   get_trash_status: 'notex:read',
   list_tags: 'notex:read',
   list_collections: 'notex:read',
+  create_tag: 'notex:create',
+  update_tag: 'notex:edit',
+  delete_tag: 'notex:delete',
+  create_collection: 'notex:create',
+  update_collection: 'notex:edit',
+  delete_collection: 'notex:delete',
   create_note: 'notex:create',
   update_note_header: 'notex:edit',
   add_note_block: 'notex:edit',
   update_note_block: 'notex:edit',
   set_note_tags: 'notex:edit',
+  set_note_favorite: 'notex:edit',
+  set_note_pinned: 'notex:edit',
+  set_note_thumbnail: 'notex:edit',
+  add_linked_note: 'notex:edit',
+  remove_linked_note: 'notex:delete',
+  add_note_example: 'notex:edit',
+  update_note_example: 'notex:edit',
+  delete_note_example: 'notex:delete',
+  add_note_link: 'notex:edit',
+  delete_note_link: 'notex:delete',
+  delete_note_block: 'notex:delete',
+  reorder_note_blocks: 'notex:edit',
   move_note_to_trash: 'notex:edit',
   restore_note: 'notex:edit',
   delete_note_permanently: 'notex:delete',
@@ -401,11 +591,29 @@ const toolDescriptions: Record<CommandName, string> = {
   get_trash_status: 'Read the current trash count and state token required by clear_trash.',
   list_tags: 'List existing NoteX tags. Use returned IDs in write tools.',
   list_collections: 'List existing NoteX collections. Use returned IDs in write tools.',
+  create_tag: 'Create a NoteX tag with a name and optional palette color.',
+  update_tag: 'Update selected fields of an existing NoteX tag.',
+  delete_tag: 'Delete a NoteX tag and remove it from every note that uses it.',
+  create_collection: 'Create a NoteX collection with a name and optional palette color.',
+  update_collection: 'Update selected fields of an existing NoteX collection.',
+  delete_collection: 'Delete a NoteX collection and unassign every note that uses it.',
   create_note: 'Create a NoteX note, optionally with rich-text blocks and existing tags.',
   update_note_header: 'Update selected inline-rich-text header fields using optimistic versioning.',
   add_note_block: 'Append a rich-text block to a NoteX note using optimistic versioning.',
   update_note_block: 'Replace selected block fields using optimistic versioning. Content is the complete new body.',
   set_note_tags: 'Replace a NoteX note tag set with existing tag IDs using optimistic versioning.',
+  set_note_favorite: 'Set the exact favorite state of a NoteX note using optimistic versioning.',
+  set_note_pinned: 'Set the exact pinned state of a NoteX note using optimistic versioning.',
+  set_note_thumbnail: 'Set the thumbnail variant of a NoteX note using optimistic versioning.',
+  add_linked_note: 'Add one existing note to a NoteX note linked-note set using optimistic versioning.',
+  remove_linked_note: 'Remove one note from a NoteX note linked-note set using optimistic versioning.',
+  add_note_example: 'Append one additional example to a NoteX note using optimistic versioning.',
+  update_note_example: 'Replace one additional example by its current index using optimistic versioning.',
+  delete_note_example: 'Delete one additional example by its current index using optimistic versioning.',
+  add_note_link: 'Add one HTTP or HTTPS related link to a NoteX note using optimistic versioning.',
+  delete_note_link: 'Delete one related link by its stable ID using optimistic versioning.',
+  delete_note_block: 'Permanently delete one block from an active NoteX note using optimistic versioning.',
+  reorder_note_blocks: 'Apply a complete ordered list of block IDs to a NoteX note using optimistic versioning.',
   move_note_to_trash: 'Move an active NoteX note to trash using optimistic versioning.',
   restore_note: 'Restore a NoteX note from trash using optimistic versioning.',
   delete_note_permanently: 'Permanently delete one NoteX note that is already in trash.',
@@ -413,6 +621,12 @@ const toolDescriptions: Record<CommandName, string> = {
 };
 
 const destructiveCommands = new Set<CommandName>([
+  'delete_tag',
+  'delete_collection',
+  'remove_linked_note',
+  'delete_note_example',
+  'delete_note_link',
+  'delete_note_block',
   'move_note_to_trash',
   'delete_note_permanently',
   'clear_trash',

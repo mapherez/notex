@@ -8,6 +8,7 @@ They are not end-user guides.
 - [Architecture constraints](ARCHITECTURE_CONSTRAINTS.md)
 - [Data model](DATA_MODEL.md)
 - [Layout](LAYOUT.md)
+- [Local MCP feature parity plan](MCP_LOCAL_FEATURE_PARITY_PLAN.md)
 - [Pages](PAGES.md)
 - [Routes](ROUTES.md)
 - [Stack](STACK.md)

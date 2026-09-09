@@ -4,6 +4,10 @@
 
 ### Highlights
 
+- Expanded local MCP support with tag and collection management, note state,
+  linked notes, examples, related links, and block organization tools.
+- Added MCP block deletion and reordering with version checks and local-edit
+  conflict protection.
 - Improved inline image controls, clarified alignment and text wrapping, and added automatic wrapping based on image drop position.
 - Deleting an inline image or attachment now also removes its stored file and database reference.
 

@@ -100,6 +100,42 @@ export async function dispatchMcpCommand(
           ).map(collectionDto),
         });
       }
+      case 'create_tag': {
+        const input = parseInput('create_tag', request.input);
+        return success(request.requestId, 'create_tag', await createTagCommand(request, input));
+      }
+      case 'update_tag': {
+        const input = parseInput('update_tag', request.input);
+        return success(request.requestId, 'update_tag', await updateTagCommand(request, input));
+      }
+      case 'delete_tag': {
+        const input = parseInput('delete_tag', request.input);
+        return success(request.requestId, 'delete_tag', await deleteTagCommand(request, input));
+      }
+      case 'create_collection': {
+        const input = parseInput('create_collection', request.input);
+        return success(
+          request.requestId,
+          'create_collection',
+          await createCollectionCommand(request, input),
+        );
+      }
+      case 'update_collection': {
+        const input = parseInput('update_collection', request.input);
+        return success(
+          request.requestId,
+          'update_collection',
+          await updateCollectionCommand(request, input),
+        );
+      }
+      case 'delete_collection': {
+        const input = parseInput('delete_collection', request.input);
+        return success(
+          request.requestId,
+          'delete_collection',
+          await deleteCollectionCommand(request, input),
+        );
+      }
       case 'create_note': {
         const input = parseInput('create_note', request.input);
         return success(request.requestId, 'create_note', await createNoteCommand(request, input));
@@ -127,6 +163,98 @@ export async function dispatchMcpCommand(
       case 'set_note_tags': {
         const input = parseInput('set_note_tags', request.input);
         return success(request.requestId, 'set_note_tags', await setNoteTagsCommand(request, input));
+      }
+      case 'set_note_favorite': {
+        const input = parseInput('set_note_favorite', request.input);
+        return success(
+          request.requestId,
+          'set_note_favorite',
+          await setNoteFavoriteCommand(request, input),
+        );
+      }
+      case 'set_note_pinned': {
+        const input = parseInput('set_note_pinned', request.input);
+        return success(
+          request.requestId,
+          'set_note_pinned',
+          await setNotePinnedCommand(request, input),
+        );
+      }
+      case 'set_note_thumbnail': {
+        const input = parseInput('set_note_thumbnail', request.input);
+        return success(
+          request.requestId,
+          'set_note_thumbnail',
+          await setNoteThumbnailCommand(request, input),
+        );
+      }
+      case 'add_linked_note': {
+        const input = parseInput('add_linked_note', request.input);
+        return success(
+          request.requestId,
+          'add_linked_note',
+          await addLinkedNoteCommand(request, input),
+        );
+      }
+      case 'remove_linked_note': {
+        const input = parseInput('remove_linked_note', request.input);
+        return success(
+          request.requestId,
+          'remove_linked_note',
+          await removeLinkedNoteCommand(request, input),
+        );
+      }
+      case 'add_note_example': {
+        const input = parseInput('add_note_example', request.input);
+        return success(
+          request.requestId,
+          'add_note_example',
+          await addNoteExampleCommand(request, input),
+        );
+      }
+      case 'update_note_example': {
+        const input = parseInput('update_note_example', request.input);
+        return success(
+          request.requestId,
+          'update_note_example',
+          await updateNoteExampleCommand(request, input),
+        );
+      }
+      case 'delete_note_example': {
+        const input = parseInput('delete_note_example', request.input);
+        return success(
+          request.requestId,
+          'delete_note_example',
+          await deleteNoteExampleCommand(request, input),
+        );
+      }
+      case 'add_note_link': {
+        const input = parseInput('add_note_link', request.input);
+        return success(request.requestId, 'add_note_link', await addNoteLinkCommand(request, input));
+      }
+      case 'delete_note_link': {
+        const input = parseInput('delete_note_link', request.input);
+        return success(
+          request.requestId,
+          'delete_note_link',
+          await deleteNoteLinkCommand(request, input),
+        );
+      }
+      case 'delete_note_block': {
+        const input = parseInput('delete_note_block', request.input);
+        return success(
+          request.requestId,
+          'delete_note_block',
+          await deleteNoteBlockCommand(request, input),
+        );
+      }
+      case 'reorder_note_blocks': {
+        const input = parseInput('reorder_note_blocks', request.input);
+        return success(
+          request.requestId,
+          'reorder_note_blocks',
+          await reorderNoteBlocksCommand(request, input),
+        );
       }
       case 'move_note_to_trash': {
         const input = parseInput('move_note_to_trash', request.input);
@@ -222,6 +350,118 @@ function failure(
       ...(currentVersion === undefined ? {} : { currentVersion }),
     },
   };
+}
+
+async function createTagCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'create_tag'>,
+): Promise<CommandOutput<'create_tag'>> {
+  ensureDeadline(request.deadlineAt);
+  const tag = await useKnowledgeStore.getState().createTag(input.name, input.color);
+  if (!tag) {
+    throw new CommandFailure('INVALID_INPUT');
+  }
+  return { tag: tagDto(tag) };
+}
+
+async function updateTagCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'update_tag'>,
+): Promise<CommandOutput<'update_tag'>> {
+  ensureDeadline(request.deadlineAt);
+  const current = findTag(input.tagId);
+  if (!current) {
+    throw new CommandFailure('NOT_FOUND');
+  }
+  await useKnowledgeStore.getState().updateTag(input.tagId, {
+    name: input.name ?? current.name,
+    color: input.color ?? current.color,
+  });
+  const updated = findTag(input.tagId);
+  if (!updated) {
+    throw new CommandFailure('NOT_FOUND');
+  }
+  return { tag: tagDto(updated) };
+}
+
+async function deleteTagCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'delete_tag'>,
+): Promise<CommandOutput<'delete_tag'>> {
+  ensureDeadline(request.deadlineAt);
+  if (!findTag(input.tagId)) {
+    throw new CommandFailure('NOT_FOUND');
+  }
+  const affectedNoteIds = useNotesStore
+    .getState()
+    .notes.filter((note) => note.tagIds.includes(input.tagId))
+    .map((note) => note.id);
+
+  return withNoteMutationLeases(request, affectedNoteIds, async () => {
+    if (!findTag(input.tagId)) {
+      throw new CommandFailure('NOT_FOUND');
+    }
+    await useKnowledgeStore.getState().deleteTag(input.tagId);
+    return { tagId: input.tagId, deleted: true, affectedNoteCount: affectedNoteIds.length };
+  });
+}
+
+async function createCollectionCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'create_collection'>,
+): Promise<CommandOutput<'create_collection'>> {
+  ensureDeadline(request.deadlineAt);
+  const collection = await useKnowledgeStore.getState().createCollection(input.name, input.color);
+  if (!collection) {
+    throw new CommandFailure('INVALID_INPUT');
+  }
+  return { collection: collectionDto(collection) };
+}
+
+async function updateCollectionCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'update_collection'>,
+): Promise<CommandOutput<'update_collection'>> {
+  ensureDeadline(request.deadlineAt);
+  const current = findCollection(input.collectionId);
+  if (!current) {
+    throw new CommandFailure('NOT_FOUND');
+  }
+  await useKnowledgeStore.getState().updateCollection(input.collectionId, {
+    name: input.name ?? current.name,
+    color: input.color ?? current.color,
+  });
+  const updated = findCollection(input.collectionId);
+  if (!updated) {
+    throw new CommandFailure('NOT_FOUND');
+  }
+  return { collection: collectionDto(updated) };
+}
+
+async function deleteCollectionCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'delete_collection'>,
+): Promise<CommandOutput<'delete_collection'>> {
+  ensureDeadline(request.deadlineAt);
+  if (!findCollection(input.collectionId)) {
+    throw new CommandFailure('NOT_FOUND');
+  }
+  const affectedNoteIds = useNotesStore
+    .getState()
+    .notes.filter((note) => note.collectionId === input.collectionId)
+    .map((note) => note.id);
+
+  return withNoteMutationLeases(request, affectedNoteIds, async () => {
+    if (!findCollection(input.collectionId)) {
+      throw new CommandFailure('NOT_FOUND');
+    }
+    await useKnowledgeStore.getState().deleteCollection(input.collectionId);
+    return {
+      collectionId: input.collectionId,
+      deleted: true,
+      affectedNoteCount: affectedNoteIds.length,
+    };
+  });
 }
 
 async function createNoteCommand(
@@ -340,6 +580,190 @@ async function setNoteTagsCommand(
   });
 }
 
+async function setNoteFavoriteCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'set_note_favorite'>,
+): Promise<CommandOutput<'set_note_favorite'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
+    await useNotesStore.getState().setNoteFavorite(input.noteId, input.isFavorite);
+    return currentMutationResult(input.noteId);
+  });
+}
+
+async function setNotePinnedCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'set_note_pinned'>,
+): Promise<CommandOutput<'set_note_pinned'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
+    await useNotesStore.getState().setNotePinned(input.noteId, input.isPinned);
+    return currentMutationResult(input.noteId);
+  });
+}
+
+async function setNoteThumbnailCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'set_note_thumbnail'>,
+): Promise<CommandOutput<'set_note_thumbnail'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
+    await useNotesStore.getState().updateNoteThumbnail(input.noteId, { variant: input.variant });
+    return currentMutationResult(input.noteId);
+  });
+}
+
+async function addLinkedNoteCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'add_linked_note'>,
+): Promise<CommandOutput<'add_linked_note'>> {
+  if (input.noteId === input.linkedNoteId) {
+    throw new CommandFailure('INVALID_INPUT');
+  }
+
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
+    const linkedNote = findNote(input.linkedNoteId);
+    if (!linkedNote) {
+      throw new CommandFailure('NOT_FOUND');
+    }
+    if (linkedNote.isTrashed) {
+      throw new CommandFailure('READ_ONLY_TRASH');
+    }
+    if (!note.linkedNoteIds.includes(input.linkedNoteId)) {
+      await useNotesStore
+        .getState()
+        .updateNoteLinkedNotes(input.noteId, [...note.linkedNoteIds, input.linkedNoteId]);
+    }
+    return { ...currentMutationResult(input.noteId), linkedNoteId: input.linkedNoteId };
+  });
+}
+
+async function removeLinkedNoteCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'remove_linked_note'>,
+): Promise<CommandOutput<'remove_linked_note'>> {
+  if (input.noteId === input.linkedNoteId) {
+    throw new CommandFailure('INVALID_INPUT');
+  }
+
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
+    if (note.linkedNoteIds.includes(input.linkedNoteId)) {
+      await useNotesStore
+        .getState()
+        .updateNoteLinkedNotes(
+          input.noteId,
+          note.linkedNoteIds.filter((linkedNoteId) => linkedNoteId !== input.linkedNoteId),
+        );
+    }
+    return { ...currentMutationResult(input.noteId), linkedNoteId: input.linkedNoteId };
+  });
+}
+
+async function addNoteExampleCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'add_note_example'>,
+): Promise<CommandOutput<'add_note_example'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
+    const exampleIndex = (note.additionalExamples ?? []).length;
+    await useNotesStore.getState().addAdditionalExample(input.noteId, input.example);
+    return { ...currentMutationResult(input.noteId), exampleIndex };
+  });
+}
+
+async function updateNoteExampleCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'update_note_example'>,
+): Promise<CommandOutput<'update_note_example'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
+    if (input.exampleIndex >= (note.additionalExamples ?? []).length) {
+      throw new CommandFailure('NOT_FOUND');
+    }
+    await useNotesStore
+      .getState()
+      .updateAdditionalExample(input.noteId, input.exampleIndex, input.example);
+    return { ...currentMutationResult(input.noteId), exampleIndex: input.exampleIndex };
+  });
+}
+
+async function deleteNoteExampleCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'delete_note_example'>,
+): Promise<CommandOutput<'delete_note_example'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
+    if (input.exampleIndex >= (note.additionalExamples ?? []).length) {
+      throw new CommandFailure('NOT_FOUND');
+    }
+    await useNotesStore.getState().deleteAdditionalExample(input.noteId, input.exampleIndex);
+    return {
+      ...currentMutationResult(input.noteId),
+      exampleIndex: input.exampleIndex,
+      deleted: true,
+    };
+  });
+}
+
+async function addNoteLinkCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'add_note_link'>,
+): Promise<CommandOutput<'add_note_link'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
+    const existingLinkIds = new Set((note.relatedLinks ?? []).map((link) => link.id));
+    await useNotesStore.getState().addRelatedLink(input.noteId, input.title, input.href);
+    const updatedNote = findNote(input.noteId);
+    const link = updatedNote?.relatedLinks?.find((item) => !existingLinkIds.has(item.id));
+    if (!link) {
+      throw new CommandFailure('INTERNAL');
+    }
+    return { ...currentMutationResult(input.noteId), link: { ...link } };
+  });
+}
+
+async function deleteNoteLinkCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'delete_note_link'>,
+): Promise<CommandOutput<'delete_note_link'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
+    if (!(note.relatedLinks ?? []).some((link) => link.id === input.linkId)) {
+      throw new CommandFailure('NOT_FOUND');
+    }
+    await useNotesStore.getState().deleteRelatedLink(input.noteId, input.linkId);
+    return { ...currentMutationResult(input.noteId), linkId: input.linkId, deleted: true };
+  });
+}
+
+async function deleteNoteBlockCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'delete_note_block'>,
+): Promise<CommandOutput<'delete_note_block'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
+    if (!(note.blocks ?? []).some((block) => block.id === input.blockId)) {
+      throw new CommandFailure('NOT_FOUND');
+    }
+    await useNotesStore.getState().deleteBlock(input.noteId, input.blockId);
+    return { ...currentMutationResult(input.noteId), blockId: input.blockId, deleted: true };
+  });
+}
+
+async function reorderNoteBlocksCommand(
+  request: McpBridgeRequest,
+  input: CommandInput<'reorder_note_blocks'>,
+): Promise<CommandOutput<'reorder_note_blocks'>> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
+    const currentBlockIds = [...(note.blocks ?? [])]
+      .sort((left, right) => left.sortOrder - right.sortOrder)
+      .map((block) => block.id);
+    const requestedBlockIds = input.blockIds;
+    const currentBlockIdSet = new Set(currentBlockIds);
+    if (
+      requestedBlockIds.length !== currentBlockIds.length ||
+      requestedBlockIds.some((blockId) => !currentBlockIdSet.has(blockId))
+    ) {
+      throw new CommandFailure('INVALID_INPUT');
+    }
+    if (!sameOrderedIds(currentBlockIds, requestedBlockIds)) {
+      await useNotesStore.getState().reorderBlocks(input.noteId, requestedBlockIds);
+    }
+    return { ...currentMutationResult(input.noteId), blockIds: [...requestedBlockIds] };
+  });
+}
+
 async function moveNoteToTrashCommand(
   request: McpBridgeRequest,
   input: CommandInput<'move_note_to_trash'>,
@@ -403,6 +827,34 @@ async function clearTrashCommand(
     return {
       deletedCount: initialSnapshot.noteIds.length,
     };
+  } finally {
+    for (const lease of leases) {
+      lease.release();
+    }
+  }
+}
+
+async function withNoteMutationLeases<T>(
+  request: McpBridgeRequest,
+  noteIds: string[],
+  mutation: () => Promise<T>,
+): Promise<T> {
+  ensureDeadline(request.deadlineAt);
+  const leases: Array<{ release: () => void }> = [];
+  try {
+    for (const noteId of [...new Set(noteIds)].sort()) {
+      const lease = tryBeginMcpMutation(noteId);
+      if (!lease.acquired) {
+        const currentVersion = findNote(noteId)?.version;
+        if (lease.blockedBy === 'local') {
+          throw new CommandFailure('LOCAL_EDITS_PENDING', true, currentVersion);
+        }
+        throw new CommandFailure('CONFLICT', true, currentVersion);
+      }
+      leases.push(lease);
+    }
+    ensureDeadline(request.deadlineAt);
+    return await mutation();
   } finally {
     for (const lease of leases) {
       lease.release();
@@ -558,6 +1010,12 @@ function noteDetail(note: Note): CommandOutput<'get_note'> {
     subtitle: inlineRichTextOutput(note.subtitle),
     collectionId: note.collectionId,
     tagIds: [...note.tagIds],
+    linkedNoteIds: [...note.linkedNoteIds],
+    additionalExamples: [...(note.additionalExamples ?? [])],
+    relatedLinks: (note.relatedLinks ?? []).map((link) => ({ ...link })),
+    isFavorite: note.isFavorite,
+    isPinned: note.isPinned,
+    thumbnail: note.thumbnail ? { ...note.thumbnail } : null,
     isTrashed: note.isTrashed,
     readOnly: note.isTrashed,
     createdAt: note.createdAt,
@@ -592,6 +1050,14 @@ function findNote(noteId: string) {
   return useNotesStore.getState().notes.find((note) => note.id === noteId);
 }
 
+function findTag(tagId: string) {
+  return useKnowledgeStore.getState().tags.find((tag) => tag.id === tagId);
+}
+
+function findCollection(collectionId: string) {
+  return useKnowledgeStore.getState().collections.find((collection) => collection.id === collectionId);
+}
+
 function filterNamedEntities<T extends { name: string }>(entities: T[], query: string, limit: number) {
   const normalizedQuery = normalizeSearchValue(query);
   return entities
@@ -619,6 +1085,10 @@ function collectionDto(collection: Collection) {
 function truncatePreview(value: string) {
   const normalized = value.replace(/\s+/g, ' ').trim();
   return normalized.length <= 240 ? normalized : `${normalized.slice(0, 237).trimEnd()}...`;
+}
+
+function sameOrderedIds(left: string[], right: string[]) {
+  return left.length === right.length && left.every((id, index) => id === right[index]);
 }
 
 function deadlineExpired(deadlineAt: string) {
