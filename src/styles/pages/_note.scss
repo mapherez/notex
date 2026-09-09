@@ -435,6 +435,12 @@
   outline: none;
 }
 
+.note-tiptap-prosemirror::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+
 .note-tiptap-prosemirror p {
   margin: 0.4rem 0;
 }
@@ -613,9 +619,14 @@
 }
 
 .note-image-node {
+  position: relative;
   display: grid;
   gap: var(--nx-space-2);
   margin: var(--nx-space-4) 0;
+}
+
+.note-image-node:not(.wrap-left, .wrap-right) {
+  clear: both;
 }
 
 .note-image-node.align-center {
@@ -633,6 +644,7 @@
 .note-image-node.wrap-left,
 .note-image-node.wrap-right {
   display: block;
+  width: fit-content;
   max-width: min(48%, 30rem);
 }
 
@@ -651,6 +663,12 @@
   max-width: 100%;
   gap: var(--nx-space-2);
   margin: 0;
+  cursor: grab;
+  user-select: none;
+}
+
+.note-image-node figure:active {
+  cursor: grabbing;
 }
 
 @for $index from 4 through 19 {
@@ -662,6 +680,8 @@
 .note-image-node img {
   width: 100%;
   border-radius: var(--nx-radius-sm);
+  pointer-events: none;
+  user-select: none;
 }
 
 .note-image-placeholder {
@@ -680,6 +700,19 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--nx-space-2);
+}
+
+.note-image-controls button.is-active,
+.note-image-controls button[aria-pressed="true"] {
+  border-color: var(--nx-color-accent);
+  background: var(--nx-color-hover);
+  color: var(--nx-color-text);
+}
+
+.note-image-controls__divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--nx-color-border);
 }
 
 .note-panel-toggle-list {

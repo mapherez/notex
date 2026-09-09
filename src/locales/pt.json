@@ -172,6 +172,7 @@
     "files": "Ficheiros",
     "noFiles": "Ainda não há ficheiros anexados.",
     "fileAdded": "Ficheiro adicionado",
+    "fileDeleted": "Ficheiro apagado",
     "exportNote": "Exportar nota",
     "noteExported": "Nota exportada",
     "noteExportFailed": "Falha ao exportar a nota",
@@ -189,8 +190,12 @@
     "editor": {
       "addImage": "Adicionar imagem",
       "addFile": "Anexar ficheiro",
-      "wrapLeft": "Texto à esquerda",
-      "wrapRight": "Texto à direita"
+      "alignImageLeft": "Alinhar imagem à esquerda sem envolver texto",
+      "alignImageCenter": "Centrar imagem sem envolver texto",
+      "alignImageRight": "Alinhar imagem à direita sem envolver texto",
+      "wrapLeft": "Imagem à esquerda, envolver texto",
+      "wrapRight": "Imagem à direita, envolver texto",
+      "imageWidth": "Largura da imagem"
     }
   },
   "tags": {

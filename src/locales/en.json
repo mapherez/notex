@@ -172,6 +172,7 @@
     "files": "Files",
     "noFiles": "No files attached yet.",
     "fileAdded": "File added",
+    "fileDeleted": "File deleted",
     "exportNote": "Export note",
     "noteExported": "Note exported",
     "noteExportFailed": "Note export failed",
@@ -189,8 +190,12 @@
     "editor": {
       "addImage": "Add image",
       "addFile": "Attach file",
-      "wrapLeft": "Wrap left",
-      "wrapRight": "Wrap right"
+      "alignImageLeft": "Align image left without text wrapping",
+      "alignImageCenter": "Center image without text wrapping",
+      "alignImageRight": "Align image right without text wrapping",
+      "wrapLeft": "Image left, wrap text",
+      "wrapRight": "Image right, wrap text",
+      "imageWidth": "Image width"
     }
   },
   "tags": {

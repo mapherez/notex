@@ -620,6 +620,10 @@ export function NoteDetailPage() {
                 key={block.id}
                 noteId={note.id}
                 onDelete={() => setDeleteBlockState({ blockId: block.id, title: richTextToPlainText(block.title).trim() || t('notes.untitledBlock') })}
+                onDeleteFile={async (fileId) => {
+                  await deleteFile(note.id, fileId);
+                  pushToast(t('notes.fileDeleted'), 'warning');
+                }}
                 onDragStart={(event) => startBlockDrag(event, block.id)}
                 onRequestFileUpload={async () => {
                   const sourcePath = await chooseNoteAttachment();
@@ -847,7 +851,7 @@ export function NoteDetailPage() {
                         className="icon-button danger"
                         type="button"
                         aria-label={t('common.delete')}
-                        onClick={() => void deleteFile(note.id, file.id).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'))}
+                        onClick={() => void deleteFile(note.id, file.id).then(() => pushToast(t('notes.fileDeleted'), 'warning'))}
                       >
                         <Trash2 />
                       </button>
@@ -1141,6 +1145,7 @@ function BlockEditor({
   dragged,
   noteId,
   onDelete,
+  onDeleteFile,
   onDragStart,
   onRequestFileUpload,
   onTocChange,
@@ -1151,6 +1156,7 @@ function BlockEditor({
   dragged: boolean;
   noteId: string;
   onDelete: () => void;
+  onDeleteFile: (fileId: string) => Promise<void>;
   onDragStart: (event: PointerEvent<HTMLButtonElement>) => void;
   onRequestFileUpload: () => Promise<NoteFile | null>;
   onTocChange: () => void;
@@ -1326,6 +1332,7 @@ function BlockEditor({
               setContentText(nextText);
               onTocChange();
             }}
+            onDeleteFile={onDeleteFile}
             onFocus={() => setContentActive(true)}
             onPendingFileInsertChange={setFileInsertPending}
             onRequestFileUpload={onRequestFileUpload}

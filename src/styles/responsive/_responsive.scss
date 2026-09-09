@@ -349,6 +349,15 @@
     grid-template-columns: 1fr;
     gap: var(--nx-space-2);
   }
+
+  .note-image-node.wrap-left,
+  .note-image-node.wrap-right {
+    float: none;
+    width: auto;
+    max-width: 100%;
+    margin-right: 0;
+    margin-left: 0;
+  }
 }
 
 

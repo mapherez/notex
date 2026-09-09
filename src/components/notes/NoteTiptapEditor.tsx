@@ -37,13 +37,13 @@ import {
   useMemo,
   useRef,
   useState,
+  type DragEvent as ReactDragEvent,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
 import { type Editor, type JSONContent } from '@tiptap/core';
 import { EditorContent, NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type ReactNodeViewProps } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
-import { layout, prepare } from '@chenglou/pretext';
 import { TextStyleToolbar } from '../editing/TextStyleToolbar';
 import type { InlineStyleColor, InlineStyleKind } from '../../core/utils/inlineFormatting';
 import type { NoteFile, TiptapDocument } from '../../core/models/models';
@@ -69,6 +69,7 @@ type NoteTiptapEditorProps = {
   insertTextRequest?: NoteTiptapInsertTextRequest | null;
   onBlur?: () => void;
   onChange: (contentJson: TiptapDocument, contentText: string) => void;
+  onDeleteFile: (fileId: string) => Promise<void>;
   onFocus?: () => void;
   onPendingFileInsertChange?: (pending: boolean) => void;
   onRequestFileUpload: () => Promise<NoteFile | null>;
@@ -145,6 +146,7 @@ type TextAlignment = 'center' | 'justify' | 'left' | 'right';
 const toolbarShortcutBindings = new Map<ToolbarActionId, ShortcutBinding>();
 const toolbarShortcutLabels = new Map<ToolbarActionId, string>();
 const configuredShortcutSignatures = new Set<string>();
+const noteImageDragType = 'application/x-notex-image';
 
 for (const tool of editorSettings.noteTools) {
   const binding = parseShortcut(tool.shortcut);
@@ -197,6 +199,7 @@ export function NoteTiptapEditor({
   insertTextRequest = null,
   onBlur,
   onChange,
+  onDeleteFile,
   onFocus,
   onPendingFileInsertChange,
   onRequestFileUpload,
@@ -205,6 +208,8 @@ export function NoteTiptapEditor({
 }: NoteTiptapEditorProps) {
   const { t } = useI18n();
   const editorShellRef = useRef<HTMLDivElement>(null);
+  const onDeleteFileRef = useRef(onDeleteFile);
+  onDeleteFileRef.current = onDeleteFile;
   const [contentKey, setContentKey] = useState(() =>
     JSON.stringify(value ?? emptyTiptapDocument),
   );
@@ -225,12 +230,50 @@ export function NoteTiptapEditor({
       onFocus,
       editorProps: {
         handleClick: (_view, _pos, event) => handleEditorLinkClick(event),
+        handleKeyDown: (view, event) => {
+          if (event.key !== 'Backspace' && event.key !== 'Delete') {
+            return false;
+          }
+          const fileId = selectedNoteFileId(view.state.selection);
+          if (!fileId) {
+            return false;
+          }
+          queueMicrotask(() => void onDeleteFileRef.current(fileId));
+          return false;
+        },
         attributes: {
           class: "note-tiptap-prosemirror",
         },
       },
     },
     [],
+  );
+
+  const handleImageDropCapture = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>) => {
+      if (!editor || disabled) {
+        return;
+      }
+      const draggedImageId = event.dataTransfer.getData(noteImageDragType);
+      if (!draggedImageId) {
+        return;
+      }
+      const editorBounds = editor.view.dom.getBoundingClientRect();
+      const imageLayout = imageLayoutForDrop(event.clientX, editorBounds);
+      requestAnimationFrame(() => applyDroppedImageLayout(editor, draggedImageId, imageLayout));
+    },
+    [disabled, editor],
+  );
+
+  const handleImageDragOverCapture = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>) => {
+      if (disabled || !Array.from(event.dataTransfer.types).includes(noteImageDragType)) {
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    },
+    [disabled],
   );
 
   const insertUploadedFile = useCallback(async () => {
@@ -368,7 +411,12 @@ export function NoteTiptapEditor({
   }, [blockId, editor, insertUploadedFile, onToolbarTargetChange]);
 
   return (
-    <div className="note-tiptap-editor" ref={editorShellRef}>
+    <div
+      className="note-tiptap-editor"
+      ref={editorShellRef}
+      onDragOverCapture={handleImageDragOverCapture}
+      onDropCapture={handleImageDropCapture}
+    >
       {editor ? (
         <BubbleMenu
           className="note-bubble-toolbar"
@@ -1105,18 +1153,16 @@ function TipNodeView({ deleteNode, node }: ReactNodeViewProps) {
   );
 }
 
-function FileNodeView({ editor, node, selected, updateAttributes }: ReactNodeViewProps) {
+function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) {
   const { t } = useI18n();
   const attrs = node.attrs as FileAttrs;
   const imageNodeRef = useRef<HTMLDivElement>(null);
   const [src, setSrc] = useState<string | null>(null);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
-  const [editorFocused, setEditorFocused] = useState(editor.isFocused);
-  const [controlsFocused, setControlsFocused] = useState(false);
-  const [wrapLines, setWrapLines] = useState(1);
+  const [controlsOpen, setControlsOpen] = useState(false);
   const isImage = attrs.kind === 'image';
   const imageWidth = quantizeImageWidth(Number(attrs.width ?? 420));
-  const showImageControls = selected && (editorFocused || controlsFocused);
+  const showImageControls = selected && controlsOpen;
 
   useEffect(() => {
     let cancelled = false;
@@ -1139,30 +1185,33 @@ function FileNodeView({ editor, node, selected, updateAttributes }: ReactNodeVie
   }, [attrs.relativePath, isImage]);
 
   useEffect(() => {
-    const updateFocused = () => setEditorFocused(editor.isFocused);
-
-    editor.on('focus', updateFocused);
-    editor.on('blur', updateFocused);
-    editor.on('selectionUpdate', updateFocused);
-
-    return () => {
-      editor.off('focus', updateFocused);
-      editor.off('blur', updateFocused);
-      editor.off('selectionUpdate', updateFocused);
-    };
-  }, [editor]);
+    if (!selected) {
+      setControlsOpen(false);
+    }
+  }, [selected]);
 
   useEffect(() => {
-    if (!isImage) {
+    if (!controlsOpen) {
       return;
     }
-    try {
-      const measured = layout(prepare(attrs.originalName || 'Image', '14px sans-serif'), Math.max(120, imageWidth), 20);
-      setWrapLines(measured.lineCount);
-    } catch {
-      setWrapLines(1);
+
+    function closeControlsOnOutsidePointer(event: PointerEvent) {
+      if (
+        event.target instanceof globalThis.Node &&
+        !imageNodeRef.current?.contains(event.target)
+      ) {
+        setControlsOpen(false);
+      }
     }
-  }, [attrs.originalName, imageWidth, isImage]);
+
+    document.addEventListener('pointerdown', closeControlsOnOutsidePointer, true);
+    return () => document.removeEventListener('pointerdown', closeControlsOnOutsidePointer, true);
+  }, [controlsOpen]);
+
+  function applyImageLayout(update: Pick<FileAttrs, 'align' | 'wrap'>) {
+    updateAttributes(update);
+    setControlsOpen(false);
+  }
 
   if (!isImage) {
     return (
@@ -1197,10 +1246,23 @@ function FileNodeView({ editor, node, selected, updateAttributes }: ReactNodeVie
       ]
         .filter(Boolean)
         .join(" ")}
-      data-drag-handle
-      data-wrap-lines={wrapLines}
+      onPointerDownCapture={(event: React.PointerEvent<HTMLDivElement>) => {
+        if (event.target instanceof Element && event.target.closest('figure')) {
+          setControlsOpen(true);
+        }
+      }}
     >
-      <figure>
+      <figure
+        data-drag-handle
+        draggable
+        onDragStartCapture={(event: ReactDragEvent<HTMLElement>) => {
+          if (attrs.id) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData(noteImageDragType, attrs.id);
+            setControlsOpen(false);
+          }
+        }}
+      >
         {src && !imageLoadFailed ? (
           <img
             src={src}
@@ -1216,60 +1278,65 @@ function FileNodeView({ editor, node, selected, updateAttributes }: ReactNodeVie
         <div
           className="note-image-controls"
           contentEditable={false}
-          onBlurCapture={(event) => {
-            if (!imageNodeRef.current?.contains(event.relatedTarget)) {
-              setControlsFocused(false);
-            }
-          }}
-          onFocusCapture={() => setControlsFocused(true)}
-          onPointerDownCapture={() => setControlsFocused(true)}
         >
           <button
+            aria-label={t('notes.editor.alignImageLeft')}
+            aria-pressed={attrs.wrap === 'none' && attrs.align === 'left'}
+            className={attrs.wrap === 'none' && attrs.align === 'left' ? 'is-active' : undefined}
+            title={t('notes.editor.alignImageLeft')}
             type="button"
             onMouseDown={preserveToolbarSelection}
-            onClick={() => updateAttributes({ align: "left", wrap: "none" })}
+            onClick={() => applyImageLayout({ align: 'left', wrap: 'none' })}
           >
             <AlignLeft />
           </button>
           <button
+            aria-label={t('notes.editor.alignImageCenter')}
+            aria-pressed={attrs.wrap === 'none' && attrs.align === 'center'}
+            className={attrs.wrap === 'none' && attrs.align === 'center' ? 'is-active' : undefined}
+            title={t('notes.editor.alignImageCenter')}
             type="button"
             onMouseDown={preserveToolbarSelection}
-            onClick={() => updateAttributes({ align: "center", wrap: "none" })}
+            onClick={() => applyImageLayout({ align: 'center', wrap: 'none' })}
           >
             <AlignCenter />
           </button>
           <button
+            aria-label={t('notes.editor.alignImageRight')}
+            aria-pressed={attrs.wrap === 'none' && attrs.align === 'right'}
+            className={attrs.wrap === 'none' && attrs.align === 'right' ? 'is-active' : undefined}
+            title={t('notes.editor.alignImageRight')}
             type="button"
             onMouseDown={preserveToolbarSelection}
-            onClick={() => updateAttributes({ align: "right", wrap: "none" })}
+            onClick={() => applyImageLayout({ align: 'right', wrap: 'none' })}
           >
             <AlignRight />
           </button>
+          <span className="note-image-controls__divider" aria-hidden="true" />
           <button
+            aria-pressed={attrs.wrap === 'left'}
+            className={attrs.wrap === 'left' ? 'is-active' : undefined}
+            title={t('notes.editor.wrapLeft')}
             type="button"
             onMouseDown={preserveToolbarSelection}
-            onClick={() =>
-              updateAttributes({
-                wrap: attrs.wrap === "left" ? "none" : "left",
-                align: "left",
-              })
-            }
+            onClick={() => applyImageLayout({ wrap: 'left', align: 'left' })}
           >
             {t("notes.editor.wrapLeft")}
           </button>
           <button
+            aria-pressed={attrs.wrap === 'right'}
+            className={attrs.wrap === 'right' ? 'is-active' : undefined}
+            title={t('notes.editor.wrapRight')}
             type="button"
             onMouseDown={preserveToolbarSelection}
-            onClick={() =>
-              updateAttributes({
-                wrap: attrs.wrap === "right" ? "none" : "right",
-                align: "right",
-              })
-            }
+            onClick={() => applyImageLayout({ wrap: 'right', align: 'right' })}
           >
             {t("notes.editor.wrapRight")}
           </button>
+          <span className="note-image-controls__divider" aria-hidden="true" />
           <input
+            aria-label={t('notes.editor.imageWidth')}
+            title={t('notes.editor.imageWidth')}
             type="range"
             min={160}
             max={760}
@@ -1278,11 +1345,52 @@ function FileNodeView({ editor, node, selected, updateAttributes }: ReactNodeVie
             onChange={(event) =>
               updateAttributes({ width: Number(event.currentTarget.value) })
             }
+            onPointerUp={() => setControlsOpen(false)}
           />
         </div>
       ) : null}
     </NodeViewWrapper>
   );
+}
+
+function imageLayoutForDrop(clientX: number, bounds: DOMRect): Pick<FileAttrs, 'align' | 'wrap'> {
+  const horizontalPosition = bounds.width > 0 ? (clientX - bounds.left) / bounds.width : 0.5;
+  if (horizontalPosition < 0.38) {
+    return { align: 'left', wrap: 'left' };
+  }
+  if (horizontalPosition > 0.62) {
+    return { align: 'right', wrap: 'right' };
+  }
+  return { align: 'center', wrap: 'none' };
+}
+
+function applyDroppedImageLayout(
+  editor: Editor,
+  imageId: string,
+  layout: Pick<FileAttrs, 'align' | 'wrap'>,
+) {
+  const image = findImageNode(editor, imageId);
+  if (!image) {
+    return;
+  }
+  editor.view.dispatch(
+    editor.state.tr.setNodeMarkup(image.position, undefined, { ...image.attrs, ...layout }),
+  );
+}
+
+function findImageNode(
+  editor: Editor,
+  imageId: string,
+): { attrs: Record<string, unknown>; position: number } | null {
+  let image: { attrs: Record<string, unknown>; position: number } | null = null;
+  editor.state.doc.descendants((documentNode, position) => {
+    if (documentNode.type.name === 'noteFile' && documentNode.attrs.id === imageId) {
+      image = { attrs: { ...documentNode.attrs }, position };
+      return false;
+    }
+    return true;
+  });
+  return image;
 }
 
 function ToolbarButton({
@@ -1494,6 +1602,15 @@ function normalizeShortcutKey(key: string) {
 function isNoteFileSelection(selection: unknown) {
   const selectedNode = (selection as { node?: { type?: { name?: string } } }).node;
   return selectedNode?.type?.name === 'noteFile';
+}
+
+function selectedNoteFileId(selection: unknown) {
+  const selectedNode = (selection as {
+    node?: { attrs?: { id?: unknown }; type?: { name?: string } };
+  }).node;
+  return selectedNode?.type?.name === 'noteFile' && typeof selectedNode.attrs?.id === 'string'
+    ? selectedNode.attrs.id
+    : null;
 }
 
 function handleEditorLinkClick(event: globalThis.MouseEvent) {
