@@ -977,12 +977,45 @@ fn temp_directory(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 fn ensure_schema(conn: &Connection) -> Result<(), String> {
-    ensure_metadata_table(conn)?;
-    if read_metadata(conn, "sqlite_schema_version")?.as_deref() != Some(SCHEMA_VERSION) {
-        reset_storage_schema(conn)?;
+    // Inspect before writing anything. An unknown database must never be reset
+    // or silently upgraded; each supported upgrade needs an explicit migration.
+    let tx = conn.unchecked_transaction().map_err(to_string)?;
+    let has_metadata: bool = tx
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_metadata')",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(to_string)?;
+    if has_metadata {
+        match read_metadata(&tx, "sqlite_schema_version")?.as_deref() {
+            Some(SCHEMA_VERSION) => return Ok(()),
+            Some(version) => {
+                return Err(format!(
+                    "Unsupported NoteX database schema version '{}'; this app supports '{}'. No data was changed. An explicit migration or a compatible app version is required.",
+                    version, SCHEMA_VERSION
+                ));
+            }
+            None => {
+                return Err("The existing NoteX database has no schema version. No data was changed; recovery is required before opening it.".to_string());
+            }
+        }
     }
 
-    conn.execute_batch(
+    let has_existing_schema: bool = tx
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE name NOT GLOB 'sqlite_*')",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(to_string)?;
+    if has_existing_schema {
+        return Err("The existing database has no NoteX schema metadata. No data was changed; recovery is required before opening it.".to_string());
+    }
+
+    // Only an empty database is initialized. DDL and the version marker commit
+    // together so an interrupted initialization cannot leave a partial schema.
+    tx.execute_batch(
         r#"
         CREATE TABLE IF NOT EXISTS notes (
           id TEXT PRIMARY KEY,
@@ -1114,43 +1147,8 @@ fn ensure_schema(conn: &Connection) -> Result<(), String> {
     )
     .map_err(to_string)?;
 
-    write_metadata(conn, "sqlite_schema_version", SCHEMA_VERSION)?;
-    Ok(())
-}
-
-fn ensure_metadata_table(conn: &Connection) -> Result<(), String> {
-    conn.execute_batch(
-        r#"
-        CREATE TABLE IF NOT EXISTS app_metadata (
-          key TEXT PRIMARY KEY,
-          value TEXT NOT NULL,
-          updated_at TEXT NOT NULL
-        );
-        "#,
-    )
-    .map_err(to_string)?;
-    Ok(())
-}
-
-fn reset_storage_schema(conn: &Connection) -> Result<(), String> {
-    conn.execute_batch(
-        r#"
-        DROP TABLE IF EXISTS notes;
-        DROP TABLE IF EXISTS note_blocks;
-        DROP TABLE IF EXISTS note_files;
-        DROP TABLE IF EXISTS tags;
-        DROP TABLE IF EXISTS collections;
-        DROP TABLE IF EXISTS users;
-        DROP TABLE IF EXISTS activities;
-        DROP TABLE IF EXISTS user_settings;
-        DROP TABLE IF EXISTS sync_state;
-        DROP TABLE IF EXISTS sync_items;
-        DROP TABLE IF EXISTS device_sessions;
-        DROP TABLE IF EXISTS app_metadata;
-        "#,
-    )
-    .map_err(to_string)?;
-    Ok(())
+    write_metadata(&tx, "sqlite_schema_version", SCHEMA_VERSION)?;
+    tx.commit().map_err(to_string)
 }
 
 fn read_metadata(conn: &Connection, key: &str) -> Result<Option<String>, String> {
@@ -2380,6 +2378,91 @@ mod tests {
     }
 
     #[test]
+    fn initializes_empty_database_and_records_current_version() {
+        let conn = Connection::open_in_memory().unwrap();
+        ensure_schema(&conn).unwrap();
+        assert!(conn.is_autocommit());
+        assert_eq!(
+            read_metadata(&conn, "sqlite_schema_version")
+                .unwrap()
+                .as_deref(),
+            Some(SCHEMA_VERSION)
+        );
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM notes", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn rejects_unknown_versions_and_missing_marker_without_changing_data() {
+        for version in [Some("2"), Some("4"), Some("invalid"), Some(""), None] {
+            let conn = Connection::open_in_memory().unwrap();
+            ensure_schema(&conn).unwrap();
+            conn.execute(
+                "INSERT INTO notes (id, title, subtitle, tag_ids, linked_note_ids, created_at, updated_at, stats, payload)
+                 VALUES ('keep', 'Keep this note', '', '[]', '[]', '2026-01-01', '2026-01-01', '{}', '{\"text\":\"User content\"}')",
+                [],
+            ).unwrap();
+            if let Some(version) = version {
+                conn.execute(
+                    "UPDATE app_metadata SET value = ?1 WHERE key = 'sqlite_schema_version'",
+                    [version],
+                )
+                .unwrap();
+            } else {
+                conn.execute(
+                    "DELETE FROM app_metadata WHERE key = 'sqlite_schema_version'",
+                    [],
+                )
+                .unwrap();
+            }
+            let before = schema_snapshot(&conn);
+            let changes_before = conn.total_changes();
+            let error = ensure_schema(&conn).unwrap_err();
+            assert!(error.contains("No data was changed"));
+            assert_eq!(schema_snapshot(&conn), before);
+            assert_eq!(conn.total_changes(), changes_before);
+            assert_eq!(
+                read_metadata(&conn, "sqlite_schema_version")
+                    .unwrap()
+                    .as_deref(),
+                version
+            );
+            let payload: String = conn
+                .query_row("SELECT payload FROM notes WHERE id = 'keep'", [], |row| {
+                    row.get(0)
+                })
+                .unwrap();
+            assert_eq!(payload, r#"{"text":"User content"}"#);
+            assert!(conn.is_autocommit());
+        }
+    }
+
+    #[test]
+    fn rejects_unversioned_existing_database_without_creating_metadata() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "CREATE TABLE notes (id TEXT, content TEXT);
+                            INSERT INTO notes VALUES ('keep', 'Original content');",
+        )
+        .unwrap();
+        let before = schema_snapshot(&conn);
+        let changes_before = conn.total_changes();
+        assert!(ensure_schema(&conn)
+            .unwrap_err()
+            .contains("No data was changed"));
+        assert_eq!(schema_snapshot(&conn), before);
+        assert_eq!(conn.total_changes(), changes_before);
+        let content: String = conn
+            .query_row("SELECT content FROM notes WHERE id = 'keep'", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(content, "Original content");
+    }
+
+    #[test]
     fn preserves_existing_v3_schema_and_note_content() {
         let conn = Connection::open_in_memory().unwrap();
         ensure_schema(&conn).unwrap();
@@ -2419,7 +2502,9 @@ mod tests {
             )
             .unwrap();
 
+        let changes_before = conn.total_changes();
         ensure_schema(&conn).unwrap();
+        assert_eq!(conn.total_changes(), changes_before);
 
         let schema_after = schema_snapshot(&conn);
         let note_after: (String, String, String, i64, String) = conn

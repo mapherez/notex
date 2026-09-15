@@ -1,3 +1,13 @@
+# 2.2.3
+
+## What's New in NoteX
+
+### Highlights
+
+- Fixed a bug where recent notes were being re-ordered when opening a note, instead of editing it.
+
+---
+
 # 2.2.2
 
 ## What's New in NoteX
