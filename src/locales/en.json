@@ -97,7 +97,7 @@
     "favoritesTitle": "Favorites",
     "favoritesSubtitle": "Notes marked for quick access.",
     "recentTitle": "Recent",
-    "recentSubtitle": "Notes recently opened or edited.",
+    "recentSubtitle": "Notes recently edited.",
     "trashTitle": "Trash",
     "trashSubtitle": "Removed notes that can still be recovered.",
     "clearTrash": "Clear trash",

@@ -475,7 +475,7 @@ export function DashboardPage() {
 }
 
 function getRecentTimestamp(note: Note) {
-  return note.lastOpenedAt ?? note.updatedAt;
+  return note.updatedAt;
 }
 
 function countTags(notes: Note[]) {

@@ -72,7 +72,7 @@ function compareNotes(
   }
 
   if (!sortOrder && mode === 'recent') {
-    return (b.lastOpenedAt ?? b.updatedAt).localeCompare(a.lastOpenedAt ?? a.updatedAt) || compareNoteTitles(a, b);
+    return b.updatedAt.localeCompare(a.updatedAt) || compareNoteTitles(a, b);
   }
 
   switch (sortOrder ?? defaultNotesSortOrder) {

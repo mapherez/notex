@@ -1175,7 +1175,7 @@ function hasSkippedNoteImportItems(importInfo: NotexNoteImportInfo) {
 }
 
 function getRecentTimestamp(note: Note) {
-  return note.lastOpenedAt ?? note.updatedAt;
+  return note.updatedAt;
 }
 
 function formatRecentActivityTimestamp(value: string, locale: string, t: ReturnType<typeof useI18n>['t']) {

@@ -340,7 +340,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
         showPinIndicator={pinActionsEnabled}
         showPinnedDragHandle={pinActionsEnabled}
         tags={tags}
-        timeValue={mode === 'recent' ? note.lastOpenedAt ?? note.updatedAt : undefined}
+        timeValue={mode === 'recent' ? note.updatedAt : undefined}
       />
     ));
   }
