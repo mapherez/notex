@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { SearchBox } from '../ui/SearchBox';
 import { getNextTheme, getThemeIcon } from '../../core/theme/themeRegistry';
 import { useClickOutside } from '../../core/utils/useClickOutside';
+import { useMenuOptionFocus } from '../../core/utils/useMenuOptionFocus';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
@@ -19,6 +20,7 @@ export function TopBar({
   const { t } = useI18n();
   const [accountOpen, setAccountOpen] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
+  const menu = useMenuOptionFocus(accountOpen, () => setAccountOpen(false));
   const navigate = useNavigate();
   const user = useKnowledgeStore((state) => state.user);
   const theme = useAppStore((state) => state.settings.theme);
@@ -41,7 +43,7 @@ export function TopBar({
       ) : (
         <span />
       )}
-      <div className="topbar__actions" ref={actionsRef}>
+      <div className="topbar__actions" ref={actionsRef} onKeyDown={menu.onKeyDown}>
         <button
           className="icon-button"
           type="button"
@@ -55,6 +57,7 @@ export function TopBar({
         </button>
         <button
           className="avatar-button"
+          ref={menu.triggerRef}
           type="button"
           aria-label={t('topbar.account')}
           aria-expanded={accountOpen}
@@ -72,7 +75,7 @@ export function TopBar({
           <ChevronDown className="topbar__account-chevron" />
         </button>
         {accountOpen ? (
-          <div className="floating-menu topbar-menu account-menu">
+          <div className="floating-menu topbar-menu account-menu" ref={menu.menuRef}>
             {user ? (
               <>
                 <strong>{user?.name}</strong>
@@ -85,7 +88,7 @@ export function TopBar({
               type="button"
               onClick={() => {
                 navigate('/profile');
-                setAccountOpen(false);
+                menu.closeAndFocus();
               }}
             >
               {t('topbar.profile')}

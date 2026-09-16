@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { useMenuOptionFocus } from '../core/utils/useMenuOptionFocus';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { InlineFormattedText } from '../components/editing/InlineFormattedText';
 import { StyledTextField } from '../components/editing/TextStyleToolbar';
@@ -128,6 +129,7 @@ export function NoteDetailPage() {
   const [selectedLinkedNoteId, setSelectedLinkedNoteId] = useState<string | null>(null);
   const dragBlockIdsRef = useRef<string[] | null>(null);
   const draggedBlockIdRef = useRef<string | null>(null);
+  const keyboardReorderPendingRef = useRef(false);
   const typingRequestNonceRef = useRef(0);
   const tocEntriesRef = useRef<TocEntry[]>([]);
   const tocRefreshFrameRef = useRef<number | null>(null);
@@ -257,6 +259,24 @@ export function NoteDetailPage() {
   useEffect(() => {
     refreshTocEntries();
   }, [refreshTocEntries, note?.id, visibleBlocks]);
+
+  useEffect(() => {
+    const shell = document.querySelector<HTMLElement>('.note-document-shell');
+    if (!shell) return;
+    const bars = Array.from(document.querySelectorAll<HTMLElement>('.topbar, .document-top, .note-edit-toolbar-shell'));
+    function updateOffset() {
+      const bottom = Math.max(0, ...bars.map((bar) => {
+        const top = Number.parseFloat(getComputedStyle(bar).top) || 0;
+        return top + bar.getBoundingClientRect().height;
+      }));
+      shell!.style.setProperty('--nx-note-navigation-top', `${bottom + 16}px`);
+    }
+    const observer = new ResizeObserver(updateOffset);
+    bars.forEach((bar) => observer.observe(bar));
+    updateOffset();
+    window.addEventListener('resize', updateOffset);
+    return () => { observer.disconnect(); window.removeEventListener('resize', updateOffset); };
+  }, [note?.id]);
 
   useEffect(() => {
     const blockList = document.querySelector('.note-block-list');
@@ -459,12 +479,42 @@ export function NoteDetailPage() {
       return;
     }
     event.preventDefault();
+    event.currentTarget.focus({ preventScroll: true });
     event.currentTarget.setPointerCapture(event.pointerId);
     const blockIds = (note.blocks ?? []).map((block) => block.id);
     dragBlockIdsRef.current = blockIds;
     draggedBlockIdRef.current = blockId;
     setDragBlockIds(blockIds);
     setDraggedBlockId(blockId);
+  }
+
+  async function moveBlockWithKeyboard(blockId: string, direction: -1 | 1) {
+    if (!note || draggedBlockIdRef.current || keyboardReorderPendingRef.current) return;
+    const current = useNotesStore.getState().notes.find((item) => item.id === note.id);
+    const ids = (current?.blocks ?? []).map((block) => block.id);
+    const index = ids.indexOf(blockId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= ids.length) return;
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    keyboardReorderPendingRef.current = true;
+    try {
+      await reorderBlocks(note.id, ids);
+      requestAnimationFrame(() => {
+        const element = document.getElementById(`block-${blockId}`);
+        if (!element) return;
+        const handle = element.querySelector<HTMLButtonElement>('.note-block-handle');
+        handle?.focus({ preventScroll: true });
+        const rect = element.getBoundingClientRect();
+        const headerBottom = Math.max(0, ...Array.from(document.querySelectorAll<HTMLElement>('.topbar, .document-top, .note-edit-toolbar-shell'))
+          .map((bar) => bar.getBoundingClientRect().bottom)) + 16;
+        const available = Math.max(0, window.innerHeight - headerBottom - 16);
+        // Very tall blocks cannot fit: keep their heading and reorder handle
+        // visible while centering shorter blocks in the unobscured viewport.
+        const height = Math.min(rect.height, available);
+        const desiredTop = headerBottom + (available - height) / 2;
+        window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - desiredTop), behavior: 'instant' });
+      });
+    } finally { keyboardReorderPendingRef.current = false; }
   }
 
   function previewBlockReorder(overBlockId: string) {
@@ -625,6 +675,7 @@ export function NoteDetailPage() {
                   pushToast(t('notes.fileDeleted'), 'warning');
                 }}
                 onDragStart={(event) => startBlockDrag(event, block.id)}
+                onKeyboardReorder={(direction) => void moveBlockWithKeyboard(block.id, direction)}
                 onRequestFileUpload={async () => {
                   const sourcePath = await chooseNoteAttachment();
                   if (!sourcePath) {
@@ -1095,14 +1146,17 @@ function ThumbnailPicker({
 }) {
   const [open, setOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const menu = useMenuOptionFocus(open, () => setOpen(false), 3);
   const currentThumbnail = current ?? { variant: defaultNoteThumbnailVariant };
 
   useClickOutside(pickerRef, open, () => setOpen(false));
 
   return (
-    <div className="thumbnail-picker" ref={pickerRef}>
+    <div className="thumbnail-picker" ref={pickerRef} onKeyDown={menu.onKeyDown}
+      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}>
       <button
         className="thumbnail-picker-trigger"
+        ref={menu.triggerRef}
         type="button"
         aria-expanded={open}
         aria-haspopup="menu"
@@ -1116,18 +1170,19 @@ function ThumbnailPicker({
         </span>
       </button>
       {open ? (
-        <div className="thumbnail-picker-menu" role="menu" aria-label={t('noteDetail.thumbnail')}>
+        <div className="thumbnail-picker-menu" ref={menu.menuRef} role="menu" aria-label={t('noteDetail.thumbnail')}>
           {thumbnailOptions.map(({ id: variant }) => (
             <button
               className={variant === currentThumbnail.variant ? 'thumbnail-option active' : 'thumbnail-option'}
               key={variant}
               type="button"
               role="menuitemradio"
+              tabIndex={-1}
               aria-checked={variant === currentThumbnail.variant}
               aria-label={`${t('noteDetail.changeThumbnail')}: ${variant}`}
               onClick={() => {
                 onSelect({ variant });
-                setOpen(false);
+                menu.closeAndFocus();
               }}
             >
               <NoteThumbnail thumbnail={{ variant }} />
@@ -1147,6 +1202,7 @@ function BlockEditor({
   onDelete,
   onDeleteFile,
   onDragStart,
+  onKeyboardReorder,
   onRequestFileUpload,
   onTocChange,
   onToolbarTargetChange,
@@ -1158,6 +1214,7 @@ function BlockEditor({
   onDelete: () => void;
   onDeleteFile: (fileId: string) => Promise<void>;
   onDragStart: (event: PointerEvent<HTMLButtonElement>) => void;
+  onKeyboardReorder: (direction: -1 | 1) => void;
   onRequestFileUpload: () => Promise<NoteFile | null>;
   onTocChange: () => void;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
@@ -1278,6 +1335,12 @@ function BlockEditor({
         aria-grabbed={dragged}
         title={t('notes.reorderBlock')}
         onPointerDown={onDragStart}
+        onClick={(event) => event.currentTarget.focus({ preventScroll: true })}
+        onKeyDown={(event) => {
+          if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+          event.preventDefault(); event.stopPropagation();
+          onKeyboardReorder(event.key === 'ArrowUp' ? -1 : 1);
+        }}
       >
         <GripVertical />
       </button>

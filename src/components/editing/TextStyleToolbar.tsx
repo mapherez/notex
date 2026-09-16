@@ -8,6 +8,7 @@ import {
   type InlineStyleKind,
 } from '../../core/utils/inlineFormatting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
+import { useMenuOptionFocus } from '../../core/utils/useMenuOptionFocus';
 import { useI18n } from '../../i18n/I18nProvider';
 
 type TextControlElement = HTMLInputElement | HTMLTextAreaElement;
@@ -88,14 +89,16 @@ function TextStylePicker({
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const menu = useMenuOptionFocus(open, () => setOpen(false));
   const Icon = kind === 'color' ? Baseline : Highlighter;
 
   useClickOutside(pickerRef, open, () => setOpen(false));
 
   return (
-    <div className="text-style-picker" ref={pickerRef}>
+    <div className="text-style-picker" ref={pickerRef} onKeyDown={menu.onKeyDown}>
       <button
         className={clsx('markdown-tool-button text-style-picker__trigger', active && 'is-active')}
+        ref={menu.triggerRef}
         disabled={disabled}
         type="button"
         aria-label={label}
@@ -111,16 +114,18 @@ function TextStylePicker({
         </span>
       </button>
       {open ? (
-        <div className="text-style-picker__menu" role="menu" aria-label={label}>
+        <div className="text-style-picker__menu" ref={menu.menuRef} role="menu" aria-label={label}>
           <button
             className="text-style-picker__reset"
             type="button"
+            role="menuitem"
+            tabIndex={-1}
             title={kind === 'color' ? t('editor.automaticColor') : t('editor.noHighlightColor')}
             aria-label={kind === 'color' ? `${label}: ${t('editor.automaticColor')}` : `${label}: ${t('editor.noHighlightColor')}`}
             onMouseDown={preserveEditorSelection}
             onClick={() => {
               onSelect(kind, null);
-              setOpen(false);
+              menu.closeAndFocus();
             }}
           >
             {kind === 'color' ? <span className="text-style-picker__auto-swatch" /> : <Eraser />}
@@ -131,12 +136,14 @@ function TextStylePicker({
               className={`text-style-picker__swatch text-style-picker__swatch--${kind}-${color}`}
               key={color}
               type="button"
+              role="menuitem"
+              tabIndex={-1}
               title={t(`tags.colors.${color}`)}
               aria-label={`${label}: ${t(`tags.colors.${color}`)}`}
               onMouseDown={preserveEditorSelection}
               onClick={() => {
                 onSelect(kind, color);
-                setOpen(false);
+                menu.closeAndFocus();
               }}
             >
               <span />
