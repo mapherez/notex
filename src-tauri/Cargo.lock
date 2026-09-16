@@ -7,14 +7,17 @@ name = "NoteX"
 version = "2.2.2"
 dependencies = [
  "axum",
+ "base64 0.22.1",
  "futures-util",
  "keyring",
  "log",
+ "rand 0.8.6",
  "reqwest 0.12.28",
  "rmcp",
  "rusqlite",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",

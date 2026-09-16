@@ -103,6 +103,7 @@ export function SearchBox({ className }: { className?: string }) {
       </label>
       {showResults ? (
         <div className="search-results-popover" id={resultsId} role="list" aria-label={t('topbar.searchResults')}>
+          {notes.some((note) => note.cloudOnly && !note.isTrashed) && <div className="search-result-empty" role="status">{t('cloud.searchPartial')}</div>}
           {results.length ? (
             results.map((result, index) => (
               <Link

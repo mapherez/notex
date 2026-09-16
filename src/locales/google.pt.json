@@ -1,0 +1,26 @@
+{
+  "title": "Ligar a tua conta Google",
+  "desktopDescription": "Mantém as notas neste computador e faz backup para a tua própria Google Drive.",
+  "webDescription": "Faz login para abrir a tua biblioteca NoteX. As notas ficam guardadas neste browser e têm backup na tua Google Drive.",
+  "continue": "Continuar com Google",
+  "connecting": "À espera da Google…",
+  "preparing": "A preparar o login Google…",
+  "logout": "Terminar sessão",
+  "switchAccount": "Escolher outra conta",
+  "connected": "Conta Google",
+  "retry": "Tentar novamente",
+  "storageError": "O NoteX não conseguiu abrir esta biblioteca. Os teus dados não foram repostos.",
+  "errors": {
+    "GOOGLE_NOT_CONFIGURED": "O login Google ainda não está configurado nesta versão.",
+    "GOOGLE_NETWORK_ERROR": "Não foi possível contactar a Google. Verifica a ligação e tenta novamente.",
+    "GOOGLE_POPUP_BLOCKED": "Permite o popup de login Google e tenta novamente.",
+    "GOOGLE_AUTH_CANCELLED": "O login foi cancelado. A tua biblioteca não mudou.",
+    "GOOGLE_AUTH_TIMEOUT": "O tempo para fazer login terminou. Tenta novamente.",
+    "GOOGLE_DRIVE_PERMISSION_REQUIRED": "Permite que o NoteX guarde os backups na Google Drive para continuar.",
+    "GOOGLE_REAUTHORIZE": "Autoriza novamente a Google para continuar os backups.",
+    "GOOGLE_ACCOUNT_MISMATCH": "Escolhe a conta Google ligada a esta biblioteca.",
+    "LOCAL_SAVE_PENDING": "Há alterações que ainda não foram guardadas localmente. Termina a gravação antes de mudar de conta.",
+    "ACCOUNT_NOTE_CONFLICT": "Uma nota local e uma nota da conta têm a mesma versão mas conteúdo diferente. As duas cópias foram preservadas.",
+    "generic": "Não foi possível concluir esta operação. As tuas notas locais foram preservadas."
+  }
+}

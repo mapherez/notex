@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { desktopInvoke as invoke } from '../storage/desktopInvoke';
 import { open, save } from '@tauri-apps/plugin-dialog';
 
 export type SqliteDatabaseInfo = {
@@ -56,8 +56,9 @@ export async function chooseSqliteImportFile() {
   return typeof selected === 'string' ? selected : null;
 }
 
-export function replaceSqliteDatabaseFromFile(sourcePath: string) {
-  return invoke<void>('notex_sqlite_replace_database_from_file', { sourcePath });
+export async function replaceSqliteDatabaseFromFile(sourcePath: string) {
+  const { replaceDesktopLibrary } = await import('./replaceDesktopLibrary');
+  await replaceDesktopLibrary('notex_sqlite_replace_database_from_file', sourcePath);
 }
 
 export function openSqliteDatabaseFolder() {

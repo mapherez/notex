@@ -8,6 +8,7 @@ import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
+import { useGoogleAccountStore } from '../../store/useGoogleAccountStore';
 
 export function TopBar({
   showSearch,
@@ -21,6 +22,8 @@ export function TopBar({
   const actionsRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const user = useKnowledgeStore((state) => state.user);
+  const account = useGoogleAccountStore((state) => state.account);
+  const avatar = account?.picture ?? user?.avatarUrl;
   const theme = useAppStore((state) => state.settings.theme);
   const setTheme = useAppStore((state) => state.setTheme);
   const ThemeIcon = getThemeIcon(theme) === 'sun' ? Sun : Moon;
@@ -62,9 +65,9 @@ export function TopBar({
             setAccountOpen((value) => !value);
           }}
         >
-          <span className={user?.avatarUrl ? 'avatar' : 'avatar avatar-placeholder'}>
-            {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
+          <span className={avatar ? 'avatar' : 'avatar avatar-placeholder'}>
+            {avatar ? (
+              <img src={avatar} alt="" referrerPolicy="no-referrer" />
             ) : (
               <UserRound strokeWidth={1.8} />
             )}
@@ -73,10 +76,10 @@ export function TopBar({
         </button>
         {accountOpen ? (
           <div className="floating-menu topbar-menu account-menu">
-            {user ? (
+            {account || user ? (
               <>
-                <strong>{user?.name}</strong>
-                <span className="menu-muted">{user?.email ?? t('profile.localAccount')}</span>
+                <strong>{account?.name ?? user?.name}</strong>
+                <span className="menu-muted">{account?.email ?? user?.email ?? t('profile.localAccount')}</span>
               </>
             ) : (
               <span className="menu-muted">{t('profile.localUser')}</span>

@@ -21,12 +21,13 @@ import {
   type ReactNode,
   useEffect,
   useState,
+  lazy,
+  Suspense,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AppModal } from "../components/ui/AppModal";
 import { CustomSelect } from "../components/ui/CustomSelect";
 import { IconBadge } from "../components/ui/IconBadge";
-import { McpProfileSection } from "../components/profile/McpProfileSection";
 import { appLimits, editorSettings } from "../config/appSettings";
 import {
   openSqliteDatabaseFolder,
@@ -58,6 +59,8 @@ import { useNotesStore } from "../store/useNotesStore";
 import { useKnowledgeStore } from "../store/useKnowledgeStore";
 import { useToastStore } from "../store/useToastStore";
 import type { Note, Locale, ThemePreference } from "../core/models/models";
+import { isTauri } from '@tauri-apps/api/core';
+import { useGoogleAccountStore } from '../store/useGoogleAccountStore';
 
 type ExportModalState =
   | null
@@ -65,7 +68,10 @@ type ExportModalState =
   | { phase: "exporting" }
   | { phase: "ready"; exportInfo: SqliteExportInfo };
 
+const McpProfileSection = lazy(() => import('../components/profile/McpProfileSection').then((module) => ({ default: module.McpProfileSection })));
+
 export function ProfilePage() {
+  const { account, showLogin, logout, authorizing } = useGoogleAccountStore();
   const { locale, t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
@@ -107,6 +113,7 @@ export function ProfilePage() {
     : t("profile.values.noActivity");
 
   useEffect(() => {
+    if (!isTauri()) return;
     let cancelled = false;
 
     void readSqliteDatabaseInfo()
@@ -304,7 +311,7 @@ export function ProfilePage() {
           type="button"
           aria-label={t(checkingForUpdates ? "updater.checking" : "updater.checkNow")}
           title={t(checkingForUpdates ? "updater.checking" : "updater.checkNow")}
-          disabled={updateActionDisabled}
+          hidden={!isTauri()} disabled={updateActionDisabled}
           onClick={() => void handleCheckForUpdates()}
         >
           <RefreshCw className={checkingForUpdates ? "spinning" : undefined} />
@@ -316,22 +323,26 @@ export function ProfilePage() {
           <article className="profile-section profile-card">
             <div
               className={
-                user?.avatarUrl
+                (account?.picture ?? user?.avatarUrl)
                   ? "profile-avatar"
                   : "profile-avatar profile-card__avatar--placeholder"
               }
             >
-              {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
+              {(account?.picture ?? user?.avatarUrl) ? (
+                <img src={account?.picture ?? user?.avatarUrl} alt="" referrerPolicy="no-referrer" />
               ) : (
                 <UserRound strokeWidth={1.6} />
               )}
             </div>
             <h2 className="profile-section-title">
-              {user?.name ?? t("profile.localUser")}
+              {account?.name ?? user?.name ?? t("profile.localUser")}
             </h2>
             {user?.handle ? <div className="handle">{user.handle}</div> : null}
-            <div className="connected">{t("profile.localAccount")}</div>
+            <div className="connected">{account?.email ?? t("profile.localAccount")}</div>
+            <button className="secondary-button" type="button" disabled={authorizing} onClick={showLogin}>
+              {t(account ? 'google.switchAccount' : 'google.continue')}
+            </button>
+            {account && <button className="secondary-button" type="button" disabled={authorizing} onClick={() => void logout()}>{t('google.logout')}</button>}
           </article>
 
           <ProfileSection className="profile-shortcuts-section" title={t("profile.shortcuts.title")}>
@@ -348,11 +359,11 @@ export function ProfilePage() {
             </button>
           </ProfileSection>
 
-          <McpProfileSection />
+          {isTauri() && <Suspense fallback={null}><McpProfileSection /></Suspense>}
         </section>
 
         <section className="profile-main">
-          <div className="profile-top-row">
+          <div className={isTauri() ? "profile-top-row" : "profile-top-row profile-top-row--web"}>
             <ProfileSection
               className="profile-top-card profile-preferences-section"
               title={t("profile.preferences.title")}
@@ -389,7 +400,7 @@ export function ProfilePage() {
               />
             </ProfileSection>
 
-            <ProfileSection className="profile-data-section" title={t("profile.dataManagement.title")}>
+            {isTauri() && <ProfileSection className="profile-data-section" title={t("profile.dataManagement.title")}>
               <button
                 className="profile-action-row"
                 type="button"
@@ -418,10 +429,10 @@ export function ProfilePage() {
                 </span>
                 <ChevronRight />
               </button>
-            </ProfileSection>
+            </ProfileSection>}
           </div>
 
-          <ProfileSection
+          {isTauri() && <ProfileSection
             className="profile-wide-section database-management-card"
             title={t("profile.databaseManagement.title")}
           >
@@ -457,7 +468,7 @@ export function ProfilePage() {
                 openLabel={t("profile.databaseManagement.openFilesFolder")}
               />
             </div>
-          </ProfileSection>
+          </ProfileSection>}
 
           <ProfileSection className="profile-statistics-section" title={t("profile.statistics")}>
             <div className="meta-list profile-stat-grid">

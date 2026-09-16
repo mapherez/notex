@@ -1,0 +1,22 @@
+.cloud-transfer-banner {
+  position: fixed;
+  right: var(--nx-space-5);
+  bottom: var(--nx-space-5);
+  z-index: 94;
+  width: min(30rem, calc(100vw - 2rem));
+  padding: var(--nx-space-3);
+  color: var(--nx-color-text);
+  background: var(--nx-color-surface-elevated);
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-md);
+  box-shadow: var(--nx-shadow-soft);
+  &__summary { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--nx-space-3); align-items: center; }
+  &__summary > svg { color: var(--nx-color-accent); width: 1.25rem; }
+  &__details { display: grid; gap: var(--nx-space-3); padding-top: var(--nx-space-3); max-height: 50vh; overflow: auto; }
+  &__details p { margin: 0; color: var(--nx-color-text-muted); font-size: 0.875rem; }
+  &__actions { display: flex; flex-wrap: wrap; gap: var(--nx-space-2); }
+  &__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  & label { display: grid; gap: var(--nx-space-2); }
+}
+.google-account-modal p { color: var(--nx-color-text-muted); }
+.profile-top-row--web { grid-template-columns: minmax(0, 1fr); }

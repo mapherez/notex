@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { desktopInvoke as invoke } from '../storage/desktopInvoke';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import type { SqliteExportInfo } from './sqliteDataManagement';
 
@@ -38,6 +38,7 @@ export async function chooseNotexPackageImportFile() {
   return typeof selected === 'string' ? selected : null;
 }
 
-export function replaceFromNotexPackage(sourcePath: string) {
-  return invoke<void>('notex_package_replace_from_file', { sourcePath });
+export async function replaceFromNotexPackage(sourcePath: string) {
+  const { replaceDesktopLibrary } = await import('./replaceDesktopLibrary');
+  await replaceDesktopLibrary('notex_package_replace_from_file', sourcePath);
 }

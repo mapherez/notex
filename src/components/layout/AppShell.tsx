@@ -13,6 +13,7 @@ import { LegalModal, type LegalModalKind } from '../ui/LegalModal';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { WindowTitleBar } from './WindowTitleBar';
+import { CloudTransferBanner } from '../ui/CloudTransferBanner';
 
 export function AppShell() {
   const { t } = useI18n();
@@ -96,6 +97,7 @@ export function AppShell() {
   return (
     <div className={hasWindowTitleBar ? 'app-frame app-frame--custom-titlebar' : 'app-frame'}>
       <WindowTitleBar />
+      <CloudTransferBanner />
       <div className="app-shell">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onCreateNote={() => void requestNewNote()} />
         <main className="main-shell">

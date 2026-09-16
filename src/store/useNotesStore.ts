@@ -11,6 +11,9 @@ import type {
 } from '../core/models/models';
 import { db } from '../core/storage/notexRepository';
 import { richTextToPlainText } from '../core/utils/richText';
+import { stableStringify } from '../core/utils/stableJson';
+import { downloadCloudNote, withCloudMetadata, markCloudDeleted } from '../core/cloud/cloudView';
+import { beginLocalSave } from '../core/mcp/noteMutationCoordinator';
 import { deleteNoteAttachment, importNoteAttachment } from '../core/services/noteFiles';
 
 type NoteInput = {
@@ -71,7 +74,7 @@ type NotesStore = {
   updateBlock: (noteId: string, blockId: string, input: BlockInput) => Promise<void>;
   reorderBlocks: (noteId: string, blockIds: string[]) => Promise<void>;
   deleteBlock: (noteId: string, blockId: string) => Promise<void>;
-  importFileForBlock: (sourcePath: string, noteId: string, blockId: string | null) => Promise<NoteFile | null>;
+  importFileForBlock: (sourcePath: string | File, noteId: string, blockId: string | null) => Promise<NoteFile | null>;
   deleteFile: (noteId: string, fileId: string) => Promise<void>;
   moveNoteToTrash: (noteId: string) => Promise<void>;
   restoreNote: (noteId: string) => Promise<void>;
@@ -131,7 +134,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     return note;
   },
   markNoteOpened: async (noteId) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
       return;
     }
@@ -140,10 +143,15 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: state.notes.map((item) => (item.id === noteId ? updated : item)) }));
   },
   updateNoteHeader: async (noteId, input) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
       return;
     }
+    if (
+      (input.title === undefined || input.title === note.title) &&
+      (input.subtitle === undefined || input.subtitle === note.subtitle) &&
+      (input.collectionId === undefined || input.collectionId === note.collectionId)
+    ) return;
     const updated = finalizeNote({
       ...note,
       title: input.title !== undefined ? input.title : note.title,
@@ -154,16 +162,18 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   updateNoteTags: async (noteId, tagIds) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
       return;
     }
-    const updated = finalizeNote({ ...note, tagIds: uniqueIds(tagIds) });
+    const nextTagIds = uniqueIds(tagIds);
+    if (sameOrderedIds(note.tagIds, nextTagIds)) return;
+    const updated = finalizeNote({ ...note, tagIds: nextTagIds });
     await persistNote(updated);
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   updateNoteThumbnail: async (noteId, thumbnail) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note || !thumbnail || note.thumbnail?.variant === thumbnail.variant) {
       return;
     }
@@ -172,6 +182,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   bulkUpdateNoteCollection: async (noteIds, collectionId) => {
+    for (const id of noteIds) if (get().notes.find((note) => note.id === id)?.cloudOnly) await downloadCloudNote(id);
     const noteIdSet = new Set(uniqueIds(noteIds));
     const noteUpdates = get().notes
       .filter((note) => noteIdSet.has(note.id) && note.collectionId !== collectionId)
@@ -188,6 +199,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     });
   },
   bulkUpdateNoteTag: async (noteIds, tagId, assigned) => {
+    for (const id of noteIds) if (get().notes.find((note) => note.id === id)?.cloudOnly) await downloadCloudNote(id);
     const noteIdSet = new Set(uniqueIds(noteIds));
     const noteUpdates = get().notes
       .filter((note) => noteIdSet.has(note.id) && note.tagIds.includes(tagId) !== assigned)
@@ -207,7 +219,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     });
   },
   updateNoteLinkedNotes: async (noteId, linkedNoteIds) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
       return;
     }
@@ -221,7 +233,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
   addAdditionalExample: async (noteId, example) => {
     const trimmed = example.trim();
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note || !trimmed) {
       return;
     }
@@ -234,12 +246,12 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
   updateAdditionalExample: async (noteId, index, example) => {
     const trimmed = example.trim();
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note || !trimmed) {
       return;
     }
     const examples = [...(note.additionalExamples ?? [])];
-    if (index < 0 || index >= examples.length) {
+    if (index < 0 || index >= examples.length || examples[index] === trimmed) {
       return;
     }
     examples[index] = trimmed;
@@ -248,8 +260,8 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   deleteAdditionalExample: async (noteId, index) => {
-    const note = findNote(get().notes, noteId);
-    if (!note) {
+    const note = await findAvailableNote(get().notes, noteId);
+    if (!note || index < 0 || index >= (note.additionalExamples ?? []).length) {
       return;
     }
     const updated = finalizeNote({
@@ -262,7 +274,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   addRelatedLink: async (noteId, title, href) => {
     const trimmedTitle = title.trim();
     const trimmedHref = href.trim();
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note || !trimmedTitle) {
       return;
     }
@@ -276,8 +288,8 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   deleteRelatedLink: async (noteId, linkId) => {
-    const note = findNote(get().notes, noteId);
-    if (!note) {
+    const note = await findAvailableNote(get().notes, noteId);
+    if (!note || !(note.relatedLinks ?? []).some((link) => link.id === linkId)) {
       return;
     }
     const updated = finalizeNote({
@@ -288,7 +300,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   setNoteFavorite: async (noteId, isFavorite) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note || note.isFavorite === isFavorite) {
       return;
     }
@@ -297,7 +309,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   setNotePinned: async (noteId, isPinned) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note || note.isPinned === isPinned) {
       return;
     }
@@ -306,19 +318,19 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   toggleFavorite: async (noteId) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (note) {
       await get().setNoteFavorite(noteId, !note.isFavorite);
     }
   },
   togglePinned: async (noteId) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (note) {
       await get().setNotePinned(noteId, !note.isPinned);
     }
   },
   addBlock: async (noteId, input = {}) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
       return null;
     }
@@ -344,7 +356,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     return block;
   },
   updateBlock: async (noteId, blockId, input) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
       return;
     }
@@ -361,6 +373,11 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       contentText: input.contentText !== undefined ? input.contentText : block.contentText,
       updatedAt: new Date().toISOString(),
     };
+    if (
+      updatedBlock.kind === block.kind && updatedBlock.title === block.title &&
+      updatedBlock.contentText === block.contentText &&
+      stableStringify(updatedBlock.contentJson) === stableStringify(block.contentJson)
+    ) return;
     const updated = finalizeNote({
       ...note,
       blocks: blocks.map((item) => (item.id === blockId ? updatedBlock : item)),
@@ -372,7 +389,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   reorderBlocks: async (noteId, blockIds) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
       return;
     }
@@ -404,7 +421,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   deleteBlock: async (noteId, blockId) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note || !(note.blocks ?? []).some((block) => block.id === blockId)) {
       return;
     }
@@ -428,10 +445,12 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     );
   },
   importFileForBlock: async (sourcePath, noteId, blockId) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
       return null;
     }
+    const finishSave = beginLocalSave(noteId, 'attachment-import');
+    try {
     const imported = await importNoteAttachment(sourcePath, noteId, blockId);
     const file: NoteFile = {
       id: imported.id,
@@ -445,20 +464,24 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       relativePath: imported.relativePath,
       createdAt: imported.createdAt,
     };
-    const updated = finalizeNote({ ...note, files: [...(note.files ?? []), file] });
+    const current = findNote(get().notes, noteId);
+    if (!current || (blockId && !current.blocks?.some((block) => block.id === blockId))) return null;
+    const updated = finalizeNote({ ...current, files: [...(current.files ?? []), file] });
     await db.transaction('rw', [db.notes, db.noteFiles], async (db) => {
       await db.noteFiles.put(file);
       await db.notes.put(stripNoteRelations(updated));
     });
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
     return file;
+    } finally { finishSave(); }
   },
   deleteFile: async (noteId, fileId) => {
-    const note = findNote(get().notes, noteId);
+    const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
       return;
     }
     const file = (note.files ?? []).find((item) => item.id === fileId);
+    if (!file) return;
     const changedBlocks: NoteBlock[] = [];
     const blocks = (note.blocks ?? []).map((block) => {
       const nextContentJson = removeNoteFileFromDocument(block.contentJson, fileId);
@@ -487,8 +510,8 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   moveNoteToTrash: async (noteId) => {
-    const note = findNote(get().notes, noteId);
-    if (!note) {
+    const note = await findAvailableNote(get().notes, noteId);
+    if (!note || note.isTrashed) {
       return;
     }
     const updated = finalizeNote({ ...note, isTrashed: true });
@@ -496,8 +519,8 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   restoreNote: async (noteId) => {
-    const note = findNote(get().notes, noteId);
-    if (!note) {
+    const note = await findAvailableNote(get().notes, noteId);
+    if (!note || !note.isTrashed) {
       return;
     }
     const updated = finalizeNote({ ...note, isTrashed: false });
@@ -505,6 +528,8 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   deleteNotesPermanently: async (noteIds) => {
+    for (const id of noteIds) if (get().notes.find((note) => note.id === id)?.cloudOnly) await downloadCloudNote(id);
+    markCloudDeleted(noteIds);
     const ids = uniqueIds(noteIds);
     if (!ids.length) {
       return;
@@ -537,11 +562,11 @@ async function readNotes() {
   const blocksByNote = groupBy(blocks, (block) => block.noteId);
   const filesByNote = groupBy(files, (file) => file.noteId);
 
-  return notes.map((note) => ({
+  return withCloudMetadata(notes.map((note) => ({
     ...note,
     blocks: (blocksByNote.get(note.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
     files: filesByNote.get(note.id) ?? [],
-  }));
+  })));
 }
 
 async function persistNote(note: Note) {
@@ -692,6 +717,13 @@ function groupBy<T>(items: T[], key: (item: T) => string) {
 
 function createId() {
   return crypto.randomUUID();
+}
+
+async function findAvailableNote(notes: Note[], noteId: string) {
+  const note = findNote(notes, noteId);
+  if (!note?.cloudOnly) return note;
+  await downloadCloudNote(noteId);
+  return findNote(useNotesStore.getState().notes, noteId);
 }
 
 function sameOrderedIds(left: string[], right: string[]) {

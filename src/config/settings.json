@@ -1,5 +1,11 @@
 {
   "productName": "NoteX",
+  "cloud": {
+    "pollLocalMs": 2000,
+    "idleBackupMs": 30000,
+    "maxPendingMs": 120000,
+    "remoteCheckMs": 60000
+  },
   "themes": {
     "default": "dark",
     "available": [

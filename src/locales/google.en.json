@@ -1,0 +1,26 @@
+{
+  "title": "Connect your Google account",
+  "desktopDescription": "Keep your notes on this computer and back them up to your own Google Drive.",
+  "webDescription": "Sign in to open your NoteX library. Notes are kept in this browser and backed up to your Google Drive.",
+  "continue": "Continue with Google",
+  "connecting": "Waiting for Google…",
+  "preparing": "Preparing Google sign-in…",
+  "logout": "Sign out",
+  "switchAccount": "Choose another account",
+  "connected": "Google account",
+  "retry": "Try again",
+  "storageError": "NoteX could not open this library. Your data has not been reset.",
+  "errors": {
+    "GOOGLE_NOT_CONFIGURED": "Google sign-in is not configured in this build yet.",
+    "GOOGLE_NETWORK_ERROR": "Could not reach Google. Check your connection and try again.",
+    "GOOGLE_POPUP_BLOCKED": "Allow the Google sign-in popup, then try again.",
+    "GOOGLE_AUTH_CANCELLED": "Sign-in was cancelled. Your library has not changed.",
+    "GOOGLE_AUTH_TIMEOUT": "Sign-in timed out. Please try again.",
+    "GOOGLE_DRIVE_PERMISSION_REQUIRED": "Allow NoteX to store its backups in Google Drive to continue.",
+    "GOOGLE_REAUTHORIZE": "Authorize Google again to continue your backups.",
+    "GOOGLE_ACCOUNT_MISMATCH": "Choose the Google account connected to this library.",
+    "LOCAL_SAVE_PENDING": "Some changes have not been saved locally. Finish saving before changing accounts.",
+    "ACCOUNT_NOTE_CONFLICT": "A local note and an account note have the same version but different content. Both copies have been preserved.",
+    "generic": "Could not complete this operation. Your local notes have been preserved."
+  }
+}

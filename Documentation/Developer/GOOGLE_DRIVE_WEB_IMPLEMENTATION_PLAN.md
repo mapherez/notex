@@ -7,7 +7,7 @@ Plano acordado na conversa de implementação. Este documento permanece após a 
 Manter o NoteX desktop rápido e utilizável offline, acrescentar backups automáticos na Drive pessoal e disponibilizar a mesma experiência de edição no browser.
 
 | Ambiente | Armazenamento | Acesso |
-|---|---|---|
+| --- | --- | --- |
 | Desktop Windows | SQLite e anexos locais | Login opcional |
 | Web | IndexedDB, incluindo anexos e fila de transferências | Conta obrigatória |
 | Google Drive | JSON e anexos na `appDataFolder` | Diretamente pelos clientes |

@@ -29,6 +29,19 @@ async function persist(settings: UserSettings) {
     ...settings,
     updatedAt: new Date().toISOString(),
   });
+  rememberDevicePreferences(settings);
+}
+
+const deviceFields = ['theme', 'language', 'mcpPort', 'username', 'startupPage', 'preferredLayout', 'confirmNoteExport'] as const;
+function rememberDevicePreferences(settings: UserSettings) {
+  try { localStorage.setItem('notex.devicePreferences', JSON.stringify(Object.fromEntries(deviceFields.map((key) => [key, settings[key]])))); }
+  catch { /* SQLite/IndexedDB still holds the preferences when browser storage is unavailable. */ }
+}
+function devicePreferences(): Partial<UserSettings> {
+  try {
+    const value = JSON.parse(localStorage.getItem('notex.devicePreferences') ?? '{}');
+    return Object.fromEntries(deviceFields.filter((key) => typeof value?.[key] === typeof defaultUserSettings[key]).map((key) => [key, value[key]]));
+  } catch { return {}; }
 }
 
 function normalizeSettings(settings?: Partial<UserSettings> | null): UserSettings {
@@ -63,8 +76,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   isHydrated: false,
   hydrateSettings: async () => {
     const stored = await db.userSettings.get(defaultUserSettings.id);
+    const settings = normalizeSettings({ ...stored, ...devicePreferences() });
+    rememberDevicePreferences(settings);
     set({
-      settings: normalizeSettings(stored),
+      settings,
       isHydrated: true,
     });
   },
