@@ -1,0 +1,13 @@
+{
+  "name": "notex-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs",
+    "preview": "node scripts/preview.mjs"
+  },
+  "devDependencies": {
+    "marked": "18.0.13"
+  }
+}
