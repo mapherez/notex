@@ -5,6 +5,7 @@ import type { Collection, Note, PreferredLayout, Tag } from '../../core/models/m
 import { richTextToPlainText } from '../../core/utils/richText';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
+import { useMenuOptionFocus } from '../../core/utils/useMenuOptionFocus';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useNotesStore } from '../../store/useNotesStore';
@@ -47,6 +48,7 @@ export function NoteRow({
   const { t } = useI18n();
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menu = useMenuOptionFocus(menuOpen, () => setMenuOpen(false));
   const toggleFavorite = useNotesStore((state) => state.toggleFavorite);
   const togglePinned = useNotesStore((state) => state.togglePinned);
   const setPinnedNoteState = useAppStore((state) => state.setPinnedNoteState);
@@ -198,11 +200,12 @@ export function NoteRow({
         ) : null}
       </div>
       <span className="note-row__time">{formatDisplayTime(timeValue ?? note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
-      <div className="note-row-actions" ref={menuRef}>
+      <div className="note-row-actions" ref={menuRef} onKeyDown={menu.onKeyDown}>
         <button
           className="icon-button"
           type="button"
           aria-label={t('notes.openMenu')}
+          ref={menu.triggerRef}
           onClick={(event) => {
             event.preventDefault();
             setMenuOpen((value) => !value);
@@ -211,7 +214,7 @@ export function NoteRow({
           <MoreVertical />
         </button>
         {menuOpen ? (
-          <div className="floating-menu note-row-menu">
+          <div className="floating-menu note-row-menu" ref={menu.menuRef} onClick={menu.closeAndFocus}>
             <Link to={`/notes/${note.id}`}>{t('common.open')}</Link>
             <button type="button" onClick={() => void handleDuplicate()}>
               <Copy />

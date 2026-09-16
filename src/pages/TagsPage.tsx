@@ -45,6 +45,7 @@ export function TagsPage() {
   const newNameInputRef = useRef<HTMLInputElement>(null);
   const favoritePickerRef = useRef<HTMLDivElement>(null);
   const favoriteSearchRef = useRef<HTMLInputElement>(null);
+  const favoriteTriggerRef = useRef<HTMLButtonElement>(null);
   const tags = useKnowledgeStore((state) => state.tags);
   const notes = useNotesStore((state) => state.notes);
   const createTag = useKnowledgeStore((state) => state.createTag);
@@ -92,7 +93,7 @@ export function TagsPage() {
   const favoritePickerNavigation = useKeyboardListNavigation({
     enabled: favoritePickerOpen,
     itemCount: filteredFavoriteOptions.length,
-    onEscape: closeFavoritePicker,
+    onEscape: () => { closeFavoritePicker(); favoriteTriggerRef.current?.focus({ preventScroll: true }); },
     onSelect: (index) => {
       const tag = filteredFavoriteOptions[index];
       if (tag) {
@@ -108,6 +109,10 @@ export function TagsPage() {
       requestAnimationFrame(() => favoriteSearchRef.current?.focus());
     }
   }, [favoritePickerOpen]);
+
+  useEffect(() => {
+    if (favoritePickerOpen) favoritePickerRef.current?.querySelector<HTMLElement>('.tags-favorite-picker-options .active')?.scrollIntoView({ block: 'nearest' });
+  }, [favoritePickerOpen, favoritePickerNavigation.activeIndex]);
 
   useEffect(() => {
     if (editingId) {
@@ -202,6 +207,7 @@ export function TagsPage() {
 
     await toggleFavoriteTag(tagId);
     closeFavoritePicker();
+    favoriteTriggerRef.current?.focus({ preventScroll: true });
     pushToast(t('tagsPage.favoriteTagsUpdated'), 'success');
   }
 
@@ -343,9 +349,11 @@ export function TagsPage() {
                   })}
                 </span>
               </span>
-              <div className="tags-favorites-add" ref={favoritePickerRef}>
+              <div className="tags-favorites-add" ref={favoritePickerRef} onKeyDown={favoritePickerNavigation.onKeyDown}
+                onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) closeFavoritePicker(); }}>
                 <button
                   className="tags-action-button"
+                  ref={favoriteTriggerRef}
                   type="button"
                   aria-disabled={!canAddFavoriteTag}
                   aria-expanded={favoritePickerOpen}
@@ -376,7 +384,6 @@ export function TagsPage() {
                         type="search"
                         value={favoriteQuery}
                         onChange={(event) => setFavoriteQuery(event.target.value)}
-                        onKeyDown={favoritePickerNavigation.onKeyDown}
                         placeholder={t('tagsPage.searchFavoriteTags')}
                       />
                     </label>
@@ -388,6 +395,7 @@ export function TagsPage() {
                             key={tag.id}
                             type="button"
                             role="option"
+                            tabIndex={-1}
                             aria-selected={favoritePickerNavigation.activeIndex === index}
                             onClick={() => void addFavoriteTag(tag.id)}
                             onMouseEnter={() => favoritePickerNavigation.setActiveIndex(index)}

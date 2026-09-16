@@ -15,6 +15,7 @@
 
 .note-toc {
   position: sticky;
+  top: var(--nx-note-navigation-top, calc(var(--nx-topbar-height) + 8rem));
     z-index: 40;
     width: 2.75rem;
     min-height: 9rem;
@@ -75,11 +76,13 @@
   visibility: hidden;
 }
 
-.note-toc:hover .note-toc-dashes {
+.note-toc:hover .note-toc-dashes,
+.note-toc:focus-within .note-toc-dashes {
   opacity: 0;
 }
 
-.note-toc:hover .note-toc-content {
+.note-toc:hover .note-toc-content,
+.note-toc:focus-within .note-toc-content {
   opacity: 1;
   pointer-events: auto;
   transform: translateX(0);
@@ -262,6 +265,11 @@
 .note-block-delete:hover,
 .note-block-delete:focus-visible {
   color: var(--nx-color-danger);
+}
+
+.note-block-handle:focus {
+  outline: 2px solid var(--nx-color-accent);
+  outline-offset: 2px;
 }
 
 .note-block-body {

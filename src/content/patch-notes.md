@@ -5,6 +5,9 @@
 ### Highlights
 
 - Fixed a bug where recent notes were being re-ordered when opening a note, instead of editing it.
+- Improved thumbnail selection: opening the picker with Enter focuses the first thumbnail, arrow keys navigate the grid, Enter selects, and Escape closes the picker and returns focus to its button.
+- Improved keyboard navigation across dropdowns and menus, with arrow-key navigation, Enter selection, and focus returning to the trigger after selecting an item or pressing Escape.
+- Fixed the note's side navigation position so it stays below the top bars while scrolling.
 
 ---
 

@@ -50,6 +50,7 @@ import type { NoteFile, TiptapDocument } from '../../core/models/models';
 import { exportNoteAttachment, openNoteAttachment, resolveNoteFileSrc } from '../../core/services/noteFiles';
 import { openExternalUrl } from "../../core/services/externalLinks";
 import { useClickOutside } from '../../core/utils/useClickOutside';
+import { useMenuOptionFocus } from '../../core/utils/useMenuOptionFocus';
 import { richTextToTiptapContent } from '../../core/utils/richText';
 import { formatShortcutForDisplay } from '../../core/utils/shortcutFormatting';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -585,6 +586,7 @@ export function NoteTiptapToolbar({
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const [toolbarStateVersion, setToolbarStateVersion] = useState(0);
   const tableToolRef = useRef<HTMLDivElement>(null);
+  const tableMenu = useMenuOptionFocus(tableMenuOpen, () => setTableMenuOpen(false));
   const tableModeRef = useRef(false);
   const editor = target?.editor ?? null;
   const contentTarget = target?.kind === 'content' ? target : null;
@@ -707,7 +709,7 @@ export function NoteTiptapToolbar({
     } else {
       chain.addColumnAfter().run();
     }
-    setTableMenuOpen(false);
+    if (tableMenuOpen) tableMenu.closeAndFocus();
   }
 
   async function executeToolbarAction(actionId: ToolbarActionId) {
@@ -1026,9 +1028,10 @@ export function NoteTiptapToolbar({
         >
           <Link2 />
         </ToolbarButton>
-        <div className="table-tool" ref={tableToolRef}>
+        <div className="table-tool" ref={tableToolRef} onKeyDown={tableMenu.onKeyDown}>
           <button
             className="markdown-tool-button"
+            ref={tableMenu.triggerRef}
             type="button"
             disabled={tableDisabled}
             aria-expanded={tableMenuOpen}
@@ -1041,7 +1044,7 @@ export function NoteTiptapToolbar({
             <ToolbarTooltip label={t("editor.tableMenu")} shortcut={toolbarShortcutLabels.get('table')} />
           </button>
           {tableMenuOpen ? (
-            <div className="markdown-table-menu">
+            <div className="markdown-table-menu" ref={tableMenu.menuRef}>
               <ToolbarButton
                 disabled={tableDisabled}
                 label={t("editor.insertTable")}

@@ -206,6 +206,7 @@ function SearchableFilterField({
   const [query, setQuery] = useState("");
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const selectedOption = options.find((option) => option.value === value);
   const filteredOptions = query.trim()
     ? options.filter((option) =>
@@ -218,7 +219,7 @@ function SearchableFilterField({
   const optionNavigation = useKeyboardListNavigation({
     enabled: open,
     itemCount: optionCount,
-    onEscape: () => setOpen(false),
+    onEscape: closeAndFocus,
     onSelect: (index) => {
       if (index === 0) {
         selectValue(null);
@@ -242,16 +243,27 @@ function SearchableFilterField({
     }
   }, [open]);
 
+  useEffect(() => {
+    if (open) wrapperRef.current?.querySelector<HTMLElement>('.notes-filter-options .active')?.scrollIntoView({ block: 'nearest' });
+  }, [open, optionNavigation.activeIndex]);
+
   function selectValue(nextValue: string | null) {
     onChange(nextValue);
-    setOpen(false);
+    closeAndFocus();
     setQuery("");
+  }
+
+  function closeAndFocus() {
+    setOpen(false);
+    triggerRef.current?.focus({ preventScroll: true });
   }
 
   return (
     <div
       className="notes-filter-control notes-filter-combobox"
       ref={wrapperRef}
+      onKeyDown={optionNavigation.onKeyDown}
+      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}
     >
       <span className="notes-filter-label">
         <Icon />
@@ -259,6 +271,7 @@ function SearchableFilterField({
       </span>
       <button
         className="notes-filter-trigger"
+        ref={triggerRef}
         type="button"
         aria-expanded={open}
         onClick={() => {
@@ -286,7 +299,6 @@ function SearchableFilterField({
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={optionNavigation.onKeyDown}
               placeholder={searchPlaceholder}
             />
           </label>
@@ -296,6 +308,7 @@ function SearchableFilterField({
               type="button"
               role="option"
               aria-selected={!value}
+              tabIndex={-1}
               onClick={() => selectValue(null)}
               onMouseEnter={() => optionNavigation.setActiveIndex(0)}
             >
@@ -309,6 +322,7 @@ function SearchableFilterField({
                   type="button"
                   role="option"
                   aria-selected={option.value === value}
+                  tabIndex={-1}
                   onClick={() => selectValue(option.value)}
                   onMouseEnter={() => optionNavigation.setActiveIndex(index + 1)}
                 >

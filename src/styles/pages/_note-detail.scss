@@ -246,6 +246,12 @@
   outline: none;
 }
 
+.thumbnail-option:focus {
+  outline: 2px solid var(--nx-color-accent);
+  outline-offset: 2px;
+}
+
+
 .thumbnail-option.active {
   border-color: color-mix(in srgb, var(--nx-color-accent) 68%, var(--nx-color-border-strong));
 }

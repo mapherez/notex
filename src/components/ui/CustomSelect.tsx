@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { TagColor } from '../../core/models/models';
 import { useClickOutside } from '../../core/utils/useClickOutside';
+import { useMenuOptionFocus } from '../../core/utils/useMenuOptionFocus';
 
 export type CustomSelectOption = {
   color?: TagColor;
@@ -35,6 +36,8 @@ export function CustomSelect({
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const selectedOption = options.find((option) => option.value === value);
+  const menu = useMenuOptionFocus(open, () => setOpen(false), 1,
+    Math.max(0, options.filter((option) => !option.disabled).findIndex((option) => option.value === value)));
   const placeholderLabel = placeholder ?? '';
 
   useClickOutside(rootRef, open, () => setOpen(false));
@@ -51,13 +54,16 @@ export function CustomSelect({
     }
 
     onChange(option.value);
-    setOpen(false);
+    menu.closeAndFocus();
   }
 
   return (
-    <div className={clsx('custom-select', className, disabled && 'custom-select--disabled')} ref={rootRef}>
+    <div className={clsx('custom-select', className, disabled && 'custom-select--disabled')} ref={rootRef}
+      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}
+      onKeyDown={menu.onKeyDown}>
       <button
         className="custom-select__trigger"
+        ref={menu.triggerRef}
         type="button"
         aria-controls={open ? menuId : undefined}
         aria-expanded={open}
@@ -72,7 +78,7 @@ export function CustomSelect({
         <ChevronDown className="custom-select__chevron" />
       </button>
       {open ? (
-        <div className="custom-select__menu" id={menuId} role="listbox">
+        <div className="custom-select__menu" ref={menu.menuRef} id={menuId} role="listbox" aria-label={ariaLabel}>
           {options.length ? (
             options.map((option) => (
               <button
@@ -82,6 +88,7 @@ export function CustomSelect({
                 role="option"
                 aria-selected={option.value === value}
                 disabled={option.disabled}
+                tabIndex={-1}
                 onClick={() => selectOption(option)}
               >
                 <CustomSelectOptionContent option={option} />
