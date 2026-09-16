@@ -29,13 +29,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: landing/package-lock.json
+
+      - name: Build website and Markdown documentation
+        run: |
+          npm ci --prefix landing
+          npm run build --prefix landing
+          npm run check --prefix landing
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
       - name: Upload landing artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: landing
+          path: landing/dist
 
       - name: Deploy to GitHub Pages
         id: deployment

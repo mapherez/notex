@@ -1,0 +1,51 @@
+[
+  {
+    "title": "Getting started",
+    "pages": [
+      { "slug": "index", "title": "Introduction", "description": "Meet your local workspace for structured notes and connected knowledge." },
+      { "slug": "quickstart", "title": "Your first note", "description": "Install NoteX and build your first note in a few simple steps." }
+    ]
+  },
+  {
+    "title": "Writing notes",
+    "pages": [
+      { "slug": "blocks", "title": "Notes & blocks", "description": "Structure a note, move its blocks, and navigate long documents." },
+      { "slug": "rich-content", "title": "Formatting & files", "description": "Work with rich text, tables, images, and attachments." }
+    ]
+  },
+  {
+    "title": "Organizing",
+    "pages": [
+      { "slug": "collections-tags", "title": "Collections & tags", "description": "Give your library a structure that works across subjects and projects." },
+      { "slug": "favorites-trash", "title": "Favorites, pins & trash", "description": "Keep important notes close and understand how deletion works." },
+      { "slug": "search", "title": "Search & filters", "description": "Find notes by content, narrow your library, and choose a view." }
+    ]
+  },
+  {
+    "title": "Keyboard navigation",
+    "pages": [
+      { "slug": "keyboard", "title": "Shortcuts & focus", "description": "Write, select, and reorder with less switching between keyboard and mouse." }
+    ]
+  },
+  {
+    "title": "Your data",
+    "pages": [
+      { "slug": "local-storage", "title": "Local storage & privacy", "description": "Understand where your notes live and what stays on your computer." },
+      { "slug": "import-export", "title": "Import, export & backups", "description": "Back up your workspace or share an individual note with its files." }
+    ]
+  },
+  {
+    "title": "Local MCP",
+    "pages": [
+      { "slug": "mcp-setup", "title": "Connect an AI client", "description": "Connect a compatible local AI client to NoteX through MCP." },
+      { "slug": "mcp-workflows", "title": "Tools & workflows", "description": "See what an AI client can do with your notes and try practical prompts." }
+    ]
+  },
+  {
+    "title": "Help",
+    "pages": [
+      { "slug": "troubleshooting", "title": "Troubleshooting", "description": "Resolve common import, navigation, and MCP connection issues." },
+      { "slug": "updates", "title": "Updates & feedback", "description": "Keep NoteX current and send useful bug reports or feature requests." }
+    ]
+  }
+]

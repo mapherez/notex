@@ -1,0 +1,47 @@
+/* Homepage additions share the existing NoteX palette and components. */
+.hero h1 { font-size: clamp(2.65rem, 5.2vw, 4.6rem); line-height: 1.06; letter-spacing: -0.045em; }
+.hero-reassurance { margin: 1rem 0 0; color: var(--text-muted); font-size: 0.78rem; }
+.text-link { display: inline-flex; align-items: center; gap: 0.7rem; color: #a5c8fa; font-size: 0.9rem; font-weight: 600; }
+.text-link:hover { color: var(--text); }
+.mcp-copy .text-link { margin-top: 0.8rem; }
+.learn-section { padding-top: 5rem; padding-bottom: 3rem; }
+.learn-heading { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+.learn-heading .section-heading { max-width: 38rem; }
+.learn-heading > a { flex-shrink: 0; }
+.guide-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.2rem; }
+.guide-card { display: flex; flex-direction: column; padding: 1.8rem; border: 1px solid var(--border); border-radius: 0.6rem; background: var(--surface); transition: background 160ms ease, border-color 160ms ease; }
+.guide-card:hover { border-color: var(--border-strong); background: var(--surface-raised); }
+.guide-category { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.72rem; }
+.guide-category > span { font-size: 1rem; }
+.guide-icon { margin: 2rem 0 1.2rem; color: var(--blue); }
+.guide-card:nth-child(2) .guide-icon { color: var(--green); }
+.guide-card:nth-child(3) .guide-icon { color: var(--pink); }
+.guide-card h3 { margin-bottom: 0.7rem; font-size: 1.12rem; font-weight: 650; }
+.guide-card p { margin-bottom: 1.5rem; color: var(--text-muted); font-size: 0.9rem; line-height: 1.75; }
+.guide-bottom { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.78rem; color: #a5c8fa; }
+.learn-shortcuts { display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem; margin-top: 1.7rem; font-size: 0.78rem; }
+.learn-shortcuts > span { color: var(--text-muted); }
+.learn-shortcuts a { color: #a5c8fa; }
+.learn-shortcuts a:hover { color: var(--text); }
+.faq-section { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 4rem; padding-top: 4rem; padding-bottom: 5rem; }
+.faq-list details { padding: 1.2rem 0; border-bottom: 1px solid var(--border); }
+.faq-list details:first-child { border-top: 1px solid var(--border); }
+.faq-list summary { cursor: pointer; color: var(--text); font-size: 0.95rem; line-height: 1.6; }
+.faq-list summary::marker { color: var(--text-muted); }
+.faq-list p { margin: 1rem 0 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.8; }
+.faq-list a { color: #a5c8fa; text-decoration: underline; text-underline-offset: 0.2em; }
+@media (max-width: 900px) {
+  .learn-heading { align-items: flex-start; flex-direction: column; gap: 0; margin-bottom: 1.8rem; }
+  .guide-grid { gap: 0.8rem; }
+  .guide-card { padding: 1.2rem; }
+  .faq-section { grid-template-columns: 1fr; gap: 0; }
+}
+@media (max-width: 640px) {
+  .guide-grid { grid-template-columns: 1fr; }
+  .guide-card { padding: 1.5rem; }
+  .guide-icon { margin-top: 1.2rem; }
+  .learn-section { padding-top: 3rem; }
+  .learn-shortcuts { gap: 1rem; }
+  .learn-shortcuts > span { flex-basis: 100%; }
+  .faq-section { padding-top: 2rem; padding-bottom: 3rem; }
+}
