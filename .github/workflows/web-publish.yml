@@ -60,19 +60,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=notex-web
 
       - name: Check Nginx, SPA routes and service worker
-        shell: bash
-        run: |
-          docker run --rm notex-web:check nginx -t
-          docker run --detach --name notex-web-check --publish 127.0.0.1:18083:8080 notex-web:check
-          trap 'docker logs notex-web-check; docker rm -f notex-web-check' EXIT
-          curl --fail --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:18083/healthz
-          curl --fail --silent http://127.0.0.1:18083/ -o /tmp/notex-index.html
-          curl --fail --silent http://127.0.0.1:18083/notes/example -o /tmp/notex-note.html
-          cmp /tmp/notex-index.html /tmp/notex-note.html
-          curl --fail --silent -D /tmp/notex-sw-headers http://127.0.0.1:18083/sw.js -o /tmp/notex-sw.js
-          grep -Eqi 'Content-Type: (application|text)/javascript' /tmp/notex-sw-headers
-          grep -qi 'Cache-Control: no-cache' /tmp/notex-sw-headers
-          test "$(curl --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:18083/assets/missing.js)" = 404
+        run: node scripts/check-web-image.mjs notex-web:check
 
       - name: Log in to GHCR
         uses: docker/login-action@v4.6.0
