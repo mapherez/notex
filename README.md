@@ -1,132 +1,85 @@
-# NoteX
+﻿# NoteX
 
-NoteX is a local-first desktop knowledge management app built around structured
-notes, rich content blocks, tags, collections, attachments, and SQLite
-persistence.
+NoteX is a place to write, organize, and find the information you want to keep.
+Use it for project references, study notes, useful links, ideas, and everyday
+knowledge, with text, images, and files together in each note.
 
-The production app is built with Tauri. It does not require an account, and
-cloud sync is not part of the active app.
+Your notes are saved locally as you edit. The desktop app works offline and
+does not require an account. You can also connect your Google account for
+automatic backups to your own Google Drive and access your library in the browser.
 
-## Features
+[Website](https://notex.mapherez.com/) ·
+[Download for Windows](https://github.com/mapherez/notex/releases/latest) ·
+[User guides](Documentation/README.md)
 
-- Block-based rich-text notes with images and file attachments
-- Tags, collections, favorites, pins, trash, quick capture, and search
-- Local `.notex` package import and export
-- Embedded local MCP server for compatible AI clients
-- English and Portuguese interfaces with light and dark themes
+## Write notes with structure
 
-## Stack
+A note can have a title, a short description, and multiple content blocks.
+Give each block its own heading and reorder sections as your note grows.
 
-- React 18
-- TypeScript
-- Vite
-- Zustand
-- Tauri 2
-- Tauri SQLite via Rust `rusqlite`
-- React Router
-- SCSS with Sass maps, theme tokens, and Stylelint guardrails
-- Static marketing site in `landing/`
+The editor supports formatting, lists, checklists, tables, code, images, and
+file attachments. Link related notes and keep useful references alongside
+your writing.
 
-## Requirements
+## Keep your library organized
 
-- Node.js 24 LTS
-- npm
-- Rust 1.88+ and the Tauri prerequisites for your platform
+Group notes into collections and use tags for topics that cross between them.
+Browse your library as a list or a grid, filter by collection or tag, and
+search when you know what you are looking for.
 
-## Local Development
+Favorites, pinned notes, and quick pins keep frequently used information close.
+The Home screen brings together recent notes, library shortcuts, and quick
+capture for ideas you want to save before returning to your work.
 
-Install dependencies:
+## Work locally, back up to your Drive
 
-```bash
-npm install
-```
+On desktop, you can keep using NoteX without signing in. Connecting Google
+adds automatic backups of your notes, organization, and attachments to your
+own Drive. Each Google account has its own library.
 
-Run the Vite frontend:
+Browser mode requires a Google account. Sign in with the same account to
+continue with your backed-up library. Once the app and notes have been
+downloaded, you can edit those notes offline; pending backups resume when
+you reconnect and Google authorization is valid.
 
-```bash
-npm run dev
-```
+Let backups finish before switching devices. If local and cloud changes
+conflict, NoteX lets you choose which version to keep.
 
-Run the Tauri desktop app:
+Desktop exports are also available: save a full library as a `.notex` package
+or share one note, including its attachments, as a `.notex-note` package.
 
-```bash
-npm run tauri:dev
-```
+Read the [Google Drive and browser guide](landing/docs/content/google-drive-web.md)
+or the [import and export guide](landing/docs/content/import-export.md) for details.
 
-Useful checks:
+## Connect an AI assistant
 
-```bash
-npm run typecheck
-npm run check:styles
-npm run build
-npm test
-```
+The desktop app can connect to compatible AI clients through its local MCP
+integration. Ask your assistant to find information in your notes, summarize
+references, create a structured note, or help organize your library.
 
-## Local MCP
+The AI runs in the client you connect; NoteX does not include its own AI model.
+You choose when to start or stop the connection in Profile.
 
-Open Profile in the desktop app and select **Start MCP**. **Configure MCP**
-provides the current Streamable HTTP URL and generic client configuration.
+See the [local MCP guide](Documentation/MCP_LOCAL_USER_GUIDE.md) for setup.
 
-The server listens only on the local computer and remains available only while
-NoteX is open and MCP is running. Notes continue to be stored exclusively in
-the existing local SQLite database. See the [Local MCP guide](Documentation/MCP_LOCAL_USER_GUIDE.md)
-for setup, tools, and access details.
+## Make it comfortable to use
 
-## Desktop Build
+NoteX includes light and dark themes, English and Portuguese interfaces, and
+keyboard shortcuts for writing and navigating your library.
 
-Build the desktop app:
+## Get started
 
-```bash
-npm run tauri:build
-```
+1. [Download the Windows app](https://github.com/mapherez/notex/releases/latest)
+   and create your first note. No account is needed for desktop use.
+2. Add a collection or a few tags so you can find it again.
+3. Optionally connect Google in **Profile** to enable Drive backups.
 
-Installers and updater bundles are generated under
-`src-tauri/target/release/bundle/`. The installed app stores its SQLite database
-and attachments in the Tauri app data directory.
+The [first-note guide](landing/docs/content/quickstart.md) walks through the
+basics. Explore the [user documentation](Documentation/README.md) for more,
+including [keyboard shortcuts](landing/docs/content/keyboard.md).
 
-## Release
+## Development
 
-Set the release version across all manifests:
-
-```bash
-npm run version:set
-```
-
-Update `src/content/patch-notes.md` before publishing. The signed Tauri release
-workflow is defined in `.github/workflows/release.yml`, with helper logic in
-`.github/scripts/tauri-release.mjs`.
-
-The in-app updater is configured through `src-tauri/tauri.conf.json` and checks signed GitHub release artifacts.
-
-## Scripts
-
-- `npm run dev` - start the Vite dev server.
-- `npm run tauri:dev` - start the Tauri desktop app in development mode.
-- `npm run tauri:build` - build the desktop app.
-- `npm run tauri:icon` - regenerate Tauri icons from `public/assets/notex_logo_small.webp`.
-- `npm run release:tauri` - run the Tauri release helper script.
-- `npm run version:set` - update the app version in all release manifests.
-- `npm run build` - typecheck and build the frontend.
-- `npm run preview` - preview the frontend build with Vite.
-- `npm run typecheck` - run TypeScript checks.
-- `npm run check:styles` - run SCSS Stylelint and inline-style guardrails.
-
-## Project Structure
-
-- `src/` - React app, stores, local database, storage services, and UI.
-- `src-tauri/` - Tauri shell, SQLite commands, updater config, and desktop packaging.
-- `packages/notex-mcp-contract/` - shared MCP schemas, tool definitions, and generated manifest.
-- `backend/` - preserved hosted MCP bridge for future remote-platform access; not required by local MCP.
-- `public/` - static assets used by the app.
-- `landing/` - static public marketing site.
-- `scripts/` - local repository maintenance scripts.
-- `Documentation/` - user guides, with internal references under `Documentation/Developer/`.
-- `dist/` - generated frontend build output.
-
-## Data
-
-SQLite is the official app storage layer. `.notex` packages contain the local
-database and associated files. Importing a complete package replaces the
-current local data only after user confirmation.
-
-IndexedDB and cloud sync are not used by the current app.
+For setup, commands, architecture, and implementation plans, see the
+[development guide](Documentation/Developer/DEVELOPMENT.md) and
+[developer documentation](Documentation/Developer/README.md).
