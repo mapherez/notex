@@ -61,6 +61,8 @@ export type NoteFile = {
 };
 
 export type Note = {
+  /** UI-only catalog entry: content has not been downloaded yet. */
+  cloudOnly?: boolean;
   id: string;
   title: string;
   subtitle: string;

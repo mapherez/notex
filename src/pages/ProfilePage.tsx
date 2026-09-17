@@ -10,8 +10,10 @@ import {
   HardDrive,
   Keyboard,
   Loader2,
+  LogOut,
   RefreshCw,
   Star,
+  Tag,
   Upload,
   UserRound,
   type LucideIcon,
@@ -21,12 +23,15 @@ import {
   type ReactNode,
   useEffect,
   useState,
+  lazy,
+  Suspense,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AppModal } from "../components/ui/AppModal";
+import { GoogleSignInButton } from "../components/profile/GoogleSignInButton";
+import { GoogleDriveStatus } from "../components/profile/GoogleDriveStatus";
 import { CustomSelect } from "../components/ui/CustomSelect";
 import { IconBadge } from "../components/ui/IconBadge";
-import { McpProfileSection } from "../components/profile/McpProfileSection";
 import { appLimits, editorSettings } from "../config/appSettings";
 import {
   openSqliteDatabaseFolder,
@@ -58,6 +63,8 @@ import { useNotesStore } from "../store/useNotesStore";
 import { useKnowledgeStore } from "../store/useKnowledgeStore";
 import { useToastStore } from "../store/useToastStore";
 import type { Note, Locale, ThemePreference } from "../core/models/models";
+import { isTauri } from '@tauri-apps/api/core';
+import { useGoogleAccountStore } from '../store/useGoogleAccountStore';
 
 type ExportModalState =
   | null
@@ -65,7 +72,10 @@ type ExportModalState =
   | { phase: "exporting" }
   | { phase: "ready"; exportInfo: SqliteExportInfo };
 
+const McpProfileSection = lazy(() => import('../components/profile/McpProfileSection').then((module) => ({ default: module.McpProfileSection })));
+
 export function ProfilePage() {
+  const { account, showLogin, login, logout, authorizing } = useGoogleAccountStore();
   const { locale, t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
@@ -86,6 +96,7 @@ export function ProfilePage() {
   const setLanguage = useAppStore((state) => state.setLanguage);
   const notes = useNotesStore((state) => state.notes);
   const collections = useKnowledgeStore((state) => state.collections);
+  const tags = useKnowledgeStore((state) => state.tags);
   const user = useKnowledgeStore((state) => state.user);
   const refreshKnowledge = useKnowledgeStore((state) => state.refreshKnowledge);
   const refreshNotes = useNotesStore((state) => state.refreshNotes);
@@ -107,6 +118,7 @@ export function ProfilePage() {
     : t("profile.values.noActivity");
 
   useEffect(() => {
+    if (!isTauri()) return;
     let cancelled = false;
 
     void readSqliteDatabaseInfo()
@@ -299,130 +311,138 @@ export function ProfilePage() {
           <h1 className="page-title">{t("profile.title")}</h1>
           <p className="page-subtitle">{t("profile.subtitle")}</p>
         </div>
-        <button
-          className="icon-button profile-update-button"
-          type="button"
-          aria-label={t(checkingForUpdates ? "updater.checking" : "updater.checkNow")}
-          title={t(checkingForUpdates ? "updater.checking" : "updater.checkNow")}
-          disabled={updateActionDisabled}
-          onClick={() => void handleCheckForUpdates()}
-        >
-          <RefreshCw className={checkingForUpdates ? "spinning" : undefined} />
-        </button>
+        <div className="profile-update-action" hidden={!isTauri()}>
+          <span>{t(checkingForUpdates ? "updater.checking" : "updater.checkNow")}</span>
+          <button
+            className="icon-button profile-update-button"
+            type="button"
+            aria-label={t(checkingForUpdates ? "updater.checking" : "updater.checkNow")}
+            title={t(checkingForUpdates ? "updater.checking" : "updater.checkNow")}
+            disabled={updateActionDisabled}
+            onClick={() => void handleCheckForUpdates()}
+          >
+            <RefreshCw className={checkingForUpdates ? "spinning" : undefined} />
+          </button>
+        </div>
       </header>
 
       <div className="profile-layout">
-        <section className="profile-left">
-          <article className="profile-section profile-card">
-            <div
-              className={
-                user?.avatarUrl
-                  ? "profile-avatar"
-                  : "profile-avatar profile-card__avatar--placeholder"
-              }
-            >
-              {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
-              ) : (
-                <UserRound strokeWidth={1.6} />
-              )}
-            </div>
-            <h2 className="profile-section-title">
-              {user?.name ?? t("profile.localUser")}
-            </h2>
-            {user?.handle ? <div className="handle">{user.handle}</div> : null}
-            <div className="connected">{t("profile.localAccount")}</div>
-          </article>
+        <article className="profile-section profile-card">
+          <div
+            className={
+              (account?.picture ?? user?.avatarUrl)
+                ? "profile-avatar"
+                : "profile-avatar profile-card__avatar--placeholder"
+            }
+          >
+            {(account?.picture ?? user?.avatarUrl) ? (
+              <img src={account?.picture ?? user?.avatarUrl} alt="" referrerPolicy="no-referrer" />
+            ) : (
+              <UserRound strokeWidth={1.6} />
+            )}
+          </div>
+          <h2 className="profile-section-title">
+            {account?.name ?? user?.name ?? t("profile.localUser")}
+          </h2>
+          {user?.handle ? <div className="handle">{user.handle}</div> : null}
+          <div className="connected">{account?.email ?? t("profile.localAccount")}</div>
+          <div className="profile-account-actions">
+            {account ? (
+              <button className="profile-sign-out-button" type="button" disabled={authorizing} onClick={() => void logout()}>
+                <LogOut aria-hidden="true" />
+                <span>{t('google.logout')}</span>
+              </button>
+            ) : (
+              <GoogleSignInButton disabled={authorizing} onClick={() => { if (isTauri()) void login(); else showLogin(); }}>
+                {t('google.continue')}
+              </GoogleSignInButton>
+            )}
+          </div>
+        </article>
 
-          <ProfileSection className="profile-shortcuts-section" title={t("profile.shortcuts.title")}>
+        <ProfileSection
+          className="profile-preferences-section"
+          title={t("profile.preferences.title")}
+        >
+          <PreferenceSelect
+            icon={<IconBadge icon={CalendarClock} color="red" />}
+            label={t("profile.preferences.theme")}
+            description={t("profile.preferences.themeDescription")}
+            value={settings.theme}
+            onChange={(value) =>
+              void setTheme(value as ThemePreference).then(() =>
+                pushToast(t("common.done"), "success"),
+              )
+            }
+            options={themeRegistry.map((theme) => ({
+              value: theme.id,
+              label: t(theme.labelKey),
+            }))}
+          />
+          <PreferenceSelect
+            icon={<IconBadge icon={Globe2} color="green" />}
+            label={t("profile.preferences.language")}
+            description={t("profile.preferences.languageDescription")}
+            value={settings.language}
+            onChange={(value) =>
+              void setLanguage(value as Locale).then(() =>
+                pushToast(t("common.done"), "success"),
+              )
+            }
+            options={[
+              { value: "pt", label: t("profile.preferences.portuguese") },
+              { value: "en", label: t("profile.preferences.english") },
+            ]}
+          />
+          <button className="profile-action-row profile-shortcuts-action" type="button" onClick={() => setShortcutHelpOpen(true)}>
+            <IconBadge icon={Keyboard} color="blue" />
+            <span>
+              <span className="profile-row-label">{t("profile.shortcuts.title")}</span>
+              <span className="profile-row-description">{t("profile.shortcuts.description")}</span>
+            </span>
+            <ChevronRight aria-hidden="true" />
+          </button>
+        </ProfileSection>
+
+        <ProfileSection className="profile-data-section" title={t("profile.dataManagement.title")}>
+          {isTauri() && <>
             <button
-              className="profile-action-row shortcuts-button"
+              className="profile-action-row"
               type="button"
-              onClick={() => setShortcutHelpOpen(true)}
+              onClick={() => setExportModal({ phase: "confirm" })}
             >
-              <Keyboard className="profile-action-row__icon profile-action-row__icon--blue" />
-              <span className="profile-row-description">
-                {t("profile.shortcuts.description")}
+              <Download className="profile-action-row__icon profile-action-row__icon--success" />
+              <span>
+                <span>{t("profile.dataManagement.exportData")}</span>
+                <span className="profile-row-description">
+                  {t("profile.dataManagement.exportDescription")}
+                </span>
               </span>
               <ChevronRight />
             </button>
-          </ProfileSection>
-
-          <McpProfileSection />
-        </section>
-
-        <section className="profile-main">
-          <div className="profile-top-row">
-            <ProfileSection
-              className="profile-top-card profile-preferences-section"
-              title={t("profile.preferences.title")}
+            <button
+              className="profile-action-row"
+              type="button"
+              onClick={() => setImportChoiceModalOpen(true)}
             >
-              <PreferenceSelect
-                icon={<IconBadge icon={CalendarClock} color="red" />}
-                label={t("profile.preferences.theme")}
-                description={t("profile.preferences.themeDescription")}
-                value={settings.theme}
-                onChange={(value) =>
-                  void setTheme(value as ThemePreference).then(() =>
-                    pushToast(t("common.done"), "success"),
-                  )
-                }
-                options={themeRegistry.map((theme) => ({
-                  value: theme.id,
-                  label: t(theme.labelKey),
-                }))}
-              />
-              <PreferenceSelect
-                icon={<IconBadge icon={Globe2} color="green" />}
-                label={t("profile.preferences.language")}
-                description={t("profile.preferences.languageDescription")}
-                value={settings.language}
-                onChange={(value) =>
-                  void setLanguage(value as Locale).then(() =>
-                    pushToast(t("common.done"), "success"),
-                  )
-                }
-                options={[
-                  { value: "pt", label: t("profile.preferences.portuguese") },
-                  { value: "en", label: t("profile.preferences.english") },
-                ]}
-              />
-            </ProfileSection>
-
-            <ProfileSection className="profile-data-section" title={t("profile.dataManagement.title")}>
-              <button
-                className="profile-action-row"
-                type="button"
-                onClick={() => setExportModal({ phase: "confirm" })}
-              >
-                <Download className="profile-action-row__icon profile-action-row__icon--success" />
-                <span>
-                  <span>{t("profile.dataManagement.exportData")}</span>
-                  <span className="profile-row-description">
-                    {t("profile.dataManagement.exportDescription")}
-                  </span>
+              <Upload className="profile-action-row__icon profile-action-row__icon--blue" />
+              <span>
+                <span>{t("profile.dataManagement.importData")}</span>
+                <span className="profile-row-description">
+                  {t("profile.dataManagement.importDescription")}
                 </span>
-                <ChevronRight />
-              </button>
-              <button
-                className="profile-action-row"
-                type="button"
-                onClick={() => setImportChoiceModalOpen(true)}
-              >
-                <Upload className="profile-action-row__icon profile-action-row__icon--blue" />
-                <span>
-                  <span>{t("profile.dataManagement.importData")}</span>
-                  <span className="profile-row-description">
-                    {t("profile.dataManagement.importDescription")}
-                  </span>
-                </span>
-                <ChevronRight />
-              </button>
-            </ProfileSection>
-          </div>
+              </span>
+              <ChevronRight />
+            </button>
+          </>}
+          {account && <GoogleDriveStatus />}
+        </ProfileSection>
 
+        {isTauri() && <Suspense fallback={null}><McpProfileSection /></Suspense>}
+
+        {isTauri() && (
           <ProfileSection
-            className="profile-wide-section database-management-card"
+            className="profile-module--wide database-management-card"
             title={t("profile.databaseManagement.title")}
           >
             <div className="database-management-grid">
@@ -458,36 +478,42 @@ export function ProfilePage() {
               />
             </div>
           </ProfileSection>
+        )}
 
-          <ProfileSection className="profile-statistics-section" title={t("profile.statistics")}>
-            <div className="meta-list profile-stat-grid">
-              <Metric
-                icon={CalendarClock}
-                color="blue"
-                label={t("profile.stats.lastActivity")}
-                value={lastActivityValue}
-              />
-              <Metric
-                icon={FileText}
-                color="red"
-                label={t("profile.stats.notes")}
-                value={String(activeNotes.length)}
-              />
-              <Metric
-                icon={Star}
-                color="amber"
-                label={t("profile.stats.favorites")}
-                value={String(favoriteNotes.length)}
-              />
-              <Metric
-                icon={Folder}
-                color="green"
-                label={t("profile.stats.collections")}
-                value={String(collections.length)}
-              />
-            </div>
-          </ProfileSection>
-        </section>
+        <ProfileSection className="profile-module--full profile-statistics-section" title={t("profile.statistics")}>
+          <div className="meta-list profile-stat-grid">
+            <Metric
+              icon={CalendarClock}
+              color="blue"
+              label={t("profile.stats.lastActivity")}
+              value={lastActivityValue}
+            />
+            <Metric
+              icon={FileText}
+              color="red"
+              label={t("profile.stats.notes")}
+              value={String(activeNotes.length)}
+            />
+            <Metric
+              icon={Star}
+              color="amber"
+              label={t("profile.stats.favorites")}
+              value={String(favoriteNotes.length)}
+            />
+            <Metric
+              icon={Folder}
+              color="green"
+              label={t("profile.stats.collections")}
+              value={String(collections.length)}
+            />
+            <Metric
+              icon={Tag}
+              color="red"
+              label={t("dashboard.stats.tags")}
+              value={String(tags.length)}
+            />
+          </div>
+        </ProfileSection>
       </div>
       <ExportDatabaseModal
         modal={exportModal}

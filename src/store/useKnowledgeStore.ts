@@ -11,7 +11,7 @@ type KnowledgeStore = {
   user: User | null;
   activities: ActivityItem[];
   isReady: boolean;
-  initialize: (locale: Locale, userSettings?: UserSettings) => Promise<void>;
+  initialize: (locale: Locale, userSettings?: UserSettings, seedDemo?: boolean) => Promise<void>;
   refreshKnowledge: () => Promise<void>;
   setUser: (user: User) => Promise<void>;
   createCollection: (name: string, color?: TagColor) => Promise<Collection | null>;
@@ -32,8 +32,8 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
   user: initialKnowledge.user,
   activities: sortActivities(initialKnowledge.activities),
   isReady: false,
-  initialize: async (locale, userSettings = defaultUserSettings) => {
-    await seedDatabaseIfEmpty(createMockData(locale), userSettings);
+  initialize: async (locale, userSettings = defaultUserSettings, seedDemo = true) => {
+    if (seedDemo) await seedDatabaseIfEmpty(createMockData(locale), userSettings);
     const knowledge = await readAllKnowledge();
     set({
       tags: sortTags(knowledge.tags),

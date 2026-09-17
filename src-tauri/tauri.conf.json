@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "NoteX",
-  "version": "2.2.3",
+  "version": "2.3.0",
   "identifier": "com.mapherez.notex",
   "build": {
     "frontendDist": "../dist",
@@ -26,7 +26,8 @@
       "assetProtocol": {
         "enable": true,
         "scope": [
-          "$APPDATA/files/**"
+          "$APPDATA/files/**",
+          "$APPDATA/*/files/**"
         ]
       }
     }

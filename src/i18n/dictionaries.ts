@@ -1,13 +1,17 @@
 import en from '../locales/en.json';
 import pt from '../locales/pt.json';
+import googleEn from '../locales/google.en.json';
+import googlePt from '../locales/google.pt.json';
+import cloudEn from '../locales/cloud.en.json';
+import cloudPt from '../locales/cloud.pt.json';
 import type { Locale } from '../core/models/models';
 
 export const dictionaries = {
-  en,
-  pt,
+  en: { ...en, google: googleEn, cloud: cloudEn },
+  pt: { ...pt, google: googlePt, cloud: cloudPt },
 } as const;
 
-export type Dictionary = typeof pt;
+export type Dictionary = typeof dictionaries.pt;
 
 export const getDictionary = (locale: Locale): Dictionary => dictionaries[locale] ?? dictionaries.pt;
 

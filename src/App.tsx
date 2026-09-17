@@ -1,88 +1,40 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { AppUpdatePrompt } from './components/ui/AppUpdatePrompt';
 import { ToastViewport } from './components/ui/ToastViewport';
-import { initializeStorage } from './core/services/storageBootstrap';
-import { I18nProvider } from './i18n/I18nProvider';
+import { CloudTransferBanner } from './components/ui/CloudTransferBanner';
+import { isTauri } from '@tauri-apps/api/core';
+import { GoogleAccountModal } from './components/profile/GoogleAccountModal';
+import { DesktopBackupCloseGuard } from './components/ui/DesktopBackupCloseGuard';
+import { useGoogleAccountStore } from './store/useGoogleAccountStore';
+import { I18nProvider, useI18n } from './i18n/I18nProvider';
 import { DashboardPage } from './pages/DashboardPage';
 import { CollectionsPage, NotesListPage } from './pages/NotesListPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { TagsPage } from './pages/TagsPage';
 import { useAppStore } from './store/useAppStore';
-import { useNotesStore } from './store/useNotesStore';
-import { useKnowledgeStore } from './store/useKnowledgeStore';
-import { useLocalMcpStore } from './store/useLocalMcpStore';
-import { useToastStore } from './store/useToastStore';
+
+
+
 
 const NoteDetailPage = lazy(() =>
   import('./pages/NoteDetailPage').then((module) => ({ default: module.NoteDetailPage })),
 );
 
 export function App() {
-  const [isStorageReady, setIsStorageReady] = useState(false);
   const settings = useAppStore((state) => state.settings);
-  const isHydrated = useAppStore((state) => state.isHydrated);
-  const hydrateSettings = useAppStore((state) => state.hydrateSettings);
-  const initialize = useKnowledgeStore((state) => state.initialize);
-  const isReady = useKnowledgeStore((state) => state.isReady);
-  const initializeNotes = useNotesStore((state) => state.initialize);
-  const notesReady = useNotesStore((state) => state.isReady);
-  const pushToast = useToastStore((state) => state.pushToast);
-  const initializeLocalMcp = useLocalMcpStore((state) => state.initialize);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void initializeStorage().then((result) => {
-      if (cancelled) {
-        return;
-      }
-
-      if (result.error) {
-        pushToast('SQLite storage could not be initialized.', 'warning');
-        console.warn(result.error);
-      }
-
-      setIsStorageReady(true);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [pushToast]);
-
-  useEffect(() => {
-    if (isStorageReady) {
-      void hydrateSettings();
-    }
-  }, [hydrateSettings, isStorageReady]);
-
+  const status = useGoogleAccountStore((state) => state.status);
+  const initialize = useGoogleAccountStore((state) => state.initialize);
+  const appReady = status === 'ready';
+  useEffect(() => { void initialize(); }, [initialize]);
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
     document.documentElement.lang = settings.language;
   }, [settings.language, settings.theme]);
-
   useEffect(() => {
-    if (isStorageReady && isHydrated && !isReady) {
-      void initialize(settings.language, settings);
-    }
-  }, [initialize, isHydrated, isReady, isStorageReady, settings]);
-
-  useEffect(() => {
-    if (isStorageReady && isHydrated && !notesReady) {
-      void initializeNotes();
-    }
-  }, [notesReady, initializeNotes, isHydrated, isStorageReady]);
-
-  const appReady = isStorageReady && isHydrated && isReady && notesReady;
-
-  useEffect(() => {
-    if (appReady) {
-      void initializeLocalMcp();
-    }
-  }, [appReady, initializeLocalMcp]);
-
+    if (appReady && isTauri()) void import('./store/useLocalMcpStore').then(({ useLocalMcpStore }) => useLocalMcpStore.getState().initialize());
+  }, [appReady]);
   return (
     <I18nProvider locale={settings.language}>
       <BrowserRouter>
@@ -111,21 +63,28 @@ export function App() {
             </Route>
           </Routes>
         ) : (
-          <AppLoadingScreen />
+          <AppLoadingScreen failed={status === 'error'} waitingForLogin={status === 'login-required'} />
         )}
-        <AppUpdatePrompt enabled={isStorageReady && isHydrated && isReady && notesReady} />
-        <ToastViewport />
+        <GoogleAccountModal />
+        <DesktopBackupCloseGuard />
+        <div className="notification-viewport">
+          <AppUpdatePrompt enabled={appReady && isTauri()} />
+          <CloudTransferBanner />
+          <ToastViewport />
+        </div>
       </BrowserRouter>
     </I18nProvider>
   );
 }
 
-function AppLoadingScreen() {
+function AppLoadingScreen({ failed, waitingForLogin }: { failed: boolean; waitingForLogin: boolean }) {
+  const { t } = useI18n();
   return (
-    <div className="app-loading-screen" aria-busy="true" aria-label="Loading NoteX" role="status">
+    <div className="app-loading-screen" aria-busy={!failed && !waitingForLogin} aria-label="NoteX" role="status">
       <div className="app-loading-screen__content">
-        <span className="app-loading-screen__spinner" aria-hidden="true" />
+        {!failed && !waitingForLogin && <span className="app-loading-screen__spinner" aria-hidden="true" />}
         <span className="app-loading-screen__label">NoteX</span>
+        {failed && <><p>{t('google.storageError')}</p><button type="button" className="secondary-button" onClick={() => window.location.reload()}>{t('google.retry')}</button></>}
       </div>
     </div>
   );

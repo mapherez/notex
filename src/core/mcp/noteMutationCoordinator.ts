@@ -9,6 +9,20 @@ export type McpMutationLease =
   | { acquired: false; blockedBy: 'local' | 'mcp' };
 
 const entries = new Map<string, NoteMutationEntry>();
+const idleListeners = new Set<() => void>();
+export function hasNoteMutations(noteId: string) { return entries.has(noteId); }
+
+export function waitForNoteMutations(timeoutMs = 10_000): Promise<void> {
+  if (!entries.size) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const ready = () => { clearTimeout(timer); idleListeners.delete(ready); resolve(); };
+    const timer = setTimeout(() => {
+      idleListeners.delete(ready);
+      reject(new Error('LOCAL_SAVE_PENDING'));
+    }, timeoutMs);
+    idleListeners.add(ready);
+  });
+}
 
 export function setLocalDraftPending(noteId: string, sourceId: string, pending: boolean) {
   const entry = getOrCreateEntry(noteId);
@@ -90,5 +104,6 @@ function getOrCreateEntry(noteId: string) {
 function pruneEntry(noteId: string, entry: NoteMutationEntry) {
   if (!entry.localDraftSources.size && !entry.localSaveCounts.size && !entry.mcpMutationActive) {
     entries.delete(noteId);
+    if (!entries.size) for (const listener of idleListeners) listener();
   }
 }

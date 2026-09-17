@@ -1,13 +1,18 @@
 mod external_links;
+mod google_auth;
+mod library_context;
 mod mcp_bridge;
 mod mcp_local_server;
 mod mcp_request_broker;
 mod sqlite_storage;
+mod storage_migrations;
 mod update_cleanup;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(library_context::LibraryManager::default())
+        .manage(google_auth::GoogleAuth::default())
         .manage(mcp_bridge::McpManager::new())
         .manage(mcp_local_server::LocalMcpManager::new())
         .manage(mcp_request_broker::McpRequestBroker::new())
@@ -15,6 +20,12 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
+            library_context::notex_library_current,
+            library_context::notex_library_logout,
+            google_auth::notex_google_login,
+            google_auth::notex_google_cancel_login,
+            google_auth::notex_google_activate,
+            google_auth::notex_google_access_token,
             external_links::notex_open_external_url,
             mcp_bridge::notex_mcp_get_state,
             mcp_bridge::notex_mcp_initialize,
@@ -30,6 +41,7 @@ pub fn run() {
             mcp_local_server::notex_local_mcp_start,
             mcp_local_server::notex_local_mcp_stop,
             sqlite_storage::notex_sqlite_status,
+            sqlite_storage::notex_cloud_storage,
             sqlite_storage::notex_sqlite_create_temp_export,
             sqlite_storage::notex_sqlite_copy_export_to,
             sqlite_storage::notex_sqlite_replace_database_from_file,

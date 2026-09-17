@@ -559,7 +559,7 @@
       "logout": "Terminar sessão"
     },
     "dataManagement": {
-      "title": "Exportar / Importar",
+      "title": "Backups e transferências",
       "databasePath": "Base de dados atual",
       "databasePathLoading": "A carregar caminho da base de dados...",
       "databasePathError": "Não foi possível ler o caminho da base de dados",
@@ -627,18 +627,22 @@
     "privacy": {
       "title": "Política de Privacidade",
       "paragraphs": [
-        "O NoteX é uma aplicação desktop local e offline-first. As suas notas, etiquetas, coleções, definições e restantes dados da aplicação são guardados numa base de dados SQLite local no seu dispositivo.",
-        "O NoteX não requer uma conta e não envia a sua base de conhecimento para um servidor do NoteX.",
+          "O NoteX guarda bibliotecas desktop em bases SQLite locais e bibliotecas web em IndexedDB no seu dispositivo. As bibliotecas locais são separadas por conta Google.",
+          "A utilização desktop não requer conta. A versão web requer login Google. O NoteX utiliza o ID da conta Google, email, nome e imagem de perfil para identificar a conta e a biblioteca.",
+          "Quando ligado à Google, o NoteX envia JSON das notas, metadados da biblioteca e anexos diretamente para a área oculta da aplicação na sua própria Google Drive. A Google processa estes dados segundo as suas políticas. As notas e os tokens Google não são guardados num servidor do NoteX.",
+          "Os refresh tokens desktop são guardados através do gestor de credenciais do sistema operativo. Os access tokens web ficam no armazenamento de sessão até logout ou expiração. Terminar sessão preserva as bibliotecas locais da conta; limpar os dados do site no browser pode remover notas locais e backups pendentes.",
+          "O website público e o host da webapp recebem pedidos HTTP normais e podem registar informação de ligação nos logs do servidor. Login Google, acesso à Drive, procura de atualizações e downloads requerem internet.",
         "Quando inicia o MCP local e liga um cliente de AI, os dados das notas pedidos por esse cliente são enviados através da ligação MCP local. O NoteX não guarda uma cópia adicional dessa troca, mas o cliente de AI ligado pode processar o conteúdo de acordo com a sua própria política de privacidade.",
         "Quando exporta os seus dados, o NoteX cria localmente um pacote .notex com a sua base de dados e os ficheiros anexados. É da sua responsabilidade decidir onde guarda ou partilha esse pacote exportado.",
         "Quando importa um pacote, o NoteX substitui a base de dados local e a pasta de ficheiros atuais pelo pacote .notex selecionado.",
-        "O NoteX não vende os seus dados, não utiliza as suas notas para publicidade e não partilha a sua base de dados local com terceiros."
+          "O NoteX não vende os seus dados nem utiliza as suas notas para publicidade. Os dados são transferidos para a Google ou para um cliente de AI ligado apenas através das funcionalidades correspondentes descritas acima."
       ]
     },
     "terms": {
       "title": "Termos de Serviço",
       "paragraphs": [
-        "O NoteX é disponibilizado como software desktop local para gestão de conhecimento pessoal.",
+          "O NoteX é disponibilizado como software desktop e aplicação web para gestão de conhecimento pessoal, com backup na Google Drive.",
+          "Aguarde a conclusão dos backups antes de fechar a app ou mudar de dispositivo. A utilização simultânea não é bloqueada. O armazenamento do browser pode ser limpo por si ou pelo browser, e o acesso Google pode expirar ou ser revogado.",
         "É responsável pelas suas notas, cópias de segurança, pacotes exportados e por quaisquer dados que decida importar ou substituir.",
         "A importação de um pacote .notex substitui a base de dados local e a pasta de ficheiros atuais. Confirme as suas cópias de segurança antes de importar.",
         "Deve manter as suas próprias cópias de segurança se as suas notas forem importantes. O NoteX não consegue recuperar dados eliminados, substituídos ou perdidos fora da aplicação.",

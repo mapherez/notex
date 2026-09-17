@@ -1,8 +1,4 @@
 .app-update-banner {
-  position: fixed;
-  left: var(--nx-space-6);
-  bottom: var(--nx-space-6);
-  z-index: 95;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   width: min(34rem, calc(100vw - 2rem));

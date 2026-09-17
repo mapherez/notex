@@ -4,6 +4,9 @@ NoteX has two package formats: one for an entire workspace and one for a single 
 
 ## Choose the right package
 
+The package import/export actions below are desktop features. For automatic
+backups and access from the browser, see [Google Drive and browser mode](google-drive-web.md).
+
 | Format | Contains | Use it for |
 | --- | --- | --- |
 | `.notex` | The workspace database and attached files | Full backups and moving a complete library |

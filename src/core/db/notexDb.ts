@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { desktopInvoke as invoke } from '../storage/desktopInvoke';
 import type {
   ActivityItem,
   Collection,
@@ -44,7 +44,7 @@ export type StorageTable<T> = {
   where: (index: string) => WhereClause<T>;
 };
 
-type NoteXStorageDatabase = {
+export type NoteXStorageDatabase = {
   notes: StorageTable<Note>;
   noteBlocks: StorageTable<NoteBlock>;
   noteFiles: StorageTable<NoteFile>;
@@ -236,7 +236,13 @@ class SqliteWhereQuery<T> implements WhereQuery<T> {
   }
 }
 
-export const db: NoteXStorageDatabase = new SqliteStorageAdapter();
+export let db: NoteXStorageDatabase = new SqliteStorageAdapter();
+
+// Consumers import this live binding; changing libraries must happen only after
+// the account coordinator has drained writes and reset the UI stores.
+export function setStorageDatabase(database: NoteXStorageDatabase) {
+  db = database;
+}
 
 export async function seedDatabaseIfEmpty(bundle: MockDataBundle, settings: UserSettings) {
   const notesCount = await db.notes.count();

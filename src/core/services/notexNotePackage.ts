@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { desktopInvoke as invoke } from '../storage/desktopInvoke';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import type { SqliteExportInfo } from './sqliteDataManagement';
 

@@ -9,6 +9,7 @@ import { setLocalDraftPending } from './noteMutationCoordinator';
 const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }));
 
 vi.mock('@tauri-apps/api/core', () => ({
+  isTauri: () => true,
   convertFileSrc: (path: string) => path,
   invoke: invokeMock,
 }));
@@ -514,6 +515,7 @@ describe('dispatchMcpCommand', () => {
     expect(updated?.blocks?.map((block) => [block.id, block.sortOrder])).toEqual([['block-later', 0]]);
     expect(updated?.files).toEqual([]);
     expect(invokeMock).toHaveBeenCalledWith('notex_note_file_delete', {
+      libraryId: null,
       relativePath: 'note-active/diagram.png',
     });
   });
@@ -641,6 +643,7 @@ describe('dispatchMcpCommand', () => {
     expect(deleted).toEqual({ noteId: trashWithFile.id, deleted: true });
     expect(useNotesStore.getState().notes.map((note) => note.id)).toEqual([activeNote.id]);
     expect(invokeMock).toHaveBeenCalledWith('notex_note_file_delete', {
+      libraryId: null,
       relativePath: 'note-trash/archive.pdf',
     });
   });

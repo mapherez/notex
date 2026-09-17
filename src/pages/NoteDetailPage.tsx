@@ -1,6 +1,7 @@
 import {
   ChevronLeft,
   Check,
+  Cloud,
   ExternalLink,
   FileText,
   Folder,
@@ -56,6 +57,8 @@ import { useAppStore } from '../store/useAppStore';
 import { useNotesStore, emptyTiptapDocument } from '../store/useNotesStore';
 import { useKnowledgeStore } from '../store/useKnowledgeStore';
 import { useToastStore } from '../store/useToastStore';
+import { useCloudStore } from '../store/useCloudStore';
+import { isTauri } from '@tauri-apps/api/core';
 
 type DeleteBlockState = null | {
   blockId: string;
@@ -135,6 +138,20 @@ export function NoteDetailPage() {
   const tocRefreshFrameRef = useRef<number | null>(null);
   const [toolbarTarget, setToolbarTarget] = useState<NoteTiptapToolbarTarget | null>(null);
   const note = isNewNote ? undefined : notes.find((item) => item.id === id);
+  const ensureAvailable = useCloudStore((state) => state.ensureAvailable);
+  const transferError = useCloudStore((state) => state.error);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const cloudAccountId = useCloudStore((state) => state.accountId);
+  const excludedNotes = useCloudStore((state) => state.excludedNotes);
+  const toggleExcluded = useCloudStore((state) => state.toggleExcluded);
+  useEffect(() => {
+    let active = true;
+    setDownloadError(null);
+    if (note?.cloudOnly) void ensureAvailable(note.id).catch((error) => {
+      if (active) setDownloadError(error instanceof Error ? error.message : String(error));
+    });
+    return () => { active = false; };
+  }, [note?.id, note?.cloudOnly, ensureAvailable]);
 
   useEffect(() => {
     if (!notesReady || !isNewNote || createStartedRef.current) {
@@ -147,10 +164,10 @@ export function NoteDetailPage() {
   }, [createNote, notesReady, isNewNote, navigate, searchParams, settings.primaryCollectionId]);
 
   useEffect(() => {
-    if (note && !isNewNote) {
+    if (note && !note.cloudOnly && !isNewNote) {
       void markOpened(note.id);
     }
-  }, [isNewNote, markOpened, note?.id]);
+  }, [isNewNote, markOpened, note?.id, note?.cloudOnly]);
 
   useEffect(() => {
     if (linkOpen) {
@@ -201,6 +218,7 @@ export function NoteDetailPage() {
   });
 
   function handleExportNote() {
+    if (!isTauri()) return;
     if (settings.confirmNoteExport) {
       setNoteExportConfirmOpen(true);
       return;
@@ -383,6 +401,14 @@ export function NoteDetailPage() {
   if (!notesReady || isNewNote) {
     return null;
   }
+  if (note?.cloudOnly) return <div className="page-content">
+    <button className="back-button" type="button" onClick={() => navigate(-1)}><ChevronLeft />{t('common.back')}</button>
+    <p role="status">{t(transferError || downloadError ? 'cloud.noteUnavailable' : 'cloud.loadingNote')}</p>
+    {(transferError || downloadError) && <button className="secondary-button" type="button" onClick={() => {
+      setDownloadError(null);
+      void ensureAvailable(note.id).catch((error) => setDownloadError(String(error)));
+    }}>{t('google.retry')}</button>}
+  </div>;
 
   if (!note) {
     return (
@@ -569,6 +595,9 @@ export function NoteDetailPage() {
           />
         </div>
         <div className="document-actions">
+          {cloudAccountId && <button className="icon-button" type="button" aria-label={t('cloud.noteBackup')}
+            title={t('cloud.noteBackup')} aria-pressed={!excludedNotes.includes(note.id)}
+            onClick={() => void toggleExcluded(note.id)}><Cloud /></button>}
           <button
             className={note.isFavorite ? 'icon-button document-actions__favorite is-active' : 'icon-button document-actions__favorite'}
             type="button"
@@ -582,6 +611,7 @@ export function NoteDetailPage() {
             className="icon-button"
             type="button"
             aria-label={t('notes.exportNote')}
+            hidden={!isTauri()}
             disabled={isExportingNote}
             onClick={() => void handleExportNote()}
           >
@@ -890,7 +920,7 @@ export function NoteDetailPage() {
                 {note.files.map((file) => (
                   <li key={file.id}>
                     {file.kind === 'image' ? <ImageIcon /> : <FileText />}
-                    <span>{file.originalName}</span>
+                    <span title={file.originalName}>{file.originalName}</span>
                     <span className="side-list-actions">
                       <button className="icon-button" type="button" aria-label={t('common.open')} onClick={() => void openNoteAttachment(file.relativePath)}>
                         <FileText />

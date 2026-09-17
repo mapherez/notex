@@ -13,12 +13,13 @@ use tauri::{AppHandle, Manager};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
-const SCHEMA_VERSION: &str = "3";
+const SCHEMA_VERSION: &str = crate::storage_migrations::CURRENT_VERSION;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SqliteStatus {
     initialized: bool,
+    should_seed_demo: bool,
     database_path: String,
     local_data_directory: String,
     files_directory: String,
@@ -83,7 +84,11 @@ struct TableInfo {
 }
 
 #[tauri::command]
-pub fn notex_sqlite_status(app: AppHandle) -> Result<SqliteStatus, String> {
+pub fn notex_sqlite_status(
+    app: AppHandle,
+    library_id: Option<String>,
+) -> Result<SqliteStatus, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let database_path = database_path(&app)?;
     let backup_directory = backup_directory(&app)?;
     let temp_directory = temp_directory(&app)?;
@@ -94,9 +99,18 @@ pub fn notex_sqlite_status(app: AppHandle) -> Result<SqliteStatus, String> {
     fs::create_dir_all(&backup_directory).map_err(to_string)?;
     fs::create_dir_all(&temp_directory).map_err(to_string)?;
     fs::create_dir_all(&files_directory).map_err(to_string)?;
+    let note_count: i64 = conn
+        .query_row("SELECT count(*) FROM notes", [], |row| row.get(0))
+        .map_err(to_string)?;
+    if note_count > 0 {
+        conn.execute("INSERT OR IGNORE INTO app_metadata (key, value, updated_at) VALUES ('demo_seeded', 'true', datetime('now'))", []).map_err(to_string)?;
+    }
 
     Ok(SqliteStatus {
         initialized: existed || read_metadata(&conn, "sqlite_schema_version")?.is_some(),
+        should_seed_demo: library_id.is_none()
+            && note_count == 0
+            && read_metadata(&conn, "demo_seeded")?.is_none(),
         database_path: database_path.to_string_lossy().to_string(),
         local_data_directory: local_data_directory(&app)?.to_string_lossy().to_string(),
         files_directory: files_directory.to_string_lossy().to_string(),
@@ -106,7 +120,11 @@ pub fn notex_sqlite_status(app: AppHandle) -> Result<SqliteStatus, String> {
 }
 
 #[tauri::command]
-pub fn notex_sqlite_create_temp_export(app: AppHandle) -> Result<SqliteExportInfo, String> {
+pub fn notex_sqlite_create_temp_export(
+    app: AppHandle,
+    library_id: Option<String>,
+) -> Result<SqliteExportInfo, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let conn = open_connection(&app)?;
     ensure_schema(&conn)?;
     let created_at = timestamp_for_filename();
@@ -131,9 +149,12 @@ pub fn notex_sqlite_create_temp_export(app: AppHandle) -> Result<SqliteExportInf
 
 #[tauri::command]
 pub fn notex_sqlite_copy_export_to(
+    app: AppHandle,
     temp_path: String,
     destination_path: String,
+    library_id: Option<String>,
 ) -> Result<String, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let source = PathBuf::from(temp_path);
     let destination = PathBuf::from(destination_path);
     if !source.is_file() {
@@ -150,7 +171,11 @@ pub fn notex_sqlite_copy_export_to(
 }
 
 #[tauri::command]
-pub fn notex_package_create_temp_export(app: AppHandle) -> Result<SqliteExportInfo, String> {
+pub fn notex_package_create_temp_export(
+    app: AppHandle,
+    library_id: Option<String>,
+) -> Result<SqliteExportInfo, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let conn = open_connection(&app)?;
     ensure_schema(&conn)?;
     let created_at = timestamp_for_filename();
@@ -192,9 +217,12 @@ pub fn notex_package_create_temp_export(app: AppHandle) -> Result<SqliteExportIn
 
 #[tauri::command]
 pub fn notex_package_copy_export_to(
+    app: AppHandle,
     temp_path: String,
     destination_path: String,
+    library_id: Option<String>,
 ) -> Result<String, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let source = PathBuf::from(temp_path);
     let destination = PathBuf::from(destination_path);
     if !source.is_file() {
@@ -215,7 +243,9 @@ pub fn notex_package_copy_export_to(
 pub fn notex_note_package_create_temp_export(
     app: AppHandle,
     note_id: String,
+    library_id: Option<String>,
 ) -> Result<SqliteExportInfo, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let conn = open_connection(&app)?;
     ensure_schema(&conn)?;
 
@@ -298,9 +328,12 @@ pub fn notex_note_package_create_temp_export(
 
 #[tauri::command]
 pub fn notex_note_package_copy_export_to(
+    app: AppHandle,
     temp_path: String,
     destination_path: String,
+    library_id: Option<String>,
 ) -> Result<String, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let source = PathBuf::from(temp_path);
     let destination = PathBuf::from(destination_path);
     if !source.is_file() {
@@ -321,7 +354,9 @@ pub fn notex_note_package_copy_export_to(
 pub fn notex_note_package_import_from_file(
     app: AppHandle,
     source_path: String,
+    library_id: Option<String>,
 ) -> Result<NotePackageImportInfo, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let source = PathBuf::from(source_path);
     if !source.is_file() {
         return Err("Selected NoteX note export was not found".to_string());
@@ -587,7 +622,12 @@ pub fn notex_note_package_import_from_file(
 }
 
 #[tauri::command]
-pub fn notex_package_replace_from_file(app: AppHandle, source_path: String) -> Result<(), String> {
+pub fn notex_package_replace_from_file(
+    app: AppHandle,
+    source_path: String,
+    library_id: Option<String>,
+) -> Result<(), String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let source = PathBuf::from(source_path);
     if !source.is_file() {
         return Err("Selected NoteX package was not found".to_string());
@@ -604,6 +644,7 @@ pub fn notex_package_replace_from_file(app: AppHandle, source_path: String) -> R
 
     let incoming_database = temp_dir.join("notex.sqlite");
     validate_sqlite_database(&incoming_database)?;
+    prepare_imported_database(&incoming_database)?;
 
     let database = database_path(&app)?;
     let files = files_directory(&app)?;
@@ -664,7 +705,9 @@ pub fn notex_note_file_import(
     source_path: String,
     note_id: String,
     block_id: Option<String>,
+    library_id: Option<String>,
 ) -> Result<FileImportInfo, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let source = PathBuf::from(source_path);
     if !source.is_file() {
         return Err("Selected file was not found".to_string());
@@ -720,7 +763,9 @@ pub fn notex_note_file_import(
 pub fn notex_note_file_absolute_path(
     app: AppHandle,
     relative_path: String,
+    library_id: Option<String>,
 ) -> Result<String, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let relative = safe_relative_files_path(&relative_path)?;
     Ok(files_directory(&app)?
         .join(relative)
@@ -729,7 +774,12 @@ pub fn notex_note_file_absolute_path(
 }
 
 #[tauri::command]
-pub fn notex_note_file_open(app: AppHandle, relative_path: String) -> Result<(), String> {
+pub fn notex_note_file_open(
+    app: AppHandle,
+    relative_path: String,
+    library_id: Option<String>,
+) -> Result<(), String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let relative = safe_relative_files_path(&relative_path)?;
     open_file(&files_directory(&app)?.join(relative))
 }
@@ -739,7 +789,9 @@ pub fn notex_note_file_copy_to(
     app: AppHandle,
     relative_path: String,
     destination_path: String,
+    library_id: Option<String>,
 ) -> Result<String, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let relative = safe_relative_files_path(&relative_path)?;
     let source = files_directory(&app)?.join(relative);
     if !source.is_file() {
@@ -754,7 +806,12 @@ pub fn notex_note_file_copy_to(
 }
 
 #[tauri::command]
-pub fn notex_note_file_delete(app: AppHandle, relative_path: String) -> Result<(), String> {
+pub fn notex_note_file_delete(
+    app: AppHandle,
+    relative_path: String,
+    library_id: Option<String>,
+) -> Result<(), String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let relative = safe_relative_files_path(&relative_path)?;
     let source = files_directory(&app)?.join(relative);
     if source.is_file() {
@@ -767,7 +824,9 @@ pub fn notex_note_file_delete(app: AppHandle, relative_path: String) -> Result<(
 pub fn notex_sqlite_replace_database_from_file(
     app: AppHandle,
     source_path: String,
+    library_id: Option<String>,
 ) -> Result<(), String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let source = PathBuf::from(source_path);
     if !source.is_file() {
         return Err("Selected database file was not found".to_string());
@@ -794,6 +853,7 @@ pub fn notex_sqlite_replace_database_from_file(
 
     fs::copy(&source, &incoming).map_err(to_string)?;
     validate_sqlite_database(&incoming)?;
+    prepare_imported_database(&incoming)?;
 
     let replace_result = replace_file(&incoming, &database);
     if let Err(error) = replace_result {
@@ -818,7 +878,11 @@ pub fn notex_sqlite_replace_database_from_file(
 }
 
 #[tauri::command]
-pub fn notex_sqlite_open_database_folder(app: AppHandle) -> Result<(), String> {
+pub fn notex_sqlite_open_database_folder(
+    app: AppHandle,
+    library_id: Option<String>,
+) -> Result<(), String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let database = database_path(&app)?;
     let folder = database
         .parent()
@@ -827,14 +891,22 @@ pub fn notex_sqlite_open_database_folder(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn notex_sqlite_open_local_data_folder(app: AppHandle) -> Result<(), String> {
+pub fn notex_sqlite_open_local_data_folder(
+    app: AppHandle,
+    library_id: Option<String>,
+) -> Result<(), String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let folder = local_data_directory(&app)?;
     fs::create_dir_all(&folder).map_err(to_string)?;
     open_folder(&folder)
 }
 
 #[tauri::command]
-pub fn notex_sqlite_open_files_folder(app: AppHandle) -> Result<(), String> {
+pub fn notex_sqlite_open_files_folder(
+    app: AppHandle,
+    library_id: Option<String>,
+) -> Result<(), String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let folder = files_directory(&app)?;
     fs::create_dir_all(&folder).map_err(to_string)?;
     open_folder(&folder)
@@ -845,7 +917,9 @@ pub fn notex_sqlite_get(
     app: AppHandle,
     table: String,
     key: String,
+    library_id: Option<String>,
 ) -> Result<Option<JsonValue>, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let conn = open_connection(&app)?;
     ensure_schema(&conn)?;
     let info = table_info(&table)?;
@@ -864,14 +938,24 @@ pub fn notex_sqlite_get(
 }
 
 #[tauri::command]
-pub fn notex_sqlite_read_table(app: AppHandle, table: String) -> Result<Vec<JsonValue>, String> {
+pub fn notex_sqlite_read_table(
+    app: AppHandle,
+    table: String,
+    library_id: Option<String>,
+) -> Result<Vec<JsonValue>, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let conn = open_connection(&app)?;
     ensure_schema(&conn)?;
     read_payloads(&conn, &table, None, &[])
 }
 
 #[tauri::command]
-pub fn notex_sqlite_count(app: AppHandle, table: String) -> Result<i64, String> {
+pub fn notex_sqlite_count(
+    app: AppHandle,
+    table: String,
+    library_id: Option<String>,
+) -> Result<i64, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let conn = open_connection(&app)?;
     ensure_schema(&conn)?;
     let info = table_info(&table)?;
@@ -886,7 +970,9 @@ pub fn notex_sqlite_where_read(
     table: String,
     index: String,
     values: Vec<JsonValue>,
+    library_id: Option<String>,
 ) -> Result<Vec<JsonValue>, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     let conn = open_connection(&app)?;
     ensure_schema(&conn)?;
     read_payloads(&conn, &table, Some(&index), &values)
@@ -898,7 +984,9 @@ pub fn notex_sqlite_where_count(
     table: String,
     index: String,
     values: Vec<JsonValue>,
+    library_id: Option<String>,
 ) -> Result<i64, String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     if values.is_empty() {
         return Ok(0);
     }
@@ -921,7 +1009,9 @@ pub fn notex_sqlite_where_count(
 pub fn notex_sqlite_transaction(
     app: AppHandle,
     operations: Vec<SqliteOperation>,
+    library_id: Option<String>,
 ) -> Result<(), String> {
+    let _library_guard = crate::library_context::guard(&app, library_id.as_deref())?;
     if operations.is_empty() {
         return Ok(());
     }
@@ -930,12 +1020,268 @@ pub fn notex_sqlite_transaction(
     ensure_schema(&conn)?;
     let tx = conn.transaction().map_err(to_string)?;
     for operation in operations {
+        if operation.table == "notes" {
+            tx.execute("INSERT OR IGNORE INTO app_metadata (key, value, updated_at) VALUES ('demo_seeded', 'true', datetime('now'))", []).map_err(to_string)?;
+        }
         apply_operation(&tx, operation)?;
     }
     tx.commit().map_err(to_string)?;
     Ok(())
 }
 
+#[tauri::command]
+pub fn notex_cloud_storage(
+    app: AppHandle,
+    library_id: String,
+    action: String,
+    input: JsonValue,
+) -> Result<JsonValue, String> {
+    use base64::Engine;
+    let _guard = crate::library_context::guard(&app, Some(&library_id))?;
+    let mut conn = open_connection(&app)?;
+    ensure_schema(&conn)?;
+    let id = input.get("id").and_then(JsonValue::as_str).unwrap_or("");
+    match action.as_str() {
+        "state" => {
+            let raw: Option<String> = conn
+                .query_row("SELECT payload FROM cloud_state WHERE id = ?1", [id], |r| {
+                    r.get(0)
+                })
+                .optional()
+                .map_err(to_string)?;
+            raw.map(|raw| serde_json::from_str(&raw).map_err(to_string))
+                .unwrap_or(Ok(JsonValue::Null))
+        }
+        "putState" => {
+            conn.execute("INSERT INTO cloud_state VALUES (?1, ?2) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload", params![id, input["value"].to_string()]).map_err(to_string)?;
+            Ok(JsonValue::Null)
+        }
+        "pending" => {
+            let mut statement = conn.prepare("SELECT entity_id, kind, change_token, version, deleted, first_changed_at, last_changed_at FROM cloud_outbox ORDER BY first_changed_at").map_err(to_string)?;
+            let values = statement.query_map([], |r| Ok(serde_json::json!({
+                "entityId":r.get::<_,String>(0)?, "kind":r.get::<_,String>(1)?, "changeToken":r.get::<_,String>(2)?,
+                "version":r.get::<_,i64>(3)?, "deleted":r.get::<_,bool>(4)?, "firstChangedAt":r.get::<_,i64>(5)?, "lastChangedAt":r.get::<_,i64>(6)?
+            }))).map_err(to_string)?.collect::<Result<Vec<_>,_>>().map_err(to_string)?;
+            Ok(JsonValue::Array(values))
+        }
+        "acknowledge" => {
+            conn.execute(
+                "DELETE FROM cloud_outbox WHERE entity_id = ?1 AND change_token = ?2",
+                params![id, input["token"].as_str()],
+            )
+            .map_err(to_string)?;
+            Ok(JsonValue::Null)
+        }
+        "applyOrganization" => {
+            let tx = conn
+                .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
+                .map_err(to_string)?;
+            let pending: bool = tx
+                .query_row(
+                    "SELECT EXISTS(SELECT 1 FROM cloud_outbox WHERE entity_id = '@library')",
+                    [],
+                    |r| r.get(0),
+                )
+                .map_err(to_string)?;
+            if pending {
+                return Ok(JsonValue::Null);
+            }
+            let catalog = &input["catalog"];
+            tx.execute("DELETE FROM tags", []).map_err(to_string)?;
+            tx.execute("DELETE FROM collections", [])
+                .map_err(to_string)?;
+            for value in catalog["tags"].as_array().ok_or("Invalid catalog")? {
+                insert_tag(&tx, value)?;
+            }
+            for value in catalog["collections"].as_array().ok_or("Invalid catalog")? {
+                insert_collection(&tx, value)?;
+            }
+            if let Some(organization) = catalog["organization"].as_object() {
+                for mut settings in read_payloads(&tx, "userSettings", None, &[])? {
+                    for field in [
+                        "primaryCollectionId",
+                        "favoriteTagIds",
+                        "pinnedNoteIds",
+                        "quickPinNoteIds",
+                        "noteHiddenPanelIds",
+                    ] {
+                        if let Some(value) = organization.get(field) {
+                            settings[field] = value.clone();
+                        }
+                    }
+                    insert_user_settings(&tx, &settings)?;
+                }
+            }
+            tx.execute("DELETE FROM cloud_outbox WHERE entity_id = '@library'", [])
+                .map_err(to_string)?;
+            tx.commit().map_err(to_string)?;
+            Ok(JsonValue::Null)
+        }
+        "snapshot" => {
+            let tx = conn.transaction().map_err(to_string)?;
+            let note =
+                read_payloads(&tx, "notes", Some("id"), &[JsonValue::String(id.into())])?.pop();
+            let token: Option<String> = tx
+                .query_row(
+                    "SELECT change_token FROM cloud_outbox WHERE entity_id = ?1",
+                    [id],
+                    |r| r.get(0),
+                )
+                .optional()
+                .map_err(to_string)?;
+            let version = note
+                .as_ref()
+                .and_then(|n| n.get("version"))
+                .cloned()
+                .unwrap_or(JsonValue::Null);
+            let backup = if let Some(note) = note {
+                let blocks = read_payloads(
+                    &tx,
+                    "noteBlocks",
+                    Some("noteId"),
+                    &[JsonValue::String(id.into())],
+                )?;
+                let files = read_payloads(
+                    &tx,
+                    "noteFiles",
+                    Some("noteId"),
+                    &[JsonValue::String(id.into())],
+                )?;
+                let tags: Vec<_> = read_payloads(&tx, "tags", None, &[])?
+                    .into_iter()
+                    .filter(|tag| {
+                        string_array_field(&note, "tagIds")
+                            .contains(&opt_text(tag, "id").unwrap_or_default())
+                    })
+                    .collect();
+                let collection = read_payloads(
+                    &tx,
+                    "collections",
+                    Some("id"),
+                    &[note["collectionId"].clone()],
+                )?
+                .pop();
+                serde_json::json!({"schemaVersion":1, "exportedAt":timestamp_for_filename(), "note":note, "blocks":blocks, "files":files, "tags":tags, "collection":collection, "linkedNotes":[]})
+            } else {
+                JsonValue::Null
+            };
+            Ok(serde_json::json!({"backup":backup,"version":version,"changeToken":token}))
+        }
+        "readBlob" => {
+            let path = files_directory(&app)?.join(safe_relative_files_path(id)?);
+            let root = crate::library_context::root(&app)?
+                .canonicalize()
+                .map_err(to_string)?
+                .join("files");
+            if !path.canonicalize().map_err(to_string)?.starts_with(root) {
+                return Err("Invalid attachment path".into());
+            }
+            Ok(JsonValue::String(
+                base64::engine::general_purpose::STANDARD
+                    .encode(fs::read(path).map_err(to_string)?),
+            ))
+        }
+        "writeBlob" => {
+            let path = files_directory(&app)?.join(safe_relative_files_path(id)?);
+            let parent = path.parent().ok_or("Invalid attachment path")?;
+            fs::create_dir_all(parent).map_err(to_string)?;
+            let root = crate::library_context::root(&app)?
+                .canonicalize()
+                .map_err(to_string)?
+                .join("files");
+            if !parent.canonicalize().map_err(to_string)?.starts_with(&root) {
+                return Err("Invalid attachment path".into());
+            }
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(input["base64"].as_str().ok_or("Invalid attachment data")?)
+                .map_err(to_string)?;
+            // Downloads use fresh paths; never truncate an attachment in use.
+            let mut file = fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(path)
+                .map_err(to_string)?;
+            file.write_all(&bytes).map_err(to_string)?;
+            file.sync_all().map_err(to_string)?;
+            Ok(JsonValue::Null)
+        }
+        "apply" => {
+            let tx = conn
+                .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
+                .map_err(to_string)?;
+            let existing =
+                read_payloads(&tx, "notes", Some("id"), &[JsonValue::String(id.into())])?.pop();
+            let current_version = existing
+                .as_ref()
+                .and_then(|n| n.get("version"))
+                .cloned()
+                .unwrap_or(JsonValue::Null);
+            let current_token: Option<String> = tx
+                .query_row(
+                    "SELECT change_token FROM cloud_outbox WHERE entity_id = ?1",
+                    [id],
+                    |r| r.get(0),
+                )
+                .optional()
+                .map_err(to_string)?;
+            if current_version != input["expectedVersion"]
+                || serde_json::to_value(current_token).map_err(to_string)? != input["expectedToken"]
+            {
+                return Err("LOCAL_NOTE_CHANGED".into());
+            }
+            if let Some(backup) = input.get("backup").filter(|value| !value.is_null()) {
+                if backup["note"]["id"].as_str() != Some(id) {
+                    return Err("Invalid note identity".into());
+                }
+                for (table, records) in [("noteBlocks", "blocks"), ("noteFiles", "files")] {
+                    for record in backup[records].as_array().ok_or("Invalid note records")? {
+                        if record["noteId"].as_str() != Some(id) {
+                            return Err("Invalid note relationship".into());
+                        }
+                        let existing =
+                            read_payloads(&tx, table, Some("id"), &[record["id"].clone()])?;
+                        if existing
+                            .iter()
+                            .any(|value| value["noteId"].as_str() != Some(id))
+                        {
+                            return Err("Note record identity collision".into());
+                        }
+                        if table == "noteFiles"
+                            && !files_directory(&app)?
+                                .join(safe_relative_files_path(
+                                    record["relativePath"]
+                                        .as_str()
+                                        .ok_or("Invalid attachment path")?,
+                                )?)
+                                .is_file()
+                        {
+                            return Err("Missing downloaded attachment".into());
+                        }
+                    }
+                }
+                where_delete(&tx, "noteBlocks", "noteId", &[JsonValue::String(id.into())])?;
+                where_delete(&tx, "noteFiles", "noteId", &[JsonValue::String(id.into())])?;
+                insert_note(&tx, &backup["note"])?;
+                for block in backup["blocks"].as_array().unwrap() {
+                    insert_note_block(&tx, block)?;
+                }
+                for file in backup["files"].as_array().unwrap() {
+                    insert_note_file(&tx, file)?;
+                }
+            } else {
+                where_delete(&tx, "noteBlocks", "noteId", &[JsonValue::String(id.into())])?;
+                where_delete(&tx, "noteFiles", "noteId", &[JsonValue::String(id.into())])?;
+                delete_key(&tx, "notes", id)?;
+            }
+            tx.execute("DELETE FROM cloud_outbox WHERE entity_id = ?1", [id])
+                .map_err(to_string)?;
+            tx.execute("INSERT INTO cloud_state VALUES (?1, ?2) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload", params![format!("baseline:{id}"), input["entry"].to_string()]).map_err(to_string)?;
+            tx.commit().map_err(to_string)?;
+            Ok(JsonValue::Null)
+        }
+        _ => Err("Unknown cloud storage operation".into()),
+    }
+}
 fn open_connection(app: &AppHandle) -> Result<Connection, String> {
     let path = database_path(app)?;
     if let Some(parent) = path.parent() {
@@ -949,11 +1295,7 @@ fn open_connection(app: &AppHandle) -> Result<Connection, String> {
 }
 
 fn database_path(app: &AppHandle) -> Result<PathBuf, String> {
-    Ok(app
-        .path()
-        .app_data_dir()
-        .map_err(to_string)?
-        .join("notex.sqlite"))
+    Ok(crate::library_context::root(app)?.join("notex.sqlite"))
 }
 
 fn local_data_directory(app: &AppHandle) -> Result<PathBuf, String> {
@@ -961,21 +1303,369 @@ fn local_data_directory(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 fn files_directory(app: &AppHandle) -> Result<PathBuf, String> {
-    Ok(app.path().app_data_dir().map_err(to_string)?.join("files"))
+    Ok(crate::library_context::root(app)?.join("files"))
 }
 
 fn backup_directory(app: &AppHandle) -> Result<PathBuf, String> {
-    Ok(app
-        .path()
-        .app_data_dir()
-        .map_err(to_string)?
-        .join("backups"))
+    Ok(crate::library_context::root(app)?.join("backups"))
 }
 
 fn temp_directory(app: &AppHandle) -> Result<PathBuf, String> {
-    Ok(app.path().app_data_dir().map_err(to_string)?.join("_temp"))
+    Ok(crate::library_context::root(app)?.join("_temp"))
 }
 
+#[cfg(test)]
+pub(crate) fn merge_local_library(source_root: &Path, target_root: &Path) -> Result<(), String> {
+    merge_local_library_with_choices(source_root, target_root, &HashMap::new())
+}
+
+pub(crate) fn merge_local_library_with_choices(
+    source_root: &Path,
+    target_root: &Path,
+    resolutions: &HashMap<String, String>,
+) -> Result<(), String> {
+    let source_root = &source_root.canonicalize().map_err(to_string)?;
+    let target_root = &target_root.canonicalize().map_err(to_string)?;
+    if source_root == target_root {
+        return Err("Cannot adopt a library into itself".into());
+    }
+    let source_path = source_root.join("notex.sqlite");
+    let source = Connection::open(&source_path).map_err(to_string)?;
+    ensure_schema(&source)?;
+    let mut target = Connection::open(target_root.join("notex.sqlite")).map_err(to_string)?;
+    ensure_schema(&target)?;
+    // Attached databases use rollback journals so their changes commit together.
+    source
+        .pragma_update(None, "journal_mode", "DELETE")
+        .map_err(to_string)?;
+    target
+        .pragma_update(None, "journal_mode", "DELETE")
+        .map_err(to_string)?;
+    let notes = read_payloads(&source, "notes", None, &[])?;
+    if notes.is_empty()
+        && read_payloads(&source, "tags", None, &[])?.is_empty()
+        && read_payloads(&source, "collections", None, &[])?.is_empty()
+    {
+        source.execute("INSERT OR IGNORE INTO app_metadata (key, value, updated_at) VALUES ('demo_seeded', 'true', datetime('now'))", []).map_err(to_string)?;
+        return Ok(());
+    }
+    for (conn, root) in [(&source, source_root), (&target, target_root)] {
+        fs::create_dir_all(root.join("backups")).map_err(to_string)?;
+        let backup = root.join("backups").join(format!(
+            "before-account-adoption-{}.sqlite",
+            timestamp_for_id()
+        ));
+        conn.execute("VACUUM INTO ?1", [backup.to_string_lossy().as_ref()])
+            .map_err(to_string)?;
+        validate_sqlite_database(&backup)?;
+    }
+    target
+        .execute(
+            "ATTACH DATABASE ?1 AS local_source",
+            [source_path.to_string_lossy().as_ref()],
+        )
+        .map_err(to_string)?;
+    let tx = target
+        .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
+        .map_err(to_string)?;
+    // The source write lock also prevents another process changing it mid-copy.
+    tx.execute(
+        "UPDATE local_source.app_metadata SET value = value WHERE key = 'sqlite_schema_version'",
+        [],
+    )
+    .map_err(to_string)?;
+    let notes = read_payloads(&source, "notes", None, &[])?;
+    let mut obsolete_files = Vec::new();
+    for mut note in notes {
+        let id = text(&note, "id", "")?;
+        let existing =
+            read_payloads(&tx, "notes", Some("id"), &[JsonValue::String(id.clone())])?.pop();
+        let mut incoming_version = note.get("version").and_then(JsonValue::as_i64).unwrap_or(1);
+        let existing_version = existing
+            .as_ref()
+            .and_then(|value| value.get("version"))
+            .and_then(JsonValue::as_i64)
+            .unwrap_or(0);
+        let mut blocks = read_payloads(
+            &source,
+            "noteBlocks",
+            Some("noteId"),
+            &[JsonValue::String(id.clone())],
+        )?;
+        let mut files = read_payloads(
+            &source,
+            "noteFiles",
+            Some("noteId"),
+            &[JsonValue::String(id.clone())],
+        )?;
+        if let Some(existing) = &existing {
+            if incoming_version == existing_version {
+                let old_blocks = read_payloads(
+                    &tx,
+                    "noteBlocks",
+                    Some("noteId"),
+                    &[JsonValue::String(id.clone())],
+                )?;
+                let old_files = read_payloads(
+                    &tx,
+                    "noteFiles",
+                    Some("noteId"),
+                    &[JsonValue::String(id.clone())],
+                )?;
+                if comparable_bundle(existing, &old_blocks, &old_files)
+                    != comparable_bundle(&note, &blocks, &files)
+                {
+                    match resolutions.get(&id).map(String::as_str) {
+                        Some("local") => {
+                            incoming_version += 1;
+                            note["version"] = JsonValue::from(incoming_version);
+                        }
+                        Some("remote") => {}
+                        _ => return Err(format!("ACCOUNT_NOTE_CONFLICT:{id}")),
+                    }
+                }
+            }
+        }
+        for file in &files {
+            let path = source_root
+                .join("files")
+                .join(safe_relative_files_path(&text(file, "relativePath", "")?)?);
+            if path.exists() {
+                if !path
+                    .canonicalize()
+                    .map_err(to_string)?
+                    .starts_with(source_root.join("files"))
+                {
+                    return Err("Attachment is outside the local library".into());
+                }
+                obsolete_files.push(path);
+            }
+        }
+        if existing.is_none() || incoming_version > existing_version {
+            for (table, records) in [("noteBlocks", &blocks), ("noteFiles", &files)] {
+                for record in records {
+                    let record_id = text(record, "id", "")?;
+                    if read_payloads(&tx, table, Some("id"), &[JsonValue::String(record_id)])?
+                        .iter()
+                        .any(|old| old.get("noteId") != record.get("noteId"))
+                    {
+                        return Err("An attachment or block ID belongs to another note".into());
+                    }
+                }
+            }
+            let mut remapped = HashMap::new();
+            for file in &mut files {
+                let old_path = text(file, "relativePath", "")?;
+                let relative = safe_relative_files_path(&old_path)?;
+                let source_file = source_root.join("files").join(relative);
+                if !source_file.is_file() {
+                    return Err(format!("Missing local attachment: {old_path}"));
+                }
+                let normalized_root = source_root
+                    .join("files")
+                    .canonicalize()
+                    .map_err(to_string)?;
+                if normalized_root != source_root.join("files") {
+                    return Err("Attachment directory is outside the local library".into());
+                }
+                if !source_file
+                    .canonicalize()
+                    .map_err(to_string)?
+                    .starts_with(&normalized_root)
+                {
+                    return Err("Attachment is outside the local library".into());
+                }
+                let new_path = format!(
+                    "adopted-{}/{}",
+                    timestamp_for_id(),
+                    old_path.replace('\\', "/")
+                );
+                let destination = target_root
+                    .join("files")
+                    .join(safe_relative_files_path(&new_path)?);
+                fs::create_dir_all(
+                    destination
+                        .parent()
+                        .ok_or("Attachment directory is missing")?,
+                )
+                .map_err(to_string)?;
+                if !destination
+                    .parent()
+                    .unwrap()
+                    .canonicalize()
+                    .map_err(to_string)?
+                    .starts_with(target_root.join("files"))
+                {
+                    return Err("Attachment directory is outside the account library".into());
+                }
+                fs::copy(&source_file, &destination).map_err(to_string)?;
+                fs::OpenOptions::new()
+                    .write(true)
+                    .open(&destination)
+                    .map_err(to_string)?
+                    .sync_all()
+                    .map_err(to_string)?;
+                if checksum_file(&source_file)? != checksum_file(&destination)? {
+                    return Err("Attachment copy failed validation".into());
+                }
+                remapped.insert(old_path, new_path.clone());
+                file["relativePath"] = JsonValue::String(new_path);
+            }
+            for block in &mut blocks {
+                remap_attachment_paths(block, &remapped);
+            }
+            where_delete(
+                &tx,
+                "noteBlocks",
+                "noteId",
+                &[JsonValue::String(id.clone())],
+            )?;
+            where_delete(&tx, "noteFiles", "noteId", &[JsonValue::String(id.clone())])?;
+            insert_note(&tx, &note)?;
+            for block in blocks {
+                insert_note_block(&tx, &block)?;
+            }
+            for file in files {
+                insert_note_file(&tx, &file)?;
+            }
+        }
+    }
+    for table in ["tags", "collections"] {
+        for value in read_payloads(&source, table, None, &[])? {
+            let id = text(&value, "id", "")?;
+            if read_payloads(&tx, table, Some("id"), &[JsonValue::String(id)])?.is_empty() {
+                insert_payload(&tx, table, &value)?;
+            }
+        }
+    }
+    // The guest keeps device preferences, but its organization moves with the
+    // notes. Existing account choices take precedence; lists are merged by ID.
+    for mut guest in read_payloads(&source, "userSettings", None, &[])? {
+        let settings_id = text(&guest, "id", "")?;
+        let mut merged = read_payloads(
+            &tx,
+            "userSettings",
+            Some("id"),
+            &[JsonValue::String(settings_id.clone())],
+        )?
+        .pop()
+        .unwrap_or_else(|| guest.clone());
+        for field in [
+            "favoriteTagIds",
+            "pinnedNoteIds",
+            "quickPinNoteIds",
+            "noteHiddenPanelIds",
+        ] {
+            let mut values = merged
+                .get(field)
+                .and_then(JsonValue::as_array)
+                .cloned()
+                .unwrap_or_default();
+            if let Some(incoming) = guest.get(field).and_then(JsonValue::as_array) {
+                for value in incoming {
+                    if !values.contains(value) {
+                        values.push(value.clone());
+                    }
+                }
+            }
+            merged[field] = JsonValue::Array(values);
+            guest[field] = serde_json::json!([]);
+        }
+        insert_user_settings(&tx, &merged)?;
+        guest["primaryCollectionId"] = JsonValue::String(String::new());
+        tx.execute("UPDATE local_source.user_settings SET primary_collection_id = '', favorite_tag_ids = '[]', quick_pin_note_ids = '[]', payload = ?1 WHERE id = ?2",
+            params![payload_text(&guest)?, settings_id]).map_err(to_string)?;
+    }
+    // No deletions are published for the guest library: these records moved to
+    // the account, they were not deleted by the user.
+    tx.execute_batch(
+        "DELETE FROM local_source.note_blocks;
+                      DELETE FROM local_source.note_files;
+                      DELETE FROM local_source.notes;
+                      DELETE FROM local_source.activities;
+                      DELETE FROM local_source.tags;
+                      DELETE FROM local_source.collections;
+                      INSERT INTO local_source.app_metadata (key, value, updated_at) VALUES ('demo_seeded', 'true', datetime('now'))
+                        ON CONFLICT(key) DO UPDATE SET value = 'true';
+                      DELETE FROM local_source.cloud_outbox;",
+    )
+    .map_err(to_string)?;
+    tx.commit().map_err(to_string)?;
+    // Interrupted cleanup leaves only unreferenced files, never lost notes.
+    let recovery_files = source_root
+        .join("backups")
+        .join(format!("adopted-files-{}", timestamp_for_id()));
+    for path in obsolete_files {
+        if let Ok(relative) = path.strip_prefix(source_root.join("files")) {
+            let recovery = recovery_files.join(relative);
+            if let Some(parent) = recovery.parent() {
+                if fs::create_dir_all(parent).is_ok() {
+                    let _ = fs::rename(&path, recovery);
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn remap_attachment_paths(value: &mut JsonValue, paths: &HashMap<String, String>) {
+    match value {
+        JsonValue::Array(items) => {
+            for item in items {
+                remap_attachment_paths(item, paths);
+            }
+        }
+        JsonValue::Object(fields) => {
+            if let Some(path) = fields
+                .get("relativePath")
+                .and_then(JsonValue::as_str)
+                .and_then(|path| paths.get(path))
+            {
+                fields.insert("relativePath".into(), JsonValue::String(path.clone()));
+            }
+            for value in fields.values_mut() {
+                remap_attachment_paths(value, paths);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn comparable_bundle(note: &JsonValue, blocks: &[JsonValue], files: &[JsonValue]) -> JsonValue {
+    fn remove_fields(value: &mut JsonValue, keys: &[&str]) {
+        if let Some(fields) = value.as_object_mut() {
+            for key in keys {
+                fields.remove(*key);
+            }
+        }
+    }
+    let mut note = note.clone();
+    remove_fields(
+        &mut note,
+        &["lastOpenedAt", "updatedAt", "stats", "blocks", "files"],
+    );
+    let paths: HashMap<String, String> = files
+        .iter()
+        .filter_map(|file| {
+            Some((
+                opt_text(file, "relativePath")?,
+                format!("file:{}", opt_text(file, "id")?),
+            ))
+        })
+        .collect();
+    let mut blocks = blocks.to_vec();
+    let mut files = files.to_vec();
+    for block in &mut blocks {
+        remove_fields(block, &["updatedAt"]);
+        remap_attachment_paths(block, &paths);
+    }
+    for file in &mut files {
+        remove_fields(file, &["relativePath"]);
+    }
+    blocks.sort_by_key(|value| opt_text(value, "id"));
+    files.sort_by_key(|value| opt_text(value, "id"));
+    serde_json::json!({ "note": note, "blocks": blocks, "files": files })
+}
 fn ensure_schema(conn: &Connection) -> Result<(), String> {
     // Inspect before writing anything. An unknown database must never be reset
     // or silently upgraded; each supported upgrade needs an explicit migration.
@@ -990,6 +1680,11 @@ fn ensure_schema(conn: &Connection) -> Result<(), String> {
     if has_metadata {
         match read_metadata(&tx, "sqlite_schema_version")?.as_deref() {
             Some(SCHEMA_VERSION) => return Ok(()),
+            Some("3") => {
+                drop(tx);
+                crate::storage_migrations::migrate_v3_to_v4(conn)?;
+                return Ok(());
+            }
             Some(version) => {
                 return Err(format!(
                     "Unsupported NoteX database schema version '{}'; this app supports '{}'. No data was changed. An explicit migration or a compatible app version is required.",
@@ -1147,6 +1842,7 @@ fn ensure_schema(conn: &Connection) -> Result<(), String> {
     )
     .map_err(to_string)?;
 
+    crate::storage_migrations::create_cloud_schema(&tx)?;
     write_metadata(&tx, "sqlite_schema_version", SCHEMA_VERSION)?;
     tx.commit().map_err(to_string)
 }
@@ -1928,6 +2624,22 @@ fn validate_sqlite_database(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
+fn prepare_imported_database(path: &Path) -> Result<(), String> {
+    let mut conn = Connection::open(path).map_err(to_string)?;
+    ensure_schema(&conn)?;
+    let tx = conn.transaction().map_err(to_string)?;
+    // A package may come from another account. Its remote IDs, exclusion list
+    // and deletion queue must never be replayed into this account's Drive.
+    tx.execute_batch("DELETE FROM cloud_state; DELETE FROM cloud_outbox;
+        INSERT INTO cloud_outbox SELECT id, 'note', lower(hex(randomblob(16))), version, 0,
+            CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER), CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM notes;
+        INSERT INTO cloud_outbox VALUES ('@library', 'library', lower(hex(randomblob(16))), 1, 0,
+            CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER), CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER));
+        INSERT OR REPLACE INTO app_metadata (key,value,updated_at) VALUES ('demo_seeded','true',datetime('now'));").map_err(to_string)?;
+    tx.commit().map_err(to_string)?;
+    Ok(())
+}
+
 fn create_notex_package(
     package_path: &Path,
     database_path: &Path,
@@ -2340,6 +3052,214 @@ mod tests {
     use rusqlite::Connection;
     use std::path::PathBuf;
 
+    struct AdoptionFixture {
+        root: PathBuf,
+        account: PathBuf,
+    }
+    impl AdoptionFixture {
+        fn new() -> Self {
+            let root = std::env::temp_dir()
+                .join(format!("notex-adoption-test-{}", super::timestamp_for_id()));
+            let account = root.join("user@gmail.com");
+            std::fs::create_dir_all(root.join("files")).unwrap();
+            std::fs::create_dir_all(&account).unwrap();
+            Self { root, account }
+        }
+        fn database(&self, account: bool) -> Connection {
+            let conn = Connection::open(
+                if account { &self.account } else { &self.root }.join("notex.sqlite"),
+            )
+            .unwrap();
+            ensure_schema(&conn).unwrap();
+            conn
+        }
+        fn seed(&self, account: bool, title: &str, version: u64, with_file: bool) {
+            let mut conn = self.database(account);
+            let tx = conn.transaction().unwrap();
+            super::insert_note(
+                &tx,
+                &serde_json::json!({"id":"note", "title":title, "version":version}),
+            )
+            .unwrap();
+            super::insert_note_block(&tx, &serde_json::json!({"id":"block", "noteId":"note", "contentText":title,
+                "contentJson":{"relativePath":"attachment.txt", "updatedAt":"content field must survive"}})).unwrap();
+            if with_file {
+                super::insert_note_file(&tx, &serde_json::json!({"id":"file", "noteId":"note", "blockId":"block", "relativePath":"attachment.txt"})).unwrap();
+                let root = if account { &self.account } else { &self.root };
+                std::fs::create_dir_all(root.join("files")).unwrap();
+                std::fs::write(root.join("files/attachment.txt"), title).unwrap();
+            }
+            tx.commit().unwrap();
+        }
+    }
+    impl Drop for AdoptionFixture {
+        fn drop(&mut self) {
+            // This unique fixture directory was created by this test only.
+            let expected_parent = std::env::temp_dir().canonicalize().unwrap();
+            let resolved = self.root.canonicalize().unwrap();
+            assert_eq!(resolved.parent(), Some(expected_parent.as_path()));
+            assert!(resolved
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with("notex-adoption-test-"));
+            std::fs::remove_dir_all(resolved).unwrap();
+        }
+    }
+
+    #[test]
+    fn account_adoption_preserves_ids_and_files_and_clears_guest_only_after_commit() {
+        let fixture = AdoptionFixture::new();
+        fixture.seed(false, "Local note", 7, true);
+        super::merge_local_library(&fixture.root, &fixture.account).unwrap();
+        let guest = fixture.database(false);
+        let account = fixture.database(true);
+        assert_eq!(
+            super::read_payloads(&guest, "notes", None, &[])
+                .unwrap()
+                .len(),
+            0
+        );
+        let note = super::read_payloads(&account, "notes", None, &[])
+            .unwrap()
+            .pop()
+            .unwrap();
+        assert_eq!(note["id"], "note");
+        assert_eq!(note["version"], 7);
+        let file = super::read_payloads(&account, "noteFiles", None, &[])
+            .unwrap()
+            .pop()
+            .unwrap();
+        let path = file["relativePath"].as_str().unwrap();
+        assert_eq!(
+            std::fs::read_to_string(fixture.account.join("files").join(path)).unwrap(),
+            "Local note"
+        );
+        let block = super::read_payloads(&account, "noteBlocks", None, &[])
+            .unwrap()
+            .pop()
+            .unwrap();
+        assert_eq!(block["contentJson"]["relativePath"], path);
+        assert_eq!(
+            block["contentJson"]["updatedAt"],
+            "content field must survive"
+        );
+        assert!(!fixture.root.join("files/attachment.txt").exists());
+        assert_eq!(
+            read_metadata(&guest, "demo_seeded").unwrap().as_deref(),
+            Some("true")
+        );
+        assert_eq!(
+            account
+                .query_row(
+                    "SELECT version FROM cloud_outbox WHERE entity_id = 'note'",
+                    [],
+                    |r| r.get::<_, i64>(0)
+                )
+                .unwrap(),
+            7
+        );
+        drop(guest);
+        drop(account);
+        // Retrying after a committed adoption does not duplicate data.
+        super::merge_local_library(&fixture.root, &fixture.account).unwrap();
+    }
+
+    #[test]
+    fn account_adoption_conflict_or_missing_file_preserves_both_libraries() {
+        let fixture = AdoptionFixture::new();
+        fixture.seed(false, "Local", 2, true);
+        fixture.seed(true, "Account", 2, true);
+        assert!(super::merge_local_library(&fixture.root, &fixture.account)
+            .unwrap_err()
+            .starts_with("ACCOUNT_NOTE_CONFLICT:"));
+        let guest = fixture.database(false);
+        let account = fixture.database(true);
+        assert_eq!(
+            super::read_payloads(&guest, "notes", None, &[]).unwrap()[0]["title"],
+            "Local"
+        );
+        assert_eq!(
+            super::read_payloads(&account, "notes", None, &[]).unwrap()[0]["title"],
+            "Account"
+        );
+        assert_eq!(
+            std::fs::read_to_string(fixture.root.join("files/attachment.txt")).unwrap(),
+            "Local"
+        );
+        drop(guest);
+        drop(account);
+        fixture.seed(false, "Newer local", 3, true);
+        std::fs::remove_file(fixture.root.join("files/attachment.txt")).unwrap();
+        assert!(super::merge_local_library(&fixture.root, &fixture.account)
+            .unwrap_err()
+            .contains("Missing local attachment"));
+        assert_eq!(
+            super::read_payloads(&fixture.database(false), "notes", None, &[]).unwrap()[0]
+                ["version"],
+            3
+        );
+        assert_eq!(
+            super::read_payloads(&fixture.database(true), "notes", None, &[]).unwrap()[0]
+                ["version"],
+            2
+        );
+        assert_eq!(
+            std::fs::read_to_string(fixture.account.join("files/attachment.txt")).unwrap(),
+            "Account"
+        );
+    }
+
+    #[test]
+    fn account_adoption_never_replaces_a_newer_account_note() {
+        let fixture = AdoptionFixture::new();
+        fixture.seed(false, "Local", 2, true);
+        fixture.seed(true, "Account", 5, true);
+        super::merge_local_library(&fixture.root, &fixture.account).unwrap();
+        assert_eq!(
+            super::read_payloads(&fixture.database(true), "notes", None, &[]).unwrap()[0]
+                ["version"],
+            5
+        );
+        assert_eq!(
+            std::fs::read_to_string(fixture.account.join("files/attachment.txt")).unwrap(),
+            "Account"
+        );
+        assert!(
+            super::read_payloads(&fixture.database(false), "notes", None, &[])
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn note_revision_enqueues_block_edits_even_without_header_changes() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        ensure_schema(&conn).unwrap();
+        let tx = conn.transaction().unwrap();
+        super::insert_note(
+            &tx,
+            &serde_json::json!({"id":"note", "title":"Unchanged", "version":1}),
+        )
+        .unwrap();
+        tx.execute("DELETE FROM cloud_outbox", []).unwrap();
+        super::insert_note(
+            &tx,
+            &serde_json::json!({"id":"note", "title":"Unchanged", "version":2}),
+        )
+        .unwrap();
+        assert_eq!(
+            tx.query_row(
+                "SELECT version FROM cloud_outbox WHERE entity_id = 'note'",
+                [],
+                |r| r.get::<_, i64>(0)
+            )
+            .unwrap(),
+            2
+        );
+        tx.commit().unwrap();
+    }
+
     fn schema_snapshot(conn: &Connection) -> Vec<(String, String, Option<String>)> {
         let mut statement = conn
             .prepare(
@@ -2369,6 +3289,143 @@ mod tests {
         );
     }
 
+    fn make_legacy_database(conn: &Connection) {
+        ensure_schema(conn).unwrap();
+        let triggers: Vec<String> = conn
+            .prepare(
+                "SELECT name FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'cloud_%'",
+            )
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        for trigger in triggers {
+            conn.execute_batch(&format!("DROP TRIGGER \"{trigger}\";"))
+                .unwrap();
+        }
+        conn.execute_batch("DROP TABLE cloud_state; DROP TABLE cloud_outbox;
+            UPDATE app_metadata SET value = '3' WHERE key = 'sqlite_schema_version';
+            INSERT INTO notes (id, title, subtitle, tag_ids, linked_note_ids, created_at, updated_at, stats, payload)
+            VALUES ('legacy', 'Existing note', '', '[]', '[]', '2026-01-01', '2026-01-01', '{}', '{\"id\":\"legacy\",\"title\":\"Existing note\"}');").unwrap();
+    }
+
+    #[test]
+    fn migrates_v3_without_changing_notes_and_preserves_a_consistent_backup() {
+        let root = std::env::temp_dir().join(format!(
+            "notex-migration-test-{}",
+            super::timestamp_for_id()
+        ));
+        std::fs::create_dir(&root).unwrap();
+        let path = root.join("notex.sqlite");
+        let conn = Connection::open(&path).unwrap();
+        conn.pragma_update(None, "journal_mode", "WAL").unwrap();
+        make_legacy_database(&conn);
+        ensure_schema(&conn).unwrap();
+        assert_eq!(
+            read_metadata(&conn, "sqlite_schema_version")
+                .unwrap()
+                .as_deref(),
+            Some(SCHEMA_VERSION)
+        );
+        let payload: String = conn
+            .query_row("SELECT payload FROM notes WHERE id = 'legacy'", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        let backup_path = read_metadata(&conn, "last_migration_backup_path")
+            .unwrap()
+            .unwrap();
+        let backup =
+            Connection::open_with_flags(&backup_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+                .unwrap();
+        assert_eq!(
+            read_metadata(&backup, "sqlite_schema_version")
+                .unwrap()
+                .as_deref(),
+            Some("3")
+        );
+        let backed_up: String = backup
+            .query_row("SELECT payload FROM notes WHERE id = 'legacy'", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(payload, backed_up);
+        drop(backup);
+        drop(conn);
+        std::fs::remove_file(&backup_path).unwrap();
+        std::fs::remove_dir(root.join("backups")).unwrap();
+        std::fs::remove_file(path).unwrap();
+        std::fs::remove_dir(root).unwrap();
+    }
+
+    #[test]
+    fn migration_failure_rolls_back_all_schema_changes() {
+        let conn = Connection::open_in_memory().unwrap();
+        make_legacy_database(&conn);
+        conn.execute_batch(
+            "CREATE TRIGGER cloud_notes_INSERT AFTER INSERT ON notes BEGIN SELECT 1; END;",
+        )
+        .unwrap();
+        let before = schema_snapshot(&conn);
+        assert!(ensure_schema(&conn).is_err());
+        assert_eq!(schema_snapshot(&conn), before);
+        assert_eq!(
+            read_metadata(&conn, "sqlite_schema_version")
+                .unwrap()
+                .as_deref(),
+            Some("3")
+        );
+        let title: String = conn
+            .query_row("SELECT title FROM notes WHERE id = 'legacy'", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(title, "Existing note");
+    }
+
+    #[test]
+    fn outbox_coalesces_edits_ignores_visits_and_records_deletions_atomically() {
+        let conn = Connection::open_in_memory().unwrap();
+        make_legacy_database(&conn);
+        ensure_schema(&conn).unwrap();
+        conn.execute("UPDATE notes SET last_opened_at = 'today', payload = json_set(payload, '$.lastOpenedAt', 'today') WHERE id = 'legacy'", []).unwrap();
+        let count = || {
+            conn.query_row::<i64, _, _>("SELECT COUNT(*) FROM cloud_outbox", [], |row| row.get(0))
+                .unwrap()
+        };
+        assert_eq!(count(), 0);
+        conn.execute("UPDATE notes SET title = 'Edited', version = 2, payload = json_set(payload, '$.title', 'Edited', '$.version', 2) WHERE id = 'legacy'", []).unwrap();
+        assert_eq!(count(), 1);
+        let token: String = conn
+            .query_row("SELECT change_token FROM cloud_outbox", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        conn.execute("UPDATE notes SET title = 'Again', version = 3, payload = json_set(payload, '$.title', 'Again', '$.version', 3) WHERE id = 'legacy'", []).unwrap();
+        assert_eq!(count(), 1);
+        let next: String = conn
+            .query_row("SELECT change_token FROM cloud_outbox", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_ne!(token, next);
+        conn.execute_batch("BEGIN; DELETE FROM notes WHERE id = 'legacy'; ROLLBACK;")
+            .unwrap();
+        let deleted: i64 = conn
+            .query_row("SELECT deleted FROM cloud_outbox", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(deleted, 0);
+        conn.execute("DELETE FROM notes WHERE id = 'legacy'", [])
+            .unwrap();
+        let result: (i64, i64) = conn
+            .query_row("SELECT deleted, version FROM cloud_outbox", [], |row| {
+                Ok((row.get(0)?, row.get(1)?))
+            })
+            .unwrap();
+        assert_eq!(result, (1, 4));
+    }
+
     #[test]
     fn rejects_unsafe_package_paths() {
         assert!(safe_archive_path("../notex.sqlite").is_err());
@@ -2396,7 +3453,7 @@ mod tests {
 
     #[test]
     fn rejects_unknown_versions_and_missing_marker_without_changing_data() {
-        for version in [Some("2"), Some("4"), Some("invalid"), Some(""), None] {
+        for version in [Some("2"), Some("5"), Some("invalid"), Some(""), None] {
             let conn = Connection::open_in_memory().unwrap();
             ensure_schema(&conn).unwrap();
             conn.execute(
