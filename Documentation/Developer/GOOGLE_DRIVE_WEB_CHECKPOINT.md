@@ -44,7 +44,7 @@ Plano de referência: `GOOGLE_DRIVE_WEB_IMPLEMENTATION_PLAN.md`.
 
 1. Confirmar secrets do workflow e estado público/Branding/Data Access do projeto OAuth na Google. Não foi inspecionada configuração remota.
 2. Gerar instalador 2.3.0 no GitHub e confirmar atualização da app instalada, migração e preservação de notas/anexos antes da publicação pública.
-3. Definir o encaminhamento público apenas de /app/ para a imagem da webapp, mantendo landing/docs no deployment independente. Ajustar GOOGLE_WEB_ORIGIN/origem OAuth para https://notex.mapherez.com, reconstruir a imagem e validar no URL HTTPS final. Encaminhamento ainda pendente.
+3. Definir o encaminhamento público apenas de /app/ para a imagem da webapp, mantendo landing/docs no deployment independente. Ajustar GOOGLE_WEB_ORIGIN/origem OAuth para <https://notex.mapherez.com>, reconstruir a imagem e validar no URL HTTPS final. Encaminhamento ainda pendente.
 4. Publicar documentação atualizada junto da release. Guias, configuração, deployment e privacidade atualizados nesta etapa; apagar este CHECKPOINT quando o restante estiver concluído.
 
 Limites da validação real: limpeza diária, interrupções de uploads grandes,
@@ -231,4 +231,4 @@ Restante: validação real desktop/web/Drive, inspeção visual/offline em brows
 - Service worker registado em /app/sw.js, limitado a /app/; ignora pedidos fora desse âmbito, incluindo navegação para a landing. Nginx serve apenas a app, devolve 404 fora dela e redireciona /app para /app/ sem alterar o protocolo do proxy.
 - Check da imagem atualizado para verificar isolamento da app, redirect, rotas /app/, worker e assets. Não foi aberto/executado Docker localmente nesta alteração. Alterações ao conteúdo/layout da landing nesta etapa foram retiradas.
 - Build de produção da app com base /app/ passou, incluindo TypeScript e geração do worker. Build da landing gerou 15 artigos. Validação do runtime Nginx/container fica no workflow do GitHub; URL público ainda por validar.
-- Próximo passo: definir o encaminhamento público por caminho antes do deployment em /app/. Não encaminhar o domínio inteiro para o container. GOOGLE_WEB_ORIGIN e Authorized JavaScript origins = https://notex.mapherez.com; publicação da imagem e validação pública continuam pendentes.
+- Próximo passo: definir o encaminhamento público por caminho antes do deployment em /app/. Não encaminhar o domínio inteiro para o container. GOOGLE_WEB_ORIGIN e Authorized JavaScript origins = <https://notex.mapherez.com>; publicação da imagem e validação pública continuam pendentes.

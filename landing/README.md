@@ -15,7 +15,7 @@ npm --prefix landing run check
 npm --prefix landing run preview
 ```
 
-Preview at **http://127.0.0.1:4174**. Generated files live in `landing/dist/`,
+Preview at **<http://127.0.0.1:4174>**. Generated files live in `landing/dist/`,
 which is ignored by Git. Visitors do not download a framework or Markdown parser.
 Reading and navigation work without JavaScript; local search is an enhancement.
 
