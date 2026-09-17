@@ -218,3 +218,8 @@ Restante: validação real desktop/web/Drive, inspeção visual/offline em brows
 - Removidas props size dos ícones Drive/backup/logout no Profile; dimensões e flex-shrink definidos no SCSS.
 - Verificador distingue dimensões numéricas JSX com chavetas de variáveis numéricas comuns, evitando o falso positivo em const size no teste de upload Drive.
 - npm run check:styles passou integralmente (stylelint e lint:no-inline-styles); git diff --check passou. Alterações no branch web_mode, sem staging ou commits.
+
+## Correção Nginx no primeiro publish web
+
+- Build da imagem chegou à verificação Nginx no GitHub, onde a regex de assets com {8,} sem aspas causou erro de parsing. Expressão colocada entre aspas, preservando a regra de cache.
+- Correção no main após merge do PR; sem staging/commits. A validação real nginx -t e publicação precisam de uma nova execução do workflow com o commit corrigido. Docker local permanece sem validação de runtime nesta etapa.
