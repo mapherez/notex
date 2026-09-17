@@ -13,6 +13,13 @@ They are not end-user guides.
 - [Routes](ROUTES.md)
 - [Stack](STACK.md)
 
+## Google Drive and browser mode
+
+- [Implementation plan](GOOGLE_DRIVE_WEB_IMPLEMENTATION_PLAN.md)
+- [Google OAuth and build configuration](GOOGLE_DRIVE_SETUP.md)
+- [Web deployment and release preparation](GOOGLE_DRIVE_WEB_DEPLOYMENT.md)
+- [Validation and remaining release work](GOOGLE_DRIVE_WEB_CHECKPOINT.md)
+
 ## Future Remote MCP
 
 The embedded local MCP server is the active, completed integration. The

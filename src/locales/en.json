@@ -627,18 +627,22 @@
     "privacy": {
       "title": "Privacy Policy",
       "paragraphs": [
-        "NoteX is a local/offline-first desktop app. Your notes, tags, collections, settings, and app data are stored in a local SQLite database on your device.",
-        "NoteX does not require an account and does not send your knowledge base to a NoteX server.",
+          "NoteX stores desktop libraries in local SQLite databases and browser libraries in IndexedDB on your device. Local libraries are kept separate for each Google account.",
+          "Desktop use does not require an account. Browser mode requires Google sign-in. NoteX uses your Google account ID, email, display name, and profile image to identify your account and library.",
+          "When connected to Google, NoteX sends note JSON, library metadata, and attachments directly to the application's hidden data area in your own Google Drive. Google processes this data under its own policies. Your notes and Google tokens are not stored on a NoteX server.",
+          "Desktop refresh tokens are stored using the operating system credential store. Browser access tokens are kept in session storage until logout or expiry. Signing out preserves local account libraries; clearing browser site data can remove local notes and pending backups.",
+          "The public website and webapp host receive normal HTTP requests and may record connection information in server logs. Google sign-in, Drive access, release checks, and downloads require internet access.",
         "When you start local MCP and connect an AI client, note data requested by that client is sent through the local MCP connection. NoteX does not store an additional copy of that exchange, but the connected AI client may process the content under its own privacy policy.",
         "When you export your data, NoteX creates a .notex package locally with your database and attached files. You are responsible for where you store or share that exported package.",
         "When you import a package, NoteX replaces the current local database and files folder with the selected .notex package.",
-        "NoteX does not sell your data, use your notes for advertising, or share your local database with third parties."
+          "NoteX does not sell your data or use your notes for advertising. Data is transferred to Google or a connected AI client only through the corresponding features described above."
       ]
     },
     "terms": {
       "title": "Terms of Service",
       "paragraphs": [
-        "NoteX is provided as local desktop software for personal knowledge management.",
+          "NoteX is provided as desktop software and a browser app for personal knowledge management, with Google Drive backup.",
+          "Wait for backups to complete before closing the app or switching devices. Concurrent use is not blocked. Browser storage may be cleared by you or the browser, and Google access may expire or be revoked.",
         "You are responsible for your notes, backups, exported packages, and any data you choose to import or replace.",
         "Importing a .notex package replaces the current local database and files folder. Review your backups before importing.",
         "You should keep your own backups if your notes are important. NoteX cannot recover data that is deleted, overwritten, or lost outside the app.",

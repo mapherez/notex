@@ -1,6 +1,6 @@
 # Local storage & privacy
 
-The released NoteX desktop app stores your library locally. It does not require an account to create, edit, organize, or export notes.
+The NoteX desktop app stores your library locally. It does not require an account to create, edit, organize, or export notes. Browser mode requires a Google account and stores each account's downloaded library in IndexedDB.
 
 ## Where your library lives
 
@@ -16,7 +16,7 @@ A disk failure or loss of the computer can also affect the local library. Keep [
 
 ## Database compatibility
 
-NoteX no longer resets database tables because it encounters an unsupported schema version. An incompatible or missing schema marker produces an error instead of deleting the existing data.
+NoteX migrates supported database versions without resetting your notes, creating a consistent backup before migration. Unsupported, invalid, or missing schema versions in an existing database produce an error instead of deleting data.
 
 If you see a compatibility error, keep the database and files intact. Do not delete them to dismiss the message. See [troubleshooting](troubleshooting.md#database-compatibility-errors).
 
@@ -29,6 +29,12 @@ The server listens on your computer's loopback address. It is not a public inter
 An AI client may send the information it reads to its own online service. Local NoteX storage does not determine that client's data handling. Review the client and provider's settings before using sensitive notes.
 
 ## Public website
+
+Google Drive backup is optional on desktop. When connected, NoteX uploads note
+JSON and attachments directly to the application's area of your personal
+Google Drive. Account libraries remain separate. Browser notes are stored
+locally and backed up to that same Drive area; the NoteX host does not store
+the library. See [Google Drive and browser mode](google-drive-web.md).
 
 Reading this documentation does not give the website access to your desktop library. Downloads, release checks, and an online AI client are separate from editing notes offline.
 

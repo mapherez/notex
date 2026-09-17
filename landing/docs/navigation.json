@@ -31,6 +31,7 @@
     "title": "Your data",
     "pages": [
       { "slug": "local-storage", "title": "Local storage & privacy", "description": "Understand where your notes live and what stays on your computer." },
+      { "slug": "google-drive-web", "title": "Google Drive & browser mode", "description": "Connect your account, back up notes, and continue working in the browser." },
       { "slug": "import-export", "title": "Import, export & backups", "description": "Back up your workspace or share an individual note with its files." }
     ]
   },

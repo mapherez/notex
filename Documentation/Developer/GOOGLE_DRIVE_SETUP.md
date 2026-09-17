@@ -68,10 +68,13 @@ O workflow `release.yml` já faz esta ligação no passo de build Tauri. Não é
 preciso criar um `.env` no runner. A ausência dos secrets mantém a possibilidade
 de compilar uma app local sem Google configurado.
 
-Ainda não há workflow/imagem Docker de distribuição da webapp neste passo.
-Quando se configurar esse build, passar os mesmos valores ao ambiente de
-`npm run build` (ou a build args no Dockerfile). Variáveis no container que
-serve ficheiros já compilados não substituem a configuração do Vite.
+O workflow manual **Publish NoteX Web Image** usa apenas `GOOGLE_WEB_CLIENT_ID`
+e `GOOGLE_WEB_ORIGIN` para compilar a imagem `ghcr.io/mapherez/notex-web`.
+Não inclui o secret desktop. Variáveis no container que serve ficheiros já
+compilados não substituem a configuração do Vite.
+
+Ver [deployment e preparação da release](GOOGLE_DRIVE_WEB_DEPLOYMENT.md) para
+a separação da landing page, origem OAuth, imagem e configuração do host.
 
 Estes valores são públicos e ficam incorporados no build; env/Secrets mantêm-nos
 fora do histórico do repo, sem os tornar secretos na app distribuída. Nunca
@@ -88,6 +91,25 @@ colocar passwords, access tokens, refresh tokens ou client secrets em `VITE_*`.
 
 Credenciais em modo de teste podem ter limitações de duração impostas pela Google. Antes de distribuir, rever o estado de publicação e os requisitos atuais de consentimento no projeto Google.
 
+### Origem autorizada e publicação são configurações distintas
+
+`VITE_GOOGLE_WEB_ORIGIN` e **Authorized JavaScript origins** recebem apenas
+protocolo, hostname e porta, sem caminhos. Por exemplo, se a app for servida em
+`https://notex.mapherez.com/app/`, a origem é `https://notex.mapherez.com`.
+O fluxo web atual usa popup/token; não exige um redirect URI web.
+
+Autorizar a origem não publica o projeto OAuth. Em **Google Auth Platform →
+Audience**, confirmar público External e usar **Publish app** para passar de
+Testing para In production. Em **Branding**, configurar nome, contacto, homepage
+e URLs públicas de privacidade/termos; confirmar domínios e requisitos de
+verificação indicados pela consola. Em **Data Access**, declarar os scopes
+usados. `drive.appdata` é classificado pela Google como não sensível; não
+adicionar permissões de acesso à Drive completa.
+
+Referências: [origens OAuth](https://developers.google.com/identity/oauth2/web/guides/get-google-api-clientid),
+[público e publicação](https://support.google.com/cloud/answer/15549945?hl=en),
+[scopes Drive](https://developers.google.com/workspace/drive/api/guides/api-specific-auth).
+
 ## Autorização na web
 
 A conta selecionada fica lembrada localmente; o access token fica em
@@ -99,4 +121,14 @@ Ao expirar o token ou se a Google rejeitar a autorização, os backups aguardam
 nova autorização explícita. Não há refresh tokens web nem servidor de sessões.
 Se o browser impedir sessionStorage, a autorização funciona apenas em memória.
 
-Até haver configuração e contas de teste, a integração real com Google não pode ser validada. Os testes locais de armazenamento e as simulações de rede continuam independentes desta configuração.
+## Validação real da versão 2.3.0
+
+O utilizador confirmou login desktop/web, backups de notas nos dois sentidos,
+refresh com autorização mantida, logout/login, separação de contas, anexos
+desktop → web, edição e refresh offline, backup após reconexão e atualização
+no desktop. Abrir uma nota sem editar não gera backup nem altera updatedAt.
+
+Build/instalador final serão gerados no GitHub. A atualização da app instalada
+com migração e preservação da biblioteca ainda precisa de confirmação antes
+de publicar a release. Não foram verificados os secrets nem o estado OAuth
+do projeto na consola Google.

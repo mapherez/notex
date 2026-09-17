@@ -2,7 +2,7 @@
 
 Última atualização: 2026-09-17.
 
-**Implementação em curso. Não apagar este ficheiro nem considerar a integração pronta para release.**
+**Funcionalidades principais implementadas e validadas pelo utilizador. Preparação da release 2.3.0 e deployment público ainda em curso; manter este ficheiro até concluir esses passos.**
 Plano de referência: `GOOGLE_DRIVE_WEB_IMPLEMENTATION_PLAN.md`.
 
 ## Estado atual
@@ -10,12 +10,12 @@ Plano de referência: `GOOGLE_DRIVE_WEB_IMPLEMENTATION_PLAN.md`.
 - Migração SQLite 3 → 4 explícita, snapshot consistente, verificação de integridade e rollback implementados. Nunca apagar tabelas por diferença de versão.
 - Bibliotecas desktop por conta, adoção da biblioteca local com anexos, snapshots, conflitos e proteção contra operações de outra conta implementadas.
 - IndexedDB por conta com notas, anexos e fila persistente implementado; desktop mantém SQLite.
-- OAuth desktop (PKCE, navegador externo, callback local, Windows Credential Manager) e web (Google Identity Services) integrados. Falta configurar e validar com Google real.
+- OAuth desktop (PKCE, navegador externo, callback local, Windows Credential Manager) e web (Google Identity Services) integrados e confirmados com Google real pelo utilizador.
 - Profile, modal de login obrigatório na web, logout com preservação dos dados e troca de conta integrados.
 - Formato JSON partilhado, catálogo global e cliente Drive appDataFolder implementados.
 - Motor ligado à aplicação: backups agrupados, versões, conflitos, eliminações, exclusões, download progressivo e prioridades por nota/collection/tag.
 - Banner expansível e aviso de fecho desktop implementados. Web sem popup nativo de saída.
-- Anexos web e cache offline da aplicação implementados; validação completa no browser pendente.
+- Anexos desktop → web e cache offline da aplicação confirmados pelo utilizador, incluindo refresh offline, edição, reconexão, backup e atualização no desktop.
 - Imports desktop de SQLite e .notex interrompem as transferências durante a substituição; DB importada passa pela migração e reinicialização do estado cloud.
 
 ## Correções na última retoma
@@ -37,17 +37,21 @@ Plano de referência: `GOOGLE_DRIVE_WEB_IMPLEMENTATION_PLAN.md`.
 - Após correções de transferências: `npm.cmd run build` passou, incluindo geração do service worker. Warnings de anotações zod e imports estáticos/dinâmicos não bloquearam o build.
 - Três testes focados de recuperação passaram: retry transitório com atraso, ausência de repetição automática de autorização e apresentação de catálogo em cache antes da rede.
 - Histórico anterior: 36 testes TypeScript e 24 testes Rust passaram antes da integração mais recente. Não equivalem a validação integral do estado atual.
-- Nenhum login Google real, transferência real na Drive ou percurso completo desktop/web foi validado. Nenhuma DB real de utilizador foi migrada através da app durante esta retoma.
+- Validação real posterior pelo utilizador: login Google, alterações de notas nos dois sentidos, refresh com sessão mantida, logout/login, separação de contas, anexos desktop → web, refresh/edição offline e backup após reconexão recebido pelo desktop. Abrir sem editar não dispara backup nem updatedAt.
+- As secções cronológicas abaixo preservam o estado de cada etapa; referências antigas a configuração/login/offline pendentes estão ultrapassadas pelos testes posteriores.
 
 ## Trabalho restante
 
-1. Bloco 1 concluído em código: publicação com registo persistente, recuperação da confirmação local e preservação de edições durante upload. Casos focados passaram; confirmação com Google real permanece na etapa 6.
-2. Bloco 3 concluído: descoberta de árvores de backup marcadas na Drive, independentemente dos IDs recebidos localmente; limpeza diária com preservação de referências e uploads recuperáveis. Validado com Drive simulada; validação real pendente.
-3. Bloco 2 concluído: sessão de upload persistida por conta e conteúdo, retoma consultando bytes confirmados pela Drive, recuperação de conclusão e substituição de sessões expiradas. Falta validar com Drive real.
-4. Bloco 4 concluído em código e verificações focadas: coordenação de transições, cancelamento de login, recuperação de falhas, conflitos de adoção e imports. Percurso real com Google permanece pendente na etapa 6.
-5. Bloco 5 concluído em código e verificações focadas: arranque web, pausa/prioridades, estado de nota indisponível, pesquisa parcial e coerência da versão em cache. Validação visual e percurso offline num browser real continuam pendentes.
-6. Configurar Google, validar autenticação e backup/recuperação reais entre desktop e web.
-7. Atualizar documentação final e só então concluir o plano/remover este CHECKPOINT. Tablet/mobile ficam para fase posterior.
+1. Confirmar secrets do workflow e estado público/Branding/Data Access do projeto OAuth na Google. Não foi inspecionada configuração remota.
+2. Gerar instalador 2.3.0 no GitHub e confirmar atualização da app instalada, migração e preservação de notas/anexos antes da publicação pública.
+3. Executar o workflow web para gerar a imagem GHCR, confirmar visibilidade do pacote e fazer deploy com compose/reverse proxy em app.notex.mapherez.com. Validar no URL HTTPS final; Dockerfile/workflow/compose implementados.
+4. Publicar documentação atualizada junto da release. Guias, configuração, deployment e privacidade atualizados nesta etapa; apagar este CHECKPOINT quando o restante estiver concluído.
+
+Limites da validação real: limpeza diária, interrupções de uploads grandes,
+conflitos e imports foram verificados em casos focados/simulações, sem percurso
+real completo confirmado pelo utilizador. Anexos web → desktop ainda sem
+confirmação explícita. Não equivalem a funcionalidades por implementar.
+Tablet/mobile e MCP hosted ficam para fases posteriores.
 
 ## Configuração externa
 
@@ -56,13 +60,13 @@ e `VITE_GOOGLE_WEB_ORIGIN`. `.env.local` na raiz foi criado vazio e está ignora
 pelo Git; `.env.example` é o modelo versionado. O JSON anterior foi removido.
 Os comandos npm Tauri carregam o env antes de iniciar o CLI e passam os valores
 ao Rust e ao frontend. O workflow de release recebe os valores dos repository
-secrets `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_DESKTOP_CLIENT_ID` e `GOOGLE_WEB_ORIGIN`.
-Os valores reais continuam por fornecer; OAuth/Drive real ainda não validados.
+secrets `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_DESKTOP_CLIENT_ID`,
+`GOOGLE_DESKTOP_CLIENT_SECRET` e `GOOGLE_WEB_ORIGIN` (sem VITE_ nos nomes dos secrets).
+Configuração local e OAuth/Drive reais validados pelo utilizador.
 Verificação desta alteração: TypeScript (`tsc -b`), Rust (`cargo check --offline
 --lib`) e execução do wrapper Tauri com `dev --help` passaram. `git check-ignore`
-confirmou que `.env.local` não entra no repo. Não foi iniciado login nem alterada
-uma biblioteca real; configuração externa e validação Google continuam pendentes.
-Instruções: `GOOGLE_DRIVE_SETUP.md`. O utilizador ainda não criou o projeto Google.
+confirmou que `.env.local` não entra no repo.
+Instruções: `GOOGLE_DRIVE_SETUP.md` e `GOOGLE_DRIVE_WEB_DEPLOYMENT.md`.
 Não publicar nem alterar configuração externa sem autorização.
 
 ## Preferência de execução
@@ -197,3 +201,14 @@ Restante: validação real desktop/web/Drive, inspeção visual/offline em brows
 - Nomes longos dos anexos no painel Files limitados com reticências; ícone e ações mantêm o espaço disponível. Nome completo acessível no tooltip nativo. Correção partilhada pelo desktop e web.
 - Teste offline confirmado pelo utilizador: edição de nota sem internet preservada e backup automático realizado quando a ligação regressou. Este resultado valida edição/reconexão; não confirma arranque ou refresh da webapp sem internet.
 - Teste seguinte confirmou refresh da webapp sem internet, continuação da edição offline, backup após reconexão e receção da alteração no desktop. Refresh offline e ciclo de sincronização completo confirmados pelo utilizador.
+- Preparação 2.3.0: documentação consolidada com estado real dos testes, guia público Google Drive/web, privacidade atualizada, nomes de secrets explícitos e instruções de deployment. Build/instalador serão gerados no GitHub pelo utilizador; publicação OAuth e deployment ainda não executados.
+- Verificação documental: build da landing gerou 15 artigos; check validou 18 páginas, links, assets, âncoras e índice de pesquisa. Compilação TypeScript passou com privacidade/termos PT/EN atualizados. Sem staging/commits, publicação ou alterações aos valores OAuth.
+
+## Imagem Docker web e compose — 2026-09-17
+
+- Workflow manual Publish NoteX Web Image compila com os Secrets web, verifica Nginx/rotas/service worker e publica latest, versão e SHA no GHCR para AMD64/ARM64. Não passa o secret desktop.
+- Dockerfile em duas etapas, contexto web próprio sem env/dados locais, runtime Nginx na porta 8080, healthcheck e política de cache/fallback da SPA. Contexto Docker MCP permanece inalterado.
+- Compose independente, copiável para o host como docker-compose.yml, imagem ghcr.io/mapherez/notex-web:latest, porta 8093 e sem necessidade de volumes/env. Tag/porta podem ser ajustadas por env opcional.
+- Hostname escolhido pelo utilizador: app.notex.mapherez.com. DNS/HTTPS/reverse proxy configurados no host, mantendo a landing no domínio anterior.
+- Docker local tem CLI mas daemon não está ativo; não foi construída/executada imagem localmente nem publicado no GHCR. Execução real do workflow/container permanece pendente.
+- Verificação focada: build de produção npm run build passou, incluindo service worker; docker compose config --quiet passou. Warnings existentes de anotações zod/imports MCP não bloquearam o build. Sem alterações ao contexto MCP, dados locais, staging ou commits.

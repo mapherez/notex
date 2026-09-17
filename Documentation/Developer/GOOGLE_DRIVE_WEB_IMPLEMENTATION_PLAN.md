@@ -2,6 +2,21 @@
 
 Plano acordado na conversa de implementação. Este documento permanece após a conclusão do trabalho. O progresso é registado em `GOOGLE_DRIVE_WEB_CHECKPOINT.md`, que só será apagado quando a implementação e as validações estiverem concluídas.
 
+## Estado na preparação da versão 2.3.0 — 2026-09-17
+
+Funcionalidades principais implementadas. O utilizador confirmou OAuth real,
+backup e atualização de notas nos dois sentidos, anexos desktop → web,
+isolamento entre contas, sessão mantida após refresh e edição/refresh offline
+com backup após reconexão recebido no desktop. Abrir sem editar não gera
+backup nem alteração de updatedAt.
+
+Configuração: [Google OAuth](GOOGLE_DRIVE_SETUP.md).
+Publicação: [deployment e release](GOOGLE_DRIVE_WEB_DEPLOYMENT.md).
+Permanecem a confirmação do instalador final/atualização com migração, o estado
+público OAuth e a execução/validação do deployment web no host. Workflow de
+imagem GHCR e compose web implementados. Tablet/mobile e MCP hosted
+continuam fora desta fase. O checkpoint distingue casos simulados dos testes reais.
+
 ## 1. Objetivo e arquitetura
 
 Manter o NoteX desktop rápido e utilizável offline, acrescentar backups automáticos na Drive pessoal e disponibilizar a mesma experiência de edição no browser.
