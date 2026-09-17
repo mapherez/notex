@@ -4,3 +4,7 @@
 @function breakpoint($name) {
   @return map.get($breakpoints, $name);
 }
+
+:root {
+  --nx-breakpoint-tablet: #{breakpoint("tablet")};
+}

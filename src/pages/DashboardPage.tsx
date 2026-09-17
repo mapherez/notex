@@ -20,6 +20,7 @@ import {
 import { filterNotes } from '../core/utils/noteFilters';
 import { richTextToPlainText, textToTiptapDocument } from '../core/utils/richText';
 import { useClickOutside } from '../core/utils/useClickOutside';
+import { useFloatingPopover } from '../core/utils/useFloatingPopover';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
@@ -39,6 +40,9 @@ export function DashboardPage() {
   const quickPinInputRef = useRef<HTMLInputElement>(null);
   const quickCaptureTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [activeQuickPinIndex, setActiveQuickPinIndex] = useState<number | null>(null);
+  const quickPinSlotRef = useRef<HTMLDivElement>(null);
+  const quickPinPopoverRef = useRef<HTMLDivElement>(null);
+  useFloatingPopover(activeQuickPinIndex !== null, quickPinSlotRef, quickPinPopoverRef, 'bottom-start', activeQuickPinIndex);
   const [quickPinQuery, setQuickPinQuery] = useState('');
   const settings = useAppStore((state) => state.settings);
   const setQuickPinAt = useAppStore((state) => state.setQuickPinAt);
@@ -269,6 +273,7 @@ export function DashboardPage() {
               {quickPinSlots.map((note, index) => (
                 <div
                   className="quick-pin-slot"
+                  ref={activeQuickPinIndex === index ? quickPinSlotRef : undefined}
                   key={note?.id ?? `quick-pin-empty-${index}`}
                 >
                   <button
@@ -316,7 +321,7 @@ export function DashboardPage() {
                     </button>
                   ) : null}
                   {activeQuickPinIndex === index ? (
-                    <div className="quick-pin-picker">
+                    <div className="quick-pin-picker responsive-popover" ref={quickPinPopoverRef}>
                       <label className="quick-pin-search">
                         <Search />
                         <input

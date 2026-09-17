@@ -1,4 +1,5 @@
 @use "../abstracts/variables" as *;
+@use "../abstracts/breakpoints" as *;
 
 .app-frame {
   display: grid;
@@ -8,6 +9,7 @@
 }
 
 .app-frame--custom-titlebar {
+  --nx-shell-top-offset: var(--nx-window-titlebar-height);
   grid-template-rows: var(--nx-window-titlebar-height) minmax(0, 1fr);
 }
 
@@ -137,7 +139,10 @@
   position: sticky;
   top: 0;
   display: flex;
-  height: 100vh;
+  height: calc(100dvh - var(--nx-shell-top-offset, 0px));
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   flex-direction: column;
   border-right: 1px solid var(--nx-color-border);
   background: var(--nx-color-sidebar);
@@ -147,7 +152,16 @@
 
 .app-frame--custom-titlebar .sidebar {
   top: var(--nx-window-titlebar-height);
-  height: calc(100vh - var(--nx-window-titlebar-height));
+}
+
+.sidebar > * {
+  flex-shrink: 0;
+}
+
+.sidebar .sidebar-close,
+.topbar .mobile-menu-button,
+.sidebar-backdrop {
+  display: none;
 }
 
 .sidebar-header {
@@ -288,6 +302,7 @@
   appearance: none;
   display: flex;
   min-height: 2.95rem;
+  min-width: 0;
   align-items: center;
   gap: var(--nx-space-3);
   border: 0;
@@ -299,6 +314,15 @@
   font-weight: 560;
   text-align: left;
   transition: background 160ms ease, color 160ms ease;
+}
+
+.nav-item span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nav-item svg {
+  flex-shrink: 0;
 }
 
 .nav-item--spaced {
@@ -529,7 +553,7 @@
   width: min(100%, var(--nx-content-max));
   min-height: var(--nx-topbar-height);
   margin: auto;
-  padding: var(--nx-page-gutter) var(--nx-space-8);
+  padding: var(--nx-page-gutter);
   background: color-mix(in srgb, var(--nx-color-canvas) 94%, transparent);
   backdrop-filter: blur(18px);
   z-index: 90;
@@ -540,14 +564,12 @@
 }
 
 .topbar--with-search {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--nx-space-4);
 }
 
 .topbar__search-area {
-  width: min(100%, var(--nx-content-max));
-  margin: 0 auto;
-  padding-inline-end: 10rem;
+  min-width: 0;
 }
 
 .topbar--with-search .search-box-shell,
@@ -556,10 +578,7 @@
 }
 
 .topbar--with-search .topbar__actions {
-  position: absolute;
-  top: 50%;
-  right: var(--nx-page-gutter);
-  transform: translateY(-50%);
+  position: relative;
 }
 
 .search-box-shell {
@@ -588,7 +607,8 @@
   z-index: 45;
   display: grid;
   overflow: auto;
-  max-height: min(26rem, 70vh);
+  max-height: min(26rem, calc(100dvh - 8rem - var(--nx-shell-top-offset, 0px)));
+  overscroll-behavior: contain;
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-md);
   background: var(--nx-color-surface-elevated);
@@ -651,4 +671,84 @@
   padding: var(--nx-space-4);
   color: var(--nx-color-text-muted);
   font-size: 0.9rem;
+}
+
+@media (max-width: breakpoint("tablet")) {
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: var(--nx-shell-top-offset, 0) auto 0 0;
+    width: min(20rem, calc(100% - 1rem));
+    visibility: hidden;
+    transform: translateX(-100%);
+    transition: transform 180ms ease;
+    z-index: 110;
+  }
+
+  .sidebar.open {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .sidebar-header {
+    justify-content: space-between;
+    gap: var(--nx-space-3);
+  }
+
+  .sidebar .sidebar-close,
+  .topbar .mobile-menu-button {
+    display: inline-grid;
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: var(--nx-shell-top-offset, 0) 0 0;
+    display: block;
+    border: 0;
+    background: rgba(0, 0, 0, 0.56);
+    z-index: 105;
+  }
+
+  .topbar,
+  .topbar--with-search {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--nx-space-3);
+  }
+}
+
+// any-pointer includes hybrid devices: a connected mouse must not reduce the
+// targets available to a finger. Keyboard hints only disappear for coarse primary input.
+@media (any-pointer: coarse) {
+  .topbar .icon-button,
+  .topbar .avatar-button,
+  .sidebar-close,
+  .sidebar .brand,
+  .sidebar .nav-item,
+  .sidebar-section-title-link,
+  .sidebar-legal-link,
+  .sidebar-version,
+  .sidebar-mcp-status,
+  .topbar .account-menu button {
+    min-width: 3rem;
+    min-height: 3rem;
+  }
+
+  .topbar .search-box input {
+    font-size: 1rem;
+  }
+}
+
+@media (pointer: coarse) {
+  .topbar .search-box .kbd {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
 }

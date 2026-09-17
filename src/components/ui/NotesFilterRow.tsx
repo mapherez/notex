@@ -22,6 +22,7 @@ import {
 } from "../../core/utils/noteFilters";
 import { sortTagsByName } from "../../core/utils/tagSorting";
 import { useClickOutside } from "../../core/utils/useClickOutside";
+import { useFloatingPopover } from "../../core/utils/useFloatingPopover";
 import { useKeyboardListNavigation } from "../../core/utils/useKeyboardListNavigation";
 import { useI18n } from "../../i18n/I18nProvider";
 import { CustomSelect } from "./CustomSelect";
@@ -207,6 +208,8 @@ function SearchableFilterField({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  useFloatingPopover(open, triggerRef, popoverRef);
   const selectedOption = options.find((option) => option.value === value);
   const filteredOptions = query.trim()
     ? options.filter((option) =>
@@ -291,7 +294,7 @@ function SearchableFilterField({
         <ChevronDown />
       </button>
       {open ? (
-        <div className="notes-filter-menu">
+        <div className="notes-filter-menu responsive-popover" ref={popoverRef}>
           <label className="notes-filter-search">
             <Search />
             <input

@@ -1,0 +1,304 @@
+.page-content {
+  container: page / inline-size;
+}
+
+.dashboard-main {
+  min-width: 0;
+  container: dashboard / inline-size;
+}
+
+.note-list {
+  min-width: 0;
+  container: note-list / inline-size;
+}
+
+.notes-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+}
+
+.note-row__thumbnail .note-thumb {
+  display: block;
+  width: 3.7rem;
+  height: 3.7rem;
+}
+
+.collection-grid,
+.tag-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+}
+
+.stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+}
+
+.quick-pin-row {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+
+.notes-filter-control,
+.notes-filter-order,
+.bulk-field {
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+
+.notes-filter-menu,
+.bulk-tags-menu {
+  width: 100%;
+  min-width: 0;
+}
+
+.responsive-popover {
+  position: absolute;
+  top: var(--nx-popover-top, 0);
+  left: var(--nx-popover-left, 0);
+  right: auto;
+  max-width: var(--nx-popover-max-width, calc(100vw - 2rem));
+  max-height: min(26rem, var(--nx-popover-max-height, 70dvh));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.notes-filter-menu.responsive-popover {
+  width: var(--nx-popover-anchor-width, 100%);
+}
+
+.quick-pin-picker.responsive-popover {
+  width: 18rem;
+  min-width: 0;
+}
+
+.notes-filter-options button {
+  overflow-wrap: anywhere;
+}
+
+.page-header-actions,
+.collection-card-header,
+.tag-card-header {
+  flex-wrap: wrap;
+}
+
+.collection-card-main .stat-label,
+.collection-card-main .stat-delta {
+  overflow-wrap: anywhere;
+}
+
+@container page (max-width: 70rem) {
+  .dashboard-layout,
+  .collections-layout,
+  .tags-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-side {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  }
+}
+
+@container dashboard (max-width: 48rem) {
+  .stat-card {
+    min-height: 9rem;
+    gap: var(--nx-space-3);
+    padding: var(--nx-space-4);
+  }
+}
+
+@mixin compact-notes {
+  .note-row,
+  .note-row.selectable,
+  .note-row.with-pin-indicator,
+  .note-row.selectable.with-pin-indicator,
+  .note-row.with-drag-handle.with-pin-indicator,
+  .note-row.selectable.with-drag-handle.with-pin-indicator,
+  .notes-grid .note-row,
+  .notes-grid .note-row.selectable,
+  .notes-grid .note-row.with-pin-indicator,
+  .notes-grid .note-row.selectable.with-pin-indicator,
+  .notes-grid .note-row.with-drag-handle.with-pin-indicator,
+  .notes-grid .note-row.selectable.with-drag-handle.with-pin-indicator {
+    grid-template:
+      "status status status actions" auto
+      "thumb title title title" auto
+      "badges badges badges badges" auto
+      "time time time time" auto / auto auto minmax(0, 1fr) auto;
+    min-height: 0;
+    gap: var(--nx-space-2) var(--nx-space-3);
+    padding: var(--nx-space-3) var(--nx-space-4);
+  }
+
+  .note-row.selectable,
+  .note-row.selectable.with-pin-indicator,
+  .notes-grid .note-row.selectable,
+  .notes-grid .note-row.selectable.with-pin-indicator {
+    grid-template-areas:
+      "select status status actions"
+      "thumb title title title"
+      "badges badges badges badges"
+      "time time time time";
+  }
+
+  .note-row.with-drag-handle,
+  .note-row.with-drag-handle.with-pin-indicator,
+  .notes-grid .note-row.with-drag-handle,
+  .notes-grid .note-row.with-drag-handle.with-pin-indicator {
+    grid-template-areas:
+      "drag status status actions"
+      "thumb title title title"
+      "badges badges badges badges"
+      "time time time time";
+  }
+
+  .note-row.selectable.with-drag-handle,
+  .note-row.selectable.with-drag-handle.with-pin-indicator,
+  .notes-grid .note-row.selectable.with-drag-handle,
+  .notes-grid .note-row.selectable.with-drag-handle.with-pin-indicator {
+    grid-template-areas:
+      "drag select status actions"
+      "thumb title title title"
+      "badges badges badges badges"
+      "time time time time";
+  }
+
+  .note-row__drag-handle { grid-area: drag; }
+  .note-select-control { grid-area: select; }
+  .note-row-actions { grid-area: actions; }
+
+  .note-row__status-stack {
+    grid-area: status;
+    display: flex;
+    width: auto;
+    justify-self: start;
+    gap: var(--nx-space-2);
+  }
+
+  .note-row__thumbnail { grid-area: thumb; }
+
+  .note-row__content,
+  .notes-grid .note-row__content {
+    grid-area: title;
+    display: grid;
+    min-width: 0;
+  }
+
+  .note-row__title-line,
+  .notes-grid .note-row__title-line,
+  .notes-grid .note-row__summary-preview {
+    grid-area: auto;
+  }
+
+  .note-row .note-row__badges,
+  .notes-grid .note-row__badges {
+    grid-area: badges;
+    display: grid;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    gap: var(--nx-space-2);
+  }
+
+  .note-row .collection-chip {
+    max-width: 100%;
+    justify-self: start;
+  }
+
+  .note-row .note-row__tag-chain {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    gap: var(--nx-space-2);
+    margin-left: 0;
+    padding: var(--nx-space-1);
+    overscroll-behavior-x: contain;
+  }
+
+  .note-row__tag-chain-item::after { display: none; }
+
+  .note-row__tag-chain-item .tag-chip,
+  .note-row__tag-chain-item:hover .tag-chip,
+  .note-row__tag-chain-item:focus-within .tag-chip {
+    display: inline-flex;
+    max-width: none;
+    transform: none;
+  }
+
+  .note-row__time,
+  .notes-grid .note-row__time {
+    grid-area: time;
+    justify-self: end;
+  }
+
+  .note-row .icon-button {
+    display: inline-grid;
+  }
+}
+
+@container note-list (max-width: 64rem) {
+  @include compact-notes;
+}
+
+@media (any-pointer: coarse) {
+  @include compact-notes;
+
+  .note-row .note-row__status-button,
+  .note-row .note-row__drag-handle,
+  .note-row .note-select-control,
+  .note-row .icon-button,
+  .note-row-menu button,
+  .note-row-menu > a,
+  .note-row .tag-chip,
+  .note-row .collection-chip,
+  .notes-filter-trigger,
+  .notes-filter-view-button,
+  .notes-filter-clear,
+  .notes-filter-options button,
+  .bulk-tags-trigger,
+  .bulk-clear-button,
+  .bulk-delete-button,
+  .bulk-selection-summary,
+  .bulk-tag-option,
+  .list-page-grid .custom-select__trigger,
+  .collection-action-button,
+  .collection-create-actions > button,
+  .tag-create-actions > button,
+  .tag-card .icon-button,
+  .tag-card-actions button,
+  .quick-pin-edit,
+  .quick-pin-clear,
+  .quick-pin-options button,
+  .dashboard-side .submit-button {
+    min-width: 3rem;
+    min-height: 3rem;
+  }
+
+  .notes-filter-toggle {
+    height: auto;
+  }
+
+  .quick-pin-card:not(.empty) {
+    padding-right: 4rem;
+  }
+
+  .quick-pin-row {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  }
+
+  .quick-pin-edit {
+    top: var(--nx-space-2);
+    right: var(--nx-space-2);
+  }
+
+  .quick-pin-search,
+  .notes-filter-search {
+    min-height: 3rem;
+  }
+
+  .quick-pin-search input,
+  .notes-filter-search input,
+  .collection-create-card input,
+  .collection-edit-form input,
+  .tag-create-card input,
+  .tag-edit-form input,
+  .dashboard-side textarea {
+    font-size: 1rem;
+  }
+}

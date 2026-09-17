@@ -49,7 +49,7 @@ export function SearchBox({ className }: { className?: string }) {
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
-      if (isPrimaryShortcut(event, "f")) {
+      if (isPrimaryShortcut(event, "f") && !inputRef.current?.closest('[inert]')) {
         event.preventDefault();
         inputRef.current?.focus();
         if (normalizedQuery) {
@@ -91,6 +91,7 @@ export function SearchBox({ className }: { className?: string }) {
           ref={inputRef}
           type="search"
           placeholder={t('topbar.searchPlaceholder')}
+          aria-label={t('topbar.searchPlaceholder')}
           value={query}
           aria-expanded={showResults}
           aria-controls={showResults ? resultsId : undefined}

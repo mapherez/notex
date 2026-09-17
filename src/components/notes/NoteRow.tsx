@@ -6,6 +6,7 @@ import { richTextToPlainText } from '../../core/utils/richText';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useMenuOptionFocus } from '../../core/utils/useMenuOptionFocus';
+import { useFloatingPopover } from '../../core/utils/useFloatingPopover';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useNotesStore } from '../../store/useNotesStore';
@@ -49,6 +50,7 @@ export function NoteRow({
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menu = useMenuOptionFocus(menuOpen, () => setMenuOpen(false));
+  useFloatingPopover(menuOpen, menu.triggerRef, menu.menuRef, 'bottom-end');
   const toggleFavorite = useNotesStore((state) => state.toggleFavorite);
   const togglePinned = useNotesStore((state) => state.togglePinned);
   const setPinnedNoteState = useAppStore((state) => state.setPinnedNoteState);
@@ -205,6 +207,7 @@ export function NoteRow({
           className="icon-button"
           type="button"
           aria-label={t('notes.openMenu')}
+          aria-expanded={menuOpen}
           ref={menu.triggerRef}
           onClick={(event) => {
             event.preventDefault();
@@ -214,7 +217,7 @@ export function NoteRow({
           <MoreVertical />
         </button>
         {menuOpen ? (
-          <div className="floating-menu note-row-menu" ref={menu.menuRef} onClick={menu.closeAndFocus}>
+          <div className="floating-menu note-row-menu responsive-popover" ref={menu.menuRef} onClick={menu.closeAndFocus}>
             <Link to={`/notes/${note.id}`}>{t('common.open')}</Link>
             <button type="button" onClick={() => void handleDuplicate()}>
               <Copy />

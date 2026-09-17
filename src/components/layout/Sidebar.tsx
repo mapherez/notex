@@ -1,6 +1,6 @@
 import { getVersion } from '@tauri-apps/api/app';
 import { isTauri } from '@tauri-apps/api/core';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 import { NavLink, Link, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Clock3,
@@ -12,6 +12,7 @@ import {
   Tag,
   Trash,
   Trash2,
+  X,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { appSettings, navigationSettings } from '../../config/appSettings';
@@ -20,6 +21,7 @@ import { useNotesStore } from '../../store/useNotesStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { useLocalMcpStore } from '../../store/useLocalMcpStore';
 import { latestPatchNoteVersion, PatchNotesModal } from '../ui/PatchNotesModal';
+import { useSidebarDrawer } from '../../core/utils/useSidebarDrawer';
 
 const navIcons = {
   clock: Clock3,
@@ -30,8 +32,15 @@ const navIcons = {
   trash: Trash,
 } as const;
 
-export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClose: () => void; onCreateNote: () => void }) {
+export function Sidebar({ open, onClose, onCreateNote, backgroundRef, triggerRef }: {
+  open: boolean;
+  onClose: () => void;
+  onCreateNote: () => void;
+  backgroundRef: RefObject<HTMLElement>;
+  triggerRef: RefObject<HTMLButtonElement>;
+}) {
   const { t } = useI18n();
+  const { compact, sidebarRef } = useSidebarDrawer(open, onClose, backgroundRef, triggerRef);
   const [appVersion, setAppVersion] = useState(latestPatchNoteVersion);
   const [patchNotesOpen, setPatchNotesOpen] = useState(false);
   const [searchParams] = useSearchParams();
@@ -69,18 +78,29 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
 
   return (
     <>
-      {open ? (
+      {compact && open ? (
         <button
           className="sidebar-backdrop"
           type="button"
           aria-label={t("common.close")}
+          tabIndex={-1}
           onClick={onClose}
         />
       ) : null}
-      <aside className={clsx("sidebar", open && "open")}>
+      <aside
+        id="app-sidebar"
+        ref={sidebarRef}
+        className={clsx("sidebar", open && "open")}
+        role={compact ? 'dialog' : undefined}
+        aria-modal={compact && open ? true : undefined}
+        aria-label={t('navigation.notes')}
+      >
         <div className="sidebar-header">
+          <button className="icon-button sidebar-close" type="button" aria-label={t('common.close')} onClick={onClose}>
+            <X />
+          </button>
           <Link className="brand" to="/" onClick={onClose}>
-          <img className="logo-image" src={`${import.meta.env.BASE_URL}assets/notex_logo_small.webp`} alt="" />
+            <img className="logo-image" src={`${import.meta.env.BASE_URL}assets/notex_logo_small.webp`} alt="" />
             <span>{appSettings.productName}</span>
           </Link>
         </div>
@@ -171,7 +191,10 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
               className="sidebar-version"
               type="button"
               aria-label={t('patchNotes.open', { version: appVersion })}
-              onClick={() => setPatchNotesOpen(true)}
+              onClick={() => {
+                onClose();
+                setPatchNotesOpen(true);
+              }}
             >
               v{appVersion}
             </button>

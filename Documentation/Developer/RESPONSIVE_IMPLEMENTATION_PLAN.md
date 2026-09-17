@@ -1,6 +1,8 @@
 # NoteX: janela desktop de meia largura, tablet e avaliação mobile
 
-Estado: plano de implementação; implementação não iniciada.
+Estado: implementação em curso; Etapas 1, 2 e 3 implementadas e validadas localmente.
+Validação em tablets reais pendente.
+Etapa 4: análise e proposta concretas concluídas; decisões abaixo por aprovar.
 Data: 2026-09-17.
 
 Este documento regista a análise do código e as decisões acordadas na conversa.
@@ -36,7 +38,7 @@ componentes ao espaço disponível e melhorando as interações touch.
 - Preservar rotas, dados, formatos de backup, preferências atuais e diferenças
   funcionais já existentes entre browser e desktop.
 
-## 2. Estado atual e problemas identificados
+## 2. Estado inicial e problemas identificados
 
 A análise foi estática, por leitura dos componentes, estilos e serviços. Não houve
 validação visual ou testes em dispositivos. Os problemas abaixo resultam do
@@ -367,3 +369,431 @@ Explicar o problema concreto e apresentar o resultado proposto para revisão.
 
 Estas referências fundamentam mecanismos técnicos e critérios de interação; não
 substituem a medição do NoteX nem aprovam mudanças de produto.
+
+## 9. Registo de implementação — 2026-09-17
+
+### Etapa 0: medição inicial do shell
+
+Referência visual desktop registada antes da alteração a 960×1080. As medições
+desta entrega cobrem shell, sidebar e topbar; a medição detalhada de Home,
+listas, Profile e editor continua nas etapas correspondentes.
+
+| Viewport em px CSS | Sidebar | Pesquisa após a alteração | Altura real da topbar |
+| --- | --- | --- | --- |
+| 1920×1080, rato | Persistente, 224 px | 1264 px | 112 px |
+| 960×1080, rato | Persistente, 224 px | 534 px | 106 px |
+| 768×1024, touch emulado | Drawer, 320 px | 510 px | 94 px |
+| 1024×768, touch emulado | Persistente, 224 px | 582 px | 109 px |
+| 512×768, split view touch emulado | Drawer, 320 px | 268 px | 88 px |
+
+O shell mantém o limiar existente de 900 px: ambos os lados (900 e 901 px)
+foram medidos sem sobreposição entre pesquisa e ações. A 901 px, a pesquisa
+mantém 479 px no contexto de rato. Este resultado valida o shell desta etapa;
+não determina os limiares próprios dos módulos das páginas. A topbar tem
+altura intrínseca superior ao token mínimo de 88 px em vários viewports; a
+toolbar do editor deve considerar a altura efetiva na Etapa 4.
+
+### Etapa 1: shell, sidebar e topbar
+
+Implementado:
+
+- A mesma sidebar mantém-se persistente ou funciona como drawer, sem duplicar
+  conteúdo. Tem largura explícita no drawer, scroll vertical próprio e quebra
+  de nomes longos sem comprimir os controlos.
+- Drawer fechado fica `inert`. Ao abrir, recebe foco no botão de fechar,
+  contém Tab/Shift+Tab, fecha com Escape, bloqueia conteúdo/notificações e
+  scroll do fundo, e devolve foco ao controlo anterior quando apropriado.
+  Mudanças de rota ou de modo de layout fecham o drawer e libertam o fundo.
+- Links legais e notas de versão fecham o drawer antes de abrir o respetivo
+  modal, evitando bloqueios de scroll ou foco acumulados.
+- Pesquisa e ações ocupam colunas reais; os gutters alinham com o conteúdo.
+  Pesquisa tem nome acessível explícito. Resultados e menu de conta limitam
+  altura ao viewport e permitem scroll próprio.
+- Controlos do shell usam alvos mínimos de 48 px quando existe um ponteiro
+  coarse, incluindo dispositivos híbridos. O avatar continua visível; a dica
+  de atalho da pesquisa só fica oculta com ponteiro principal coarse. Os
+  atalhos desktop existentes mantêm-se; a pesquisa não tenta focar o fundo
+  enquanto este está `inert`.
+- SCSS continua a definir o breakpoint; o hook lê a variável CSS emitida,
+  evitando um segundo valor independente em JavaScript.
+
+Validação local concluída:
+
+- Typecheck e `check:styles` passaram.
+- 14 testes passaram: drawer, `AppModal` e pesquisa (`noteSearch`).
+- Chromium isolado: geometria e screenshots nas dimensões da tabela e a
+  900/901 px; sem sobreposição da topbar ou overflow horizontal nas fixtures.
+- Foco, Escape, ciclo de Tab, restauração do foco, resize com drawer aberto,
+  abertura de modais legais/notas de versão e desbloqueio do fundo verificados.
+- Atalhos desktop de pesquisa, Profile e nova nota, e seleção de resultado por
+  setas/Enter verificados no browser. As operações de criação e registo de
+  abertura foram substituídas na fixture; não foi um teste de persistência.
+- Contexto touch emulado: toque nos menus, alvos de 48 px, 32 collections com
+  nomes longos e rodapé acessível por scroll; pesquisa com 15 resultados e
+  scroll local sem sair do viewport.
+- Fixtures em memória numa sessão isolada, sem usar a biblioteca nem a conta
+  Google do utilizador. Screenshots locais em `output/playwright/` (ignorados
+  pelo Git).
+
+Limites da validação: não substitui Safari/iPad e Chrome/Android reais, escala
+desktop/DPI nem teclado virtual. Não foi validada a janela Tauri nativa nesta
+entrega. Na conclusão da Etapa 1, Home ainda comprimia os cinco atalhos rápidos
+a 960 px e empilhava demasiado os indicadores em portrait; corrigido na Etapa 2.
+Editor, Profile,
+reordenação, modais/banners transversais e mobile mantêm as etapas previstas.
+
+### Etapa 2: Home, listas, grids, filtros, tags e collections
+
+Implementado:
+
+- Indicadores e atalhos rápidos usam mínimos próprios de largura, mantendo cinco
+  colunas quando cabem. Atalhos touch reservam espaço para o botão de edição de
+  48 px. Os indicadores ficam menos altos em áreas reduzidas.
+- Container queries medem a página e os módulos. Home, tags e collections
+  colocam os painéis laterais depois do conteúdo abaixo de 70 rem úteis; os
+  grids internos escolhem colunas a partir dos mínimos dos cards.
+- `NoteRow` continua a servir List/Grid e Home. Abaixo de 64 rem na lista, ou
+  com touch disponível, os controlos ficam numa linha, thumbnail/título/preview
+  na seguinte e collection/tags abaixo. A lista mantém linhas dentro do mesmo
+  painel; Grid mantém cards separados e o preview próprio. Não existe novo modo
+  nem componentes de nota duplicados.
+- Tags compactas têm faixa com scroll horizontal nativo e espaçamento, sem
+  sobreposição ou elevação por hover. O foco revela a tag fora da área visível.
+  Seleção, favorito, fixação, pega de reordenação, data e menu permanecem presentes.
+- Thumbnails das notas têm caixa explícita de 3,7 rem, com `display: block`,
+  evitando expansão intrínseca nas colunas automáticas.
+- Filtros e ações em lote quebram por mínimos comuns de 14 rem. Cards e
+  cabeçalhos permitem quebra de ações; formulários preservam a ordem atual.
+- Controlos touch alterados têm mínimos de 48 px e os campos têm fonte de 16 px.
+- Antecipada a infraestrutura necessária de menus da Etapa 5: helper reutilizável
+  com Floating UI para ações das notas, filtros pesquisáveis e picker de atalhos.
+  Reposiciona, limita tamanho e acompanha scroll/resize. Mantém os menus inline,
+  os handlers atuais de clique fora e foco, e lê espaçamento dos tokens CSS.
+  Os restantes overlays continuam na Etapa 5.
+
+Mínimos de conteúdo usados: indicadores 10 rem, atalhos 12 rem (16 rem com
+touch), cards de tags/collections 19 rem e notas Grid 22 rem. Em espaço inferior
+ao mínimo, cada grid permite uma coluna da largura disponível.
+
+| Viewport touch emulado | Colunas de indicadores | Colunas de atalhos |
+| --- | --- | --- |
+| 1920×1080 | 5 | 3 |
+| 960×1080 | 3 | 2 |
+| 768×1024 | 4 | 2 |
+| 1024×768 | 4 | 2 |
+| 512×768, split view | 2 | 1 |
+
+Validação local concluída:
+
+- Typecheck, `check:styles` e 5 testes existentes (`CustomSelect` e drawer) passaram.
+- Chromium: Home, notas, tags e collections nas cinco dimensões acima; desktop
+  com rato a 1920/960 px. Fixtures sem overflow horizontal da página.
+- List/Grid distintos e preferência preservada ao redimensionar; seleção mantém-se
+  após portrait/landscape; filtro ativo mantém-se depois de mudar a largura.
+- Faixa de 12 tags com scroll local e revelação por foco; alvos de seleção,
+  favorito, fixação, pega, menu e tags medidos com mínimo de 48 px em touch.
+- Abertura por toque, limites dos menus de nota/atalho nas margens, filtros por
+  teclado, Escape/restauro de foco e atalho Shift+5 verificados. Consola sem erros
+  nas sessões finais; apenas avisos existentes do React Router.
+- Screenshots antes/depois em `output/playwright/responsive-stage2-*`; fixtures
+  em memória sem persistência, biblioteca do utilizador ou login Google.
+
+A composição compacta está pronta para revisão visual. Confirmar densidade e
+scroll/swipe em tablets reais; ainda não é validação de Safari/iPad,
+Chrome/Android reais, DPI desktop ou teclado virtual. O tratamento completo de
+cancelamento/reordenação touch e os comandos alternativos continuam na Etapa 5.
+A Etapa 3 de Profile está registada abaixo; as decisões pendentes do editor/mobile mantêm-se.
+
+Referências da infraestrutura de menus:
+[posicionamento](https://floating-ui.com/docs/computeposition),
+[limites de tamanho](https://floating-ui.com/docs/size) e
+[atualização de posição](https://floating-ui.com/docs/autoupdate).
+
+### Etapa 3: Profile
+
+Implementado:
+
+- O grid mede a largura útil da página, depois da navegação e dos gutters:
+  uma coluna abaixo de 42 rem, duas a partir de 42 rem e três a partir de
+  68 rem. No modo amplo mantém as proporções existentes: conta com 15,3 rem,
+  preferências com mínimo de 24 rem e dados com 20–24,5 rem.
+- Mantém a ordem DOM e de teclado: conta, preferências, dados, módulos desktop
+  e estatísticas. Os módulos wide ocupam duas colunas quando disponíveis;
+  estatísticas continuam a ocupar a linha completa. Sem tabs ou accordions.
+- Cada módulo mede o seu conteúdo. Preferências com até 28 rem colocam os
+  seletores abaixo da descrição, alinhados com o texto. Nomes, emails,
+  descrições e caminhos longos permitem quebra sem expandir as colunas.
+- Estatísticas usam 1/2/3/5 colunas, com transições aos 26/42/64 rem internos.
+  Caminhos usam 1/2/3 colunas, aos 38/58 rem internos. Um mixin comum calcula
+  separadores e padding por linha/coluna, incluindo a última linha incompleta.
+- Cabeçalho e estado MCP permitem quebra; backup mantém o comportamento
+  existente de passar abaixo do estado quando deixa de caber. Os seletores
+  acompanham a largura disponível e o módulo focado mantém o menu visível
+  acima dos módulos seguintes.
+- Controlos de Profile têm mínimo de 48 px com `any-pointer: coarse`, incluindo
+  seletores/opções, ações de conta e backup, atalhos, MCP e abertura de pastas.
+- As condições browser/desktop e os handlers existentes não foram alterados.
+  A única alteração de JSX identifica a página para limitar os estilos touch.
+  Modais e posicionamento transversal dos restantes overlays continuam na Etapa 5.
+
+| Viewport touch emulado | Colunas de módulos | Colunas de estatísticas |
+| --- | --- | --- |
+| 1920×1080 | 3 | 5 |
+| 960×1080 | 2 | 2 |
+| 768×1024 | 2 | 3 |
+| 1024×768 | 2 | 3 |
+| 512×768, split view | 1 | 2 |
+
+Validação local concluída:
+
+- Typecheck, `check:styles`, compilação completa de Sass e `git diff --check` passaram.
+- Chromium touch emulado nas cinco dimensões da tabela e nos dois lados dos
+  breakpoints de módulos (953/954 e 1375/1376 px de viewport nesta fixture).
+  Sem overflow horizontal; separadores e alvos touch medidos.
+- Menus de preferências abrem por toque e cabem horizontalmente; setas/Enter,
+  Escape e restauro de foco funcionam. Tema selecionado mantém-se após resize
+  portrait/landscape. Modal de atalhos abre e devolve foco ao fechar por Escape.
+- Chromium com rato a 1920/960 px: seletores, idioma PT/EN e atalho desktop de
+  pesquisa verificados. Sessões finais sem erros de consola, apenas os avisos
+  existentes do React Router.
+- Conta com nome/email longos e ação de backup verificadas em memória. MCP e
+  caminhos desktop tiveram validação de geometria com markup representativo
+  e classes reais, e revisão das condições no código; não foi uma execução
+  dos componentes na janela Tauri nem um teste das operações nativas.
+- Fixtures locais sem persistência, login Google ou backup real. Screenshots
+  em `output/playwright/responsive-stage3-*`, ignorados pelo Git.
+
+Confirmar em tablets reais e Tauri, incluindo DPI/zoom e teclado virtual.
+Editor, reordenação touch, overlays transversais e mobile continuam nas etapas
+previstas. Antes da Etapa 4, concretizar as decisões pendentes do índice de
+blocos e da toolbar do editor para aprovação.
+
+## 10. Etapa 4: proposta concreta para revisão
+
+Estado: proposta, sem alterações ao código do editor. Rever e aprovar cada
+entrega separadamente. O utilizador pediu começar pela revisão de 4C;
+4A e 4B continuam pendentes. Não há aprovação para limitações mobile.
+
+### Medição do editor existente
+
+Chromium com touch emulado, nota demo em memória e 12 tags longas. Larguras
+em pixels CSS; a área de texto desconta o padding do documento. Não houve
+edição persistida, login ou utilização de ficheiros do utilizador.
+
+| Viewport solicitado | Largura de texto atual | Linhas de ferramentas atuais | Linhas com toolbar em linha própria e alvos de 48 px |
+| --- | --- | --- | --- |
+| 1920×1080 | 980 | 1 | 1 |
+| 960×1080 | 672 | 5 | 2 |
+| 768×1024 | 704 | 4 | 2 |
+| 1024×768 | 372 | 4 | 2 |
+| 512×768 | 448 | 7 | 3 |
+
+A última coluna é uma experiência CSS temporária no browser, removida depois
+da medição; não é implementação nem validação de teclado virtual. O teste da
+toolbar em linha própria usou altura de viewport de 1024 px para isolar largura.
+As referências existentes estão em `output/playwright/responsive-editor-before-*`.
+
+Problemas confirmados:
+
+- A 1024 px, o breakpoint de 1020 px conserva índice/documento/painéis em
+  colunas, apesar de a sidebar ocupar 224 px. As regras dos painéis ainda
+  fazem duas colunas dentro dos 320 px laterais, comprimindo cada módulo.
+- O índice tem o conteúdo oculto por `visibility: hidden`, revelado por hover
+  ou `focus-within`, mas não tem trigger focável. Em touch e navegação inicial
+  por teclado não existe uma forma explícita de o abrir.
+- Voltar, toolbar e ações disputam a mesma linha. O cabeçalho atinge 211 px
+  a 960 px e 283 px em split view, antes da área do documento.
+- Nesta fixture, a página expande horizontalmente a 1067 px no viewport de
+  1024 e a 637 px no de 512. Comparar scroll com a largura solicitada/clientWidth;
+  `innerWidth` também pode expandir e esconder este problema na medição mobile.
+- Ações e zonas vazias dos blocos dependem de hover/foco. A preservação de
+  seleção das ferramentas depende de `onMouseDown`. O `pointercancel` do
+  arrasto chama a conclusão normal, podendo guardar a ordem provisória.
+
+### 4A — Documento, índice e conteúdo largo
+
+Proposta de composição:
+
+- Manter índice à esquerda, documento ao centro e painéis à direita quando
+  existem pelo menos 64 rem úteis no editor. Mínimos de referência: índice
+  3 rem, documento 32 rem, lateral 20 rem e gaps com tokens existentes.
+  Confirmar o limiar com textos/anexos reais durante implementação.
+- Abaixo desse espaço, retirar a coluna do índice e colocar todos os painéis
+  depois do documento, na ordem DOM existente. Os painéis passam a grid
+  auto-fit, com mínimo inicial de 19 rem; sem duas colunas forçadas dentro
+  de um painel lateral estreito.
+- Índice compacto: botão explícito «Índice» ao lado de Voltar, com alvo de
+  48 px em touch. Abre um popover ancorado, até 20 rem e limitado ao viewport,
+  com scroll próprio, hierarquia e indicação da entrada ativa existentes.
+  Selecionar uma entrada fecha o painel e revela o destino abaixo dos headers;
+  Escape/clique fora fecha e devolve foco ao trigger, sem abrir teclado.
+- Em modo amplo, a coluna mantém os traços atuais e ganha um trigger real.
+  Clique/toque/Enter/Space abre o mesmo painel; o hover desktop pode continuar
+  como conveniência. Reutilizar a lista de entradas, sem dois índices montados.
+- Reduzir padding do documento de 2 rem para 1 rem em composição compacta,
+  mantendo gutters alinhados com o shell. Cabeçalho da nota, thumbnail,
+  collection e tags quebram por conteúdo, preservando os campos atuais.
+- Tabelas e código largos têm scroll local. Imagens e anexos respeitam a
+  largura disponível; atributos de tamanho/wrap guardados não são alterados
+  por resize. Botões de abrir/exportar/eliminar anexos ficam acessíveis por
+  toque, preservando a confirmação e diferenças browser/desktop existentes.
+
+Validação: cinco dimensões da tabela, pontos adjacentes ao limiar, índice
+extenso, seleção por toque e teclado, Escape/restauro de foco, tabelas/código
+largos, nomes de anexos longos e imagens existentes. Sem overflow da página
+nem perda de conteúdo/draft ao redimensionar.
+
+### 4B — Toolbar e teclado virtual
+
+Proposta de comportamento:
+
+- No desktop amplo conservar a composição atual quando cabe. Quando Voltar,
+  índice, ferramentas e ações deixam de caber juntos, passar a toolbar para
+  uma linha própria, sem mudar a ordem dos comandos. Manter estado de gravação
+  e todas as ações da nota visíveis, com quebra quando necessário.
+- Desktop Tauri e browser com ponteiro principal fine: toolbar sempre superior,
+  independentemente de foco ou altura. Permitir duas linhas; se não bastarem,
+  uma linha com scroll horizontal local. Disponibilidade touch aumenta os
+  alvos, mas por si só não ativa ocultação nem posição inferior em híbridos.
+- Tablet touch no browser, com ponteiro principal coarse: manter toolbar
+  superior enquanto cabe em até duas linhas e deixa altura útil de edição.
+  Em portrait de 768 px e landscape de 1024 px a medição de largura permite
+  essas duas linhas; a abertura do teclado pode mudar o resultado pela altura.
+- Modo compacto quando exige três linhas ou deixa menos de 16 rem livres
+  entre headers/toolbar e o limite visível. Os 16 rem são um mínimo inicial
+  de ensaio, a rever com escrita real. Com teclado virtual identificado,
+  apresentar uma linha com swipe diretamente acima dele. Quando fecha,
+  ocultar a barra nesse modo, conforme o acordo anterior.
+- Identificação do teclado combina foco editável com variação da área visível,
+  mantendo referências por orientação/escala. Resize, zoom ou interação
+  coarse isolados não provam abertura do teclado. Não persistir esse estado.
+- Não remontar os editores ou criar outra toolbar. Preservar target, seleção
+  Tiptap, draft e undo; tocar/swipe nas ferramentas não deve provocar formatação
+  acidental nem perda de seleção. Menus de cores/tabela são reposicionados e
+  têm scroll próprio, fora da região que recorta o swipe da toolbar.
+- Calcular offsets sticky pela altura efetiva da topbar e do cabeçalho, incluindo
+  titlebar Tauri. A barra inferior não entra no cálculo do offset superior do
+  índice. Reservar espaço para cursor e coordenar notificações/menus simultâneos.
+
+Exceção proposta, por aprovar: quando a geometria do teclado não é fiável,
+manter uma toolbar superior de uma linha com scroll, visível mesmo com teclado
+fechado. Abrange a situação em que não se consegue distinguir teclado
+flutuante/dividido ou obter posição suficiente. Não afirmar que o limite do
+viewport corresponde ao topo desses teclados. É uma alternativa à ocultação
+compacta acordada; só aplicar após aprovação.
+
+Fundamento: `VisualViewport` dá área visível e escala, que podem mudar tanto
+por zoom como pelo teclado; não constitui um indicador direto de teclado.
+[MDN: VisualViewport](https://developer.mozilla.org/en-US/docs/Web/API/VisualViewport).
+A API específica de teclado tem suporte limitado, pelo que não deve ser um
+requisito para usar o editor.
+[MDN: VirtualKeyboard API](https://developer.mozilla.org/en-US/docs/Web/API/VirtualKeyboard_API).
+A escolha do fallback superior é uma decisão proposta para NoteX, não uma
+garantia dada por estas APIs.
+
+Validação: seleção/formatar/undo após transições, swipe sem comandos acidentais,
+foco dos menus, teclado fechado com editor ainda focado, rotação e zoom. Fixtures
+podem testar transições, mas a barra acima do teclado só fica validada com escrita
+em Safari/iPad e Chrome/Android reais, incluindo teclado flutuante/dividido.
+Não marcar 4B completa apenas com emulação Chromium.
+
+### 4C — Ações dos blocos e conclusão dos gestos
+
+Direção definida pelo utilizador, ainda sem implementação: retirar tanto a
+barra permanente como a pega touch. Não reservar espaço para ações de bloco.
+Os limites do bloco aparecem durante interação, sem fundos permanentemente
+ativos. Manter o comportamento desktop nos ponteiros que o usam.
+
+Decisão aprovada pelo utilizador: distinguir leitura de edição, seguindo o
+comportamento observado no Notion mobile. A entrada imediata na escrita por
+clique e navegação por teclado é um requisito obrigatório. Esta aprovação
+define o comportamento; ainda não há implementação nem validação em touch real.
+
+- Em leitura, manter a mesma instância Tiptap não editável, mas acessível na
+  ordem atual de Tab/Shift+Tab. Não criar uma segunda representação do documento.
+- Clique com rato ativa edição no ponto clicado. Foco por teclado ativa edição
+  imediatamente, preservando o comportamento atual do cursor e os atalhos.
+  Não exigir Enter, segundo clique ou outra ação; não perder a primeira letra.
+- Em touch, distinguir tap curto de pressão prolongada antes de ativar edição.
+  Não ativar edição indiscriminadamente no foco provocado pelo contacto inicial.
+- Durante edição, pressão prolongada no texto mantém a interação nativa de
+  cursor, lupa, seleção e copiar/colar, e a formatação existente. Não iniciar
+  drag do bloco a partir desse gesto. Não desenvolver lupa própria nesta direção.
+- Determinar o estado pelo foco/seleção e interação, não apenas pelo teclado
+  virtual: teclado fechado ou teclado físico não provam fim da edição.
+  A forma de regressar à leitura ainda precisa de revisão.
+- Suportar iOS, Android, rato, touch e teclado, incluindo dispositivos híbridos;
+  não escolher o comportamento apenas pela largura ou pelo sistema operativo.
+
+Sequência touch pretendida, começando fora de edição:
+
+1. Entrar na nota: conteúdo normal, sem blocos em foco ou controlos de bloco.
+2. Tap curto numa área do bloco: ativar edição, focar visualmente esse bloco e colocar o cursor
+   no texto correspondente ao ponto tocado, sem pega nem botão de eliminar.
+   O comportamento de áreas não textuais/anexos precisa de preservar as ações
+   próprias desses elementos; não colocar o cursor numa posição arbitrária.
+3. Pressionar em leitura durante cerca de 1 s: bloco preparado para arrasto, com feedback
+   háptico quando suportado e border mais evidente ou glow leve. Aspeto final
+   a rever visualmente; não mudar geometria/altura do bloco por mudar border.
+   Tempo final a afinar. Movimento antes da ativação deve permitir scroll normal
+   e cancelar a preparação de drag, distinguindo-o do pequeno tremor do dedo.
+4. Após preparação, deslocar o dedo além da tolerância de movimento inicia
+   drag, mantendo o mesmo contacto. Tremor de 5–10 px não deve indicar intenção
+   de arrasto automaticamente. Valores finais a afinar com touch real.
+5. Durante drag: mostrar moldura do bloco e uma linha horizontal de inserção
+   no destino exato que será confirmado ao levantar o dedo. Fazer scroll automático conforme a
+   posição do dedo na área visível de edição. Acelerar progressivamente junto
+   às margens, com máximo controlado e independente da frequência de eventos.
+   O centro deve permitir deslocação muito lenta; recomendação para revisão:
+   zona central sem autoscroll, para estabilizar o destino. Recalcular destino
+   enquanto o conteúdo faz scroll, mesmo com o dedo parado.
+6. Proposta anterior, pendente de nova revisão neste modelo de leitura/edição:
+   se continuar parado após a preparação durante cerca de mais 1 s, cancelar
+   a possibilidade de iniciar drag nesse contacto e revelar as ações: mover
+   acima/abaixo empilhados junto ao ponto original de toque, e eliminar ao
+   centro em baixo. Segundo feedback háptico quando disponível. O menu é
+   ancorado às coordenadas do toque, com ajuste apenas para evitar clipping
+   e obstrução pelo dedo; não é ancorado genericamente ao topo do bloco.
+7. Eliminar mantém a confirmação desktop existente. O botão inferior fica
+   acima do teclado quando a geometria é conhecida; sem teclado, usa margem
+   inferior generosa e safe area. Áreas de toque confortáveis, inicialmente
+   48×48 px, sem exigir ícones visualmente grandes.
+8. Mover acima/abaixo reutiliza a operação existente e acompanha o bloco por
+   scroll, preservando o bloco alvo. Ações precisam de um novo tap deliberado:
+   levantar o dedo da pressão prolongada não pode executar uma opção.
+9. Drop válido confirma a ordem uma vez. Interrupção, `pointercancel` ou perda
+   inesperada de captura abandonam a ordem provisória. Se libertar o dedo
+   depois da primeira ativação sem arrasto/menu, não executar uma operação.
+
+A eventual preferência de velocidade em Profile foi sugerida para discussão
+posterior à implementação e teste. Não acrescentar agora.
+
+Limitações e decisões técnicas a resolver antes da implementação completa:
+
+- Vibração web não é garantida; Safari/iOS não suporta `navigator.vibrate`.
+  O feedback visual precisa de comunicar os dois estados por si só.
+  [MDN: vibração](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/vibrate),
+  [MDN: compatibilidade](https://github.com/mdn/browser-compat-data/blob/main/api/Navigator.json).
+- O editor atual está editável mesmo sem foco. Os handlers touch consultados
+  no ProseMirror instalado não têm um temporizador de seleção de palavra após
+  1 s; a origem exata do comportamento observado ainda precisa de confirmação.
+  Primeiro ensaio: comparar editável sem foco, leitura e edição após tap curto.
+  `editable: false` isolado não impede seleção nativa de texto em leitura.
+  Validar supressão do gesto de seleção apenas onde necessário para o drag,
+  sem prejudicar scroll, zoom, links, anexos ou seleção durante edição.
+  [Tiptap: editable e tabindex](https://tiptap.dev/docs/editor/api/editor).
+- O browser pode assumir pan/zoom e cancelar o ponteiro; mudar `touch-action`
+  depois da ativação não muda o gesto já iniciado. Não resolver com bloqueio
+  global de scroll/zoom ou scroll manual em toda a nota sem aprovação.
+  [MDN: arbitragem de gestos](https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action).
+- A área visível também muda por zoom. Teclados flutuantes/divididos podem não
+  fornecer a posição necessária ao botão inferior; comportamento alternativo
+  ainda por decidir. Não adotar automaticamente o fallback proposto em 4B.
+
+Validação por passos: clique e Tab/Shift+Tab com escrita imediata, primeira letra,
+ordem de foco e cursor preservados; tap curto com cursor no ponto tocado e
+abertura do teclado no mesmo gesto; hold em leitura versus seleção/lupa em edição;
+scroll e zoom em Safari/iPhone/iPad e Chrome/Android reais, e transições entre
+touch, rato e teclado físico em híbridos; tempos e tolerância;
+drag/destino/autoscroll; ações contextuais com teclado aberto/fechado; comandos,
+confirmação e cancelamento. Não avançar automaticamente para 4A/4B.

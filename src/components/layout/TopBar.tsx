@@ -1,6 +1,6 @@
 import { ChevronDown, Menu, Moon, Sun, UserRound } from "lucide-react";
 import clsx from "clsx";
-import { useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { useNavigate } from "react-router-dom";
 import { SearchBox } from "../ui/SearchBox";
 import { getNextTheme, getThemeIcon } from "../../core/theme/themeRegistry";
@@ -14,9 +14,13 @@ import { useGoogleAccountStore } from "../../store/useGoogleAccountStore";
 export function TopBar({
   showSearch,
   onMenuClick,
+  sidebarOpen,
+  menuTriggerRef,
 }: {
   showSearch: boolean;
   onMenuClick: () => void;
+  sidebarOpen: boolean;
+  menuTriggerRef: RefObject<HTMLButtonElement>;
 }) {
   const { t } = useI18n();
   const [accountOpen, setAccountOpen] = useState(false);
@@ -39,7 +43,10 @@ export function TopBar({
       <button
         className="icon-button mobile-menu-button"
         type="button"
+        ref={menuTriggerRef}
         aria-label={t("navigation.expand")}
+        aria-expanded={sidebarOpen}
+        aria-controls="app-sidebar"
         onClick={onMenuClick}
       >
         <Menu />

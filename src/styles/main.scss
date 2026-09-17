@@ -27,3 +27,5 @@
 @use "components/cloud";
 @use "components/toast";
 @use "responsive/responsive";
+@use "responsive/content";
+@use "responsive/profile" as responsive-profile;
