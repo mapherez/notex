@@ -1,0 +1,11 @@
+services:
+  notex-web:
+    image: ghcr.io/mapherez/notex-web:${NOTEX_WEB_TAG:-latest}
+    container_name: notex-web
+    restart: unless-stopped
+    ports:
+      - "${NOTEX_WEB_PORT:-8093}:8080"
+
+# No env file or volume required. OAuth web configuration is compiled into
+# the image; libraries live in each user's browser and personal Google Drive.
+# Point your HTTPS reverse proxy for app.notex.mapherez.com to HOST_IP:8093.

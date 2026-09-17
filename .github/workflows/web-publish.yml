@@ -1,0 +1,111 @@
+name: Publish NoteX Web Image
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notex-web-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and publish web image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    env:
+      VITE_GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+      VITE_GOOGLE_WEB_ORIGIN: ${{ secrets.GOOGLE_WEB_ORIGIN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Validate configuration and read version
+        id: config
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          const id = process.env.VITE_GOOGLE_WEB_CLIENT_ID?.trim();
+          const origin = process.env.VITE_GOOGLE_WEB_ORIGIN?.trim();
+          if (!id || !origin) throw new Error('Set GOOGLE_WEB_CLIENT_ID and GOOGLE_WEB_ORIGIN in repository Actions secrets.');
+          const url = new URL(origin);
+          if (url.protocol !== 'https:' || url.origin !== origin) throw new Error('GOOGLE_WEB_ORIGIN must be an HTTPS origin without a path or trailing slash.');
+          const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
+          if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) throw new Error('Invalid package version.');
+          const owner = process.env.GITHUB_REPOSITORY_OWNER.toLowerCase();
+          appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\nimage=ghcr.io/${owner}/notex-web\n`);
+          NODE
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build image for server checks
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/web/Dockerfile
+          load: true
+          platforms: linux/amd64
+          tags: notex-web:check
+          build-args: |
+            VITE_GOOGLE_WEB_CLIENT_ID=${{ env.VITE_GOOGLE_WEB_CLIENT_ID }}
+            VITE_GOOGLE_WEB_ORIGIN=${{ env.VITE_GOOGLE_WEB_ORIGIN }}
+          cache-from: type=gha,scope=notex-web
+          cache-to: type=gha,mode=max,scope=notex-web
+
+      - name: Check Nginx, SPA routes and service worker
+        shell: bash
+        run: |
+          docker run --rm notex-web:check nginx -t
+          docker run --detach --name notex-web-check --publish 127.0.0.1:18083:8080 notex-web:check
+          trap 'docker logs notex-web-check; docker rm -f notex-web-check' EXIT
+          curl --fail --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:18083/healthz
+          curl --fail --silent http://127.0.0.1:18083/ -o /tmp/notex-index.html
+          curl --fail --silent http://127.0.0.1:18083/notes/example -o /tmp/notex-note.html
+          cmp /tmp/notex-index.html /tmp/notex-note.html
+          curl --fail --silent -D /tmp/notex-sw-headers http://127.0.0.1:18083/sw.js -o /tmp/notex-sw.js
+          grep -Eqi 'Content-Type: (application|text)/javascript' /tmp/notex-sw-headers
+          grep -qi 'Cache-Control: no-cache' /tmp/notex-sw-headers
+          test "$(curl --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:18083/assets/missing.js)" = 404
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish AMD64 and ARM64 image
+        id: image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/web/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ steps.config.outputs.image }}:latest
+            ${{ steps.config.outputs.image }}:${{ steps.config.outputs.version }}
+            ${{ steps.config.outputs.image }}:sha-${{ github.sha }}
+          build-args: |
+            VITE_GOOGLE_WEB_CLIENT_ID=${{ env.VITE_GOOGLE_WEB_CLIENT_ID }}
+            VITE_GOOGLE_WEB_ORIGIN=${{ env.VITE_GOOGLE_WEB_ORIGIN }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.config.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=notex-web
+          cache-to: type=gha,mode=max,scope=notex-web
+
+      - name: Deployment summary
+        env:
+          IMAGE: ${{ steps.config.outputs.image }}
+          VERSION: ${{ steps.config.outputs.version }}
+          DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          printf 'Image: `%s:latest`\n\nVersion: `%s`\n\nDigest: `%s`\n\nCopy `docker-compose.web.yml` to the host as `docker-compose.yml`, then run `docker compose pull` and `docker compose up -d`.\n' "$IMAGE" "$VERSION" "$DIGEST" >> "$GITHUB_STEP_SUMMARY"
