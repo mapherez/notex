@@ -1,7 +1,9 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // The hosted image uses /app/; desktop and local development keep /.
+  base: loadEnv(mode, '.', 'NOTEX_').NOTEX_WEB_BASE_PATH || '/',
   plugins: [react()],
   server: {
     watch: {
@@ -39,4 +41,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

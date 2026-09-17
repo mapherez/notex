@@ -44,7 +44,7 @@ Plano de referência: `GOOGLE_DRIVE_WEB_IMPLEMENTATION_PLAN.md`.
 
 1. Confirmar secrets do workflow e estado público/Branding/Data Access do projeto OAuth na Google. Não foi inspecionada configuração remota.
 2. Gerar instalador 2.3.0 no GitHub e confirmar atualização da app instalada, migração e preservação de notas/anexos antes da publicação pública.
-3. Executar o workflow web para gerar a imagem GHCR, confirmar visibilidade do pacote e fazer deploy com compose/reverse proxy em app.notex.mapherez.com. Validar no URL HTTPS final; Dockerfile/workflow/compose implementados.
+3. Definir o encaminhamento público apenas de /app/ para a imagem da webapp, mantendo landing/docs no deployment independente. Ajustar GOOGLE_WEB_ORIGIN/origem OAuth para https://notex.mapherez.com, reconstruir a imagem e validar no URL HTTPS final. Encaminhamento ainda pendente.
 4. Publicar documentação atualizada junto da release. Guias, configuração, deployment e privacidade atualizados nesta etapa; apagar este CHECKPOINT quando o restante estiver concluído.
 
 Limites da validação real: limpeza diária, interrupções de uploads grandes,
@@ -209,7 +209,7 @@ Restante: validação real desktop/web/Drive, inspeção visual/offline em brows
 - Workflow manual Publish NoteX Web Image compila com os Secrets web, verifica Nginx/rotas/service worker e publica latest, versão e SHA no GHCR para AMD64/ARM64. Não passa o secret desktop.
 - Dockerfile em duas etapas, contexto web próprio sem env/dados locais, runtime Nginx na porta 8080, healthcheck e política de cache/fallback da SPA. Contexto Docker MCP permanece inalterado.
 - Compose independente, copiável para o host como docker-compose.yml, imagem ghcr.io/mapherez/notex-web:latest, porta 8093 e sem necessidade de volumes/env. Tag/porta podem ser ajustadas por env opcional.
-- Hostname escolhido pelo utilizador: app.notex.mapherez.com. DNS/HTTPS/reverse proxy configurados no host, mantendo a landing no domínio anterior.
+- Configuração inicial usou app.notex.mapherez.com; substituída pelo deployment no mesmo domínio com /app/, descrito abaixo.
 - Docker local tem CLI mas daemon não está ativo; não foi construída/executada imagem localmente nem publicado no GHCR. Execução real do workflow/container permanece pendente.
 - Verificação focada: build de produção npm run build passou, incluindo service worker; docker compose config --quiet passou. Warnings existentes de anotações zod/imports MCP não bloquearam o build. Sem alterações ao contexto MCP, dados locais, staging ou commits.
 
@@ -223,3 +223,12 @@ Restante: validação real desktop/web/Drive, inspeção visual/offline em brows
 
 - Build da imagem chegou à verificação Nginx no GitHub, onde a regex de assets com {8,} sem aspas causou erro de parsing. Expressão colocada entre aspas, preservando a regra de cache.
 - Correção no main após merge do PR; sem staging/commits. A validação real nginx -t e publicação precisam de uma nova execução do workflow com o commit corrigido. Docker local permanece sem validação de runtime nesta etapa.
+
+## Deployment no domínio original com /app/ — 2026-09-17
+
+- Landing e documentação preservam notex.mapherez.com e /docs/ e o workflow independente de Pages. A inclusão da landing na imagem, feita sem pedido do utilizador, foi retirada. A imagem contém apenas dist/ em /app/, com o mesmo compose e porta 8093.
+- Base Vite configurável por NOTEX_WEB_BASE_PATH, definido como /app/ apenas no build da imagem. Router, favicon, logos, botão Google e thumbnails respeitam o base; desktop/dev mantêm / por defeito. Dados e formatos de armazenamento não foram alterados.
+- Service worker registado em /app/sw.js, limitado a /app/; ignora pedidos fora desse âmbito, incluindo navegação para a landing. Nginx serve apenas a app, devolve 404 fora dela e redireciona /app para /app/ sem alterar o protocolo do proxy.
+- Check da imagem atualizado para verificar isolamento da app, redirect, rotas /app/, worker e assets. Não foi aberto/executado Docker localmente nesta alteração. Alterações ao conteúdo/layout da landing nesta etapa foram retiradas.
+- Build de produção da app com base /app/ passou, incluindo TypeScript e geração do worker. Build da landing gerou 15 artigos. Validação do runtime Nginx/container fica no workflow do GitHub; URL público ainda por validar.
+- Próximo passo: definir o encaminhamento público por caminho antes do deployment em /app/. Não encaminhar o domínio inteiro para o container. GOOGLE_WEB_ORIGIN e Authorized JavaScript origins = https://notex.mapherez.com; publicação da imagem e validação pública continuam pendentes.

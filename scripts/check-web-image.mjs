@@ -30,30 +30,45 @@ try {
   }
   assert.ok(ready, 'Nginx did not become ready within 60 seconds');
 
-  const index = await get('/');
+  const redirect = await fetch(`${base}/app`, { redirect: 'manual', signal: AbortSignal.timeout(5000) });
+  assert.equal(redirect.status, 308, 'App trailing-slash redirect');
+  assert.equal(redirect.headers.get('location'), '/app/', 'Relative app redirect');
+  await redirect.arrayBuffer();
+
+  const index = await get('/app/');
   assert.equal(index.status, 200, 'Index status');
   assert.match(index.headers.get('cache-control') ?? '', /no-cache/, 'Index cache');
   const html = await index.text();
-  const note = await get('/notes/example');
+  assert.match(html, /\/app\/favicon\.ico/, 'App favicon base');
+  const note = await get('/app/notes/example');
   assert.equal(note.status, 200, 'Note route status');
   assert.equal(await note.text(), html, 'Note route must serve the app index');
 
-  const worker = await get('/sw.js');
+  const worker = await get('/app/sw.js');
   assert.equal(worker.status, 200, 'Service worker status');
   assert.match(worker.headers.get('content-type') ?? '', /(?:application|text)\/javascript/, 'Worker MIME type');
   assert.match(worker.headers.get('cache-control') ?? '', /no-cache/, 'Worker cache');
-  assert.match(await worker.text(), /self\.addEventListener\('fetch'/, 'Worker body');
+  const workerBody = await worker.text();
+  assert.match(workerBody, /self\.addEventListener\('fetch'/, 'Worker body');
+  assert.match(workerBody, /url\.href\.startsWith\(self\.registration\.scope\)/, 'Worker must ignore navigation outside app scope');
+  for (const path of ['/', '/docs/', '/index.html', '/sw.js', '/notes/example', '/app/assets/missing.js']) {
+    const missing = await get(path);
+    assert.equal(missing.status, 404, `Missing resource must not serve app HTML: ${path}`);
+    await missing.arrayBuffer();
+  }
 
   const assetPath = html.match(/<script\b[^>]*\bsrc=["']([^"']+)/)?.[1];
-  assert.ok(assetPath?.startsWith('/assets/'), 'Compiled app script missing');
+  assert.ok(assetPath?.startsWith('/app/assets/'), 'Compiled app script missing');
   const asset = await get(assetPath);
   assert.equal(asset.status, 200, 'App script status');
   assert.match(asset.headers.get('cache-control') ?? '', /immutable/, 'Hashed asset cache');
   await asset.arrayBuffer();
-  const missing = await get('/assets/missing.js');
-  assert.equal(missing.status, 404, 'Missing assets must not serve HTML');
-  await missing.arrayBuffer();
-  console.log('Web image checks passed: startup, SPA routes, service worker and asset caching.');
+  for (const path of ['/app/assets/google-g.png', '/app/assets/thumb-text.svg', '/app/assets/notex_logo_small.webp']) {
+    const asset = await get(path);
+    assert.equal(asset.status, 200, `Public app asset: ${path}`);
+    await asset.arrayBuffer();
+  }
+  console.log('Web image checks passed: app-only deployment, /app/ routes, scoped worker and assets.');
 } catch (error) {
   if (started) {
     try { console.error(docker('logs', name)); } catch { /* Preserve the original error. */ }

@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { defaultNoteThumbnailVariant, thumbnailOptions } from '../../config/appSettings';
 import type { NoteThumbnail as Thumbnail } from '../../core/models/models';
 
-const thumbnailAssets = Object.fromEntries(thumbnailOptions.map((option) => [option.id, option.asset])) as Record<Thumbnail['variant'], string>;
+const thumbnailAssets = Object.fromEntries(thumbnailOptions.map((option) => [option.id, `${import.meta.env.BASE_URL}${option.asset.slice(1)}`])) as Record<Thumbnail['variant'], string>;
 
 export function NoteThumbnail({ thumbnail }: { thumbnail?: Thumbnail }) {
   const variant = thumbnail?.variant ?? defaultNoteThumbnailVariant;

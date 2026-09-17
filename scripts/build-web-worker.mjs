@@ -26,7 +26,7 @@ self.addEventListener('activate', event => {
 });
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin || !url.href.startsWith(self.registration.scope)) return;
   if (event.request.mode === 'navigate') {
     // Serve HTML from the same installed release as the cached JS/CSS. The
     // next worker takes over once old tabs close, without mixing releases.

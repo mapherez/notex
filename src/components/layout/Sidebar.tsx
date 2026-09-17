@@ -80,7 +80,7 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
       <aside className={clsx("sidebar", open && "open")}>
         <div className="sidebar-header">
           <Link className="brand" to="/" onClick={onClose}>
-            <img className="logo-image" src="/assets/notex_logo_small.webp" alt="" />
+          <img className="logo-image" src={`${import.meta.env.BASE_URL}assets/notex_logo_small.webp`} alt="" />
             <span>{appSettings.productName}</span>
           </Link>
         </div>

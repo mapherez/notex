@@ -8,4 +8,6 @@ services:
 
 # No env file or volume required. OAuth web configuration is compiled into
 # the image; libraries live in each user's browser and personal Google Drive.
-# Point your HTTPS reverse proxy for app.notex.mapherez.com to HOST_IP:8093.
+# This image serves only /app/. Landing/docs keep their independent deployment.
+# A public path router must forward /app/ to HOST_IP:8093, preserving the path.
+# Do not point the entire notex.mapherez.com domain at this container.

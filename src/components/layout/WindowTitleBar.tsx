@@ -55,7 +55,7 @@ export function WindowTitleBar() {
   return (
     <header className="window-titlebar">
       <div className="window-titlebar__drag-region" data-tauri-drag-region>
-        <img className="window-titlebar__logo" src="/assets/notex_logo_small.webp" alt={appSettings.productName} />
+        <img className="window-titlebar__logo" src={`${import.meta.env.BASE_URL}assets/notex_logo_small.webp`} alt={appSettings.productName} />
       </div>
       <div className="window-titlebar__controls">
         <button

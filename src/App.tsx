@@ -37,7 +37,7 @@ export function App() {
   }, [appReady]);
   return (
     <I18nProvider locale={settings.language}>
-      <BrowserRouter>
+      <BrowserRouter basename={isTauri() ? '/' : import.meta.env.BASE_URL}>
         {appReady ? (
           <Routes>
             <Route element={<AppShell />}>
