@@ -1,7 +1,7 @@
 {
   "name": "notex",
   "private": true,
-  "version": "2.3.0",
+  "version": "2.3.1",
   "type": "module",
   "scripts": {
     "build:mcp-contract": "npm --prefix packages/notex-mcp-contract run build",

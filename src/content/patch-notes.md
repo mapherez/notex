@@ -1,3 +1,14 @@
+# 2.3.1
+
+## What's New in NoteX
+
+### Fixes
+
+- Fixed a regression introduced in 2.3.0 where the Close button in the desktop title bar would not close the app, including when no Google account was signed in.
+- Closing the app now completes correctly after choosing to finish pending backups or exit immediately.
+
+---
+
 # 2.3.0
 
 ## What's New in NoteX
