@@ -15,12 +15,12 @@ export function GoogleDriveStatus() {
   return (
     <div className="profile-drive-status">
       <div className="profile-drive-status__label" role="status">
-        <Cloud size={16} aria-hidden="true" />
+        <Cloud aria-hidden="true" />
         <span>{cloudStatusLabel(state, t)}</span>
       </div>
       <button className="profile-backup-button" type="button" disabled={busy && !requiresAuthorization}
         onClick={() => requiresAuthorization ? showLogin() : void state.backupNow()}>
-        <ActionIcon size={16} aria-hidden="true" />
+        <ActionIcon aria-hidden="true" />
         <span>{t(requiresAuthorization ? 'cloud.reauthorize' : 'cloud.backupNow')}</span>
       </button>
     </div>

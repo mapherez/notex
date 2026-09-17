@@ -212,3 +212,9 @@ Restante: validação real desktop/web/Drive, inspeção visual/offline em brows
 - Hostname escolhido pelo utilizador: app.notex.mapherez.com. DNS/HTTPS/reverse proxy configurados no host, mantendo a landing no domínio anterior.
 - Docker local tem CLI mas daemon não está ativo; não foi construída/executada imagem localmente nem publicado no GHCR. Execução real do workflow/container permanece pendente.
 - Verificação focada: build de produção npm run build passou, incluindo service worker; docker compose config --quiet passou. Warnings existentes de anotações zod/imports MCP não bloquearam o build. Sem alterações ao contexto MCP, dados locais, staging ou commits.
+
+## Correção do check de estilos do PR
+
+- Removidas props size dos ícones Drive/backup/logout no Profile; dimensões e flex-shrink definidos no SCSS.
+- Verificador distingue dimensões numéricas JSX com chavetas de variáveis numéricas comuns, evitando o falso positivo em const size no teste de upload Drive.
+- npm run check:styles passou integralmente (stylelint e lint:no-inline-styles); git diff --check passou. Alterações no branch web_mode, sem staging ou commits.

@@ -217,8 +217,17 @@
 }
 
 .profile-drive-status__label svg {
+  width: 1rem;
+  height: 1rem;
   flex-shrink: 0;
   color: var(--nx-color-accent-strong);
+}
+
+.profile-sign-out-button svg,
+.profile-backup-button svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 
 .profile-backup-button {

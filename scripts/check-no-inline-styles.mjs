@@ -11,7 +11,8 @@ const disallowedPatterns = [
   },
   {
     label: 'Icon size prop',
-    pattern: /\ssize\s*=\s*(?:\{?\d|["'])/,
+    // Numeric JSX attributes require braces; `const size = 10` is not styling.
+    pattern: /\ssize\s*=\s*(?:\{\s*\d|["'])/,
   },
   {
     label: 'Visual color prop',

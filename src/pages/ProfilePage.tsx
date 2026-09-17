@@ -349,7 +349,7 @@ export function ProfilePage() {
           <div className="profile-account-actions">
             {account ? (
               <button className="profile-sign-out-button" type="button" disabled={authorizing} onClick={() => void logout()}>
-                <LogOut size={16} aria-hidden="true" />
+                <LogOut aria-hidden="true" />
                 <span>{t('google.logout')}</span>
               </button>
             ) : (
