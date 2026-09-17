@@ -14,6 +14,8 @@ export function ToastViewport() {
   const toasts = useToastStore((state) => state.toasts);
   const dismissToast = useToastStore((state) => state.dismissToast);
 
+  if (!toasts.length) return null;
+
   return (
     <div className="toast-viewport" role="status" aria-live="polite">
       {toasts.map((toast) => {

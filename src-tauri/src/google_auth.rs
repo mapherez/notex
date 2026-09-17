@@ -8,7 +8,10 @@ use axum::{
     routing::get,
     Router,
 };
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use base64::{
+    engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
+    Engine,
+};
 use rand::{rngs::OsRng, RngCore};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -38,16 +41,11 @@ struct CachedToken {
     expires: Instant,
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Config {
-    desktop_client_id: String,
-}
-
 fn client_id() -> Result<String, String> {
-    let config: Config = serde_json::from_str(include_str!("../../src/config/google.json"))
-        .map_err(|_| "GOOGLE_CONFIG_INVALID")?;
-    let id = config.desktop_client_id.trim();
+    // Supplied at compile time by tauri-with-env.mjs or the CI environment.
+    let id = option_env!("VITE_GOOGLE_DESKTOP_CLIENT_ID")
+        .unwrap_or("")
+        .trim();
     if id.is_empty() {
         return Err("GOOGLE_NOT_CONFIGURED".into());
     }
@@ -75,14 +73,36 @@ struct Callback {
     error: Option<String>,
 }
 
+fn callback_page(title: &str, description: &str, received: bool) -> Html<String> {
+    let icon = if received {
+        "<path d=\"m5 12 4 4L19 6\"/>"
+    } else {
+        "<path d=\"M12 8v5m0 3h.01\"/><circle cx=\"12\" cy=\"12\" r=\"9\"/>"
+    };
+    Html(
+        include_str!("google_callback.html")
+            .replace(
+                "{{LOGO}}",
+                &STANDARD.encode(include_bytes!("../../public/assets/notex_logo_small.webp")),
+            )
+            .replace("{{ICON}}", icon)
+            .replace("{{TITLE}}", title)
+            .replace("{{DESCRIPTION}}", description),
+    )
+}
+
 async fn callback(
     State(state): State<CallbackState>,
     Query(query): Query<Callback>,
-) -> (StatusCode, Html<&'static str>) {
+) -> (StatusCode, Html<String>) {
     if query.state.as_deref() != Some(&state.expected) {
         return (
             StatusCode::BAD_REQUEST,
-            Html("Invalid authorization request."),
+            callback_page(
+                "This request could not be verified",
+                "Return to NoteX and start Google sign-in again.",
+                false,
+            ),
         );
     }
     let result = if query.error.is_some() {
@@ -93,12 +113,17 @@ async fn callback(
             .filter(|code| !code.is_empty())
             .ok_or_else(|| "GOOGLE_AUTH_INVALID_CALLBACK".into())
     };
+    let page = if result.is_ok() {
+        callback_page("You're ready to return to NoteX", "Your Google authorization has been received. Return to the app to finish connecting your account.", true)
+    } else {
+        callback_page("Sign-in wasn't completed", "Your account has not been connected. Return to NoteX to try again. Your local notes are safe.", false)
+    };
     if let Ok(mut sender) = state.sender.lock() {
         if let Some(sender) = sender.take() {
             let _ = sender.send(result);
         }
     }
-    (StatusCode::OK, Html("<!doctype html><meta charset=utf-8><title>NoteX</title><p>NoteX: regressa à aplicação / return to the app. Podes fechar esta página / you can close this page.</p>"))
+    (StatusCode::OK, page)
 }
 
 #[derive(Deserialize)]
@@ -108,22 +133,46 @@ struct TokenResponse {
     refresh_token: Option<String>,
     scope: Option<String>,
 }
+fn token_error(body: &serde_json::Value) -> &'static str {
+    let description = body["error_description"]
+        .as_str()
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    if body["error"] == "invalid_request" && description.contains("client_secret") {
+        "GOOGLE_DESKTOP_SECRET_REQUIRED"
+    } else {
+        match body["error"].as_str() {
+            Some("invalid_grant") => "GOOGLE_REAUTHORIZE",
+            Some("invalid_client" | "unauthorized_client") => "GOOGLE_CLIENT_INVALID",
+            _ => "GOOGLE_TOKEN_ERROR",
+        }
+    }
+}
 async fn exchange(fields: &[(&str, &str)]) -> Result<TokenResponse, String> {
+    let mut fields = fields.to_vec();
+    let secret = option_env!("GOOGLE_DESKTOP_CLIENT_SECRET")
+        .unwrap_or("")
+        .trim();
+    if !secret.is_empty() {
+        fields.push(("client_secret", secret));
+    }
     let response = reqwest::Client::new()
         .post(TOKEN_URL)
         .timeout(Duration::from_secs(30))
-        .form(fields)
+        .form(&fields)
         .send()
         .await
         .map_err(|_| "GOOGLE_NETWORK_ERROR")?;
     if !response.status().is_success() {
+        let response_status = response.status();
         let body: serde_json::Value = response.json().await.unwrap_or_default();
-        return Err(if body["error"] == "invalid_grant" {
-            "GOOGLE_REAUTHORIZE"
-        } else {
-            "GOOGLE_TOKEN_ERROR"
-        }
-        .into());
+        let error = token_error(&body);
+        // Never log Google's raw response, authorization codes or tokens.
+        log::warn!(
+            "Google token exchange failed: HTTP {}, {error}",
+            response_status
+        );
+        return Err(error.into());
     }
     let token: TokenResponse = response.json().await.map_err(|_| "GOOGLE_TOKEN_ERROR")?;
     if token.access_token.is_empty() || token.expires_in == 0 {
@@ -422,6 +471,29 @@ pub async fn notex_google_access_token(
 mod tests {
     use super::*;
     #[test]
+    fn token_errors_identify_configuration_failures_without_returning_raw_responses() {
+        assert_eq!(
+            token_error(
+                &serde_json::json!({"error": "invalid_request", "error_description": "client_secret is missing."})
+            ),
+            "GOOGLE_DESKTOP_SECRET_REQUIRED"
+        );
+        assert_eq!(
+            token_error(&serde_json::json!({"error": "invalid_client"})),
+            "GOOGLE_CLIENT_INVALID"
+        );
+        assert_eq!(
+            token_error(&serde_json::json!({"error": "invalid_grant"})),
+            "GOOGLE_REAUTHORIZE"
+        );
+        assert_eq!(
+            token_error(
+                &serde_json::json!({"error": "unknown", "access_token": "never return this"})
+            ),
+            "GOOGLE_TOKEN_ERROR"
+        );
+    }
+    #[test]
     fn pkce_matches_rfc7636_and_secrets_are_url_safe() {
         assert_eq!(
             challenge("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"),
@@ -465,6 +537,12 @@ mod tests {
         )
         .await;
         assert_eq!(valid.0, StatusCode::OK);
+        assert!(valid.1 .0.contains("<html lang=\"en\">"));
+        assert!(valid
+            .1
+             .0
+            .contains("Your Google authorization has been received."));
+        assert!(!valid.1 .0.contains("{{"));
         assert_eq!(receiver.await.unwrap().unwrap(), "code");
     }
 }

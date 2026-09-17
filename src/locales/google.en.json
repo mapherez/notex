@@ -9,6 +9,7 @@
   "switchAccount": "Choose another account",
   "connected": "Google account",
   "retry": "Try again",
+  "errorCode": "Error code: {{code}}",
   "storageError": "NoteX could not open this library. Your data has not been reset.",
   "errors": {
     "GOOGLE_NOT_CONFIGURED": "Google sign-in is not configured in this build yet.",
@@ -21,6 +22,15 @@
     "GOOGLE_ACCOUNT_MISMATCH": "Choose the Google account connected to this library.",
     "LOCAL_SAVE_PENDING": "Some changes have not been saved locally. Finish saving before changing accounts.",
     "ACCOUNT_NOTE_CONFLICT": "A local note and an account note have the same version but different content. Both copies have been preserved.",
+    "GOOGLE_TOKEN_ERROR": "Google authorization was received, but NoteX could not obtain an access token. Check the desktop OAuth configuration and try again.",
+    "GOOGLE_DESKTOP_SECRET_REQUIRED": "Google sign-in requires additional desktop app configuration. Your local notes have been preserved.",
+    "GOOGLE_CLIENT_INVALID": "Google rejected the desktop OAuth credentials. Check that the client ID and client secret belong to the same Desktop app client.",
+    "GOOGLE_PROFILE_ERROR": "NoteX could not verify your Google account. Try signing in again.",
+    "GOOGLE_CREDENTIAL_STORAGE_ERROR": "NoteX could not save your Google sign-in in Windows Credential Manager. Your local notes have been preserved.",
+    "GOOGLE_SECURE_STORAGE_UNAVAILABLE": "Secure storage for Google sign-in is not available on this system.",
+    "GOOGLE_AUTH_INVALID_CALLBACK": "The Google sign-in response was incomplete. Start sign-in again.",
+    "GOOGLE_CALLBACK_UNAVAILABLE": "NoteX could not open the local Google sign-in callback. Restart the app and try again.",
+    "GOOGLE_BROWSER_UNAVAILABLE": "NoteX could not open your browser. Check your default browser and try again.",
     "generic": "Could not complete this operation. Your local notes have been preserved."
   }
 }

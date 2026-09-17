@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "NoteX"
-version = "2.2.3"
+version = "2.3.0"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -27,6 +27,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
+ "windows-sys 0.61.2",
  "zip 2.4.2",
 ]
 

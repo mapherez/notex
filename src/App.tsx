@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { AppUpdatePrompt } from './components/ui/AppUpdatePrompt';
 import { ToastViewport } from './components/ui/ToastViewport';
+import { CloudTransferBanner } from './components/ui/CloudTransferBanner';
 import { isTauri } from '@tauri-apps/api/core';
 import { GoogleAccountModal } from './components/profile/GoogleAccountModal';
 import { DesktopBackupCloseGuard } from './components/ui/DesktopBackupCloseGuard';
@@ -66,8 +67,11 @@ export function App() {
         )}
         <GoogleAccountModal />
         <DesktopBackupCloseGuard />
-        <AppUpdatePrompt enabled={appReady && isTauri()} />
-        <ToastViewport />
+        <div className="notification-viewport">
+          <AppUpdatePrompt enabled={appReady && isTauri()} />
+          <CloudTransferBanner />
+          <ToastViewport />
+        </div>
       </BrowserRouter>
     </I18nProvider>
   );

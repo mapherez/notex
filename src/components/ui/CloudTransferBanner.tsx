@@ -1,8 +1,12 @@
 import { ChevronDown, ChevronUp, Cloud } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { cloudStatusLabel, hasCloudWork } from '../../core/cloud/transferStatus';
+import { richTextToPlainText } from '../../core/utils/richText';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useCloudStore } from '../../store/useCloudStore';
 import { useGoogleAccountStore } from '../../store/useGoogleAccountStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
+import { useToastStore } from '../../store/useToastStore';
 
 export function CloudTransferBanner() {
   const { t } = useI18n();
@@ -10,13 +14,26 @@ export function CloudTransferBanner() {
   const showLogin = useGoogleAccountStore((state) => state.showLogin);
   const collections = useKnowledgeStore((state) => state.collections);
   const tags = useKnowledgeStore((state) => state.tags);
-  if (!state.accountId) return null;
+  const pushToast = useToastStore((state) => state.pushToast);
+  const observed = useRef({ accountId: state.accountId, hadWork: false });
+  const work = hasCloudWork(state);
+  const settled = state.phase === 'idle' && Boolean(state.catalog) && !work && !state.error && !state.conflicts.length;
+  useEffect(() => {
+    if (observed.current.accountId !== state.accountId) observed.current = { accountId: state.accountId, hadWork: false };
+    if (!state.accountId) return;
+    if (work) observed.current.hadWork = true;
+    if (settled && observed.current.hadWork) {
+      observed.current.hadWork = false;
+      pushToast(t('cloud.idle'), 'success');
+      const current = useCloudStore.getState();
+      if (current.expanded) current.toggleExpanded();
+    }
+  }, [state.accountId, work, settled, pushToast, t]);
+  // Background catalog polling must not flash a banner every minute.
+  if (!state.accountId || (!work && !state.error && !state.conflicts.length && !(state.phase === 'checking' && !state.catalog))) return null;
   const busy = ['checking', 'uploading', 'downloading'].includes(state.phase);
-  const label = state.error ? t(state.error === 'CLOUD_OFFLINE' ? 'cloud.offline' : state.error === 'GOOGLE_REAUTHORIZE' ? 'google.errors.GOOGLE_REAUTHORIZE' : 'cloud.error')
-    : state.phase !== 'idle' ? t(`cloud.${state.phase}`, { done: state.completed, total: state.total })
-    : state.conflicts.length ? t('cloud.conflicts', { count: state.conflicts.length })
-    : state.pending ? t('cloud.pending', { count: state.pending })
-    : state.downloads ? t(state.paused ? 'cloud.paused' : 'cloud.remaining', { count: state.downloads }) : t('cloud.idle');
+  const requiresAuthorization = state.error === 'GOOGLE_REAUTHORIZE';
+  const label = cloudStatusLabel(state, t);
   const Chevron = state.expanded ? ChevronDown : ChevronUp;
   const prioritize = (value: string) => {
     const [kind, ...parts] = value.split(':'); const id = parts.join(':');
@@ -31,13 +48,13 @@ export function CloudTransferBanner() {
         aria-label={t(state.expanded ? 'cloud.collapse' : 'cloud.expand')}><Chevron /></button>
     </div>
     {state.expanded && <div id="cloud-transfer-details" className="cloud-transfer-banner__details">
-      {(state.pending > 0 || state.phase === 'uploading') && <p>{t('cloud.keepOpen')}</p>}
-      {state.currentTitle && <p className="cloud-transfer-banner__title">{state.currentTitle}</p>}
-      {busy && state.total > 0 && <progress className="app-update-progress-bar" max={state.total} value={state.completed} />}
+      {!requiresAuthorization && (state.pending > 0 || state.phase === 'uploading') && <p>{t('cloud.keepOpen')}</p>}
+      {!requiresAuthorization && state.currentTitle && <p className="cloud-transfer-banner__title">{richTextToPlainText(state.currentTitle)}</p>}
+      {!requiresAuthorization && busy && state.total > 0 && <progress className="app-update-progress-bar" max={state.total} value={state.completed} />}
       <div className="cloud-transfer-banner__actions">
-        <button type="button" className="secondary-button" disabled={busy} onClick={() => void state.backupNow()}>{t('cloud.backupNow')}</button>
-        {state.downloads > 0 && <button type="button" className="secondary-button" onClick={() => state.pause(!state.paused)}>{t(state.paused ? 'cloud.resume' : 'cloud.pause')}</button>}
-        {state.error === 'GOOGLE_REAUTHORIZE' && <button type="button" className="secondary-button" onClick={showLogin}>{t('cloud.reauthorize')}</button>}
+        {!requiresAuthorization && <button type="button" className="secondary-button" disabled={busy} onClick={() => void state.backupNow()}>{t('cloud.backupNow')}</button>}
+        {!requiresAuthorization && state.downloads > 0 && <button type="button" className="secondary-button" onClick={() => state.pause(!state.paused)}>{t(state.paused ? 'cloud.resume' : 'cloud.pause')}</button>}
+        {requiresAuthorization && <button type="button" className="secondary-button" onClick={showLogin}>{t('cloud.reauthorize')}</button>}
       </div>
       {state.downloads > 0 && <>
         <p>{t('cloud.remaining', { count: state.downloads })}</p>
@@ -49,7 +66,7 @@ export function CloudTransferBanner() {
         <p>{t('cloud.searchPartial')}</p>
       </>}
       {state.conflicts.map((conflict) => <div key={conflict.id}>
-        <p>{t('cloud.conflict', { title: conflict.title })}</p>
+        <p>{t('cloud.conflict', { title: richTextToPlainText(conflict.title) })}</p>
         <div className="cloud-transfer-banner__actions">
           <button type="button" className="secondary-button" onClick={() => state.resolve(conflict.id, 'local')}>{t('cloud.keepLocal')}</button>
           <button type="button" className="secondary-button" onClick={() => state.resolve(conflict.id, 'remote')}>{t('cloud.keepRemote')}</button>

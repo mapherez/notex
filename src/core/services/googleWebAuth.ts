@@ -8,10 +8,29 @@ type GoogleIdentity = { accounts: { oauth2: { initTokenClient: (options: {
 }) => TokenClient } } };
 
 let loading: Promise<void> | undefined;
-let cached: { accountId: string; value: string; expiresAt: number } | undefined;
+type WebAuthorization = { accountId: string; value: string; expiresAt: number; clientId: string };
+const sessionKey = 'notex.googleWebAuthorization';
+let cached: WebAuthorization | undefined;
 let authorization: { reject: (error: Error) => void } | undefined;
 let generation = 0;
 const identity = () => (window as Window & { google?: GoogleIdentity }).google;
+
+function restoreAuthorization(): WebAuthorization | undefined {
+  try {
+    const raw = sessionStorage.getItem(sessionKey);
+    if (!raw) return;
+    const value = JSON.parse(raw) as Partial<WebAuthorization> | null;
+    if (value && typeof value.accountId === 'string' && value.accountId
+      && typeof value.value === 'string' && value.value
+      && typeof value.expiresAt === 'number' && Number.isFinite(value.expiresAt) && value.expiresAt > Date.now()
+      && value.clientId === googleConfig.webClientId) return value as WebAuthorization;
+    sessionStorage.removeItem(sessionKey);
+  } catch { clearStoredAuthorization(); }
+}
+
+function clearStoredAuthorization() {
+  try { sessionStorage.removeItem(sessionKey); } catch { /* Storage may be unavailable. */ }
+}
 
 // Load before enabling the button, so requestAccessToken runs directly within
 // the click gesture (awaiting script loading there can lose popup permission).
@@ -69,7 +88,9 @@ export function loginGoogleWeb(expectedAccountId?: string): Promise<GoogleAccoun
             if (expectedAccountId && account.id !== expectedAccountId) {
               finish(undefined, new Error('GOOGLE_ACCOUNT_MISMATCH')); return;
             }
-            cached = { accountId: account.id, value: token, expiresAt: Date.now() + Math.max(0, response.expires_in! - 60) * 1000 };
+            cached = { accountId: account.id, value: token, expiresAt: Date.now() + Math.max(0, response.expires_in! - 60) * 1000,
+              clientId: googleConfig.webClientId };
+            try { sessionStorage.setItem(sessionKey, JSON.stringify(cached)); } catch { /* Keep authorization in memory. */ }
             finish(account);
           }).catch(() => finish(undefined, new Error('GOOGLE_PROFILE_ERROR')));
         },
@@ -81,12 +102,18 @@ export function loginGoogleWeb(expectedAccountId?: string): Promise<GoogleAccoun
 }
 
 export function googleWebAccessToken(accountId: string): string {
-  if (!cached || cached.accountId !== accountId || cached.expiresAt <= Date.now()) throw new Error('GOOGLE_REAUTHORIZE');
+  cached ??= restoreAuthorization();
+  if (cached && (cached.expiresAt <= Date.now() || cached.clientId !== googleConfig.webClientId)) {
+    cached = undefined;
+    clearStoredAuthorization();
+  }
+  if (!cached || cached.accountId !== accountId) throw new Error('GOOGLE_REAUTHORIZE');
   return cached.value;
 }
 
 export function clearGoogleWebAuthorization() {
   authorization?.reject(new Error('GOOGLE_AUTH_CANCELLED'));
   cached = undefined;
+  clearStoredAuthorization();
   generation += 1;
 }

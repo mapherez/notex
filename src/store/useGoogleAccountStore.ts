@@ -92,7 +92,7 @@ export const useGoogleAccountStore = create<AccountState>((set, get) => ({
     const previousAccount = get().account;
     const previousStatus = get().status;
     const attempt = ++loginAttempt;
-    set({ authorizing: true, error: null });
+    set({ modalOpen: true, authorizing: true, error: null });
     let activated = false;
     let prepared = false;
     let release: (() => void) | undefined;

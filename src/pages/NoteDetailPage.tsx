@@ -920,7 +920,7 @@ export function NoteDetailPage() {
                 {note.files.map((file) => (
                   <li key={file.id}>
                     {file.kind === 'image' ? <ImageIcon /> : <FileText />}
-                    <span>{file.originalName}</span>
+                    <span title={file.originalName}>{file.originalName}</span>
                     <span className="side-list-actions">
                       <button className="icon-button" type="button" aria-label={t('common.open')} onClick={() => void openNoteAttachment(file.relativePath)}>
                         <FileText />

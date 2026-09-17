@@ -1,13 +1,13 @@
 {
   "name": "notex",
   "private": true,
-  "version": "2.2.3",
+  "version": "2.3.0",
   "type": "module",
   "scripts": {
     "build:mcp-contract": "npm --prefix packages/notex-mcp-contract run build",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
-    "tauri:build:no-bundle": "tauri build --no-bundle",
+    "tauri:dev": "node scripts/tauri-with-env.mjs dev",
+    "tauri:build": "node scripts/tauri-with-env.mjs build",
+    "tauri:build:no-bundle": "node scripts/tauri-with-env.mjs build --no-bundle",
     "tauri:icon": "tauri icon ./public/assets/notex_logo_small.webp",
     "release:tauri": "node .github/scripts/tauri-release.mjs",
     "version:set": "node scripts/set-version.mjs",

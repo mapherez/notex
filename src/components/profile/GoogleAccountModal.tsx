@@ -5,6 +5,7 @@ import { prepareGoogleWebLogin } from '../../core/services/googleWebAuth';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useGoogleAccountStore } from '../../store/useGoogleAccountStore';
 import { AppModal } from '../ui/AppModal';
+import { GoogleSignInButton } from './GoogleSignInButton';
 
 export function GoogleAccountModal() {
   const { t } = useI18n();
@@ -31,12 +32,13 @@ export function GoogleAccountModal() {
     <h2 id="google-login-title">{t('google.title')}</h2>
     <p id="google-login-description">{t(desktop ? 'google.desktopDescription' : 'google.webDescription')}</p>
     {message && <p role="status">{message}</p>}
+    {message && code && /^GOOGLE_[A-Z_]+$/.test(code) && <p><small>{t('google.errorCode', { code })}</small></p>}
     {code === 'ACCOUNT_NOTE_CONFLICT' && <div className="cloud-transfer-banner__actions">
       <button type="button" className="secondary-button" disabled={authorizing} onClick={() => resolveAdoption('local')}>{t('cloud.keepLocal')}</button>
       <button type="button" className="secondary-button" disabled={authorizing} onClick={() => resolveAdoption('remote')}>{t('cloud.keepRemote')}</button>
     </div>}
-    <button className="primary-button" type="button" disabled={!configured || !prepared || authorizing}
-      onClick={() => void login()}>{t(authorizing ? 'google.connecting' : configured && !prepared && !preparationError ? 'google.preparing' : 'google.continue')}</button>
+    <GoogleSignInButton disabled={!configured || !prepared || authorizing}
+      onClick={() => void login()}>{t(authorizing ? 'google.connecting' : configured && !prepared && !preparationError ? 'google.preparing' : 'google.continue')}</GoogleSignInButton>
     {preparationError && <button className="secondary-button" type="button" onClick={() => setRetry((value) => value + 1)}>{t('google.retry')}</button>}
   </AppModal>;
 }

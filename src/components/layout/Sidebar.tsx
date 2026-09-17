@@ -176,7 +176,7 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
               v{appVersion}
             </button>
           ) : null}
-          <Link
+          {isTauri() && <Link
             className={mcpOnline ? 'sidebar-mcp-status sidebar-mcp-status--online' : 'sidebar-mcp-status'}
             to="/profile#mcp"
             aria-label={t('profile.mcp.openSection', {
@@ -186,7 +186,7 @@ export function Sidebar({ open, onClose, onCreateNote }: { open: boolean; onClos
           >
             <span className="sidebar-mcp-status__dot" aria-hidden="true" />
             {t(mcpOnline ? 'profile.mcp.online' : 'profile.mcp.offline')}
-          </Link>
+          </Link>}
         </div>
       </aside>
       <PatchNotesModal open={patchNotesOpen} onClose={() => setPatchNotesOpen(false)} />

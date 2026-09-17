@@ -20,9 +20,12 @@ beforeEach(() => {
 });
 describe('desktop account transitions', () => {
   it('ignores authorization arriving after the login modal was cancelled', async () => {
+    useGoogleAccountStore.setState({ modalOpen: false });
     let finish!: (value: typeof account) => void;
     mock.invoke.mockImplementation((command) => command === 'notex_google_login' ? new Promise((resolve) => { finish = resolve; }) : Promise.resolve());
     const login = useGoogleAccountStore.getState().login();
+    expect(mock.invoke).toHaveBeenCalledWith('notex_google_login');
+    expect(useGoogleAccountStore.getState()).toMatchObject({ modalOpen: true, authorizing: true });
     useGoogleAccountStore.getState().closeLogin();
     finish({ ...account, id: 'b' });
     await login;

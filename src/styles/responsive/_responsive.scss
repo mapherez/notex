@@ -1,19 +1,14 @@
 @media (max-width: 1180px) {
   .dashboard-layout,
-  .document-shell,
-  .profile-layout {
+  .document-shell {
     grid-template-columns: 1fr;
   }
 
   .dashboard-side,
-  .document-aside,
-  .profile-top-row {
+  .document-aside {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .profile-left {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
 }
 
 @media (max-width: 900px) {
@@ -94,8 +89,6 @@
   .profile-stat-grid,
   .dashboard-side,
   .quick-pin-row,
-  .profile-left,
-  .profile-top-row,
   .database-management-grid,
   .collections-layout,
   .collection-grid,
@@ -269,9 +262,6 @@
   }
 
   .app-update-banner {
-    left: var(--nx-page-gutter);
-    right: var(--nx-page-gutter);
-    bottom: var(--nx-page-gutter);
     grid-template-columns: auto minmax(0, 1fr);
     width: auto;
   }

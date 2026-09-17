@@ -559,7 +559,7 @@
       "logout": "Terminar sessão"
     },
     "dataManagement": {
-      "title": "Exportar / Importar",
+      "title": "Backups e transferências",
       "databasePath": "Base de dados atual",
       "databasePathLoading": "A carregar caminho da base de dados...",
       "databasePathError": "Não foi possível ler o caminho da base de dados",

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="referrer" content="no-referrer">
+  <title>NoteX · Google sign-in</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100svh; display: grid; place-items: center; padding: 32px 20px; color: #f5f4fa; background: radial-gradient(ellipse at 50% 0%, #24203d 0%, #101015 65%); font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    main { width: min(100%, 480px); }
+    .brand { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 32px; font-size: 24px; font-weight: 750; letter-spacing: -.7px; }
+    .brand img { width: 40px; height: 40px; object-fit: contain; }
+    .card { padding: 40px 32px 32px; border: 1px solid #34313f; border-radius: 24px; background: #19181f; box-shadow: 0 24px 80px #0004; text-align: center; }
+    .indicator { width: 64px; height: 64px; margin: 0 auto 24px; display: grid; place-items: center; border: 1px solid #514774; border-radius: 20px; background: #2b253f; color: #bca5ff; }
+    .indicator svg { width: 30px; height: 30px; }
+    .label { margin: 0 0 12px; color: #bca5ff; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(24px, 5vw, 30px); line-height: 1.2; letter-spacing: -.8px; }
+    .description { margin: 16px 0 28px; color: #b5b1c3; font-size: 16px; line-height: 1.7; }
+    .next { padding: 18px; border: 1px solid #34313f; border-radius: 12px; background: #131218; }
+    .next strong { display: block; margin-bottom: 6px; font-size: 14px; }
+    .next span { color: #aaa5b9; font-size: 13px; line-height: 1.6; }
+    footer { margin-top: 24px; text-align: center; color: #8e899e; font-size: 12px; line-height: 1.7; }
+    @media (max-width: 420px) { .card { padding: 32px 24px 24px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand"><img src="data:image/webp;base64,{{LOGO}}" alt=""><span>NoteX</span></div>
+    <section class="card" aria-labelledby="title">
+      <div class="indicator" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{{ICON}}</svg>
+      </div>
+      <p class="label">Google sign-in</p>
+      <h1 id="title">{{TITLE}}</h1>
+      <p class="description">{{DESCRIPTION}}</p>
+      <div class="next"><strong>Continue in the NoteX app</strong><span>You can close this tab now.</span></div>
+    </section>
+    <footer>Your notes stay on your computer.<br>Backups are stored in your own Google Drive.</footer>
+  </main>
+  <script>history.replaceState(null, '', location.pathname);</script>
+</body>
+</html>

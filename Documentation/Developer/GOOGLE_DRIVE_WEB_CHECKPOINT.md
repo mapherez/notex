@@ -1,6 +1,6 @@
 # NoteX — Google Drive e Web: CHECKPOINT
 
-Última atualização: 2026-09-16.
+Última atualização: 2026-09-17.
 
 **Implementação em curso. Não apagar este ficheiro nem considerar a integração pronta para release.**
 Plano de referência: `GOOGLE_DRIVE_WEB_IMPLEMENTATION_PLAN.md`.
@@ -51,7 +51,17 @@ Plano de referência: `GOOGLE_DRIVE_WEB_IMPLEMENTATION_PLAN.md`.
 
 ## Configuração externa
 
-`src/config/google.json` contém `webClientId`, `desktopClientId`, `webOrigin`, ainda vazios por decisão do utilizador.
+Configuração migrada para `VITE_GOOGLE_WEB_CLIENT_ID`, `VITE_GOOGLE_DESKTOP_CLIENT_ID`
+e `VITE_GOOGLE_WEB_ORIGIN`. `.env.local` na raiz foi criado vazio e está ignorado
+pelo Git; `.env.example` é o modelo versionado. O JSON anterior foi removido.
+Os comandos npm Tauri carregam o env antes de iniciar o CLI e passam os valores
+ao Rust e ao frontend. O workflow de release recebe os valores dos repository
+secrets `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_DESKTOP_CLIENT_ID` e `GOOGLE_WEB_ORIGIN`.
+Os valores reais continuam por fornecer; OAuth/Drive real ainda não validados.
+Verificação desta alteração: TypeScript (`tsc -b`), Rust (`cargo check --offline
+--lib`) e execução do wrapper Tauri com `dev --help` passaram. `git check-ignore`
+confirmou que `.env.local` não entra no repo. Não foi iniciado login nem alterada
+uma biblioteca real; configuração externa e validação Google continuam pendentes.
 Instruções: `GOOGLE_DRIVE_SETUP.md`. O utilizador ainda não criou o projeto Google.
 Não publicar nem alterar configuração externa sem autorização.
 
@@ -73,6 +83,7 @@ Concentrar esforço em implementação concreta. Limitar verificações a compil
 - `npm.cmd exec -- tsc -b` passou após as alterações.
 
 Bloco 2 autorizado e concluído abaixo.
+
 ## Bloco 2 — uploads grandes persistentes (concluído)
 
 - Cliente Drive recebe o armazenamento da conta (SQLite/IndexedDB) para persistir a sessão antes de enviar conteúdo.
@@ -82,9 +93,10 @@ Bloco 2 autorizado e concluído abaixo.
 - Sessões expiradas são substituídas; valida a origem/path do URL antes de enviar credenciais.
 - Quatro testes focados com IndexedDB fechado/reaberto e HTTP simulado: retoma parcial, conclusão remota, expiração e conteúdo diferente. Os seis testes do motor também passaram. Compilação TypeScript passou.
 - Não usa Google real nem altera configuração externa. Sessão expirada exige reenviar o ficheiro; a retoma parcial depende de a Drive conservar a sessão.
-- Referência: https://developers.google.com/workspace/drive/api/guides/manage-uploads
+- Referência: <https://developers.google.com/workspace/drive/api/guides/manage-uploads>
 
 Bloco 3 autorizado e concluído abaixo.
+
 ## Bloco 3 — ficheiros abandonados (concluído)
 
 - Novas pastas de backup são marcadas na criação com appProperties (notexBackup e noteId). A marca existe na Drive mesmo quando se perde a resposta à criação.
@@ -94,9 +106,10 @@ Bloco 3 autorizado e concluído abaixo.
 - Corre no máximo uma vez por dia após sucesso, também em bibliotecas inalteradas. Falhas não bloqueiam backups e não marcam a limpeza como concluída.
 - Limpeza limitada a árvores marcadas pelo NoteX. Órfãos anteriores sem identificação não são apagados por heurística; versões antigas conhecidas continuam cobertas pela fila existente. Sessões de upload expiradas são geridas pelo bloco 2; não há varrimento de caches locais neste bloco.
 - Compilação TypeScript passou; 14 testes cloud passaram, incluindo quatro casos novos de seleção segura e retoma da limpeza, com Drive simulada.
-- Referência: https://developers.google.com/workspace/drive/api/guides/properties
+- Referência: <https://developers.google.com/workspace/drive/api/guides/properties>
 
 Bloco 4 autorizado e concluído abaixo.
+
 ## Bloco 4 — fluxos desktop (concluído em código)
 
 - Imports SQLite/.notex e transições de conta usam exclusão mútua: não substituem a biblioteca enquanto login/logout/mudança de conta detém a operação.
@@ -109,6 +122,7 @@ Bloco 4 autorizado e concluído abaixo.
 - Não foram usados dados reais nem login Google real; validação visual e OAuth real continuam pendentes. Nenhuma configuração Google/deployment alterada.
 
 Bloco 5 autorizado e concluído abaixo.
+
 ## Bloco 5 — web e interface (concluído em código)
 
 - Priorização de notas/collections/tags já não contorna a pausa. A abertura explícita de uma nota descarrega só essa nota, sem retomar a biblioteca inteira.
@@ -118,7 +132,68 @@ Bloco 5 autorizado e concluído abaixo.
 - Perfil web lembrado inválido retorna ao login sem abrir biblioteca convidada. Logout remove a conta lembrada e mantém o próximo arranque atrás do login.
 - Service worker serve HTML da mesma versão que os assets em cache; atualização segue o ciclo normal do worker, sem forçar substituição de tabs abertas. Não adiciona beforeunload nem popups de saída.
 - Verificações focadas: dez testes passaram (arranque web e motor, incluindo pausa/prioridade/download explícito). Build de produção passou com geração do worker; sem login Google real nem inspeção visual nesta etapa.
-- Referência offline: https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers
+- Referência offline: <https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers>
 - Ferramenta externa modern-web-guidance recusada pela revisão automática por risco de supply chain; usada documentação oficial como alternativa, sem executar o pacote.
 
-Restante: configuração OAuth e validação real desktop/web/Drive, inspeção visual/offline em browser real, correções daí resultantes e documentação final. Aguardar indicação do utilizador antes de iniciar a próxima etapa.
+## Correção durante o primeiro teste OAuth desktop — 2026-09-17
+
+- Botão Google do Profile inicia diretamente a autorização desktop num clique; o modal mostra o progresso e permite cancelar/repetir em caso de erro.
+- Windows abre URLs através de ShellExecuteW no browser predefinido, substituindo a chamada ao Explorer que abria uma pasta com o URL OAuth.
+- Compilações TypeScript/Rust passaram e os três testes existentes de transições de conta passaram, incluindo início direto e cancelamento da resposta tardia.
+- A conclusão do login Google e o acesso real à Drive continuam por confirmar no teste do utilizador.
+
+## Segundo teste OAuth desktop — diagnóstico e página de regresso
+
+- Página de callback acompanha o estilo NoteX, com logótipo e texto apenas em inglês. Distingue autorização recebida, cancelamento e pedido inválido; não confirma prematuramente a ligação da conta.
+- Suporte a GOOGLE_DESKTOP_CLIENT_SECRET apenas no Rust, carregado pelo wrapper de env e configurável no workflow de release. Usado na troca e renovação de tokens quando preenchido.
+- Erros OAuth têm mensagens específicas e código visível; falhas de troca de tokens registam apenas HTTP/código estável, sem respostas brutas, códigos de autorização ou tokens.
+- A causa exata da mensagem genérica do teste anterior continua por confirmar com os novos diagnósticos; login real e Drive continuam pendentes.
+- Validação: TypeScript e Rust compilaram; três testes focados OAuth passaram (PKCE, callback/HTML inglês e classificação segura de erros). Sem login real ou alterações a notas.
+
+## Botões de conta no Profile
+
+- Utilizador confirmou a página de regresso no browser; ajustado o botão de login à referência oficial Google (fundo claro e logótipo oficial a cores, guardado localmente).
+- Profile mostra apenas Sign out após login; removida a ação Choose another account. O botão Google também é reutilizado no modal para manter consistência.
+- Ações têm espaçamento, estados hover/focus/disabled e estilos próprios, sem alterar os fluxos de login/logout.
+- TypeScript e compilação SCSS passaram; verificação de estilos dos dois ficheiros alterados passou após formatação de blocos existentes.
+
+Restante: validação real desktop/web/Drive, inspeção visual/offline em browser real, correções daí resultantes e documentação final.
+
+## Incidente de compatibilidade entre desenvolvimento e app instalada — 2026-09-17
+
+- tauri:dev estava a partilhar com a app instalada o identificador/pasta de dados. A migração 3→4 e a adoção da biblioteca pela conta deixaram a base principal vazia em schema 4, que a release instalada em schema 3 recusava abrir.
+- Verificação em cópias: biblioteca da conta e backups continham 8 notas, 23 blocos, 2 tags e 4 collections, com integridade válida. O conteúdo atual corresponde ao backup schema 3; apenas lastOpenedAt de uma nota diferia.
+- Pasta de dados completa copiada para recuperação fora do repo. Reposta a base schema 3 validada na pasta principal, preservando a biblioteca da conta, backups e restantes ficheiros. Nenhuma app foi aberta durante a recuperação.
+- tauri:dev passa a carregar configuração com identificador com.mapherez.notex.dev. Proteção Rust impede builds debug com identificador de produção de abrir/migrar o armazenamento.
+- Utilizador confirmou a abertura da app instalada com as notas recuperadas e o download progressivo, nota a nota, no tauri:dev isolado. O isolamento não separa a Drive real da conta Google usada para testes.
+- Verificação da proteção: compilação Rust e dois testes de library_context passaram, incluindo recusa do identificador de produção em debug; wrapper dev verificado em modo help sem iniciar a app.
+
+## Banner de backup e empilhamento de avisos
+
+- Banner Drive desaparece quando não há trabalho, erros ou conflitos. Verificações periódicas silenciosas não fazem o banner reaparecer; conclusão de transferências mostra uma confirmação temporária pelo sistema de toasts.
+- Estado Drive e backup manual ficam acessíveis no cartão da conta do Profile. Ações de backup/transferência têm estilos hover/focus/disabled próprios.
+- Atualizações, transferências e toasts partilham uma coluna fixa no canto inferior direito; altura e espaçamento seguem o conteúdo, incluindo quando os detalhes do backup são expandidos.
+- TypeScript, stylelint dos ficheiros alterados e compilação SCSS passaram. Sem alterações ao motor de backup, temporizações ou dados locais.
+
+## Layout modular do Profile
+
+- Módulos são filhos diretos de uma CSS Grid com posicionamento automático e alturas naturais; classes genéricas profile-module--wide/full definem apenas a largura ocupada, sem números de linha fixos.
+- Primeira linha desktop: conta, Preferences com shortcuts, Backups & transfers com export/import e Drive. Segunda: MCP e Database Management em duas colunas. Statistics ocupa a linha inteira.
+- Adicionado indicador Tags com a mesma contagem, ícone e cor da homepage. Breakpoints existentes adaptam a grid a duas/uma coluna.
+- Compilação TypeScript, stylelint dos ficheiros alterados e compilação SCSS passaram. Sem iniciar a app ou alterar armazenamento.
+- Ajustes visuais seguintes: títulos do banner/conflitos convertidos para texto simples; avatar maior e conteúdo da conta centrado; botão Google numa linha com largura natural; caminhos completos em várias linhas e conteúdo da gestão de DB equilibrado verticalmente. TypeScript e estilos passaram.
+
+## Testes reais web/desktop e autorização após refresh — 2026-09-17
+
+- Utilizador confirmou alterações e backups automáticos nos dois sentidos (desktop → web e web → desktop), preservação da edição web após refresh, atualização após logout/login e ausência de backups/updates ao abrir notas sem editar.
+- Autorização web guardada em sessionStorage para sobreviver a refreshes na mesma tab, com validade original e margem de 60 segundos. Não prolonga nem renova automaticamente tokens Google. Logout/cancelamento remove a autorização guardada; notas locais permanecem.
+- Restauração verifica conta, client ID e validade; dados inválidos/expirados são descartados. Se sessionStorage estiver indisponível, login continua a funcionar com o token em memória.
+- Enquanto GOOGLE_REAUTHORIZE estiver ativo, banner omite Back up now, aviso Keep NoteX open, título/progresso de transferência e pausa/retoma. Profile oferece reautorização em vez de backup manual nesse estado.
+- Validação focada: TypeScript compilou e sete testes passaram (autorização após recarregamento, isolamento por conta, logout, validade/client ID/formato e arranque web). Sem staging/commits ou alterações a bases reais.
+- Ainda pendentes: teste real desta persistência após refresh/logout, utilização offline e anexos caso não tenham sido testados; documentação final e conclusão do checkpoint.
+- Indicador/link MCP Online/Offline do rodapé da sidebar reservado ao desktop; não aparece na web enquanto a integração MCP para o host não estiver implementada. Versão e links legais continuam visíveis.
+- Favicon da web reutiliza o icon.ico oficial da app em public/favicon.ico, referenciado pelo index.html e incluído automaticamente nos assets públicos/cache offline do build.
+- Utilizador confirmou autorização mantida após refresh, anexos desktop → web e isolamento entre contas, incluindo atualização da biblioteca ao regressar à conta original. Offline continua pendente; anexos web → desktop ainda sem confirmação explícita.
+- Nomes longos dos anexos no painel Files limitados com reticências; ícone e ações mantêm o espaço disponível. Nome completo acessível no tooltip nativo. Correção partilhada pelo desktop e web.
+- Teste offline confirmado pelo utilizador: edição de nota sem internet preservada e backup automático realizado quando a ligação regressou. Este resultado valida edição/reconexão; não confirma arranque ou refresh da webapp sem internet.
+- Teste seguinte confirmou refresh da webapp sem internet, continuação da edição offline, backup após reconexão e receção da alteração no desktop. Refresh offline e ciclo de sincronização completo confirmados pelo utilizador.

@@ -1,9 +1,7 @@
-import configuration from '../../config/google.json';
-
 export const googleConfig = Object.freeze({
-  webClientId: configuration.webClientId.trim(),
-  desktopClientId: configuration.desktopClientId.trim(),
-  webOrigin: configuration.webOrigin.trim().replace(/\/$/, ''),
+  webClientId: (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID ?? '').trim(),
+  desktopClientId: (import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_ID ?? '').trim(),
+  webOrigin: (import.meta.env.VITE_GOOGLE_WEB_ORIGIN ?? '').trim().replace(/\/$/, ''),
 });
 
 export const googleScopes = 'openid email profile https://www.googleapis.com/auth/drive.appdata';

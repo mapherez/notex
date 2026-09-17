@@ -750,6 +750,17 @@
   color: inherit;
 }
 
+.note-file-side-list li > svg {
+  flex-shrink: 0;
+}
+
+.note-file-side-list span:not(.side-list-actions) {
+  flex: 1 1 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .note-example-side-list strong,
 .note-example-side-list small {
   display: block;

@@ -24,6 +24,20 @@ struct Selection {
     directory: PathBuf,
 }
 
+fn validate_storage_identifier(identifier: &str, development: bool) -> Result<(), String> {
+    // A debug build can run an experimental schema. Never let it open or migrate
+    // an installed release's data, even when started outside the npm wrapper.
+    if development && !identifier.ends_with(".dev") {
+        return Err("Development builds require an isolated application identifier. Start NoteX using npm run tauri:dev.".into());
+    }
+    Ok(())
+}
+
+fn data_directory(app: &AppHandle) -> Result<PathBuf, String> {
+    validate_storage_identifier(&app.config().identifier, cfg!(debug_assertions))?;
+    app.path().app_data_dir().map_err(|e| e.to_string())
+}
+
 fn registry(base: &Path) -> Result<Connection, String> {
     std::fs::create_dir_all(base).map_err(|e| e.to_string())?;
     let conn = Connection::open(base.join("notex-accounts.sqlite")).map_err(|e| e.to_string())?;
@@ -68,7 +82,7 @@ fn selection(app: &AppHandle) -> Result<Selection, String> {
     if let Some(value) = selected.as_ref() {
         return Ok(value.clone());
     }
-    let base = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let base = data_directory(app)?;
     let conn = registry(&base)?;
     let record: Option<(String, String)> = conn.query_row(
         "SELECT a.directory, a.profile FROM session s JOIN accounts a ON a.id = s.account_id WHERE s.id = 1", [],
@@ -121,7 +135,7 @@ pub fn activate(
     resolutions: &std::collections::HashMap<String, String>,
 ) -> Result<(), String> {
     let _guard = guard(app, expected)?;
-    let base = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let base = data_directory(app)?;
     let conn = registry(&base)?;
     let existing: Option<String> = conn
         .query_row(
@@ -152,7 +166,7 @@ pub fn activate(
 #[tauri::command]
 pub fn notex_library_logout(app: AppHandle, library_id: Option<String>) -> Result<(), String> {
     let _guard = guard(&app, library_id.as_deref())?;
-    let base = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let base = data_directory(&app)?;
     registry(&base)?
         .execute(
             "INSERT INTO session VALUES (1, NULL) ON CONFLICT(id) DO UPDATE SET account_id = NULL",
@@ -171,7 +185,20 @@ pub fn notex_library_logout(app: AppHandle, library_id: Option<String>) -> Resul
 
 #[cfg(test)]
 mod tests {
-    use super::account_directory;
+    use super::{account_directory, validate_storage_identifier};
+    #[test]
+    fn development_config_cannot_open_release_storage() {
+        let release: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+        let development: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.dev.conf.json")).unwrap();
+        let release_id = release["identifier"].as_str().unwrap();
+        let development_id = development["identifier"].as_str().unwrap();
+        assert_ne!(release_id, development_id);
+        assert!(validate_storage_identifier(release_id, true).is_err());
+        assert!(validate_storage_identifier(development_id, true).is_ok());
+        assert!(validate_storage_identifier(release_id, false).is_ok());
+    }
     #[test]
     fn account_names_are_single_safe_components() {
         assert_eq!(

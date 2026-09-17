@@ -559,7 +559,7 @@
       "logout": "Log out"
     },
     "dataManagement": {
-      "title": "Export / Import",
+      "title": "Backups & transfers",
       "databasePath": "Current database",
       "databasePathLoading": "Loading database path...",
       "databasePathError": "Could not read the database path",
