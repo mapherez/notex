@@ -1,6 +1,13 @@
-# NoteX 2.3.0 — deployment web e preparação da release
+# NoteX — deployment web e manutenção de releases
 
 ## Estado atual
+
+Release, configuração de produção e deployment público concluídos, conforme
+confirmação do utilizador em 2026-09-17 sobre validações realizadas noutro chat.
+Não houve nova publicação ou inspeção remota nesta sessão. O registo está no
+[plano e validação da implementação](GOOGLE_DRIVE_WEB_IMPLEMENTATION_PLAN.md).
+As instruções seguintes permanecem como referência para reconstruções,
+atualizações e futuras releases.
 
 Desktop e web partilham o código da app. O build da raiz (`npm run build`)
 gera a webapp em `dist/`, incluindo o service worker. A landing page e a
@@ -13,7 +20,7 @@ separados: `docker/web/Dockerfile`, `docker/web/nginx.conf`,
 
 ## Endereço da webapp
 
-Os endereços pretendidos mantêm os deployments separados:
+Os endereços mantêm os deployments separados:
 
 - Landing: `https://notex.mapherez.com/`, publicada pelo workflow de Pages.
 - Documentação: `https://notex.mapherez.com/docs/`, no mesmo build da landing.
@@ -29,11 +36,11 @@ mantêm o caminho base `/`. A cache offline da app não interceta a landing/docs
 A landing não entra no contexto, build ou imagem Docker. Atualizações de
 landing/docs continuam pelo workflow existente, sem reconstruir a webapp.
 
-**Pendente:** definir o encaminhamento público por caminho. Apenas `/app` e
+O encaminhamento público é por caminho. Apenas `/app` e
 `/app/…` devem chegar ao container; o resto mantém o deployment da landing.
-A configuração desse encaminhamento ainda não foi implementada nem alterada
-no Cloudflare. Não apontar o domínio inteiro para este container, que não
-serve a landing. A preparação do build para /app/ não resolve essa etapa.
+Não apontar o domínio inteiro para este container, que não serve a landing.
+A preparação do build para /app/ não substitui a configuração de encaminhamento
+no proxy público.
 
 IndexedDB e sessão pertencem à origem do browser: mudar de hostname implica
 uma nova biblioteca local, recuperável da Drive após login.
@@ -56,7 +63,7 @@ uma nova biblioteca local, recuperável da Drive após login.
    de nota em /app/, service worker e 404 de assets e rotas fora da app antes
    de publicar. O build final reutiliza a cache.
 5. GHCR recebe `ghcr.io/mapherez/notex-web:latest`, a versão do package.json
-   (por exemplo `:2.3.0`) e `:sha-<commit completo>`, para AMD64 e ARM64.
+   (por exemplo `:2.3.1`) e `:sha-<commit completo>`, para AMD64 e ARM64.
    O frontend compila na arquitetura do builder; não requer emulação ARM para
    compilar JavaScript. O resumo da execução inclui o digest publicado.
 
@@ -85,7 +92,7 @@ A porta publicada é **8093**, mapeada para **8080** no container.
 O container serve `http://HOST_IP:8093/app/`; o healthcheck interno consulta
 `/healthz`. O encaminhamento público por caminho deve preservar `/app/` e
 encaminhar apenas a app para esta porta, mantendo landing/docs no destino
-independente. Esta configuração pública ainda está pendente. Não substituir
+independente. Não substituir
 o destino de todo o domínio pelo container. Confirmar que a porta não colide
 com outro serviço no host.
 
@@ -101,7 +108,7 @@ ao lado se houver variáveis de imagem, porta ou proxy. O compose aceita
 `NOTEX_WEB_TAG` (default `latest`) e `NOTEX_WEB_PORT` (default `8093`). Por exemplo:
 
 ```dotenv
-NOTEX_WEB_TAG=2.3.0
+NOTEX_WEB_TAG=2.3.1
 NOTEX_WEB_PORT=8093
 ```
 
@@ -131,9 +138,9 @@ Referência: [deploy estático Vite](https://vite.dev/guide/static-deploy.html).
 Referências de publicação: [GHCR e GitHub Actions](https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images),
 [visibilidade GHCR](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
 
-## Preparação da release desktop
+## Checklist para futuras releases desktop
 
-- Versão pretendida: 2.3.0. Confirmar versões e patch notes coerentes.
+- Confirmar versões e patch notes coerentes com a release a publicar.
 - Secrets esperados pelo workflow: `GOOGLE_WEB_CLIENT_ID`,
   `GOOGLE_DESKTOP_CLIENT_ID`, `GOOGLE_DESKTOP_CLIENT_SECRET`, `GOOGLE_WEB_ORIGIN`.
   Os três nomes públicos não têm prefixo VITE_ nos Secrets atuais.
@@ -144,5 +151,4 @@ Referências de publicação: [GHCR e GitHub Actions](https://docs.github.com/en
   tauri:dev usa armazenamento separado e não substitui este teste do instalador.
 - Confirmar projeto OAuth publicado para o público pretendido e configuração
   de Branding/Data Access conforme indicado pela Google.
-- Concluir documentação e apagar o checkpoint apenas quando o trabalho
-  restante de release/deployment estiver fechado.
+- Atualizar a documentação permanente com alterações e resultados da validação.

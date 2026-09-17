@@ -121,14 +121,14 @@ Ao expirar o token ou se a Google rejeitar a autorização, os backups aguardam
 nova autorização explícita. Não há refresh tokens web nem servidor de sessões.
 Se o browser impedir sessionStorage, a autorização funciona apenas em memória.
 
-## Validação real da versão 2.3.0
+## Estado da validação
 
-O utilizador confirmou login desktop/web, backups de notas nos dois sentidos,
-refresh com autorização mantida, logout/login, separação de contas, anexos
-desktop → web, edição e refresh offline, backup após reconexão e atualização
-no desktop. Abrir uma nota sem editar não gera backup nem altera updatedAt.
+O utilizador confirmou a conclusão dos testes desktop/web/Drive, incluindo
+anexos nos dois sentidos, offline, recuperação de transferências e fluxos de
+importação. Confirmou também a configuração OAuth/secrets de produção,
+instalador/updater com preservação da biblioteca e deployment público.
 
-Build/instalador final serão gerados no GitHub. A atualização da app instalada
-com migração e preservação da biblioteca ainda precisa de confirmação antes
-de publicar a release. Não foram verificados os secrets nem o estado OAuth
-do projeto na consola Google.
+Esta atualização regista a confirmação do utilizador de testes concluídos
+noutro chat; não implica nova inspeção da consola Google ou dos secrets nesta
+sessão. O registo consolidado está no
+[plano e validação da implementação](GOOGLE_DRIVE_WEB_IMPLEMENTATION_PLAN.md).

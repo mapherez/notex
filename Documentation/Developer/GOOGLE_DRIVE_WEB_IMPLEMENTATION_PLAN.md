@@ -1,21 +1,56 @@
 # NoteX: Google Drive, bibliotecas por conta e versão web
 
-Plano acordado na conversa de implementação. Este documento permanece após a conclusão do trabalho. O progresso é registado em `GOOGLE_DRIVE_WEB_CHECKPOINT.md`, que só será apagado quando a implementação e as validações estiverem concluídas.
+Plano acordado na conversa de implementação, mantido como referência permanente
+da arquitetura, decisões e critérios de validação após a conclusão do trabalho.
 
-## Estado na preparação da versão 2.3.0 — 2026-09-17
+## Estado e validação — 2026-09-17
 
-Funcionalidades principais implementadas. O utilizador confirmou OAuth real,
-backup e atualização de notas nos dois sentidos, anexos desktop → web,
-isolamento entre contas, sessão mantida após refresh e edição/refresh offline
-com backup após reconexão recebido no desktop. Abrir sem editar não gera
-backup nem alteração de updatedAt.
+Implementação concluída. Google Drive e browser mode foram introduzidos na versão
+2.3.0; a versão atual do projeto é 2.3.1.
+
+O utilizador confirmou nesta conversa que as validações e os passos de
+release/deployment anteriormente registados como pendentes já tinham sido
+concluídos noutro chat. O encerramento abaixo baseia-se nessa confirmação;
+não representa uma nova execução de testes nem inspeção remota nesta sessão.
+
+- Login Google desktop/web, sessão após refresh, logout/login e isolamento das
+  bibliotecas por conta.
+- Backups e atualização de notas nos dois sentidos, incluindo anexos
+  desktop → web e web → desktop.
+- Edição e refresh offline, preservação das alterações e backup após reconexão,
+  recebido no desktop. Abrir sem editar não gera backup nem altera updatedAt.
+- Retoma de uploads grandes interrompidos, limpeza de ficheiros abandonados,
+  resolução de conflitos e fluxos de importação.
+- Configuração de produção: secrets dos workflows e publicação/configuração
+  OAuth na Google.
+- Instalador/updater desktop, migração e preservação de notas e anexos.
+- Publicação da imagem web, execução no host e encaminhamento público de `/app/`,
+  mantendo landing e documentação independentes.
+- Login, backups, refresh de uma rota de nota e modo offline no endereço HTTPS
+  final; publicação da documentação atualizada.
+
+Não permanecem pendências desta iniciativa. Tablet/mobile e MCP hosted são
+trabalhos separados e não bloqueiam este encerramento.
 
 Configuração: [Google OAuth](GOOGLE_DRIVE_SETUP.md).
 Publicação: [deployment e release](GOOGLE_DRIVE_WEB_DEPLOYMENT.md).
-Permanecem a confirmação do instalador final/atualização com migração, o estado
-público OAuth e a execução/validação do deployment web no host. Workflow de
-imagem GHCR e compose web implementados. Tablet/mobile e MCP hosted
-continuam fora desta fase. O checkpoint distingue casos simulados dos testes reais.
+
+### Garantias implementadas a preservar
+
+- Migração SQLite sequencial com snapshot, verificação e rollback; schemas
+  desconhecidos não provocam reset ou eliminação de dados.
+- Desenvolvimento desktop usa `com.mapherez.notex.dev`; builds debug com o
+  identificador de produção recusam abrir o armazenamento instalado.
+- Gravações e confirmação de backups preservam edições posteriores à revisão
+  enviada. Publicação interrompida pode retomar sem perder pendentes.
+- Uploads grandes guardam sessões persistentes; a retoma consulta os bytes
+  confirmados pela Drive. Uploads/downloads reutilizam staging validado.
+- Limpeza de órfãos limitada a árvores marcadas pelo NoteX, preservando conteúdo
+  referenciado, uploads recuperáveis e ficheiros recentes; falhas não bloqueiam backups.
+- Imports e transições de biblioteca coordenam gravações, cloud e MCP, evitando
+  operações sobre a conta errada; falhas mantêm acesso recuperável à biblioteca.
+- Service worker restrito a `/app/`, sem intercetar landing/docs ou forçar a
+  substituição de uma versão em tabs abertas.
 
 ## 1. Objetivo e arquitetura
 

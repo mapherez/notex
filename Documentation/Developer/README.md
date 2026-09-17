@@ -17,10 +17,9 @@ They are not end-user guides.
 
 ## Google Drive and browser mode
 
-- [Implementation plan](GOOGLE_DRIVE_WEB_IMPLEMENTATION_PLAN.md)
+- [Implementation and validation](GOOGLE_DRIVE_WEB_IMPLEMENTATION_PLAN.md)
 - [Google OAuth and build configuration](GOOGLE_DRIVE_SETUP.md)
-- [Web deployment and release preparation](GOOGLE_DRIVE_WEB_DEPLOYMENT.md)
-- [Validation and remaining release work](GOOGLE_DRIVE_WEB_CHECKPOINT.md)
+- [Web deployment and release maintenance](GOOGLE_DRIVE_WEB_DEPLOYMENT.md)
 
 ## Future Remote MCP
 
