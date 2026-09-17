@@ -1,3 +1,39 @@
+# 2.3.0
+
+## What's New in NoteX
+
+This release adds Google Drive backups and browser mode, while keeping desktop use local-first and account-free when you prefer.
+
+### Highlights
+
+- Added Google sign-in and automatic backups to your own Google Drive, including note content, tags, collections, and attached files.
+- Added browser mode with local browser storage, offline editing, and automatic backups when your connection returns.
+- Changes backed up on desktop or in the browser are automatically downloaded by the other app.
+- Added separate libraries for each Google account, with existing local desktop notes incorporated into the account library on first login.
+- Added progressive library downloads with pause/resume and priority controls for individual notes, collections, and tags.
+- Added note version checks and conflict resolution to help protect local and cloud changes.
+- Added a collapsible transfer banner with backup progress, pending work, errors, and Google reauthorization controls.
+
+### Improvements
+
+- Backups are grouped automatically, with a manual Back up now action available in Profile.
+- Browser authorization survives refreshes while the Google access token remains valid. Signing out removes active access and preserves the account's local notes.
+- Added a desktop close prompt when backups are pending.
+- Added safe database migration with a backup before upgrading, plus isolated development storage to protect installed libraries.
+- Refreshed the Profile layout with aligned modules, Google account controls, shortcuts in Preferences, and a Tags statistic.
+- Update prompts, backup banners, and notifications now stack without overlapping.
+- Backup banners display note titles as plain text, and long attachment names stay within their panel with the full name available on hover.
+- Added the NoteX icon to browser tabs and clarified the manual update-check action.
+
+### Website & Documentation
+
+- Expanded the public website with Markdown-based documentation, topic navigation, and documentation search.
+- Added guides for app features, the complete shortcut list, Google Drive backups, and browser mode.
+- Updated Privacy Policy and Terms to cover Google accounts, Drive backups, and browser storage.
+- Added a Docker image build and publication workflow, with a compose file for hosting browser mode on AMD64 or ARM64.
+
+---
+
 # 2.2.3
 
 ## What's New in NoteX
