@@ -13,6 +13,7 @@ import { useKnowledgeStore } from './useKnowledgeStore';
 import { useNotesStore } from './useNotesStore';
 import { useCloudStore } from './useCloudStore';
 import { beginLibraryTransition } from '../core/storage/libraryTransition';
+import { isDevAuthBypassEnabled } from '../core/services/developmentAuth';
 
 type AccountState = {
   account: GoogleAccount | null;
@@ -79,7 +80,10 @@ export const useGoogleAccountStore = create<AccountState>((set, get) => ({
     })().catch((error) => { set({ status: 'error', error: String(error instanceof Error ? error.message : error) }); });
     await initialization;
   },
-  showLogin: () => set({ modalOpen: true, error: null }),
+  showLogin: () => {
+    if (isDevAuthBypassEnabled()) return;
+    set({ modalOpen: true, error: null });
+  },
   closeLogin: () => {
     if (get().status === 'switching' || (get().authorizing && get().pendingAccount)) return;
     loginAttempt++;
@@ -88,6 +92,7 @@ export const useGoogleAccountStore = create<AccountState>((set, get) => ({
     set({ modalOpen: !isTauri() && !get().account, authorizing: false, error: null, pendingAccount: null, adoptionChoices: {} });
   },
   login: async () => {
+    if (isDevAuthBypassEnabled()) return;
     if (get().authorizing || get().status === 'switching') return;
     const previousAccount = get().account;
     const previousStatus = get().status;

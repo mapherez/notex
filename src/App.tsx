@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
+import { RotateCcw } from 'lucide-react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { AppUpdatePrompt } from './components/ui/AppUpdatePrompt';
@@ -80,12 +81,25 @@ export function App() {
 function AppLoadingScreen({ failed, waitingForLogin }: { failed: boolean; waitingForLogin: boolean }) {
   const { t } = useI18n();
   return (
-    <div className="app-loading-screen" aria-busy={!failed && !waitingForLogin} aria-label="NoteX" role="status">
-      <div className="app-loading-screen__content">
-        {!failed && !waitingForLogin && <span className="app-loading-screen__spinner" aria-hidden="true" />}
-        <span className="app-loading-screen__label">NoteX</span>
-        {failed && <><p>{t('google.storageError')}</p><button type="button" className="secondary-button" onClick={() => window.location.reload()}>{t('google.retry')}</button></>}
-      </div>
+    <div className={failed ? 'app-loading-screen app-loading-screen--failed' : 'app-loading-screen'}
+      aria-busy={!failed && !waitingForLogin} aria-label="NoteX" role="status">
+      {failed ? (
+        <section className="app-modal choice-modal" aria-labelledby="storage-error-title">
+          <h2 id="storage-error-title">NoteX</h2>
+          <p>{t('google.storageError')}</p>
+          <div className="choice-modal-actions">
+            <button type="button" className="secondary-button" onClick={() => window.location.reload()}>
+              <RotateCcw aria-hidden="true" />
+              <span>{t('google.retry')}</span>
+            </button>
+          </div>
+        </section>
+      ) : (
+        <div className="app-loading-screen__content">
+          {!waitingForLogin && <span className="app-loading-screen__spinner" aria-hidden="true" />}
+          <span className="app-loading-screen__label">NoteX</span>
+        </div>
+      )}
     </div>
   );
 }

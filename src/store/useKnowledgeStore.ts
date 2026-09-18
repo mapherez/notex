@@ -4,6 +4,7 @@ import { createMockData } from '../core/data/createMockData';
 import { db, readAllKnowledge, seedDatabaseIfEmpty } from '../core/storage/notexRepository';
 import type { ActivityItem, Collection, Locale, Tag, TagColor, User, UserSettings } from '../core/models/models';
 import { useNotesStore } from './useNotesStore';
+import { createUuid } from '../core/utils/createUuid';
 
 type KnowledgeStore = {
   tags: Tag[];
@@ -222,7 +223,7 @@ function sortActivities(activities: ActivityItem[]) {
 }
 
 function createId() {
-  return crypto.randomUUID();
+  return createUuid();
 }
 
 function createTagId(name: string) {

@@ -15,6 +15,7 @@ import { stableStringify } from '../core/utils/stableJson';
 import { downloadCloudNote, withCloudMetadata, markCloudDeleted } from '../core/cloud/cloudView';
 import { beginLocalSave } from '../core/mcp/noteMutationCoordinator';
 import { deleteNoteAttachment, importNoteAttachment } from '../core/services/noteFiles';
+import { createUuid } from '../core/utils/createUuid';
 
 type NoteInput = {
   collectionId?: string | null;
@@ -716,7 +717,7 @@ function groupBy<T>(items: T[], key: (item: T) => string) {
 }
 
 function createId() {
-  return crypto.randomUUID();
+  return createUuid();
 }
 
 async function findAvailableNote(notes: Note[], noteId: string) {

@@ -709,6 +709,16 @@ comportamento observado no Notion mobile. A entrada imediata na escrita por
 clique e navegação por teclado é um requisito obrigatório. Esta aprovação
 define o comportamento; ainda não há implementação nem validação em touch real.
 
+Limite de âmbito confirmado: estas adaptações são para tablet/mobile e, quando
+o conteúdo o exigir, janelas desktop estreitas (exemplo de referência: metade
+de um ecrã de 1920 px, não um breakpoint aprovado). Desktop normal conserva
+o layout, a edição, a seleção, as ações dos blocos e os atalhos atuais.
+Não tornar todos os editores inicialmente não editáveis de forma global.
+Separar adaptação de largura da interação: uma janela desktop estreita com
+rato não recebe gestos touch; a sequência leitura/hold aplica-se à experiência
+touch adaptada, preservando clique e teclado em dispositivos híbridos.
+Validar explicitamente o desktop normal para detetar regressões em cada passo.
+
 - Em leitura, manter a mesma instância Tiptap não editável, mas acessível na
   ordem atual de Tab/Shift+Tab. Não criar uma segunda representação do documento.
 - Clique com rato ativa edição no ponto clicado. Foco por teclado ativa edição

@@ -3,6 +3,7 @@ import { browserFileUrl, currentBrowserStorage } from '../storage/storageRuntime
 import { desktopInvoke as invoke } from '../storage/desktopInvoke';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import type { NoteFile, NoteFileKind } from '../models/models';
+import { createUuid } from '../utils/createUuid';
 
 type FileImportInfo = NoteFile & {
   absolutePath: string;
@@ -60,7 +61,7 @@ export async function importNoteAttachment(sourcePath: string | File, noteId: st
     const bytes = new Uint8Array(await sourcePath.arrayBuffer());
     let checksum = 0xcbf29ce484222325n;
     for (const byte of bytes) checksum = BigInt.asUintN(64, (checksum ^ BigInt(byte)) * 0x100000001b3n);
-    const id = crypto.randomUUID();
+    const id = createUuid();
     const relativePath = `${noteId}/${id}/${encodeURIComponent(sourcePath.name).replace(/%/g, '_')}`;
     await storage.writeBlob(relativePath, sourcePath);
     return { id, noteId, blockId: blockId ?? null, kind: sourcePath.type.startsWith('image/') ? 'image' : 'attachment',
