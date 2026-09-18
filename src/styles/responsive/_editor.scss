@@ -1,0 +1,56 @@
+@use "../abstracts/breakpoints" as *;
+
+.note-document-shell--adapted {
+  grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+  gap: var(--nx-space-3);
+  padding-block: var(--nx-space-5) var(--nx-space-8);
+}
+
+.note-document-shell--adapted .note-toc {
+  position: sticky;
+}
+
+.note-document-shell--adapted .note-document-main {
+  padding: var(--nx-space-4) var(--nx-space-3);
+}
+
+.note-document-shell--adapted .document-title-tags {
+  display: none;
+}
+
+.note-panels-navigation {
+  position: sticky;
+  top: var(--nx-note-navigation-top, calc(var(--nx-topbar-height) + 8rem));
+  z-index: 40;
+  align-self: start;
+  padding-top: var(--nx-space-2);
+}
+
+.note-panels-navigation .icon-button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-md);
+  background: var(--nx-color-surface);
+}
+
+@media (max-width: breakpoint("mobile")) {
+  .note-document-shell--adapted {
+    grid-template-columns: minmax(0, 1fr) 2.75rem;
+    gap: var(--nx-space-1);
+  }
+
+  .note-document-shell--adapted .note-toc {
+    display: none;
+  }
+
+  .note-document-shell--adapted .note-document-main {
+    padding-inline: var(--nx-space-4) var(--nx-space-2);
+  }
+
+  .note-document-shell--adapted .editable-collection-field,
+  .note-document-shell--adapted .editable-collection-field .custom-select {
+    min-width: 0;
+    max-width: 100%;
+  }
+}

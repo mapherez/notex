@@ -178,6 +178,7 @@
     "recentSortOrder": "updatedDesc"
   },
   "editor": {
+    "headerSaveDebounceMs": 650,
     "defaultTable": {
       "columns": [
         "Column 1",

@@ -19,6 +19,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } 
 import { useMenuOptionFocus } from '../core/utils/useMenuOptionFocus';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { InlineFormattedText } from '../components/editing/InlineFormattedText';
+import { NoteHeaderDraftProvider, useNoteHeaderDraft } from '../components/notes/NoteHeaderDraft';
 import { StyledTextField } from '../components/editing/TextStyleToolbar';
 import {
   NoteInlineTiptapEditor,
@@ -34,6 +35,7 @@ import { AppModal } from '../components/ui/AppModal';
 import { EmptyState } from '../components/ui/EmptyState';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
+import { ResponsiveSidePanel } from '../components/ui/ResponsiveSidePanel';
 import { SortableTagList } from '../components/ui/SortableTagList';
 import { TagChip } from '../components/ui/TagChip';
 import { appLimits, defaultNewTagColor, defaultNoteThumbnailVariant, thumbnailOptions } from '../config/appSettings';
@@ -50,6 +52,7 @@ import {
 import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
 import { richTextToPlainText } from '../core/utils/richText';
 import { useClickOutside } from '../core/utils/useClickOutside';
+import { useAdaptedContent } from '../core/utils/useAdaptedContent';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { sortTagsByFavoriteOrder } from '../core/utils/tagSorting';
 import { useI18n } from '../i18n/I18nProvider';
@@ -82,6 +85,9 @@ export function NoteDetailPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { locale, t } = useI18n();
+  const adapted = useAdaptedContent();
+  const [panelsOpen, setPanelsOpen] = useState(false);
+  const panelsTriggerRef = useRef<HTMLButtonElement>(null);
   const createStartedRef = useRef(false);
   const isNewNote = id === 'new';
   const notes = useNotesStore((state) => state.notes);
@@ -144,6 +150,7 @@ export function NoteDetailPage() {
   const cloudAccountId = useCloudStore((state) => state.accountId);
   const excludedNotes = useCloudStore((state) => state.excludedNotes);
   const toggleExcluded = useCloudStore((state) => state.toggleExcluded);
+  useEffect(() => { setPanelsOpen(false); }, [adapted, id]);
   useEffect(() => {
     let active = true;
     setDownloadError(null);
@@ -335,6 +342,7 @@ export function NoteDetailPage() {
         !note ||
         deleteBlockState ||
         draggedBlockId ||
+        panelsOpen ||
         !isPlainTypingShortcut(event) ||
         isEditableShortcutTarget(event.target)
       ) {
@@ -362,7 +370,7 @@ export function NoteDetailPage() {
 
     window.addEventListener('keydown', handleInitialTyping);
     return () => window.removeEventListener('keydown', handleInitialTyping);
-  }, [deleteBlockState, draggedBlockId, firstBlockId, note]);
+  }, [deleteBlockState, draggedBlockId, firstBlockId, note, panelsOpen]);
 
   useEffect(() => {
     if (!draggedBlockId) {
@@ -637,7 +645,8 @@ export function NoteDetailPage() {
         </div>
       </header>
 
-      <div className="note-document-shell">
+      <NoteHeaderDraftProvider key={note.id} note={note} onSave={updateHeader}>
+      <div className={`note-document-shell${adapted ? ' note-document-shell--adapted' : ''}`}>
         <aside className="note-toc" aria-label={t('notes.tableOfContents')}>
           <div className="note-toc-dashes" aria-hidden="true">
             {tocEntries.map((entry) => (
@@ -680,10 +689,8 @@ export function NoteDetailPage() {
 
         <main className="note-document-main">
           <NoteHeader
-            collections={collections}
             note={note}
             noteTags={noteTags}
-            onChange={(input) => updateHeader(note.id, input)}
             onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
             onThumbnailChange={(thumbnail) => void updateThumbnail(note.id, thumbnail)}
             onToolbarTargetChange={setToolbarTarget}
@@ -730,7 +737,17 @@ export function NoteDetailPage() {
           </div>
         </main>
 
-        <aside className="document-aside note-document-aside">
+        {adapted ? (
+          <div className="note-panels-navigation">
+            <button ref={panelsTriggerRef} className="icon-button" type="button" aria-label={t('noteDetail.openPanels')}
+              title={t('noteDetail.openPanels')} aria-controls="note-detail-panels" aria-expanded={panelsOpen}
+              onClick={() => setPanelsOpen(true)}>
+              <ChevronLeft aria-hidden="true" />
+            </button>
+          </div>
+        ) : null}
+        <ResponsiveSidePanel compact={adapted} id="note-detail-panels" label={t('noteDetail.panels')}
+          open={panelsOpen} onClose={() => setPanelsOpen(false)} triggerRef={panelsTriggerRef}>
           <Panel title={t('noteDetail.metadata')}>
             <div className="meta-list">
               <div className="meta-row">
@@ -741,7 +758,7 @@ export function NoteDetailPage() {
                 <span>{t('noteDetail.updatedAt')}</span>
                 <span className="meta-value">{formatDate(note.updatedAt, locale)}</span>
               </div>
-              <div className="meta-row">
+              <div className="meta-row meta-row--collection">
                 <span>{t('noteDetail.collectionLabel')}</span>
                 <span className="meta-value">{collections.find((collection) => collection.id === note.collectionId)?.name ?? t('noteDetail.noCollection')}</span>
               </div>
@@ -750,6 +767,10 @@ export function NoteDetailPage() {
                 <span className="meta-value">{user?.name || note.authorId || 'Local user'}</span>
               </div>
             </div>
+          </Panel>
+
+          <Panel title={t('noteDetail.collectionLabel')}>
+            <NoteCollectionField collections={collections} t={t} />
           </Panel>
 
           <Panel title={t('noteDetail.tags')}>
@@ -944,8 +965,9 @@ export function NoteDetailPage() {
               <p className="inline-help">{t('notes.noFiles')}</p>
             )}
           </Panel>
-        </aside>
+        </ResponsiveSidePanel>
       </div>
+      </NoteHeaderDraftProvider>
 
       <ExportNoteConfirmModal
         disabled={isExportingNote}
@@ -1030,103 +1052,26 @@ function ExportNoteConfirmModal({
 }
 
 function NoteHeader({
-  collections,
   note,
   noteTags,
-  onChange,
   onTagsChange,
   onThumbnailChange,
   onToolbarTargetChange,
   t,
   typingRequest,
 }: {
-  collections: Collection[];
   note: Note;
   noteTags: Tag[];
-  onChange: (input: { collectionId?: string | null; subtitle?: string; title?: string }) => Promise<void>;
   onTagsChange: (tagIds: string[]) => void;
   onThumbnailChange: (thumbnail: NoteThumbnailModel) => void;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
   t: ReturnType<typeof useI18n>['t'];
   typingRequest?: HeaderTypingRequest | null;
 }) {
-  const [title, setTitle] = useState(note.title);
-  const [subtitle, setSubtitle] = useState(note.subtitle);
-  const [collectionId, setCollectionId] = useState(note.collectionId ?? '');
-  const saveTimeoutRef = useRef<number | null>(null);
-  const draftRevisionRef = useRef(0);
-  const draftSourceId = 'header';
-
-  useEffect(() => {
-    setTitle(note.title);
-    setSubtitle(note.subtitle);
-    setCollectionId(note.collectionId ?? '');
-  }, [note.id, note.title, note.subtitle, note.collectionId]);
-
-  useEffect(() => () => {
-    draftRevisionRef.current += 1;
-    setLocalDraftPending(note.id, draftSourceId, false);
-  }, [note.id]);
-
-  useEffect(() => {
-    if (title === note.title && subtitle === note.subtitle && collectionId === (note.collectionId ?? '')) {
-      draftRevisionRef.current += 1;
-      setLocalDraftPending(note.id, draftSourceId, false);
-      return undefined;
-    }
-    const draftRevision = ++draftRevisionRef.current;
-    setLocalDraftPending(note.id, draftSourceId, true);
-    if (saveTimeoutRef.current) {
-      window.clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = window.setTimeout(() => {
-      const finishSave = beginLocalSave(note.id, draftSourceId);
-      void (async () => {
-        let saved = false;
-        try {
-          await onChange({ title, subtitle, collectionId: collectionId || null });
-          saved = true;
-        } catch {
-          // Keep the draft registered so a remote mutation cannot overwrite it.
-        } finally {
-          finishSave();
-          if (saved && draftRevisionRef.current === draftRevision) {
-            setLocalDraftPending(note.id, draftSourceId, false);
-          }
-        }
-      })();
-    }, 650);
-    return () => {
-      if (saveTimeoutRef.current) {
-        window.clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [collectionId, note.collectionId, note.subtitle, note.title, onChange, subtitle, title]);
-
-  const selectedCollection = collections.find((collection) => collection.id === collectionId);
+  const { title, subtitle, setTitle, setSubtitle } = useNoteHeaderDraft();
 
   return (
     <section className="document-heading note-document-heading">
-      <div className="document-meta-row">
-        <div className={`editable-collection-field editing ${selectedCollection?.color ?? 'neutral'}`}>
-          <Folder />
-          <CustomSelect
-            ariaLabel={t('noteDetail.collectionLabel')}
-            emptyText={t('notes.filters.noCollections')}
-            onChange={setCollectionId}
-            options={[
-              { label: t('noteDetail.noCollection'), value: '' },
-              ...collections.map((collection) => ({
-                color: collection.color,
-                label: collection.name,
-                value: collection.id,
-              })),
-            ]}
-            value={collectionId}
-          />
-        </div>
-      </div>
-
       <div className="document-title-row">
         <div className="document-title-stack">
           <NoteInlineTiptapEditor
@@ -1162,6 +1107,29 @@ function NoteHeader({
         value={subtitle}
       />
     </section>
+  );
+}
+
+function NoteCollectionField({ collections, t }: {
+  collections: Collection[];
+  t: ReturnType<typeof useI18n>['t'];
+}) {
+  const { collectionId, setCollectionId } = useNoteHeaderDraft();
+  const selectedCollection = collections.find((collection) => collection.id === collectionId);
+  return (
+    <div className={`editable-collection-field editing note-collection-field ${selectedCollection?.color ?? 'neutral'}`}>
+      <Folder aria-hidden="true" />
+      <CustomSelect
+        ariaLabel={t('noteDetail.collectionLabel')}
+        emptyText={t('notes.filters.noCollections')}
+        onChange={setCollectionId}
+        options={[
+          { label: t('noteDetail.noCollection'), value: '' },
+          ...collections.map((collection) => ({ color: collection.color, label: collection.name, value: collection.id })),
+        ]}
+        value={collectionId}
+      />
+    </div>
   );
 }
 

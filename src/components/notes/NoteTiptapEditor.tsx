@@ -534,14 +534,17 @@ export function NoteInlineTiptapEditor({
   }, [editor, insertTextRequest]);
 
   useEffect(() => {
-    if (!editor || editor.isFocused) {
-      return;
-    }
+    if (!editor) return;
 
-    if (value !== contentKey) {
+    const syncStoredValue = () => {
+      if (editor.isFocused || value === contentKey) return;
       editor.commands.setContent(richTextToTiptapContent(value), { emitUpdate: false });
       setContentKey(value);
-    }
+    };
+    syncStoredValue();
+    // A remote value deferred during focus must also refresh when editing ends.
+    editor.on('blur', syncStoredValue);
+    return () => { editor.off('blur', syncStoredValue); };
   }, [contentKey, editor, value]);
 
   useEffect(() => {

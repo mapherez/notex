@@ -5,7 +5,9 @@ após as correções da secção 11 e a avaliação no iPad Air M3 de 13", Chrom
 Mantém-se uma pendência transversal de altura disponível no browser, a tratar
 na Etapa 4 em coordenação com os overlays da Etapa 5 (secção 12).
 Esta aceitação não significa validação real de todos os browsers e dispositivos.
-Etapa 4: propostas para revisão; direção de 4C acordada, ainda sem implementação.
+Etapa 4 iniciada: acesso aos painéis, coleção no painel e swipe do menu
+esquerdo implementados (secções 17, 18 e 19).
+4B/4C definidos para ensaio, ainda sem implementação.
 Data: 2026-09-17.
 
 Este documento regista a análise do código e as decisões acordadas na conversa.
@@ -1483,3 +1485,151 @@ Referências:
 [MDN: padrões de vibração](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/vibrate),
 [Compatibilidade da Vibration API](https://caniuse.com/vibration),
 [MDN: pointercancel](https://developer.mozilla.org/en-US/docs/Web/API/Element/pointercancel_event).
+
+## 17. Primeira entrega de 4A — acesso aos painéis da nota
+
+Implementação em 2026-09-18, após autorização para iniciar. Entrega delimitada:
+
+- Reutilização dos painéis existentes numa coluna desktop ou aba sobreposta,
+  sem listas/componentes de edição duplicados. Desktop normal conserva coluna,
+  índice, cabeçalho e controlos existentes.
+- Regra adaptada existente das Etapas 1–3: janela até 64 rem ou ponteiro primário
+  coarse até 90 rem. Não tratar um ecrã touch secundário como razão suficiente
+  para substituir desktop amplo. Critério mantém consistência com as notas;
+  calibração adicional do espaço útil do editor depende dos ensaios de 4B.
+- Tablet/mobile: painéis fechados por defeito, chevron à direita alinhado com
+  referência sticky do índice, abertura sobre documento sem reduzir sua largura.
+  Mobile até breakpoint central de 680 px não mostra índice. Tablet mantém
+  apresentação/funcionamento existentes, com posição sticky nas larguras onde
+  regra antiga o fazia perder essa posição.
+- Margens de documento reduzidas na composição adaptada. Tags de cabeçalho
+  ocultas nessa composição, disponíveis no painel. Coleção ainda no cabeçalho:
+  movimento para painel próprio acima das tags é a próxima entrega.
+- Scroll vertical nativo dentro da aba e swipe horizontal nativo para a direita
+  por scroll snap. Fecho por fundo/Escape e botão no tablet; mobile conserva
+  botão acessível a teclado/leitor de ecrã mas oculto visualmente até foco.
+  Campos editáveis, tags e controlos não iniciam swipe horizontal da aba.
+- Foco/modalidade e bloqueio do fundo apenas enquanto aberta, restauro no
+  chevron sem mudar scroll. Formulários e editores permanecem montados no
+  abre/fecha; mudar entre apresentação desktop e adaptada muda o contentor.
+- Geometria da aba acompanha VisualViewport quando disponível, com fallback
+  para viewport da janela e CSS dvh; sem altura fixa de teclado. Esta entrega
+  não resolve ainda a toolbar/scroll do editor durante edição (4B).
+- Nenhuma alteração a modelos, IDs, armazenamento, contratos MCP ou operações
+  de painel. Atalho global de escrita inicial não atua atrás da aba modal.
+
+Validação focada:
+
+- Typecheck, build de produção e regras de SCSS/ausência de estilos inline
+  passaram. Build conserva avisos existentes de dependências/chunks.
+- Playwright CLI/Chrome: desktop 1920×1080, tablet 1024×1000, mobile 390×700
+  e 320×700. Coluna desktop/tags conservadas, índice só oculto no mobile,
+  aba sem comprimir nota, scroll interno, fecho/foco, conservação de rascunho
+  e instâncias de editor no abre/fecha, redimensionamento para desktop.
+- Touch nativo emulado via CDP a 1366×1024/coarse: swipe vertical faz scroll
+  interno, swipe para direita fecha e swipe vertical na nota após fechar
+  continua a fazer scroll normal. Esta evidência não substitui iPad/iPhone ou
+  Android reais, incluindo teclado virtual, barra de URL e seleção de texto.
+- Zoom emulado a 1,5×: aba ajustada à largura/altura da área visível e fecho
+  posterior validado. Não constitui teste real de pinch/teclado em iOS.
+- 27 testes existentes de dispatcher/coordenação MCP passaram. Verificam
+  contratos/coordenação de base; não constituem validação real de todas as
+  operações MCP em paralelo com edição nesta nova apresentação.
+
+Avaliação inicial do utilizador em dispositivos reais após esta entrega:
+iPad com resultado positivo e teste rápido em iPhone com aba direita a funcionar.
+Não equivale a validar todos os casos de teclado, orientação ou browsers.
+
+Próximas entregas de 4A: coleção no painel, concluída na secção 18;
+swipe de fecho do menu esquerdo; contenção de tabelas/código/imagens e seus
+controlos/preview; distinção dos uploads e limpeza permanente de anexos.
+4B e 4C permanecem separados, conforme as decisões das secções 15 e 16.
+
+## 18. Segunda entrega de 4A — coleção no painel
+
+Implementação em 2026-09-18, após autorização para continuar:
+
+- Coleção saiu do cabeçalho e passou para painel próprio imediatamente acima
+  de Tags. Aplica-se também ao desktop, conforme exceção explicitamente
+  aprovada; restantes controlos desktop conservam a apresentação existente.
+- Reutilização do mesmo CustomSelect: cores, Sem coleção, opções e navegação
+  por teclado. Largura limitada ao painel, nomes longos com ellipsis e opções
+  de pelo menos 44 px CSS em dispositivos com ponteiro coarse. O nome na
+  informação de coleção também usa ellipsis para não alargar a aba.
+- Cabeçalho e seletor partilham um único rascunho, debounce e proteção MCP,
+  incluindo quando a aba está fechada. Gravação envia apenas campos alterados;
+  atualização de campos limpos não substitui texto local mais recente quando
+  uma gravação anterior termina. Uma falha conserva o rascunho e a proteção.
+- Debounce existente de 650 ms centralizado em editor.headerSaveDebounceMs
+  no settings.json. Não é uma nova preferência de utilizador.
+- Corrigida a atualização visual de campos Tiptap inline após perder foco:
+  valores remotos adiados durante edição são aplicados ao sair do campo,
+  sem emitir nova gravação. Mantém-se a proteção do cursor durante o foco.
+- Sem alterações a modelos, IDs, contratos/transportes MCP ou operações de
+  coleção. Não foram implementados toolbar, gestos de blocos ou anexos.
+
+Validação focada:
+
+- 31 testes passaram: quatro do rascunho partilhado e 27 existentes de
+  dispatcher/coordenação MCP. Cobrem gravação conjunta, edição mais recente,
+  atualização remota, Sem coleção e conservação da proteção após falha.
+- Build de produção/typecheck e regras de estilos passaram.
+- Playwright CLI/Chrome a 1920×1080 e 1024×1000: ordem dos painéis, seleção
+  por teclado, persistência após reload, Escape/foco no dropdown sem fechar
+  a aba e gravação da coleção mesmo após fechar a aba.
+- A 390×700 e 320×700 com touch emulado: dropdown e nomes longos dentro dos
+  limites do painel, sem overflow horizontal, opções de 44 px e revisão visual.
+- Dispatcher MCP real da aplicação Web: alteração rejeitada enquanto existe
+  rascunho local; alteração de título/coleção aceite após gravação, com UI
+  sincronizada. Não constitui ensaio do transporte nativo Tauri ou de todos
+  os comandos MCP, nem substitui avaliação em tablet/mobile reais.
+
+Avaliação do utilizador após esta entrega: resultado aprovado no iPad, com
+ganho de espaço no topo, e funcionamento MCP confirmado em desktop.
+
+Próxima entrega delimitada: swipe para fechar o menu esquerdo, concluído na
+secção 19. Contenção de conteúdo largo, imagens/preview e anexos continuam
+por fazer dentro de 4A; 4B e 4C continuam sem implementação.
+
+## 19. Terceira entrega de 4A — swipe de fecho do menu esquerdo
+
+Implementação em 2026-09-18, após autorização para continuar:
+
+- Menu aberto pelo burger acompanha o dedo e fecha com swipe para a esquerda.
+  Usa scroll horizontal nativo com dois pontos de scroll snap. Scroll vertical
+  da navegação continua nativo; o browser distingue o pan do tap num link.
+- Mecanismo partilhado com a aba direita em useDrawerSwipe, com abertura,
+  fecho, observação da posição e redimensionamento comuns aos dois lados.
+  Não acrescenta bibliotecas nem deteção manual de velocidade do dedo.
+- Mantidos links, ações, fecho por fundo/botão/Escape, bloqueio do fundo,
+  foco modal e restauro do foco. Foco de abertura/restauro não desloca a página.
+  A aba mantém a área de fundo visível e as dimensões atuais do menu.
+- Regra existente do burger até 900 px preservada. Desktop com sidebar
+  permanente conserva dimensões, posição sticky e navegação; os contentores
+  adicionais usam display: contents nessa apresentação.
+- Scroll snap, IntersectionObserver e ResizeObserver permitem o mesmo caminho
+  nos browsers suportados sem exigir Popover, scroll-initial-target ou
+  animações ligadas ao scroll. Reduced motion evita a animação programática.
+- Sem alterações a dados, gravação, contratos MCP, toolbar, blocos ou anexos.
+
+Validação focada:
+
+- Três testes existentes de useSidebarDrawer passaram: foco, modalidade,
+  transições entre desktop/compacto e coordenação com modais.
+- Typecheck, build de produção e regras de estilos passaram.
+- Playwright CLI/Chrome: desktop 1920×1080 com sidebar sticky de 224 px;
+  mobile 390×700 e 320×700; tablet compacto a 820×600 e 820×900.
+  Validados fundo/botão/Escape, foco, scroll da página e transição para desktop.
+- Touch nativo emulado via CDP: menu acompanha o dedo durante swipe para a
+  esquerda, fecha e liberta foco/scroll; swipe sobre link não navega; tap no
+  link continua a navegar. Com uma lista extensa de coleções, swipe vertical
+  faz scroll dentro do menu sem o fechar ou deslocar horizontalmente.
+- Regressão da aba direita após partilha do mecanismo: scroll vertical,
+  swipe para a direita, fundo/botão/Escape, foco, rascunhos e instâncias de
+  editor preservados; passagem para desktop, scroll da nota e zoom a 1,5×.
+- A emulação não substitui ensaio real em iPad/iPhone/Android, em especial
+  gestos diagonais, movimento parcial e barras do browser.
+
+Próximas entregas de 4A: contenção de tabelas/código/imagens e seus controlos,
+preview de imagem e tratamento de uploads/limpeza de anexos. Implementar em
+entregas delimitadas; 4B e 4C permanecem separados.

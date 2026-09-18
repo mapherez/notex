@@ -1,6 +1,6 @@
 import { getVersion } from '@tauri-apps/api/app';
 import { isTauri } from '@tauri-apps/api/core';
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { NavLink, Link, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Clock3,
@@ -22,6 +22,7 @@ import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { useLocalMcpStore } from '../../store/useLocalMcpStore';
 import { latestPatchNoteVersion, PatchNotesModal } from '../ui/PatchNotesModal';
 import { useSidebarDrawer } from '../../core/utils/useSidebarDrawer';
+import { useDrawerSwipe } from '../../core/utils/useDrawerSwipe';
 
 const navIcons = {
   clock: Clock3,
@@ -41,6 +42,8 @@ export function Sidebar({ open, onClose, onCreateNote, backgroundRef, triggerRef
 }) {
   const { t } = useI18n();
   const { compact, sidebarRef } = useSidebarDrawer(open, onClose, backgroundRef, triggerRef);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const { dismiss } = useDrawerSwipe({ compact, open, onClose, scrollerRef, sheetRef: sidebarRef, side: 'left' });
   const [appVersion, setAppVersion] = useState(latestPatchNoteVersion);
   const [patchNotesOpen, setPatchNotesOpen] = useState(false);
   const [searchParams] = useSearchParams();
@@ -78,15 +81,19 @@ export function Sidebar({ open, onClose, onCreateNote, backgroundRef, triggerRef
 
   return (
     <>
+      <div className={clsx('sidebar-drawer', compact && open && 'is-open')} aria-hidden={compact && !open || undefined}>
       {compact && open ? (
         <button
           className="sidebar-backdrop"
           type="button"
           aria-label={t("common.close")}
           tabIndex={-1}
-          onClick={onClose}
+          onClick={dismiss}
         />
       ) : null}
+      <div ref={scrollerRef} className="sidebar-drawer-scroller" onClick={(event) => {
+        if (compact && !sidebarRef.current?.contains(event.target as Node)) dismiss();
+      }}>
       <aside
         id="app-sidebar"
         ref={sidebarRef}
@@ -96,7 +103,7 @@ export function Sidebar({ open, onClose, onCreateNote, backgroundRef, triggerRef
         aria-label={t('navigation.notes')}
       >
         <div className="sidebar-header">
-          <button className="icon-button sidebar-close" type="button" aria-label={t('common.close')} onClick={onClose}>
+          <button className="icon-button sidebar-close" type="button" aria-label={t('common.close')} onClick={dismiss}>
             <X />
           </button>
           <Link className="brand" to="/" onClick={onClose}>
@@ -212,6 +219,9 @@ export function Sidebar({ open, onClose, onCreateNote, backgroundRef, triggerRef
           </Link>}
         </div>
       </aside>
+      {compact && <div className="sidebar-drawer-spacer" aria-hidden="true" />}
+      </div>
+      </div>
       <PatchNotesModal open={patchNotesOpen} onClose={() => setPatchNotesOpen(false)} />
     </>
   );

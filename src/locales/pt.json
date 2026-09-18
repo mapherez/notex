@@ -256,6 +256,8 @@
     "noteCountSingular": "{{count}} nota"
   },
   "noteDetail": {
+    "panels": "Detalhes da nota",
+    "openPanels": "Abrir painéis da nota",
     "collectionLabel": "Coleção",
     "noteCreated": "Nota criada",
     "noteSaved": "Nota guardada",

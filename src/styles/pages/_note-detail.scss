@@ -304,6 +304,28 @@
   opacity: 0.72;
 }
 
+.note-collection-field.editable-collection-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+}
+
+.note-collection-field.editing .custom-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.note-collection-field .custom-select__menu {
+  width: 100%;
+}
+
+@media (any-pointer: coarse) {
+  .note-collection-field .custom-select__option {
+    min-height: 2.75rem;
+  }
+}
+
 @each $name, $value in $palette-colors {
   .breadcrumb.#{$name},
   .editable-collection-field.#{$name} {
@@ -615,6 +637,17 @@
 .meta-value {
   color: var(--nx-color-text);
   text-align: right;
+}
+
+.meta-row--collection {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.meta-row--collection .meta-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .side-list {

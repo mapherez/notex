@@ -8,6 +8,7 @@
 @use "base/typography";
 @use "layout/shell";
 @use "components/modals";
+@use "components/drawers";
 @use "components/forms";
 @use "components/custom-select";
 @use "components/color-picker";
@@ -29,3 +30,4 @@
 @use "responsive/responsive";
 @use "responsive/content";
 @use "responsive/profile" as responsive-profile;
+@use "responsive/editor" as responsive-editor;

@@ -33,7 +33,7 @@ export function useSidebarDrawer(
     const sidebar = sidebarRef.current;
     if (!sidebar) return;
     sidebar.inert = compact && !open;
-    if (sidebar.inert && sidebar.contains(document.activeElement)) triggerRef.current?.focus();
+    if (sidebar.inert && sidebar.contains(document.activeElement)) triggerRef.current?.focus({ preventScroll: true });
     if (!compact || !open) return;
 
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -44,7 +44,7 @@ export function useSidebarDrawer(
     backgrounds.forEach(({ element }) => { element.inert = true; });
     document.body.style.overflow = 'hidden';
     const focusFrame = window.requestAnimationFrame(() => {
-      sidebar.querySelector<HTMLElement>('.sidebar-close')?.focus();
+      sidebar.querySelector<HTMLElement>('.sidebar-close')?.focus({ preventScroll: true });
     });
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -81,7 +81,7 @@ export function useSidebarDrawer(
       // A newly opened AppModal manages its own focus; resizing to desktop keeps
       // focus in the persistent sidebar instead of focusing its hidden trigger.
       if (drawerMedia().matches && previousFocus?.isConnected && !document.querySelector('.modal-backdrop')) {
-        previousFocus.focus();
+        previousFocus.focus({ preventScroll: true });
       }
     };
   }, [compact, open, backgroundRef, triggerRef]);
