@@ -2,6 +2,7 @@ import { ChevronDown, Tag as TagIcon, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { NoteRow } from '../components/notes/NoteRow';
+import { useAdaptedContent } from '../core/utils/useAdaptedContent';
 import { AppModal } from '../components/ui/AppModal';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -40,6 +41,8 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const preferredLayout = useAppStore((state) => state.settings.preferredLayout);
+  const adaptedContent = useAdaptedContent();
+  const effectiveLayout = adaptedContent ? 'list' : preferredLayout;
   const pinnedNoteIds = useAppStore((state) => state.settings.pinnedNoteIds);
   const setPreferredLayout = useAppStore((state) => state.setPreferredLayout);
   const reorderPinnedNotes = useAppStore((state) => state.reorderPinnedNotes);
@@ -49,6 +52,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   const [activePinnedDragId, setActivePinnedDragId] = useState<string | null>(null);
   const [orderedPinnedDragIds, setOrderedPinnedDragIds] = useState<string[]>([]);
   const activePinnedDragIdRef = useRef<string | null>(null);
+  const activePinnedPointerIdRef = useRef<number | null>(null);
   const orderedPinnedDragIdsRef = useRef<string[]>([]);
   const pinnedDragStartRef = useRef({ x: 0, y: 0 });
   const pinnedDragMovedRef = useRef(false);
@@ -134,7 +138,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
 
   useEffect(() => {
     if (!pinOrderingEnabled && activePinnedDragIdRef.current) {
-      finishPinnedNoteReorder();
+      cancelPinnedNoteReorder();
     }
   }, [pinOrderingEnabled]);
 
@@ -144,11 +148,26 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
     }
 
     function handlePointerMove(event: globalThis.PointerEvent) {
+      if (event.pointerId !== activePinnedPointerIdRef.current) return;
       trackPinnedNoteReorderAt(event.clientX, event.clientY);
     }
 
-    function handlePointerUp() {
+    function handlePointerUp(event: globalThis.PointerEvent) {
+      if (event.pointerId !== activePinnedPointerIdRef.current) return;
       finishPinnedNoteReorder();
+    }
+
+    function handlePointerCancel(event: globalThis.PointerEvent) {
+      if (event.pointerId !== activePinnedPointerIdRef.current) return;
+      cancelPinnedNoteReorder();
+    }
+
+    function handleAdditionalPointer(event: globalThis.PointerEvent) {
+      if (event.pointerId !== activePinnedPointerIdRef.current) cancelPinnedNoteReorder();
+    }
+
+    function handleBlur() {
+      cancelPinnedNoteReorder();
     }
 
     function handleKeyDown(event: globalThis.KeyboardEvent) {
@@ -159,11 +178,17 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerCancel);
+    window.addEventListener('pointerdown', handleAdditionalPointer);
+    window.addEventListener('blur', handleBlur);
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerCancel);
+      window.removeEventListener('pointerdown', handleAdditionalPointer);
+      window.removeEventListener('blur', handleBlur);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [activePinnedDragId, pinnedNotes]);
@@ -250,6 +275,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
     }
 
     activePinnedDragIdRef.current = noteId;
+    activePinnedPointerIdRef.current = event.pointerId;
     pinnedDragStartRef.current = { x: event.clientX, y: event.clientY };
     pinnedDragMovedRef.current = false;
     updateOrderedPinnedDragIds(persistedPinnedNotes.map((note) => note.id));
@@ -300,6 +326,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
 
   function resetPinnedDragState() {
     activePinnedDragIdRef.current = null;
+    activePinnedPointerIdRef.current = null;
     pinnedDragMovedRef.current = false;
     setActivePinnedDragId(null);
   }
@@ -321,7 +348,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       <NoteRow
         key={note.id}
         collections={collections}
-        layout={preferredLayout}
+        layout={effectiveLayout}
         note={note}
         onPermanentDelete={
           mode === 'trash'
@@ -346,7 +373,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   }
 
   return (
-    <div className="page-content list-page-grid">
+    <div className={`page-content list-page-grid${adaptedContent ? ' adapted-content' : ''}`}>
       <header className="page-header-actions">
         <span>
           <h1 className="page-title">{copy.title}</h1>
@@ -395,13 +422,13 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       {filtered.length ? (
         <div className={splitPinnedLists ? 'note-list-stack' : undefined}>
           {splitPinnedLists ? (
-            <div className={['note-list', 'pin-list', preferredLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
+            <div className={['note-list', 'pin-list', effectiveLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
               {renderNoteRows(pinnedNotes)}
             </div>
           ) : null}
 
           {regularNotes.length ? (
-            <div className={['note-list', splitPinnedLists && 'unpinned-list', preferredLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
+            <div className={['note-list', splitPinnedLists && 'unpinned-list', effectiveLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
               {renderNoteRows(regularNotes)}
             </div>
           ) : null}

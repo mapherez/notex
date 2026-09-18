@@ -179,29 +179,31 @@ export function NoteRow({
           )
         ) : null}
       </div>
-      <div className="note-row__badges">
-        {collection ? (
-          <Link className={`collection-chip ${collection.color ?? 'neutral'}`} to={`/notes?collection=${collection.id}`}>
-            <Folder strokeWidth={1.9} />
-            <span>{collection.name}</span>
-          </Link>
-        ) : (
-          <Link className="collection-chip neutral collection-chip--empty" to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${title}`}>
-            <Folder strokeWidth={1.9} />
-            <span>{t('noteDetail.noCollection')}</span>
-          </Link>
-        )}
-        {noteTags.length ? (
-          <span className="note-row__tag-chain">
-            {noteTags.map((tag) => (
-              <span className="note-row__tag-chain-item" key={tag.id}>
-                <TagChip tag={tag} color={tag.color} href={`/notes?tag=${tag.id}`} />
-              </span>
-            ))}
-          </span>
-        ) : null}
+      <div className="note-row__metadata">
+        <div className="note-row__badges">
+          {collection ? (
+            <Link className={`collection-chip ${collection.color ?? 'neutral'}`} to={`/notes?collection=${collection.id}`}>
+              <Folder strokeWidth={1.9} />
+              <span>{collection.name}</span>
+            </Link>
+          ) : (
+            <Link className="collection-chip neutral collection-chip--empty" to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${title}`}>
+              <Folder strokeWidth={1.9} />
+              <span>{t('noteDetail.noCollection')}</span>
+            </Link>
+          )}
+          {noteTags.length ? (
+            <span className="note-row__tag-chain">
+              {noteTags.map((tag) => (
+                <span className="note-row__tag-chain-item" key={tag.id}>
+                  <TagChip tag={tag} color={tag.color} href={`/notes?tag=${tag.id}`} />
+                </span>
+              ))}
+            </span>
+          ) : null}
+        </div>
+        <span className="note-row__time">{formatDisplayTime(timeValue ?? note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
       </div>
-      <span className="note-row__time">{formatDisplayTime(timeValue ?? note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
       <div className="note-row-actions" ref={menuRef} onKeyDown={menu.onKeyDown}>
         <button
           className="icon-button"

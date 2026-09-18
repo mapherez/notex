@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { IconBadge } from '../components/ui/IconBadge';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { NoteRow } from '../components/notes/NoteRow';
+import { useAdaptedContent } from '../core/utils/useAdaptedContent';
 import { InlineFormattedText } from '../components/editing/InlineFormattedText';
 import { Panel } from "../components/ui/Panel";
 import { appLimits, demoSettings } from '../config/appSettings';
@@ -34,6 +35,7 @@ type CaptureForm = {
 };
 
 export function DashboardPage() {
+  const adaptedContent = useAdaptedContent();
   const { locale, t } = useI18n();
   const navigate = useNavigate();
   const quickPinPickerRef = useRef<HTMLDivElement>(null);
@@ -249,7 +251,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="page-content">
+    <div className={`page-content${adaptedContent ? ' adapted-content' : ''}`}>
       <div className="dashboard-layout">
         <section className="dashboard-main">
           <div className="stats-grid">

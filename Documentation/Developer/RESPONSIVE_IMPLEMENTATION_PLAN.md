@@ -2,6 +2,9 @@
 
 Estado: implementação em curso; Etapas 1, 2 e 3 implementadas e validadas localmente.
 Validação em tablets reais pendente.
+Primeira avaliação real recebida em 2026-09-18: iPad Air M3 de 13", Chrome.
+Etapa 1 considerada globalmente adequada nesse ambiente; Etapas 2 e 3 têm
+ajustes de apresentação identificados na secção 11. Restantes cenários reais pendentes.
 Etapa 4: análise e proposta concretas concluídas; decisões abaixo por aprovar.
 Data: 2026-09-17.
 
@@ -807,3 +810,234 @@ scroll e zoom em Safari/iPhone/iPad e Chrome/Android reais, e transições entre
 touch, rato e teclado físico em híbridos; tempos e tolerância;
 drag/destino/autoscroll; ações contextuais com teclado aberto/fechado; comandos,
 confirmação e cancelamento. Não avançar automaticamente para 4A/4B.
+
+## 11. Primeira avaliação em tablet real — revisão das Etapas 1 a 3
+
+Ambiente reportado pelo utilizador: iPad Air M3 de 13", Chrome. Os anexos
+comparam a lista de notas e o Profile publicados com as versões de desenvolvimento.
+Não generalizar esta avaliação a outros tablets, Safari, landscape, split view
+ou mobile sem validação específica. Esta revisão não altera o âmbito do desktop
+normal nem constitui autorização para avançar nas restantes entregas do editor.
+
+### Etapa 1
+
+Avaliação global positiva neste tablet. Não há correções pedidas para o shell
+nesta avaliação; continuar a preservar a navegação e os controlos desktop atuais.
+
+### Etapa 2 — listas, grelha e Home
+
+O utilizador rejeitou a composição compacta atual por ter demasiada altura e
+espaço vazio. Após comparar as referências, definiu uma nova direção: usar o
+desenho dos cartões Grid existentes no desktop como base visual para as notas
+em tablet/mobile, mantendo LIST com uma única coluna. Esta direção substitui
+a proposta anterior de reproduzir apenas a linha horizontal original no tablet.
+Desktop normal conserva tanto a lista como a grelha atuais.
+
+Causas verificadas no código:
+
+- `compact-notes` é aplicado a listas com largura até 64 rem e também por
+  `any-pointer: coarse`, independentemente da largura. O formato muda cedo.
+- O template separa ações, conteúdo, badges e data em linhas próprias; os
+  badges usam grid e separam coleção de tags. Em touch os alvos têm 3 rem,
+  aumentando ainda mais a altura desta composição.
+
+Direção definida, com dimensionamento por rever visualmente antes de implementar:
+
+- Reutilizar a composição visual Grid: miniatura, título e menu no topo,
+  descrição quando existe, e coleção/tags com data/hora em baixo. No tablet,
+  pega e seleção ficam à esquerda, ao lado de título e subtítulo respetivamente;
+  pin e favorito ficam na zona inferior direita. Apresentar
+  sempre uma nota por linha na experiência tablet/mobile, incluindo landscape.
+- Rever a altura mínima e os espaços da adaptação, sem copiar automaticamente
+  o mínimo desktop de 11 rem ou reservar uma linha vazia para descrição ausente.
+  Manter coleção e tags juntas quando cabem e permitir quebra necessária em
+  mobile; data/hora deve permanecer legível sem criar uma faixa vazia excessiva.
+- Usar altura natural conforme o conteúdo de cada nota. `NoteRow` já omite
+  descrições vazias e tags ausentes, mas o CSS Grid desktop mantém uma faixa
+  `summary` com `minmax(0, 1fr)`, gaps e `min-height: 11rem`. Esconder elementos
+  não chega: na adaptação, não reservar a faixa da descrição nem o espaço entre
+  essa faixa e as restantes quando não existe descrição. Não aplicar estas
+  alterações ao Grid ou List do desktop normal.
+- Sem descrição, aproximar a faixa de metadados do cabeçalho com o espaçamento
+  normal; com descrição, deixar o cartão crescer apenas pelo conteúdo e pelos
+  espaçamentos necessários, preservando o comportamento atual do excerto.
+  Sem tags, não reservar uma faixa para tags. Manter coleção, incluindo o badge
+  existente «Sem coleção», e data/hora: são informação, não placeholders vazios.
+- Controlos opcionais ausentes, como seleção ou pin em contextos onde não são
+  apresentados, não devem deixar colunas vazias. Um favorito desativado ou uma
+  checkbox não selecionada continuam a ser controlos úteis e não desaparecem.
+  Preservar dimensões touch confortáveis e a ordem de navegação por teclado.
+- Manter padding, alinhamento do cabeçalho e espaçamento entre secções coerentes,
+  permitindo alturas diferentes nesta lista de uma coluna. Não criar componentes
+  separados para cada combinação de conteúdo, nem novos controlos para expandir
+  ou recolher cartões.
+- Medir o espaço efetivo da lista e alvos touch; não escolher outro limiar
+  arbitrário. A apresentação do desktop normal não muda por existir touch.
+- Preservar seleção, favorito, pin, menus, reordenação existente e teclado.
+  Tags em touch precisam de acesso sem hover ou sobreposição entre alvos.
+- Reutilizar `NoteRow` na Home e nas listas; não criar versões independentes.
+
+Decisão explícita do utilizador: retirar a escolha Lista/Grelha na experiência
+tablet/mobile e apresentar sempre LIST, sem uma nova definição no Profile.
+Desktop mantém o botão atual e a escolha do utilizador, com LIST como valor
+inicial existente; não priorizar Grid sobre List.
+Esclarecimento técnico: o botão atual chama `setPreferredLayout` e grava a
+escolha internamente. Não há um segundo controlo ou setting de produto.
+Na experiência tablet/mobile a vista efetiva será List, independentemente
+desse valor interno, sem mudar o valor inicial ou a escolha do desktop.
+Não classificar um desktop híbrido como tablet apenas por `any-pointer: coarse`.
+Critério implementado nesta entrega: janelas até 64 rem, ou até 90 rem quando
+o ponteiro principal é coarse. Um ponteiro secundário coarse não ativa a
+adaptação num desktop largo. As quebras internas dos cartões e da Home medem
+os respetivos containers; validar também tablet com rato/trackpad no ensaio real.
+
+Home: referência visual recebida. Mostra cinco estatísticas distribuídas em
+4+1 e cinco atalhos rápidos distribuídos em 2+2+1, deixando espaço vazio na
+última linha de ambos os grupos. O código usa `auto-fit` com mínimos de 10 rem
+nas estatísticas e 16 rem nos atalhos em touch, explicando estas quebras.
+Decisão mais recente do utilizador: procurar uma composição de três cartões
+na primeira linha e dois na segunda (3+2) nesta largura tablet, em vez de tentar
+comprimir os cinco numa linha. Aplicar esta direção às estatísticas e aos atalhos.
+Proposta de alinhamento para revisão visual: cartões com a mesma largura, com
+os dois da segunda linha alinhados à esquerda nas mesmas colunas da primeira;
+não esticar os dois para preencher a linha nem centrar automaticamente.
+Medir o título e o controlo do atalho ocupado nesta composição, sem reduzir os
+alvos touch ou tornar o título inutilmente truncado. Quando o conteúdo deixar
+de caber, passar para duas colunas e depois uma, segundo o espaço efetivo.
+Preservar a apresentação existente no desktop normal.
+As composições finais da Home ainda precisam de revisão visual: não preencher
+com conteúdo novo, esconder slots ou mudar o número de estatísticas/atalhos.
+
+Validação focada das notas: título sem descrição, descrição presente, com/sem
+tags, coleção longa e «Sem coleção», datas, e variantes de seleção/pin. Confirmar
+que as secções ausentes não deixam espaços reservados, que texto e metadados
+quebram legivelmente em mobile e que touch/teclado continuam a funcionar.
+
+### Etapa 3 — preferências do Profile
+
+O utilizador aprova a organização responsive dos módulos e, na revisão mais
+recente, aceita manter o estilo novo das preferências, com dropdown abaixo.
+Retirou o pedido anterior de recuperar a composição original no tablet.
+
+Causa verificada: `@container profile-module (max-width: 28rem)` coloca os
+selects abaixo do texto também nos módulos de uma coluna tablet estreita.
+
+Direção: rever os limiares de quebra para que o empilhamento não aconteça antes
+de ser necessário, mantendo a apresentação nova quando faz sentido. Medir
+ícone, textos nos dois idiomas, seletor e alvos touch no espaço efetivo do módulo;
+não aplicar automaticamente a mesma quebra a todo o tablet nem reverter o estilo
+aprovado. Manter organização dos módulos, estatísticas e ações existentes.
+
+Ordem da revisão: primeiro notas em List com a base visual dos cartões Grid e
+disponibilidade da escolha Lista/Grelha; depois limiares das preferências do
+Profile e distribuição das células da Home, com a referência agora disponível.
+Validar cada entrega em portrait/landscape, largura intermédia e desktop normal,
+e voltar a pedir avaliação no tablet real.
+
+### Correções implementadas em 2026-09-18
+
+Após aprovação do utilizador, esta entrega aplica as correções das Etapas 2 e 3.
+A Etapa 1 não recebeu pedidos de alteração; o shell existente foi preservado.
+Não houve implementação ou avanço das entregas do editor.
+
+- Notas: `NoteRow` reutilizado na Home e nas listas, com altura natural,
+  descrição sem faixa reservada quando ausente, metadados juntos e tags sem
+  sobreposição. Controlos opcionais ausentes não geram colunas. Pin/favorito
+  ficam lado a lado na adaptação para evitar altura adicional de alvos touch.
+- Notas abaixo de 34 rem de largura disponível: pega/título e seleção/subtítulo
+  conservam alinhamento na coluna esquerda. Miniatura passa para o rodapé para
+  deixar largura para o texto. Descrição só acrescenta a sua linha quando
+  presente. Alvos de 48 px no tablet e 44 px nesta composição
+  mobile; ícones mantêm dimensões discretas. Sem novos controlos ou funcionalidades.
+- Lista/Grelha: escolha escondida na adaptação; vista efetiva List, sem gravar
+  uma preferência nova. Desktop normal mantém a escolha guardada e o default
+  List existente. A grelha desktop mantém duas colunas.
+- Home: três colunas na adaptação tablet, com os dois últimos cartões alinhados
+  às duas primeiras colunas. Abaixo de 41 rem no container dashboard, duas
+  colunas; atalhos passam a uma abaixo de 25 rem e estatísticas abaixo de 21 rem.
+  Nos atalhos estreitos, título fica abaixo da miniatura e admite duas linhas,
+  preservando o controlo de edição acessível. Desktop normal conserva cinco
+  colunas nos dois grupos.
+- Profile: limiar do módulo para colocar dropdown abaixo passou de 28 rem para
+  23.5 rem. Organização dos módulos e estilo novo nas composições estreitas
+  preservados; dropdowns ficam ao lado quando há largura suficiente.
+
+Validação local concluída:
+
+- Build de produção, Stylelint e verificação de ausência de estilos inline.
+- Três testes existentes da sidebar: foco, Escape, inert e transições de largura.
+- Chrome com rato em larguras 320, 390, 768, 960, 1024, 1366 e 1920 px, conforme
+  o ecrã revisto; Chrome com emulação touch em 320, 390, 1024 e 1366 px.
+- Notas com/sem descrição e tags, «Sem coleção», coleção e tag longas: sem
+  overflow horizontal, com alturas diferentes conforme o conteúdo.
+- Seleção e ações em lote; menu com ArrowDown/Escape e foco devolvido ao botão.
+- Preferência Grid guardada reaparece no desktop após a vista adaptada; List
+  desktop conserva linha horizontal. Home tablet confirmou três colunas iguais
+  nos dois grupos. Profile confirmou módulos e dropdowns sem overflow.
+
+Estas verificações não substituem o novo teste no iPad real, Safari/iOS,
+teclado virtual ou dispositivos híbridos. Capturas e scripts de QA locais estão
+em `output/playwright/` (artefactos ignorados pelo Git).
+
+### Correção após avaliação dos cartões e do drag touch
+
+O utilizador reportou título afastado para o meio do cartão tablet e arrasto
+que fazia scroll da página. Ajuste aplicado: miniatura/título/menu no topo,
+restantes controlos na faixa inferior junto aos metadados no tablet. A composição
+mobile conserva a linha própria para controlos; desktop normal conserva a
+posição original dos controlos e a ordem de navegação por teclado.
+
+A pega ativa na adaptação passa a usar `touch-action: none`, limitado ao seu
+alvo touch. O restante cartão mantém scroll e zoom nativos. Esta arbitragem
+precisa de estar definida antes de começar o gesto, conforme
+[MDN: touch-action](https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action).
+Não é uma implementação de long press no cartão nem altera as regras de produto:
+só notas fixadas podem ser reordenadas, na lista sem filtros ativos.
+
+O gesto acompanha o pointerId original; outros ponteiros não movem ou confirmam
+a nota. `pointercancel`, contacto adicional, Escape, perda de foco da janela ou
+ativação de filtros cancelam a ordem provisória. Apenas pointerup do contacto
+original confirma a operação existente.
+
+Validação de regressão no Chrome com eventos touch nativos enviados por CDP:
+
+- Reprodução com touch-action auto: página deslocou-se 189 px e recebeu
+  pointercancel. Com a correção: ordem das notas mudou, página não fez scroll
+  e o gesto terminou em pointerup.
+- Cancelamento depois de movimento: ordem guardada ficou intacta e o estado
+  de arrasto foi limpo. Movimento fora da pega: página fez scroll normalmente.
+- Capturas tablet portrait/landscape e mobile 320 px sem overflow horizontal;
+  título tablet começa junto à miniatura, antes dos controlos inferiores.
+- Arrasto com rato em desktop 1920 px e cancelamento por Escape passaram.
+- Build e verificações de estilos passaram. Novo ensaio real no iPad pendente.
+
+### Ensaio seguinte — pega e seleção na coluna esquerda
+
+O utilizador confirmou que o drag touch funciona e pediu esta composição para
+experimentar: pega no canto superior esquerdo com título à direita; seleção
+por baixo da pega com subtítulo à direita, alinhado com o título. Pin e favorito
+conservam a zona inferior direita. Este pedido substitui a posição inferior da
+pega e seleção no ensaio anterior; a interação de drag não mudou nesta entrega.
+
+Aplicado no mesmo `NoteRow`, apenas por estilos da experiência adaptada:
+
+- Tablet: miniatura à direita no topo, junto ao menu, preservando o espaço do
+  texto à direita da coluna de controlos. Rodapé conserva metadados e pin/favorito.
+- Mobile: miniatura no rodapé para preservar largura útil do título e subtítulo.
+- Sem subtítulo: seleção partilha a linha dos metadados em vez de criar uma
+  linha vazia; cartões sem seleção/pega continuam sem reservar esses controlos.
+- Desktop normal e ordem de foco existentes preservados.
+
+Validação: alinhamento horizontal do título/subtítulo e alinhamento vertical
+com os respetivos controlos em 1024, 1366, 390 e 320 px; cartões com/sem subtítulo,
+sem overflow horizontal. Teste touch nativo repetido na nova posição da pega:
+reordenação, cancelamento e scroll fora da pega passaram. Build e verificações
+de estilos passaram. Avaliação visual deste ensaio no tablet real pendente.
+
+Correção seguinte da Home: quando não existem seleção, pega ou pin, o rodapé
+deixa de reservar a coluna da miniatura para a área de ícones. Metadados ocupam
+essa largura e apenas o favorito visível usa a coluna final. Hora fica a 12 px
+do controlo visível no tablet, sem espaço adicional para controlos ausentes.
+Validado em Chrome touch em 1024, 1366, 390 e 320 px, sem overflow; em mobile,
+hora conserva alinhamento à margem direita dos metadados. Desktop normal e
+cartões com seleção/pega mantêm a composição anterior.
