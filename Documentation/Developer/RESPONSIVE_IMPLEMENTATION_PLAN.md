@@ -1,11 +1,11 @@
 # NoteX: janela desktop de meia largura, tablet e avaliação mobile
 
-Estado: implementação em curso; Etapas 1, 2 e 3 implementadas e validadas localmente.
-Validação em tablets reais pendente.
-Primeira avaliação real recebida em 2026-09-18: iPad Air M3 de 13", Chrome.
-Etapa 1 considerada globalmente adequada nesse ambiente; Etapas 2 e 3 têm
-ajustes de apresentação identificados na secção 11. Restantes cenários reais pendentes.
-Etapa 4: análise e proposta concretas concluídas; decisões abaixo por aprovar.
+Estado: Etapas 1, 2 e 3 consideradas concluídas pelo utilizador em 2026-09-18,
+após as correções da secção 11 e a avaliação no iPad Air M3 de 13", Chrome.
+Mantém-se uma pendência transversal de altura disponível no browser, a tratar
+na Etapa 4 em coordenação com os overlays da Etapa 5 (secção 12).
+Esta aceitação não significa validação real de todos os browsers e dispositivos.
+Etapa 4: propostas para revisão; direção de 4C acordada, ainda sem implementação.
 Data: 2026-09-17.
 
 Este documento regista a análise do código e as decisões acordadas na conversa.
@@ -1041,3 +1041,238 @@ do controlo visível no tablet, sem espaço adicional para controlos ausentes.
 Validado em Chrome touch em 1024, 1366, 390 e 320 px, sem overflow; em mobile,
 hora conserva alinhamento à margem direita dos metadados. Desktop normal e
 cartões com seleção/pega mantêm a composição anterior.
+
+## 12. Fecho das Etapas 1 a 3 e altura disponível no browser
+
+Em 2026-09-18, o utilizador considera as Etapas 1 a 3 concluídas, mantendo a
+pendência de altura para a Etapa 4. Não foram implementadas correções de altura
+durante esta verificação.
+
+- Estrutura principal, reset, loading e alguns modais ainda usam `100vh`;
+  sidebar e alguns limites de menus/notificações já usam `100dvh`. Uniformizar
+  os limites que devem acompanhar as barras do browser, preservando scroll.
+- `dvh` não garante espaço acima do teclado virtual. Rever a área visível dos
+  controlos do editor em 4B e coordenar modais/banners com a Etapa 5, sem tratar
+  zoom ou resize como prova isolada de teclado aberto.
+- Dropdowns adaptados já usam Floating UI, cuja implementação instalada
+  considera `VisualViewport`; não duplicar esse posicionamento.
+- Verificação em Chrome desktop: sidebar acompanha alturas de janela testadas;
+  modal de privacidade conserva margens e scroll interno com 400 px de altura.
+  Estes testes não validam barras dinâmicas nem teclado virtual em dispositivos
+  reais. Essa validação permanece necessária em iOS e Android.
+
+Não avançar automaticamente para implementação de 4A, 4B ou 4C. Rever cada
+entrega com o utilizador, preservando desktop normal e os comportamentos atuais
+de rato e teclado.
+
+## 13. Revisão de 4A — índice e painéis sobrepostos
+
+Esta revisão substitui as propostas anteriores de 4A para índice e painéis.
+Regista decisões e pontos por esclarecer; não houve implementação da interface.
+
+- Tablet: conservar apresentação, localização e funcionamento atuais do índice,
+  que o utilizador já experimentou. Reavaliar apenas a posição após rever a
+  toolbar em 4B. Mobile: retirar o índice.
+- Tablet/mobile: painéis da direita fechados por defeito; abrir sobre a nota,
+  sem comprimir o documento, através de um chevron à direita à altura do índice
+  ou, em mobile, aproximadamente da coleção. Confirmar alinhamento visual.
+- Reutilizar metadados, tags, exemplos adicionais, links/backlinks e ficheiros.
+  Manter formulários/drafts e scroll da nota durante abertura/fecho.
+- Painel direito com scroll vertical e swipe para a direita para fechar; toque
+  no backdrop também fecha. Tablet mantém botão de fechar. Mobile deixa uma
+  faixa de background visível, substituindo a proposta fullscreen, e usa swipe
+  e backdrop sem ícone de fechar. Preservar fecho acessível, Escape e foco.
+- Acrescentar swipe para a esquerda para fechar o menu lateral esquerdo aberto
+  pelo burger. Esta alteração autorizada do shell é separada do layout do editor
+  e não altera a sidebar permanente do desktop normal.
+- Distinguir direção e intenção dos gestos: scroll vertical continua nativo;
+  seleção, campos editáveis e conteúdo com scroll horizontal não devem provocar
+  fecho acidental. Não bloquear scroll/zoom globalmente.
+- Adaptar margens à largura útil, com padding e alinhamentos coerentes. Não
+  reutilizar automaticamente as margens desktop em tablet/mobile.
+- Tags: retirar a lista do cabeçalho da nota em tablet/mobile; manter gestão e
+  acesso no painel direito. Desktop normal conserva apresentação atual.
+- Título/subtítulo mantêm comportamento atual, sem novas regras de produto ou
+  limites de linhas. Garantir que conteúdo longo não alarga a página. Miniatura
+  mantém-se à direita do título, alinhada à margem útil do documento.
+- Coleção: o CSS atual tem `min-width: 13rem`, não largura fixa. Limitar o campo
+  à largura disponível, com acesso ao nome completo no seletor.
+- Tabelas/código e outros conteúdos que precisem de largura: scroll horizontal
+  local, preservando swipe vertical da página/painel. Verificar nested scroll
+  e gestos de fecho sem duplicar layouts nem alterar dados.
+- Imagens: adaptar proporcionalmente à largura útil, sem deformar, sem ampliar
+  desnecessariamente e sem alterar dimensões/wrap guardados na nota.
+
+Informação antecipada para 4B/4C, a rever antes da entrega correspondente:
+
+- Ações da nota acessíveis através de menu de reticências verticais (`⋮`) na
+  experiência adaptada; não remover operações por as agrupar.
+- Retirar exportação `.notex` em tablet/mobile, mantendo desktop. Por esclarecer:
+  se esta decisão também abrange download/exportação dos anexos originais.
+- O utilizador pretende retirar Voltar em mobile e usar swipe. Definir se o
+  gesto será da app ou do browser e o destino quando a nota é aberta por link
+  direto; não assumir que o histórico do browser tem uma página NoteX anterior.
+  Ainda não há implementação de navegação por swipe.
+- Anexos existem na lista lateral e também como elementos inseridos no documento.
+  `originalName` é o nome do ficheiro; Abrir aciona `openNoteAttachment`. No Web,
+  PDF/imagens reconhecidos são abertos numa nova aba; outros tipos seguem o
+  caminho de download atual. Esconder um ícone de download não altera por si só
+  esse comportamento. Não retirar anexos do documento por esta revisão.
+
+Desktop normal continua com composição e interações atuais. Mobile final e
+validação em browsers/dispositivos reais continuam dependentes das etapas
+correspondentes, sem considerar esta revisão uma conclusão de 4A/4B/4C.
+
+## 14. Revisão seguinte — coleção, anexos e ações da nota
+
+Decisões do utilizador, ainda sem implementação:
+
+- Aba direita em mobile semelhante ao drawer esquerdo atual: painel sobreposto,
+  faixa de background visível, scroll vertical, swipe para a direita e toque no
+  backdrop para fechar. Swipe para fechar não significa scroll horizontal da aba.
+- Mover o seletor da coleção para um painel próprio imediatamente acima de Tags.
+  Tablet/mobile usam a aba direita; desktop usa a secção de painéis existente.
+  Esta é uma alteração desktop explicitamente pedida, exceção ao princípio de
+  conservar a composição normal. Retirar a coleção do cabeçalho da nota.
+- Preservar seleção de coleção/Sem coleção, persistência e atualizações MCP.
+  Hoje coleção, título e subtítulo partilham draft/gravação em NoteHeader; separar
+  a apresentação sem reenviar valores antigos, perder drafts ou ultrapassar a
+  coordenação de mutações MCP. Contratos, IDs e formatos não mudam pelo layout.
+  Aplicar este requisito também aos restantes campos expostos por MCP.
+- Manter imagens proporcionais sem deformação. Rever legibilidade com imagens
+  reais; não comprimir conteúdo da imagem para forçar dimensões mínimas nem
+  alterar os atributos guardados. Preview solicitado pelo utilizador definido
+  abaixo; ainda sem implementação.
+- Nomes dos anexos: reutilizar ellipsis CSS da lista lateral em tablet/mobile,
+  sem nova funcionalidade para mostrar o nome completo nesta entrega.
+- Distinguir upload de imagens e outros ficheiros. Atualmente os comandos image
+  e file chamam o mesmo insertFile. Os dados já distinguem kind=image/attachment.
+  Imagens novas aparecem no documento e no painel de ficheiros; outros ficheiros
+  novos aparecem apenas no painel. Preservar armazenamento, backup/sync e
+  compatibilidade com documentos existentes. O utilizador confirma que não há
+  anexos não imagem inseridos pelos utilizadores atuais; não é necessária uma
+  entrega de migração para esta alteração. Novos anexos não imagem ficam no painel.
+- Nome do ficheiro clicável aciona Abrir. Para tipos que não se abrem no browser,
+  o utilizador deseja escolha do local de gravação. No Web, essa escolha não é
+  garantida em todos os browsers: showSaveFilePicker tem suporte limitado e exige
+  contexto seguro/interação; download convencional obedece às regras do browser.
+  Fallback aprovado: onde houver seletor suportado, permitir escolher destino;
+  nos restantes browsers usar o comportamento de download do browser/sistema,
+  sem prometer escolha universal de pasta.
+- Menu vertical de ações da nota: favorito, eliminar e controlo de participação
+  no backup atualmente existente, quando aplicável. Hoje o ícone de cloud alterna
+  exclusão da nota no backup; não constitui um novo comando de backup imediato.
+- Tablet/mobile: esconder exportação .notex e a indicação Saved locally. Isto
+  não altera persistência/sync nem elimina mensagens de erro. Desktop mantém
+  Saved locally nesta entrega; retirada futura não está autorizada agora.
+- Mobile: retirar Voltar do cabeçalho e usar navegação nativa do browser, conforme
+  a decisão do utilizador. Não acrescentar Voltar ao menu nem swipe de navegação
+  próprio. Links partilhados não estão no âmbito do produto. Validar as rotas de
+  entrada existentes e a navegação real nos browsers suportados, sem bloquear os
+  gestos nativos com os novos drawers ou scrolls locais.
+
+Verificação nesta revisão: 27 testes existentes passaram em dispatcher.test.ts e
+noteMutationCoordinator.test.ts. Confirma a base atual; não valida antecipadamente
+a nova disposição dos campos ou todos os caminhos MCP. Quando implementado,
+validar mudanças locais/remotas de coleção, título e tags com edição pendente,
+painel aberto/fechado e após navegação. Não houve alterações de código da app.
+
+### Preview de imagens solicitado pelo utilizador
+
+Para tablet/mobile, o primeiro tap curto numa imagem mostra os controlos; outro
+tap curto sobre a mesma imagem, com controlos ativos, abre o preview. Não exigir
+double-tap rápido nem interpretar toque nos controlos, swipe/drag ou pinch como
+o segundo tap. Ao mudar de imagem ou sair da interação, reiniciar esta sequência.
+O preview ocupa a área visível da app, com imagem centrada e inicialmente ajustada
+para caber inteira. Usar o ficheiro original já armazenado, sem gravar zoom/posição
+nem alterar os atributos da imagem no documento.
+
+- Pinch aumenta/reduz a imagem; após ampliar, arrastar permite explorar detalhes.
+  Limitar zoom/pan para a imagem não se perder fora da área visível; ajustar
+  limites com imagens reais, portrait/landscape e rotação.
+- Zoom pertence ao preview, preservando zoom e scroll normais fora dele. Gestos
+  no preview não reordenam blocos, fecham drawers ou alteram o conteúdo da nota.
+- Propor botão de fechar visível, Escape e restauro de foco/scroll ao sair.
+  Reutilizar infraestrutura de modal/foco, sem alterar regras dos outros modais.
+- Integrar a sequência de taps com seleção Tiptap, controlos e 4C; um arrasto não
+  termina em abertura de preview. Desktop normal mantém a interação existente,
+  com as correções de limites e simplificação de controlos pedidas abaixo.
+
+Viabilidade: browser permite pinch/pan através de Pointer Events. Exibição modal
+simples; gestos e integração com editor exigem uma entrega própria de complexidade
+média, com validação touch real em iOS/Android e regressão de foco/seleção Tiptap.
+[MDN: pinch zoom](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events/Pinch_zoom_gestures).
+Esta proposta não acrescenta galeria, navegação entre imagens ou novas ferramentas.
+
+### Limites das imagens e limpeza de anexos — revisão seguinte
+
+Decisões do utilizador, ainda sem implementação:
+
+- Em todos os dispositivos, imagem e controlos ficam dentro da largura útil do
+  respetivo container, descontando padding/bordas. Conservar proporções e evitar
+  que mínimos intrínsecos do grid/figure/img alarguem o documento. O `max-width`
+  já existente no figure não basta para considerar todos os casos resolvidos.
+- Slider de tamanho: máximo corresponde à largura útil atual do container,
+  em vez do teto fixo atual de 760 px. Rever também o mínimo/step, para caber
+  em containers estreitos e permitir atingir a largura máxima. Atualizar limites
+  ao redimensionar/rodar, sem gravar uma alteração de tamanho só por resize.
+- Controlos: conservar alinhar esquerda/centro/direita e tamanho; retirar os dois
+  botões de envolver texto. Esta simplificação e os limites são pedidos que
+  abrangem também desktop. Não eliminar atributos guardados ou suporte MCP a
+  documentos existentes por remover os botões. Revisão estética mais ampla fica
+  para depois, conforme pedido.
+- Remover imagem do corpo deve limpar a lista de ficheiros, registos, binário
+  armazenado e referências temporárias pertencentes à app. Eliminar anexo no
+  painel segue a mesma operação centralizada; não basta esconder o item.
+- Não imagem apenas no painel: associar à nota, sem dependência de um bloco que
+  possa ser apagado depois. Preservar a relação das imagens com o conteúdo.
+
+Achados da leitura do código: Backspace/Delete com nó de ficheiro selecionado
+chama deleteFile; essa ação remove referências nos blocos, registo e binário.
+Eliminação de blocos também tem limpeza. Atualização genérica do documento não
+faz reconciliação de anexos removidos, pelo que corte/remoção de seleção e outros
+caminhos ainda precisam de verificação. No Web, o cache de object URLs só é
+revogado ao trocar/fechar biblioteca; deleteBlob não revoga a URL individual.
+É necessária limpeza desse cache na eliminação para libertar referências ao Blob.
+
+Validação focada prevista: imagem grande em documento estreito, slider no máximo,
+rotação/resize, controlos/preview e drag; remoção pelo painel, Backspace/Delete,
+seleção/corte e eliminação do bloco, incluindo edição pendente, undo/redo e MCP.
+Confirmar ausência de registos/binários órfãos após reabrir biblioteca e de URLs
+em cache após eliminar ficheiros. Verificar referências repetidas e interrupções
+para não apagar um ficheiro ainda usado nem esconder falhas de limpeza.
+
+### Bug confirmado pelo utilizador — undo após eliminar imagem
+
+O utilizador reproduziu no desktop: eliminar imagem do corpo retira-a da lista
+de ficheiros; undo volta a mostrar a imagem no documento, mas não na lista.
+
+Decisão do utilizador: eliminação de imagem/anexo é definitiva e não permite
+restaurar o ficheiro por undo/redo; para o voltar a usar é necessário inserir
+novamente. Preservar undo/redo normal de texto/formatação, incluindo operações
+que envolvam texto e imagem. Não limpar indiscriminadamente todo o histórico.
+Esta correção aplica-se também ao desktop, como pedido explícito de consistência.
+
+Fundamento da leitura: o editor regista alterações do documento no histórico,
+enquanto deleteFile remove registo e binário num caminho separado. Restaurar um
+nó noteFile não restaura esses recursos. O histórico deve deixar de poder
+reintroduzir referências a anexos eliminados, também através dos comandos da
+toolbar, teclado/gestos nativos e alterações posteriores do documento. Definir
+estratégia com testes Tiptap/ProseMirror; não considerar apenas bloquear Ctrl+Z
+ou excluir a transação de eliminação do histórico como garantia suficiente.
+
+Desktop: deleteNoteAttachment invoca notex_note_file_delete, que chama
+fs::remove_file para o ficheiro da biblioteca. A URL de imagem usa caminho
+convertido do Tauri, sem passar pelo Map de object URLs Web. A reaparição visual
+pode ser uma referência restaurada pelo histórico com conteúdo ainda em cache
+da WebView; isto é hipótese, não confirmação de que o ficheiro existe em disco.
+Confirmar o caminho físico e erros da eliminação durante a reprodução; não
+concluir persistência apenas porque a imagem volta a aparecer na interface.
+
+Conclusão exigida da entrega: eliminação bem-sucedida limpa registos, binário e
+referências controladas pela app, sem recuperação de nós órfãos por undo/redo.
+Falhas de limpeza devem ser tratadas sem declarar conclusão; movimentos de
+imagem/bloco não podem ser confundidos com eliminação. Testar painel, teclas,
+seleção/corte e remoção de bloco, depois undo/redo repetidos, nova edição e
+reabertura da biblioteca. Validar ficheiro físico em Tauri e Blob/cache no Web,
+mais persistência/sync/MCP. Ainda não houve implementação desta correção.
