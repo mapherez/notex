@@ -24,13 +24,14 @@ componentes ao espaço disponível e melhorando as interações touch.
 | Ambiente | Âmbito desta iniciativa |
 | --- | --- |
 | Desktop amplo | Preservar a experiência atual e validar regressões a 1920×1080 e acima. |
-| Desktop com meia janela | Suportar largura útil a partir de 960 px, com a altura disponível na app Windows/macOS ou browser. Não suportar janelas desktop inferiores a este mínimo nesta fase. |
+| Desktop com meia janela | Suportar janelas estreitas com a altura disponível na app Windows/macOS ou browser. Rever a referência inicial de 960 px com o ensaio de toolbar a 718 px solicitado em 4B; medir largura útil após sidebar e margens. |
 | Tablet | Priorizar Safari no iPad e Chrome no Android, portrait, landscape, split view e teclado virtual. |
 | Mobile | Avaliar depois do tablet; aprovar separadamente a experiência antes de implementar adaptações específicas ou limitações funcionais. |
 
 - A resolução física do monitor não determina o espaço útil da aplicação. Para
-  medição e testes, usar pixels CSS do viewport; 960 px úteis é o pressuposto
-  inicial para o mínimo desktop, sujeito a confirmação em escala/DPI reais.
+  medição e testes, usar pixels CSS do viewport; 960 px úteis era o pressuposto
+  inicial desktop. A revisão de 4B inclui agora 718 px como referência de ensaio,
+  sem declarar antecipadamente validação de toda a app nessa largura.
 - Manter suporte desktop a rato e teclado, incluindo os atalhos existentes.
 - O pedido inicial incluía validação de dispositivos híbridos. A decisão posterior
   excluiu, por agora, a adaptação e validação específica de rato/teclado físico em
@@ -732,9 +733,10 @@ Validar explicitamente o desktop normal para detetar regressões em cada passo.
 - Durante edição, pressão prolongada no texto mantém a interação nativa de
   cursor, lupa, seleção e copiar/colar, e a formatação existente. Não iniciar
   drag do bloco a partir desse gesto. Não desenvolver lupa própria nesta direção.
-- Determinar o estado pelo foco/seleção e interação, não apenas pelo teclado
-  virtual: teclado fechado ou teclado físico não provam fim da edição.
-  A forma de regressar à leitura ainda precisa de revisão.
+- Regresso à leitura revisto pelo utilizador na secção 16: fechar teclado termina
+  edição em tablet/mobile. Foco, zoom/resize e teclado físico não são indicadores
+  isolados suficientes para inferir esse fecho no browser; validar identificação
+  e transição sem prejudicar draft/seleção. Adaptação a teclado físico adiada.
 - Suportar iOS, Android, rato, touch e teclado, incluindo dispositivos híbridos;
   não escolher o comportamento apenas pela largura ou pelo sistema operativo.
 
@@ -1276,3 +1278,208 @@ imagem/bloco não podem ser confundidos com eliminação. Testar painel, teclas,
 seleção/corte e remoção de bloco, depois undo/redo repetidos, nova edição e
 reabertura da biblioteca. Validar ficheiro físico em Tauri e Blob/cache no Web,
 mais persistência/sync/MCP. Ainda não houve implementação desta correção.
+
+## 15. Revisão de 4B — toolbar acima do teclado
+
+Esta revisão substitui a proposta anterior de toolbar superior em tablet e a
+mudança de posição por altura disponível. Ainda não houve implementação.
+
+- Desktop normal: conservar a composição atual. Desktop estreito: Voltar,
+  cloud, favorito, exportação, estado de gravação e eliminar na linha superior
+  do container; ferramentas abaixo, com duas linhas e margens alinhadas. Usar
+  718 px como ensaio pedido pelo utilizador, medindo espaço útil real, não como
+  resultado já validado nem novo breakpoint arbitrário.
+- Tablet/mobile: toolbar apenas com teclado virtual aberto, acima dele, com
+  todos os comandos numa linha e scroll horizontal. Mesma regra em portrait e
+  landscape. Não alternar para o topo só por faltar altura no modo normal;
+  avaliar primeiro em dispositivos reais.
+- A barra é a toolbar do NoteX reutilizada e reposicionada. Não existe API Web
+  para injetar os seus comandos numa barra nativa do teclado. inputAccessoryView
+  é uma API UIKit para apps nativas; VirtualKeyboard/VisualViewport fornecem
+  controlo/medição do teclado ou área visível, não uma toolbar personalizável.
+  É um elemento HTML da app dentro da área de conteúdo do browser, no limite
+  inferior da área visível acima do teclado; não sobrepõe UI do browser/sistema.
+- Preservar cursor, lupa, seleção e teclado nativos. A integração dos comandos
+  da app deve aplicar estilos à seleção Tiptap certa e preservar foco sem criar
+  outro sistema de seleção. Swipe da toolbar não executa um botão ao terminar.
+- Cores mantêm os pickers atuais: abrir acima da toolbar, ancorado ao respetivo
+  ícone, mantendo teclado e seleção. Não substituir teclado por uma lista de
+  cores. Limitar dimensão à área visível e usar scroll interno quando necessário.
+  Aplicar os mesmos limites aos menus de tabelas e restantes ferramentas.
+- Reservar no scroll espaço correspondente à toolbar e uma margem confortável,
+  para a última linha da nota poder ficar acima dela. Preservar scroll nativo;
+  ajustar apenas obstruções de foco/seleção e offsets efetivos dos headers.
+  O utilizador confirma compensar teclado e toolbar para poder ajustar a view.
+  Medir área visível real em vez de assumir altura fixa do teclado ou descontar
+  duas vezes o espaço que o browser já reduziu.
+- Banners/notificações respeitam teclado/toolbar: ações continuam alcançáveis e
+  não ficam permanentemente sobre o cursor ou os comandos. A composição exata
+  de overlays simultâneos será revista com Etapa 5. Preferência proposta pelo
+  utilizador: região superior em tablet/mobile. Rever antes apenas se um banner
+  bloquear os testes de edição; não considerar a posição final já implementada.
+- Ações da nota em menu ⋮ na experiência adaptada: favorito, eliminar e controlo
+  atual de participação no backup, quando aplicável. Retirar Saved locally em
+  tablet/mobile e Voltar em mobile. Preservar operações e atalhos existentes.
+- Exceção aprovada para geometria de teclado não fiável, como flutuante/dividido:
+  usar barra de uma linha no topo da nota durante edição, com scroll horizontal,
+  posição confirmada pelo utilizador. Não tentar seguir uma posição que o browser
+  não expõe.
+  Foco editável, zoom ou resize isolados não provam teclado virtual aberto.
+- Adaptação e validação específica de teclado físico em tablet/mobile adiadas
+  pelo utilizador para uma atualização futura. Não acrescentar agora o fallback
+  proposto para esse caso. Preservar atalhos/comportamentos existentes no código
+  partilhado e todo o suporte atual de teclado desktop.
+
+Referências: [Apple: inputAccessoryView](https://developer.apple.com/documentation/uikit/uiresponder/inputaccessoryview),
+[MDN: VirtualKeyboard](https://developer.mozilla.org/en-US/docs/Web/API/VirtualKeyboard_API),
+[MDN: VisualViewport](https://developer.mozilla.org/en-US/docs/Web/API/VisualViewport).
+Os prints Obsidian/Notion fornecidos definem a referência de posicionamento e
+comportamento; não permitem determinar a implementação interna dessas apps.
+
+Entrega prevista por partes: composição desktop estreita e ações da nota;
+posição/visibilidade da toolbar touch; preservação de seleção e scroll; pickers
+e exceções de teclado. Cada parte requer explicação antes de implementar e
+validação focada, incluindo Safari/iPad/iPhone e Chrome/Android reais.
+
+## 16. Revisão de 4C — gestos, menu contextual e destinos de arrasto
+
+Decisões revistas com o utilizador, ainda sem implementação. Esta secção
+substitui as alternativas anteriores de blocos completos durante drag e
+reordenação imediata ao atravessar um bloco.
+
+Leitura, edição e preparação touch:
+
+- Tablet/mobile: tap curto em texto entra em edição com cursor/teclado;
+  fechar teclado regressa à leitura e permite hold para reordenar imediatamente.
+  Não deixar Tiptap editável com seleção ativa após sair. Validar fecho pelo
+  browser/sistema e eventuais comandos existentes da app; rotação, zoom ou
+  resize isolados não são prova de teclado fechado.
+- Em leitura, hold de 1 s prepara drag com indicação visual e um pulso curto
+  de vibração onde suportado. Movimento além da tolerância inicia drag.
+  Mais 1 s parado após preparação (2 s no total) abre menu e emite dois pulsos
+  curtos separados por pausa, onde suportado. Feedback visual é obrigatório;
+  vibração é melhoria opcional e não se promete em Safari/iOS.
+- Tolerância inicial de ensaio: 10 px CSS, distância desde o contacto inicial
+  para ambas as esperas. Não reiniciar temporizadores com tremor. Movimento
+  além da tolerância antes de 1 s cancela hold e mantém scroll normal.
+  Drag iniciado cancela espera do menu; edição preserva gestos nativos de texto.
+- Tempos, tolerância, padrões de vibração e parâmetros de autoscroll deverão
+  ficar em src/config/settings.json, na secção editor, consumidos pela
+  configuração central existente de appSettings.ts. São parâmetros da app,
+  sem nova preferência no Profile ou alteração ao modelo de UserSettings.
+  Valores numéricos de ensaio podem ser ajustados durante testes reais.
+
+Menu de mover/eliminar:
+
+- Ações em torno do ponto de contacto: mover acima sobre o ponto, mover abaixo
+  sob o ponto e eliminar à direita. Usar desenho geométrico e tokens NoteX;
+  limitar grupo à área visível, ajustando nas margens sem clipping. Guardar
+  posição do contacto na área visível quando o menu abre; botões permanecem
+  nessa posição durante scroll e movimentos, sem seguir coordenadas do bloco.
+  Ajustar apenas o necessário para caber inicialmente ou após mudança da área
+  visível, como rotação; não deslocar o menu por compactar/expandir blocos.
+- Libertar o dedo que abriu menu não executa opção; exigir novo tap deliberado.
+  Menu permanece após mover acima/abaixo para permitir operações repetidas.
+  Cada tap move imediatamente o bloco um índice na lista, com feedback visual
+  da nova posição, acompanha bloco por scroll quando possível e atualiza limites
+  das ações. Não esperar pelo fecho do menu para aplicar ordem. Distinguir de
+  drag livre, onde só a linha indica destino e a ordem muda no drop.
+- Tap fora dos três botões fecha menu. Eliminar abre confirmação existente:
+  não apagar antes de confirmar; eliminação confirmada fecha menu e remove
+  bloco. A transição para o modal suspende os controlos contextuais; o resultado
+  de cancelar a confirmação deve ser verificado com o comportamento existente.
+- Compactação/collapse também aprovada durante menu, substituindo recomendação
+  anterior de blocos completos. Reutilizar a mesma moldura, título e preview de
+  2–3 linhas do drag. Bloco em foco mantém indicação visual de reordenação
+  ativa em ambos os modos; não depender apenas dos botões para o identificar.
+- Tap fora fecha modo de mover, restaura blocos completos e tenta manter vista
+  junto do bloco movido, preferindo a passagem/posição interna capturada antes
+  de compactar. Usar o mesmo mecanismo de restauro visual do drop. Fechar menu
+  não desfaz movimentos já efetuados nem exige confirmação adicional.
+
+Drag visual aprovado:
+
+- Compactação/collapse temporária escolhida pelo utilizador. No arrasto mostrar
+  título do bloco, se existir, e as primeiras 2–3 linhas visuais do conteúdo,
+  reutilizando a moldura existente dos blocos à volta da composição compacta.
+  Não exigir mostrar conteúdo inteiro de imagens/tabelas/código; limitar também
+  conteúdo não textual ao espaço de preview para não anular a compactação.
+- Aplicar ao drag dos blocos em tablet/mobile e desktop conforme pedido revisto.
+  Desktop conserva acesso atual por pega/rato e teclado; não recebe hold de
+  edição touch. Fora do gesto, blocos mantêm apresentação desktop normal.
+- Compactar quando começa o transporte efetivo, não apenas ao completar 1 s
+  de preparação. Se pressão permanecer até abrir menu, compactar nessa abertura.
+- Fantasma compacto acompanha dedo/ponteiro; em touch o centro vertical do
+  fantasma fica à altura do dedo. Esta ancoragem refere-se à representação que
+  segue o contacto, não a deslocar cada bloco da lista para o dedo.
+- Os outros blocos permanecem na ordem original durante o gesto. Linha azul
+  horizontal mostra a posição exata de inserção antes/depois de um alvo compacto;
+  não trocar índices ou mover automaticamente os blocos ao passar o ponteiro.
+  O fantasma não participa na medição de destinos nem interceta os contactos.
+- Reutilizar dados e instâncias Tiptap: compactação estritamente visual, sem
+  alterar documento, dimensões guardadas, ficheiros ou histórico. Não montar
+  editores adicionais para o fantasma nem disparar limpeza por conteúdo oculto.
+- Separar mecanismo visual de collapse da lógica de drag e do menu, com uma
+  única apresentação compacta reutilizável. Ideia futura do utilizador:
+  "Collapse all blocks" para visão rápida da nota. Não acrescentar agora botão,
+  preferência, persistência ou modo de leitura adicional para essa ideia.
+- Estabilizar scroll ao mudar alturas e manter o fantasma agarrado ao dedo.
+  Escolher destino pela geometria compacta, com zona antes/depois do ponto
+  médio e estabilidade na fronteira. O autoscroll recalcula destinos.
+- Libertar contacto confirma uma vez o destino indicado, grava nova ordem,
+  restaura automaticamente blocos completos e acompanha bloco movido.
+  Não exige botão adicional de confirmação. Persistência deve continuar a
+  tratar erros; não declarar gravação bem-sucedida antes da operação terminar.
+- Restauro visual após drop em tablet/mobile: antes da compactação, guardar
+  uma referência ao conteúdo visível (bloco e posição interna da passagem,
+  preferindo a zona tocada) e à sua altura na área visível. Depois de reordenar
+  e expandir, ajustar scroll para voltar a mostrar essa passagem aproximadamente
+  à mesma altura, mesmo que o bloco tenha mudado de índice. Não restaurar apenas
+  o antigo scrollTop nem saltar obrigatoriamente para o início do bloco.
+  Este critério refina o acompanhamento acima: manter contexto de leitura.
+  Limitar ajuste ao scroll disponível; testar início/fim, blocos grandes,
+  imagens que carreguem depois e rotação. A técnica exata depende do ensaio,
+  sem promessa de igualdade pixel a pixel. O comportamento após drop desktop
+  fica para avaliação separada, conforme pedido do utilizador.
+- Destino é inserção na lista, não troca exclusiva de dois IDs; preservar ordem
+  relativa dos restantes e coordenação de alterações/sync/MCP existentes.
+
+Conclusão, cancelamento e autoscroll:
+
+- pointerup válido do contacto ativo conclui drag. pointercancel significa que
+  browser/sistema interrompeu contacto, por exemplo ao assumir scroll ou mudar
+  orientação. Interrupção/Escape abandona destino e mantém ordem original,
+  remove fantasma/linha, restaura alturas e termina autoscroll/temporizadores.
+- Escape em desktop explicitamente aprovado: cancela drag ativo e conserva
+  índice original sem gravação. Restaurar contexto visual anterior quando
+  possível, limpar estado do gesto e ignorar o pointerup posterior, para não
+  concluir inadvertidamente o drag já cancelado. Preservar restantes atalhos.
+- Corrigir caminhos separados: NoteDetailPage atualmente liga pointerup e
+  pointercancel ao mesmo handlePointerEnd/finishBlockDrag, podendo gravar uma
+  ordem que o utilizador não confirmou. Gesto cancelado não deve gravar.
+- Aprovados para ensaio: zona central sem autoscroll, aceleração progressiva
+  perto de topo/fundo e velocidade máxima inicial de 250 px CSS/s.
+  Faixas de margem de cerca de 80 px CSS ajustadas à altura útil continuam
+  proposta de calibração, não medida validada. Centralizar parâmetros no
+  settings.json, incluindo tamanho das zonas e controlo da curva de aceleração.
+- Usar tempo decorrido para velocidade consistente, limitar ao scroll real
+  disponível e recalcular linha/destino com dedo parado durante autoscroll.
+  Testar em dispositivos reais antes de estabilizar valores. Não acrescentar
+  preferência de velocidade ao Profile nesta entrega.
+- Ideia futura registada pelo utilizador: preferência de velocidade do
+  autoscroll durante drag com opções Slow/Normal/Fast (nomes a rever/localizar),
+  sem expor valores em píxeis. Fora do âmbito atual; não criar UI, persistência
+  de preferência ou alteração de modelo para essa ideia nesta entrega.
+
+Validação Web touch indispensável: hold sem seleção/scroll indevidos preservando
+swipe normal antes da ativação; touch-action não pode ser alterado a meio do
+gesto como solução. Testar leitura/edição, tempos e tolerância, ambos os padrões
+de vibração onde suportados, menu persistente/repetição/margens, compactação com
+conteúdo misto e imagens, centro do fantasma, autoscroll, drop/cancelamento,
+rotação e persistência/MCP. Desktop valida pega/rato, linha/fantasma/compactação,
+cancelamento e conservação da navegação/edição por teclado.
+
+Referências:
+[MDN: padrões de vibração](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/vibrate),
+[Compatibilidade da Vibration API](https://caniuse.com/vibration),
+[MDN: pointercancel](https://developer.mozilla.org/en-US/docs/Web/API/Element/pointercancel_event).
