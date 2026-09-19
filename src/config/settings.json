@@ -179,6 +179,19 @@
   },
   "editor": {
     "headerSaveDebounceMs": 650,
+    "imageSizing": {
+      "defaultWidth": 420,
+      "minWidth": 160,
+      "resizeStep": 1,
+      "keyboardResizeStep": 10,
+      "edgeScrollZone": 64,
+      "maxEdgeScrollSpeed": 200
+    },
+    "imagePreview": {
+      "initialViewportFraction": 0.8,
+      "maxScale": 4,
+      "tapMovementTolerance": 10
+    },
     "defaultTable": {
       "columns": [
         "Column 1",

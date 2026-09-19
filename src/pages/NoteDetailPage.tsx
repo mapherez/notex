@@ -39,7 +39,7 @@ import { ResponsiveSidePanel } from '../components/ui/ResponsiveSidePanel';
 import { SortableTagList } from '../components/ui/SortableTagList';
 import { TagChip } from '../components/ui/TagChip';
 import { appLimits, defaultNewTagColor, defaultNoteThumbnailVariant, thumbnailOptions } from '../config/appSettings';
-import type { Collection, Note, NoteBlock, NoteFile, NoteThumbnail as NoteThumbnailModel, Tag, TagColor, TiptapDocument } from '../core/models/models';
+import type { Collection, Note, NoteBlock, NoteFile, NoteFileKind, NoteThumbnail as NoteThumbnailModel, Tag, TagColor, TiptapDocument } from '../core/models/models';
 import { beginLocalSave, setLocalDraftPending } from '../core/mcp/noteMutationCoordinator';
 import { chooseNoteAttachment, exportNoteAttachment, openNoteAttachment } from '../core/services/noteFiles';
 import { chooseNotexNoteExportDestination, createNotexNoteTempExport } from '../core/services/notexNotePackage';
@@ -452,6 +452,18 @@ export function NoteDetailPage() {
     pushToast(t('notes.blockDeleted'), 'warning');
   }
 
+  async function handleDeleteFile(fileId: string) {
+    const exists = useNotesStore.getState().notes
+      .find((item) => item.id === note?.id)?.files?.some((file) => file.id === fileId);
+    if (!note || !exists) return;
+    try {
+      await deleteFile(note.id, fileId);
+      pushToast(t('notes.fileDeleted'), 'warning');
+    } catch {
+      pushToast(t('notes.fileDeleteFailed'), 'warning');
+    }
+  }
+
   function startExampleEdit(index: number, example: string) {
     setEditingExampleIndex(index);
     setEditingExampleText(example);
@@ -707,22 +719,24 @@ export function NoteDetailPage() {
                 key={block.id}
                 noteId={note.id}
                 onDelete={() => setDeleteBlockState({ blockId: block.id, title: richTextToPlainText(block.title).trim() || t('notes.untitledBlock') })}
-                onDeleteFile={async (fileId) => {
-                  await deleteFile(note.id, fileId);
-                  pushToast(t('notes.fileDeleted'), 'warning');
-                }}
+                onDeleteFile={handleDeleteFile}
                 onDragStart={(event) => startBlockDrag(event, block.id)}
                 onKeyboardReorder={(direction) => void moveBlockWithKeyboard(block.id, direction)}
-                onRequestFileUpload={async () => {
-                  const sourcePath = await chooseNoteAttachment();
-                  if (!sourcePath) {
+                onRequestFileUpload={async (kind) => {
+                  try {
+                    const sourcePath = await chooseNoteAttachment(kind);
+                    if (!sourcePath) {
+                      return null;
+                    }
+                    const file = await importFileForBlock(sourcePath, note.id, block.id);
+                    if (file) {
+                      pushToast(t('notes.fileAdded'), 'success');
+                    }
+                    return file;
+                  } catch {
+                    pushToast(t('notes.fileAddFailed'), 'warning');
                     return null;
                   }
-                  const file = await importFileForBlock(sourcePath, note.id, block.id);
-                  if (file) {
-                    pushToast(t('notes.fileAdded'), 'success');
-                  }
-                  return file;
                 }}
                 onToolbarTargetChange={setToolbarTarget}
                 onTocChange={refreshTocEntries}
@@ -941,19 +955,23 @@ export function NoteDetailPage() {
                 {note.files.map((file) => (
                   <li key={file.id}>
                     {file.kind === 'image' ? <ImageIcon /> : <FileText />}
-                    <span title={file.originalName}>{file.originalName}</span>
+                    <button
+                      className="note-file-name"
+                      type="button"
+                      title={file.originalName}
+                      onClick={() => void openNoteAttachment(file.relativePath)}
+                    >
+                      {file.originalName}
+                    </button>
                     <span className="side-list-actions">
-                      <button className="icon-button" type="button" aria-label={t('common.open')} onClick={() => void openNoteAttachment(file.relativePath)}>
-                        <FileText />
-                      </button>
-                      <button className="icon-button" type="button" aria-label={t('common.export')} onClick={() => void exportNoteAttachment(file)}>
+                      <button className="icon-button note-file-export" type="button" aria-label={t('common.export')} onClick={() => void exportNoteAttachment(file)}>
                         <Download />
                       </button>
                       <button
                         className="icon-button danger"
                         type="button"
                         aria-label={t('common.delete')}
-                        onClick={() => void deleteFile(note.id, file.id).then(() => pushToast(t('notes.fileDeleted'), 'warning'))}
+                        onClick={() => void handleDeleteFile(file.id)}
                       >
                         <Trash2 />
                       </button>
@@ -1213,7 +1231,7 @@ function BlockEditor({
   onDeleteFile: (fileId: string) => Promise<void>;
   onDragStart: (event: PointerEvent<HTMLButtonElement>) => void;
   onKeyboardReorder: (direction: -1 | 1) => void;
-  onRequestFileUpload: () => Promise<NoteFile | null>;
+  onRequestFileUpload: (kind: NoteFileKind) => Promise<NoteFile | null>;
   onTocChange: () => void;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
 }) {

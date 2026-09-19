@@ -6,6 +6,13 @@ const objectUrls = new Map<string, string>();
 
 function clearUrls() { for (const url of objectUrls.values()) URL.revokeObjectURL(url); objectUrls.clear(); }
 
+export function releaseBrowserFileUrl(path: string) {
+  const url = objectUrls.get(path);
+  if (!url) return;
+  URL.revokeObjectURL(url);
+  objectUrls.delete(path);
+}
+
 export async function browserFileUrl(path: string) {
   const existing = objectUrls.get(path);
   if (existing) return existing;

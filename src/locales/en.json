@@ -172,7 +172,9 @@
     "files": "Files",
     "noFiles": "No files attached yet.",
     "fileAdded": "File added",
+    "fileAddFailed": "The file could not be added",
     "fileDeleted": "File deleted",
+    "fileDeleteFailed": "The file could not be deleted",
     "exportNote": "Export note",
     "noteExported": "Note exported",
     "noteExportFailed": "Note export failed",
@@ -190,12 +192,15 @@
     "editor": {
       "addImage": "Add image",
       "addFile": "Attach file",
-      "alignImageLeft": "Align image left without text wrapping",
-      "alignImageCenter": "Center image without text wrapping",
-      "alignImageRight": "Align image right without text wrapping",
+      "alignImageLeft": "Align image left",
+      "alignImageCenter": "Center image",
+      "alignImageRight": "Align image right",
       "wrapLeft": "Image left, wrap text",
       "wrapRight": "Image right, wrap text",
-      "imageWidth": "Image width"
+      "imageWidth": "Image width",
+      "resizeImageTopLeft": "Resize image from the top left corner",
+      "resizeImageBottomRight": "Resize image from the bottom right corner",
+      "imagePreview": "Image preview"
     }
   },
   "tags": {

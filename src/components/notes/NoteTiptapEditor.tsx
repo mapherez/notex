@@ -34,6 +34,7 @@ import {
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -46,7 +47,7 @@ import { EditorContent, NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer,
 import { BubbleMenu } from '@tiptap/react/menus';
 import { TextStyleToolbar } from '../editing/TextStyleToolbar';
 import type { InlineStyleColor, InlineStyleKind } from '../../core/utils/inlineFormatting';
-import type { NoteFile, TiptapDocument } from '../../core/models/models';
+import type { NoteFile, NoteFileKind, TiptapDocument } from '../../core/models/models';
 import { exportNoteAttachment, openNoteAttachment, resolveNoteFileSrc } from '../../core/services/noteFiles';
 import { openExternalUrl } from "../../core/services/externalLinks";
 import { useClickOutside } from '../../core/utils/useClickOutside';
@@ -56,9 +57,12 @@ import { formatShortcutForDisplay } from '../../core/utils/shortcutFormatting';
 import { useI18n } from '../../i18n/I18nProvider';
 import { emptyTiptapDocument } from '../../store/useNotesStore';
 import { editorSettings } from '../../config/appSettings';
+import { useNoteImageResize } from './useNoteImageResize';
+import { NoteImagePreview } from './NoteImagePreview';
 import {
   createNoteContentExtensions,
   createNoteInlineExtensions,
+  createPermanentNoteFileRemovalExtension,
   NoteFileNode,
   NoteTipNode,
 } from '../../core/editor/noteEditorExtensions';
@@ -73,7 +77,7 @@ type NoteTiptapEditorProps = {
   onDeleteFile: (fileId: string) => Promise<void>;
   onFocus?: () => void;
   onPendingFileInsertChange?: (pending: boolean) => void;
-  onRequestFileUpload: () => Promise<NoteFile | null>;
+  onRequestFileUpload: (kind: NoteFileKind) => Promise<NoteFile | null>;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
   value: TiptapDocument | null;
 };
@@ -82,7 +86,7 @@ export type NoteTiptapToolbarTarget =
   | {
       blockId: string;
       editor: Editor;
-      insertFile: () => Promise<void>;
+      insertFile: (kind: NoteFileKind) => Promise<void>;
       kind: 'content';
     }
   | {
@@ -211,6 +215,12 @@ export function NoteTiptapEditor({
   const editorShellRef = useRef<HTMLDivElement>(null);
   const onDeleteFileRef = useRef(onDeleteFile);
   onDeleteFileRef.current = onDeleteFile;
+  const editorExtensions = useMemo(() => [
+    ...extensions,
+    createPermanentNoteFileRemovalExtension((fileIds) => {
+      fileIds.forEach((fileId) => void onDeleteFileRef.current(fileId));
+    }),
+  ], []);
   const [contentKey, setContentKey] = useState(() =>
     JSON.stringify(value ?? emptyTiptapDocument),
   );
@@ -219,7 +229,7 @@ export function NoteTiptapEditor({
   const editor = useEditor(
     {
       editable: !disabled,
-      extensions,
+      extensions: editorExtensions,
       content: (value ?? emptyTiptapDocument) as JSONContent,
       immediatelyRender: false,
       onUpdate: ({ editor }) => {
@@ -231,17 +241,6 @@ export function NoteTiptapEditor({
       onFocus,
       editorProps: {
         handleClick: (_view, _pos, event) => handleEditorLinkClick(event),
-        handleKeyDown: (view, event) => {
-          if (event.key !== 'Backspace' && event.key !== 'Delete') {
-            return false;
-          }
-          const fileId = selectedNoteFileId(view.state.selection);
-          if (!fileId) {
-            return false;
-          }
-          queueMicrotask(() => void onDeleteFileRef.current(fileId));
-          return false;
-        },
         attributes: {
           class: "note-tiptap-prosemirror",
         },
@@ -277,11 +276,14 @@ export function NoteTiptapEditor({
     [disabled],
   );
 
-  const insertUploadedFile = useCallback(async () => {
+  const insertUploadedFile = useCallback(async (kind: NoteFileKind) => {
     onPendingFileInsertChange?.(true);
     try {
-      const file = await onRequestFileUpload();
+      const file = await onRequestFileUpload(kind);
       if (!file || !editor) {
+        return;
+      }
+      if (file.kind !== 'image') {
         return;
       }
       editor
@@ -292,7 +294,7 @@ export function NoteTiptapEditor({
           attrs: {
             ...file,
             align: "center",
-            width: file.kind === "image" ? 420 : 0,
+            width: file.kind === "image" ? editorSettings.imageSizing.defaultWidth : 0,
             wrap: "none",
           },
         })
@@ -785,7 +787,7 @@ export function NoteTiptapToolbar({
       return true;
     }
     if (actionId === 'image' || actionId === 'file') {
-      await contentTarget?.insertFile();
+      await contentTarget?.insertFile(actionId === 'image' ? 'image' : 'attachment');
       return true;
     }
 
@@ -1159,16 +1161,52 @@ function TipNodeView({ deleteNode, node }: ReactNodeViewProps) {
   );
 }
 
-function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) {
+function FileNodeView({ node, selected, updateAttributes, editor, getPos }: ReactNodeViewProps) {
   const { t } = useI18n();
   const attrs = node.attrs as FileAttrs;
   const imageNodeRef = useRef<HTMLDivElement>(null);
+  const imagePointerTypeRef = useRef('mouse');
+  const imagePointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const suppressImageTapRef = useRef(false);
   const [src, setSrc] = useState<string | null>(null);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [availableWidth, setAvailableWidth] = useState(0);
   const isImage = attrs.kind === 'image';
-  const imageWidth = quantizeImageWidth(Number(attrs.width ?? 420));
+  const storedWidth = Number(attrs.width ?? editorSettings.imageSizing.defaultWidth);
+  const imageWidth = Number.isFinite(storedWidth) && storedWidth > 0 ? storedWidth : editorSettings.imageSizing.defaultWidth;
+  const maxWidth = Math.max(1, availableWidth || imageWidth);
+  const minWidth = Math.min(editorSettings.imageSizing.minWidth, maxWidth);
   const showImageControls = selected && controlsOpen;
+  const imageResize = useNoteImageResize({
+    rootRef: imageNodeRef,
+    width: imageWidth,
+    minWidth,
+    maxWidth,
+    enabled: isImage && showImageControls && editor.isEditable,
+    onCommit: (width) => updateAttributes({ width }),
+  });
+
+  useLayoutEffect(() => {
+    if (isImage) imageNodeRef.current?.style.setProperty('--nx-note-image-width', `${imageWidth}px`);
+  }, [isImage, imageWidth]);
+
+  useLayoutEffect(() => {
+    // Observe the full node-view container, not the image's current width:
+    // resizing the image must not shrink the handles' available range.
+    const container = imageNodeRef.current?.parentElement;
+    if (!isImage || !container) return;
+    const measure = () => {
+      const style = getComputedStyle(container);
+      const width = container.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      setAvailableWidth(Math.max(1, Math.floor(width)));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [isImage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1197,6 +1235,10 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
   }, [selected]);
 
   useEffect(() => {
+    setPreviewOpen(false);
+  }, [attrs.relativePath]);
+
+  useEffect(() => {
     if (!controlsOpen) {
       return;
     }
@@ -1216,7 +1258,6 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
 
   function applyImageLayout(update: Pick<FileAttrs, 'align' | 'wrap'>) {
     updateAttributes(update);
-    setControlsOpen(false);
   }
 
   if (!isImage) {
@@ -1248,12 +1289,54 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
         attrs.align === "left" && "align-left",
         attrs.align === "right" && "align-right",
         attrs.align === "center" && "align-center",
-        `note-image-size-${imageWidth}`,
       ]
         .filter(Boolean)
         .join(" ")}
       onPointerDownCapture={(event: React.PointerEvent<HTMLDivElement>) => {
         if (event.target instanceof Element && event.target.closest('figure')) {
+          imagePointerTypeRef.current = event.pointerType;
+          if (!event.target.closest('.note-image-resize-handle')) {
+            if (imagePointersRef.current.size === 0) suppressImageTapRef.current = false;
+            imagePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+            if (imagePointersRef.current.size > 1) suppressImageTapRef.current = true;
+          }
+          // Cancel compatibility mouse focus, while retaining native touch pan.
+          if (event.pointerType === 'touch' || event.pointerType === 'pen') event.preventDefault();
+        }
+      }}
+      onPointerMoveCapture={(event: React.PointerEvent<HTMLDivElement>) => {
+        const start = imagePointersRef.current.get(event.pointerId);
+        if (!start) return;
+        suppressImageTapRef.current ||= Math.hypot(event.clientX - start.x, event.clientY - start.y) > editorSettings.imagePreview.tapMovementTolerance;
+      }}
+      onPointerUpCapture={(event: React.PointerEvent<HTMLDivElement>) => {
+        imagePointersRef.current.delete(event.pointerId);
+      }}
+      onPointerCancelCapture={(event: React.PointerEvent<HTMLDivElement>) => {
+        if (imagePointersRef.current.delete(event.pointerId)) suppressImageTapRef.current = true;
+      }}
+      onClick={(event: React.MouseEvent<HTMLDivElement>) => {
+        if (event.target instanceof Element && event.target.closest('.note-image-resize-handle')) return;
+        if (event.target instanceof Element && event.target.closest('figure')) {
+          const touchInput = imagePointerTypeRef.current === 'touch' || imagePointerTypeRef.current === 'pen';
+          const moved = suppressImageTapRef.current;
+          if (imagePointersRef.current.size === 0) suppressImageTapRef.current = false;
+          const adapted = Boolean(imageNodeRef.current?.closest('.note-document-shell--adapted'));
+          if (touchInput && adapted && selected && controlsOpen && src && !imageLoadFailed && !moved) {
+            setPreviewOpen(true);
+            return;
+          }
+          if (moved) return;
+          if (touchInput && document.activeElement instanceof HTMLElement && document.activeElement.isContentEditable) {
+            document.activeElement.blur();
+          }
+          const position = getPos();
+          if (typeof position === 'number') {
+            editor.commands.setNodeSelection(position);
+            // Sync the DOM selection even when this node was already selected.
+            // A native click on a non-editable figure can put the DOM caret after it.
+            if (!touchInput) editor.view.focus();
+          }
           setControlsOpen(true);
         }
       }}
@@ -1262,6 +1345,10 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
         data-drag-handle
         draggable
         onDragStartCapture={(event: ReactDragEvent<HTMLElement>) => {
+          if (event.target instanceof Element && event.target.closest('.note-image-resize-handle')) {
+            event.preventDefault();
+            return;
+          }
           if (attrs.id) {
             event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.setData(noteImageDragType, attrs.id);
@@ -1279,81 +1366,76 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
         ) : (
           <span className="note-image-placeholder">{attrs.originalName}</span>
         )}
+        {showImageControls && src && !imageLoadFailed ? (['top-left', 'bottom-right'] as const).map(corner => (
+          <button
+            key={corner}
+            type="button"
+            role="slider"
+            aria-label={t(corner === 'top-left' ? 'notes.editor.resizeImageTopLeft' : 'notes.editor.resizeImageBottomRight')}
+            aria-valuemin={minWidth}
+            aria-valuemax={maxWidth}
+            aria-valuenow={Math.max(minWidth, Math.min(maxWidth, imageWidth))}
+            aria-orientation="horizontal"
+            className={`note-image-resize-handle note-image-resize-handle--${corner}`}
+            contentEditable={false}
+            draggable={false}
+            disabled={!editor.isEditable}
+            onPointerDown={(event) => imageResize.begin(event, corner)}
+            onMouseDown={preserveToolbarSelection}
+            onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}
+            onKeyDown={imageResize.keyboardResize}
+          />
+        )) : null}
       </figure>
       {showImageControls ? (
         <div
           className="note-image-controls"
           contentEditable={false}
         >
-          <button
-            aria-label={t('notes.editor.alignImageLeft')}
-            aria-pressed={attrs.wrap === 'none' && attrs.align === 'left'}
-            className={attrs.wrap === 'none' && attrs.align === 'left' ? 'is-active' : undefined}
-            title={t('notes.editor.alignImageLeft')}
-            type="button"
-            onMouseDown={preserveToolbarSelection}
-            onClick={() => applyImageLayout({ align: 'left', wrap: 'none' })}
-          >
-            <AlignLeft />
-          </button>
-          <button
-            aria-label={t('notes.editor.alignImageCenter')}
-            aria-pressed={attrs.wrap === 'none' && attrs.align === 'center'}
-            className={attrs.wrap === 'none' && attrs.align === 'center' ? 'is-active' : undefined}
-            title={t('notes.editor.alignImageCenter')}
-            type="button"
-            onMouseDown={preserveToolbarSelection}
-            onClick={() => applyImageLayout({ align: 'center', wrap: 'none' })}
-          >
-            <AlignCenter />
-          </button>
-          <button
-            aria-label={t('notes.editor.alignImageRight')}
-            aria-pressed={attrs.wrap === 'none' && attrs.align === 'right'}
-            className={attrs.wrap === 'none' && attrs.align === 'right' ? 'is-active' : undefined}
-            title={t('notes.editor.alignImageRight')}
-            type="button"
-            onMouseDown={preserveToolbarSelection}
-            onClick={() => applyImageLayout({ align: 'right', wrap: 'none' })}
-          >
-            <AlignRight />
-          </button>
-          <span className="note-image-controls__divider" aria-hidden="true" />
-          <button
-            aria-pressed={attrs.wrap === 'left'}
-            className={attrs.wrap === 'left' ? 'is-active' : undefined}
-            title={t('notes.editor.wrapLeft')}
-            type="button"
-            onMouseDown={preserveToolbarSelection}
-            onClick={() => applyImageLayout({ wrap: 'left', align: 'left' })}
-          >
-            {t("notes.editor.wrapLeft")}
-          </button>
-          <button
-            aria-pressed={attrs.wrap === 'right'}
-            className={attrs.wrap === 'right' ? 'is-active' : undefined}
-            title={t('notes.editor.wrapRight')}
-            type="button"
-            onMouseDown={preserveToolbarSelection}
-            onClick={() => applyImageLayout({ wrap: 'right', align: 'right' })}
-          >
-            {t("notes.editor.wrapRight")}
-          </button>
-          <span className="note-image-controls__divider" aria-hidden="true" />
-          <input
-            aria-label={t('notes.editor.imageWidth')}
-            title={t('notes.editor.imageWidth')}
-            type="range"
-            min={160}
-            max={760}
-            step={40}
-            value={imageWidth}
-            onChange={(event) =>
-              updateAttributes({ width: Number(event.currentTarget.value) })
-            }
-            onPointerUp={() => setControlsOpen(false)}
-          />
+          <div className="note-image-controls__alignment">
+            <button
+              aria-label={t('notes.editor.alignImageLeft')}
+              aria-pressed={attrs.wrap === 'none' && attrs.align === 'left'}
+              className={attrs.wrap === 'none' && attrs.align === 'left' ? 'is-active' : undefined}
+              title={t('notes.editor.alignImageLeft')}
+              type="button"
+              onMouseDown={preserveToolbarSelection}
+              onClick={() => applyImageLayout({ align: 'left', wrap: 'none' })}
+            >
+              <AlignLeft />
+            </button>
+            <button
+              aria-label={t('notes.editor.alignImageCenter')}
+              aria-pressed={attrs.wrap === 'none' && attrs.align === 'center'}
+              className={attrs.wrap === 'none' && attrs.align === 'center' ? 'is-active' : undefined}
+              title={t('notes.editor.alignImageCenter')}
+              type="button"
+              onMouseDown={preserveToolbarSelection}
+              onClick={() => applyImageLayout({ align: 'center', wrap: 'none' })}
+            >
+              <AlignCenter />
+            </button>
+            <button
+              aria-label={t('notes.editor.alignImageRight')}
+              aria-pressed={attrs.wrap === 'none' && attrs.align === 'right'}
+              className={attrs.wrap === 'none' && attrs.align === 'right' ? 'is-active' : undefined}
+              title={t('notes.editor.alignImageRight')}
+              type="button"
+              onMouseDown={preserveToolbarSelection}
+              onClick={() => applyImageLayout({ align: 'right', wrap: 'none' })}
+            >
+              <AlignRight />
+            </button>
+          </div>
         </div>
+      ) : null}
+      {src && !imageLoadFailed ? (
+        <NoteImagePreview
+          alt={attrs.originalName}
+          onClose={() => setPreviewOpen(false)}
+          open={previewOpen}
+          src={src}
+        />
       ) : null}
     </NodeViewWrapper>
   );
@@ -1362,10 +1444,10 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
 function imageLayoutForDrop(clientX: number, bounds: DOMRect): Pick<FileAttrs, 'align' | 'wrap'> {
   const horizontalPosition = bounds.width > 0 ? (clientX - bounds.left) / bounds.width : 0.5;
   if (horizontalPosition < 0.38) {
-    return { align: 'left', wrap: 'left' };
+    return { align: 'left', wrap: 'none' };
   }
   if (horizontalPosition > 0.62) {
-    return { align: 'right', wrap: 'right' };
+    return { align: 'right', wrap: 'none' };
   }
   return { align: 'center', wrap: 'none' };
 }
@@ -1610,15 +1692,6 @@ function isNoteFileSelection(selection: unknown) {
   return selectedNode?.type?.name === 'noteFile';
 }
 
-function selectedNoteFileId(selection: unknown) {
-  const selectedNode = (selection as {
-    node?: { attrs?: { id?: unknown }; type?: { name?: string } };
-  }).node;
-  return selectedNode?.type?.name === 'noteFile' && typeof selectedNode.attrs?.id === 'string'
-    ? selectedNode.attrs.id
-    : null;
-}
-
 function handleEditorLinkClick(event: globalThis.MouseEvent) {
   const target = event.target;
   if (!(target instanceof Element)) {
@@ -1681,9 +1754,4 @@ function formatFileSize(value: number) {
     return `${Math.round(value / 1024)} KB`;
   }
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function quantizeImageWidth(width: number) {
-  const clamped = Math.max(160, Math.min(760, Number.isFinite(width) ? width : 420));
-  return Math.round(clamped / 40) * 40;
 }

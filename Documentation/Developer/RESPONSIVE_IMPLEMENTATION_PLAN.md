@@ -5,8 +5,11 @@ após as correções da secção 11 e a avaliação no iPad Air M3 de 13", Chrom
 Mantém-se uma pendência transversal de altura disponível no browser, a tratar
 na Etapa 4 em coordenação com os overlays da Etapa 5 (secção 12).
 Esta aceitação não significa validação real de todos os browsers e dispositivos.
-Etapa 4 iniciada: acesso aos painéis, coleção no painel e swipe do menu
-esquerdo implementados (secções 17, 18 e 19).
+Etapa 4 iniciada: acesso aos painéis, coleção no painel, swipe do menu
+esquerdo e contenção de conteúdo largo implementados (secções 17–22).
+O utilizador confirmou em iPad/iPhone os limites das imagens, a ausência de
+teclado ao tocar nelas, a posição dos controlos e a melhoria das colunas.
+Resize por pegas implementado para ensaio (secção 22); falta avaliação real.
 4B/4C definidos para ensaio, ainda sem implementação.
 Data: 2026-09-17.
 
@@ -1633,3 +1636,295 @@ Validação focada:
 Próximas entregas de 4A: contenção de tabelas/código/imagens e seus controlos,
 preview de imagem e tratamento de uploads/limpeza de anexos. Implementar em
 entregas delimitadas; 4B e 4C permanecem separados.
+
+## 20. Quarta entrega de 4A — contenção de conteúdo largo
+
+Entrega retomada após interrupção por limite de utilização e concluída em
+2026-09-18. Implementação e validação automatizada concluídas; falta a avaliação
+do utilizador em dispositivos reais.
+
+Alterações aplicadas:
+
+- Contentores de blocos/editor com tracks minmax(0, 1fr) e min-width: 0,
+  para evitar crescimento pela largura intrínseca de imagens, tabelas e código.
+- Scroll horizontal local no tableWrapper existente do Tiptap e código,
+  sem bloquear o pan vertical da página. Código usa white-space: pre e
+  overflow-wrap: normal para não quebrar as linhas longas pela regra do editor.
+- Imagem limitada à largura disponível, com altura proporcional. Largura
+  guardada aplicada por variável CSS de geometria, sem modificar atributos
+  apenas por redimensionar a janela.
+- Máximo do slider medido com ResizeObserver no contentor do node view,
+  independente do tamanho atual da imagem. Configuração imageSizing no
+  settings.json: largura inicial 420, mínimo 160 e passo de resize 1 px.
+- Controlos reduzidos a três alinhamentos e slider; botões de envolver texto
+  removidos e nomes dos alinhamentos simplificados em português/inglês.
+  Atributos wrap existentes preservados; novos drops usam alinhamento sem wrap.
+- Primeiro click/tap seleciona a imagem e sincroniza a seleção DOM através
+  de editor.view.focus(), que preserva o scroll. Resolve o recuo da seleção
+  para o parágrafo seguinte observado no checkpoint. Os controlos abrem no
+  click concluído, sem bloquear pointerdown ou os gestos nativos de scroll/drag.
+- Controlos limitados à largura do contentor; quebram em duas linhas quando
+  necessário. Botões e slider têm área de toque mínima de 44 px com ponteiro
+  coarse, incluindo dispositivos híbridos.
+
+Estado da validação:
+
+- Reexecutados 31 testes de extensões do editor, richTextInput e dispatcher
+  MCP: passaram. Regras de estilos também passaram.
+- Build de produção/typecheck reexecutado sobre o estado atual: passou.
+- Script de browser em output/playwright/check-wide-content.js executado com
+  imagem SVG de 3000×1500, largura guardada de 2600 px, tabelas de sete colunas,
+  código longo e tabela dentro de um exemplo. Usa biblioteca isolada de QA.
+- Chrome a 1920, 1366, 1024, 718, 390 e 320 px: imagem proporcional,
+  imagem/controlos/slider dentro do editor, máximo do slider conforme o
+  contentor e scroll local no código e nas tabelas, incluindo tabela num exemplo.
+  Screenshots revistos em output/playwright/wide-image-*.png.
+- Alterações de viewport não modificaram a nota guardada, a largura de 2600 px
+  ou as larguras das colunas. Reduzir a imagem a 160 px não reduziu o máximo
+  disponível do slider. Resize pelo teclado, três alinhamentos e gravação/reload
+  passaram, mantendo o ID do ficheiro.
+- Touch nativo emulado via CDP: swipe horizontal desloca apenas tabela/código;
+  swipe vertical desloca a vista da nota, sem deslocamento horizontal da página.
+  A medição considera VisualViewport.pageTop além de window.scrollY.
+- Tap ao centro de imagem grande a 390 e 1366 px manteve os controlos abertos.
+  Drag nativo de imagem em desktop continuou a iniciar e não duplicou o nó
+  nem criou um novo ficheiro. Isto não valida a futura reordenação de blocos 4C.
+- Não houve alterações nos contratos ou handlers MCP; testes existentes
+  passaram. A regressão MCP através do transporte desktop não foi repetida.
+- Em mobile, a toolbar atual continua a ocupar altura/ultrapassar a largura
+  disponível e pode deslocar o viewport visual; é a pendência já prevista em 4B.
+  Esta entrega contém os conteúdos do documento, sem redesenhar a toolbar.
+
+Avaliação real: inserir uma imagem grande, tocar no centro, ajustar tamanho e
+alinhamento, reabrir a nota; testar swipe horizontal e vertical sobre tabela/
+código em portrait e landscape. A emulação não substitui iPad/iPhone/Safari
+nem confirma o comportamento em todos os browsers e dispositivos.
+
+Próximas entregas: preview de imagem e uploads/limpeza de anexos. 4B e 4C
+continuam por implementar, em entregas separadas. O utilizador confirmou
+entretanto o swipe esquerdo em iPhone.
+
+## 21. Correções de 4A após avaliação em iPad/iPhone
+
+O utilizador confirmou que imagens grandes respeitam os limites do contentor,
+mas identificou abertura indevida do teclado ao tocar na imagem, fecho dos
+controlos ao alinhar e tabelas com colunas demasiado comprimidas. Correções
+implementadas e verificadas em 2026-09-18; esta secção atualiza a secção 20.
+
+Alterações aplicadas:
+
+- Tap com touch/pen seleciona a imagem sem focar o editor. O pointerdown
+  impede o foco por eventos de rato compatíveis, mantendo o pan nativo.
+  Se havia texto em edição, tocar na imagem retira esse foco. Rato conserva
+  a sincronização da seleção DOM através de editor.view.focus().
+- Alinhar ou redimensionar mantém os controlos abertos. Fecham ao tocar fora,
+  selecionar outro conteúdo ou iniciar o drag existente da imagem.
+- Três botões de alinhamento centrados sob a imagem, com slider numa linha
+  separada abaixo. O conjunto acompanha o centro da imagem nos três
+  alinhamentos e respeita a largura do contentor. Cores, superfícies, bordas,
+  estados ativos e foco usam os tokens do NoteX; alvos de toque de 44 px.
+  O slider mantém o elemento range nativo e a operação por teclado.
+- Colunas de tabelas na composição adaptada têm mínimo visual de 10 rem,
+  configurado pelo token note-table-column-min. Frases com palavras curtas
+  deixam de comprimir as colunas até uma palavra por linha: quando a largura
+  necessária excede o contentor, surge scroll horizontal local.
+  Não altera larguras guardadas nem o mínimo de resize do desktop normal.
+- Código dentro de pre preserva explicitamente espaços e linhas, incluindo
+  linhas longas compostas por palavras curtas. Quotes e tips com prosa normal
+  continuam a quebrar linhas; tabelas e código largos no seu interior usam
+  scroll local, sem transformar toda a prosa numa superfície horizontal.
+
+Validação focada:
+
+- Chrome/Playwright CLI a 1366, 390 e 320 px com touch nativo emulado via CDP,
+  e a 1920 px com rato: seleção da imagem, três alinhamentos e resize mantêm
+  os controlos visíveis; slider abaixo dos botões e conjunto dentro do editor.
+- Touch na imagem/controlos não deixa um elemento contenteditable focado.
+  Tap no texto continua a permitir edição; voltar a tocar na imagem retira
+  esse foco. Swipe vertical iniciado na imagem desloca a nota sem abrir os
+  controlos nem focar o editor.
+- Tabela de cinco colunas com frases normais, tabela dentro de tip e código
+  com uma linha longa de palavras curtas: scroll horizontal local em mobile;
+  cinco colunas cabem no tablet largo sem impor scroll desnecessário.
+  Swipe horizontal e vertical sobre tabela/código passaram separadamente.
+- Reexecutados 31 testes existentes de extensões do editor, richTextInput e
+  dispatcher MCP; regras de estilos e build de produção/typecheck passaram.
+  Contratos/handlers MCP não foram alterados; transporte desktop não repetido.
+- Screenshots e scripts de QA em output/playwright/image-review-*.png,
+  check-image-review.js e check-native-review.js, numa biblioteca isolada.
+
+Falta confirmar em iPad/iPhone que o teclado real não abre ao tocar na imagem
+e que alinhamentos/resize mantêm os controlos. A emulação verifica foco e
+gestos do browser, mas não reproduz o teclado do sistema iOS. Preview,
+uploads/limpeza de anexos, toolbar 4B e gestos de blocos 4C continuam separados.
+
+## 22. Resize proporcional por duas pegas
+
+Após avaliação real da secção 21, o utilizador aprovou substituir o slider:
+ao mudar a altura da imagem, o slider deslocava-se e dificultava manter o dedo
+no controlo. Entrega implementada em 2026-09-19 para ensaio em iPad/iPhone.
+
+Comportamento aplicado:
+
+- Duas pegas nos cantos superior esquerdo e inferior direito, visíveis com os
+  controlos da imagem. Indicadores geométricos discretos, área de interação
+  de 44 px, cores e estados de foco do NoteX. Slider removido; três botões de
+  alinhamento mantidos sob a imagem e abertos depois do resize.
+- Arrastar qualquer pega aumenta/diminui a imagem proporcionalmente, usando
+  o movimento horizontal ou vertical predominante. O tamanho mínimo continua
+  a adaptar-se a contentores mais estreitos; o máximo é a largura disponível.
+  Tocar num único lado não bloqueia crescimento: a posição provisória ajusta-se
+  dentro do contentor até atingir a largura total permitida.
+- Captura de ponteiro mantém o gesto ao sair da área inicial da pega. Apenas
+  as pegas reservam touch-action: none; a superfície restante conserva o pan
+  normal. Touch/pen não foca texto; rato preserva o foco existente do editor.
+- A imagem mantém-se no fluxo do documento: o bloco cresce em altura e afasta
+  o conteúdo seguinte. Compensação de scroll tenta manter o canto agarrado na
+  mesma posição vertical relativa ao dedo, considerando VisualViewport.
+  Para a pega superior, esta compensação afasta visualmente o conteúdo anterior.
+- Alinhamento horizontal libertado provisoriamente durante o gesto para ambas
+  as pegas acompanharem o ponteiro; translação limitada aos limites do contentor.
+  Ao largar, reaplica-se o alinhamento escolhido. Junto às margens, a pega não
+  pode acompanhar uma posição do dedo que exigiria sair do contentor.
+- Perto do topo/fundo da vista, um gesto de crescimento já iniciado pode
+  continuar enquanto o dedo permanece junto à extremidade correspondente.
+  Aceleração gradual e crescimento limitado pela largura disponível.
+- Espaço temporário de scroll antes/depois do conteúdo permite compensar a
+  posição em notas curtas e durante redução da imagem. Inserido fora do
+  documento ProseMirror e removido ao concluir/cancelar/desmontar o node view.
+  Ao concluir, preserva-se a posição vertical sempre que o scroll final permitir.
+- Tamanho provisório apenas na geometria do node view; uma atualização de
+  atributos ao largar, usando a gravação diferida já existente. Sem alterar
+  identidade do ficheiro, proporções, conteúdo ou contrato MCP.
+- pointercancel, perda de captura, Escape, saída da janela, segundo contacto,
+  zoom, mudança de largura do viewport ou alteração concorrente da largura
+  guardada cancelam e restauram tamanho/scroll. Alterações de altura das barras
+  do browser não cancelam por si só o gesto.
+- Pegas acessíveis por Tab: setas ajustam largura, Home/End escolhem limites.
+  Passo numérico e parâmetros do gesto em settings.json/editor.imageSizing:
+  resizeStep 1, keyboardResizeStep 10, edgeScrollZone 64 e maxEdgeScrollSpeed 200.
+  São configuração da app, sem acrescentar preferências ao Profile.
+
+Validação focada:
+
+- Chrome/Playwright CLI em biblioteca isolada: duas pegas, três alinhamentos,
+  aumento e redução a 1366, 390 e 320 px com touch emulado via CDP e a 1920 px
+  com rato. Proporções, largura, ausência de salto inicial, acompanhamento
+  vertical, persistência dos controlos e conservação de alinhamento/ficheiro.
+- Resize vertical com uma imagem já encostada a um lado, compensação ao largar,
+  crescimento junto à extremidade da vista, limite máximo, cancelamento nativo,
+  Escape, foco desktop, undo/redo e resize por teclado verificados no browser.
+- Perda de captura cancela sem gravar; reload conserva tamanho e ID do ficheiro.
+  Notas curtas ensaiadas em tablet/mobile e resize de imagens antigas com wrap
+  ensaiado em desktop. O gesto mantém a compensação e remove os espaços finais.
+  Numa nota curta, o restauro ao largar pode atingir o limite de scroll: em
+  emulação mobile, a toolbar larga atual pode aumentar o layout viewport e
+  limitar a compensação final. Esta pendência de viewport mantém-se ligada a 4B.
+- Tap sem movimento não modifica uma largura guardada superior ao contentor.
+  Movimento provisório não grava a nota; conclusão grava pelo caminho existente.
+- 31 testes existentes de extensões/richTextInput/dispatcher MCP passaram,
+  assim como regras de estilos e build/typecheck. Transporte MCP desktop não
+  repetido nesta entrega; contratos e handlers mantidos.
+- Scripts e imagens de QA em output/playwright/check-image-handles.js,
+  check-image-resize-safety.js, check-image-resize-short.js e image-handles-*.png. A toolbar mobile atual
+  ainda pode cobrir parte da nota em emulação; a sua adaptação mantém-se em 4B.
+
+Avaliação real pendente: ambos os cantos em iPad/iPhone, imagens a meio de texto
+e no início/fim de notas, aumento/redução com movimentos diagonais e verticais,
+alinhamentos e gesto junto às barras do browser em portrait/landscape.
+Preview e uploads/limpeza de anexos continuam como entregas seguintes de 4A;
+toolbar 4B e gestos/reordenação de blocos 4C permanecem separados.
+
+## 23. Preview fullscreen de imagens
+
+Entrega implementada e avaliada em iPad e iPhone reais em 2026-09-19.
+
+- Em tablet/mobile, o primeiro tap curto seleciona a imagem e mostra os seus
+  controlos. Um segundo tap curto na mesma imagem abre o preview. Não é exigido
+  double-tap rápido. Rato em desktop conserva a interação existente.
+- Movimento acima de 10 px, múltiplos contactos e pointercancel anulam a
+  sequência, evitando abrir o preview depois de swipe, drag ou pinch.
+- O preview reutiliza o modal da app: ocupa a área visível, bloqueia o scroll
+  do documento, mantém foco contido e fecha pelo botão visível ou Escape,
+  restaurando o foco ao sair.
+- A imagem abre centrada e conserva as proporções. A dimensão inicial máxima é
+  80% da largura e 80% da altura visíveis, deixando margem que identifica o
+  modo de preview e mantém o botão de fechar separado da imagem. Uma única
+  escala, calculada a partir das dimensões originais, escolhe o primeiro eixo
+  que atinge esse limite e deriva o outro pelo ratio original; a imagem nunca
+  é esticada para preencher simultaneamente os dois limites.
+- Pinch permite zoom entre 1× e 4×. Quando ampliada, a imagem acompanha pan e
+  fica limitada ao overflow real, sem se perder fora da área visível. O zoom e
+  a posição são temporários e reiniciam ao abrir, mudar de imagem ou alterar a
+  geometria visível.
+- Gestos do preview ficam isolados do Tiptap e não alteram conteúdo, atributos,
+  ficheiros ou ordem de blocos. Não foram adicionadas galeria ou navegação entre
+  imagens.
+
+Validação: testes focados dos limites de zoom/pan e do modal passaram, assim
+como typecheck e regras de estilos. O utilizador confirmou o funcionamento do
+preview em iPad e iPhone reais. Por indicação do utilizador, não se repetiu
+Playwright para o ajuste visual final de 80%; deve ser confirmado nos mesmos
+dispositivos quando a app for atualizada.
+
+Próxima entrega de 4A: uploads e limpeza permanente de anexos. Toolbar 4B e
+gestos/reordenação de blocos 4C permanecem separados.
+
+## 24. Uploads e limpeza permanente de anexos
+
+Entrega implementada e avaliada em dispositivos reais e no desktop Tauri em
+2026-09-19.
+
+- A ação Inserir imagem abre apenas formatos de imagem. A imagem continua a ser
+  inserida no corpo da nota e aparece também no painel Ficheiros, associada ao
+  bloco que a contém.
+- A ação Inserir ficheiro abre os formatos de documento já suportados. O ficheiro
+  é guardado e aparece apenas no painel Ficheiros; não cria um cartão dentro do
+  Tiptap nem fica associado ao bloco que estava em edição.
+- O nome do ficheiro no painel é a própria ação de abrir. Mantém ellipsis para
+  nomes extensos. Formatos que o browser consegue apresentar abrem normalmente;
+  nos restantes, o browser/sistema trata a gravação do ficheiro.
+- Exportar/descarregar conserva o comportamento de desktop. O botão é escondido
+  dentro da aba lateral adaptada de tablet/mobile, onde abrir pelo nome e apagar
+  continuam disponíveis com alvos de toque de 44 px.
+- Apagar uma imagem no editor ou apagar qualquer entrada no painel remove o nó
+  do documento, o registo da nota e o ficheiro físico. Apagar um bloco ou apagar
+  definitivamente uma nota aplica a mesma limpeza a todos os ficheiros ligados.
+- A eliminação física ocorre antes da remoção dos registos. Se a segunda fase
+  falhar, a entrada continua visível e a operação pode ser repetida; a eliminação
+  do ficheiro é idempotente. Isto evita confirmar uma eliminação enquanto o blob
+  ainda ocupa armazenamento sem existir uma forma normal de o encontrar.
+- No Web, a URL temporária em cache é revogada no próprio momento da eliminação,
+  em vez de permanecer ativa até fechar ou trocar de biblioteca.
+- Remover do editor uma imagem/ficheiro é uma operação permanente e fica fora do
+  histórico do Tiptap. Undo, redo ou uma atualização tardia de conteúdo não podem
+  restaurar o ID apagado; para voltar a usar o ficheiro é necessário inseri-lo de
+  novo. Corte, seleção, remoção de bloco e eliminação pelo painel usam a mesma
+  regra de limpeza.
+- Se a nota ou o bloco desaparecer enquanto o seletor de ficheiros está aberto,
+  ou se a gravação dos metadados falhar depois do upload, o ficheiro recém-criado
+  é eliminado para não deixar lixo no armazenamento.
+- Uploads e gravações automáticas de conteúdo são serializados por nota. Isto
+  impede que um autosave iniciado durante o seletor reponha uma versão anterior
+  do estado e faça um documento recém-adicionado desaparecer do painel até ao
+  reload. Falhas reais de seleção/importação apresentam agora feedback visível.
+- Não foram alterados contratos, comandos ou handlers MCP. A classificação e a
+  localização visual dos anexos são decisões do cliente/store existente.
+
+Validação automatizada: typecheck, regras de estilos e 13 testes focados do
+editor, store e preview passaram. Os testes cobrem a associação distinta de
+imagens/documentos, a ordem da eliminação física, a remoção do nó Tiptap e o
+bloqueio de restauro por undo. Incluem também uma transação de upload suspensa
+enquanto o autosave começa, confirmando que ambos os resultados permanecem no
+estado final. Build de produção executado após esta secção.
+
+Avaliação real concluída em iPhone, iPad e desktop: imagens aparecem no corpo e
+no painel, desaparecem de ambos ao eliminar e abrem numa nova aba; ficheiros de
+texto aparecem apenas no painel e desaparecem da lista ao eliminar. Tocar no
+nome apresenta o fluxo de gravação do browser em tablet/mobile e abre o ficheiro
+na aplicação associada no desktop, neste caso o Notepad. A correção da corrida
+entre upload e autosave foi confirmada nos três ambientes. O utilizador tinha
+também confirmado anteriormente que o MCP continua operacional no desktop.
+
+Com esta entrega e avaliação, o 4A fica concluído. Toolbar 4B e
+gestos/reordenação de blocos 4C continuam separados.

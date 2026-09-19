@@ -180,6 +180,7 @@
 
 .note-block-list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--nx-space-4);
 }
 
@@ -190,6 +191,8 @@
 .note-block {
   position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   border: 1px solid transparent;
   border-radius: var(--nx-radius-md);
   margin-inline: calc(var(--nx-space-3) * -1);
@@ -410,6 +413,8 @@
 
 .note-tiptap-editor {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 0;
     min-height: 30px;
 }
@@ -436,6 +441,7 @@
 }
 
 .note-tiptap-prosemirror {
+  min-width: 0;
   min-height: 30px;
   border-radius: var(--nx-radius-sm);
   color: var(--nx-color-text);
@@ -465,7 +471,11 @@
 }
 
 .note-tiptap-prosemirror pre {
+  max-width: 100%;
   overflow: auto;
+  overscroll-behavior-x: contain;
+  white-space: pre;
+  overflow-wrap: normal;
   margin: var(--nx-space-3) 0;
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-sm);
@@ -475,6 +485,8 @@
 
 .note-tiptap-prosemirror pre code {
   display: block;
+  white-space: pre;
+  overflow-wrap: normal;
   border: 0;
   background: transparent;
   padding: 0;
@@ -581,7 +593,15 @@
 
 .note-tip-content {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--nx-space-2);
+}
+
+.note-tiptap-prosemirror .tableWrapper {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
 .note-tiptap-prosemirror table {
@@ -595,6 +615,10 @@
   border: 1px solid var(--nx-color-border);
   padding: var(--nx-space-3);
   vertical-align: top;
+}
+
+.note-document-shell--adapted .note-tiptap-prosemirror :is(th, td) {
+  min-width: var(--nx-note-table-column-min);
 }
 
 .note-file-card {
@@ -617,8 +641,7 @@
   color: var(--nx-color-text-muted);
 }
 
-.note-file-card button,
-.note-image-controls button {
+.note-file-card button {
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-sm);
   background: var(--nx-color-surface);
@@ -627,8 +650,12 @@
 }
 
 .note-image-node {
+  --nx-note-image-controls-width: min(100%, max(11rem, min(22rem, var(--nx-note-image-width, 22rem))));
   position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  max-width: 100%;
   gap: var(--nx-space-2);
   margin: var(--nx-space-4) 0;
 }
@@ -667,7 +694,10 @@
 }
 
 .note-image-node figure {
+  position: relative;
   display: grid;
+  width: var(--nx-note-image-width, 100%);
+  min-width: 0;
   max-width: 100%;
   gap: var(--nx-space-2);
   margin: 0;
@@ -679,14 +709,10 @@
   cursor: grabbing;
 }
 
-@for $index from 4 through 19 {
-  .note-image-size-#{$index * 40} figure {
-    width: #{$index * 40}px;
-  }
-}
-
 .note-image-node img {
+  display: block;
   width: 100%;
+  height: auto;
   border-radius: var(--nx-radius-sm);
   pointer-events: none;
   user-select: none;
@@ -705,9 +731,63 @@
 }
 
 .note-image-controls {
+  display: grid;
+  justify-items: center;
+  justify-self: center;
+  width: var(--nx-note-image-controls-width);
+  min-width: 0;
+  max-width: 100%;
+  gap: var(--nx-space-3);
+  padding: var(--nx-space-3);
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-md);
+  background: var(--nx-color-surface);
+}
+
+.note-image-node.align-left .note-image-controls {
+  justify-self: start;
+  margin-inline-start: max(0px, calc((min(100%, var(--nx-note-image-width)) - var(--nx-note-image-controls-width)) / 2));
+}
+
+.note-image-node.align-right .note-image-controls {
+  justify-self: end;
+  margin-inline-end: max(0px, calc((min(100%, var(--nx-note-image-width)) - var(--nx-note-image-controls-width)) / 2));
+}
+
+.note-image-controls__alignment {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
+  max-width: 100%;
   gap: var(--nx-space-2);
+}
+
+.note-image-controls button {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid var(--nx-color-border);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-surface-subtle);
+  color: var(--nx-color-text-muted);
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.note-image-controls button svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.note-image-controls button:hover {
+  background: var(--nx-color-hover);
+  color: var(--nx-color-text);
+}
+
+.note-image-controls button:focus-visible {
+  outline: 2px solid var(--nx-color-accent-strong);
+  outline-offset: 3px;
 }
 
 .note-image-controls button.is-active,
@@ -717,10 +797,138 @@
   color: var(--nx-color-text);
 }
 
-.note-image-controls__divider {
+.note-image-resize-handle {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 0;
+  border-radius: var(--nx-radius-sm);
+  background: transparent;
+  padding: 0;
+  cursor: nwse-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.note-image-resize-handle::after {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--nx-color-accent-strong);
+  border-radius: var(--nx-radius-sm);
+  background: var(--nx-color-surface);
+  content: "";
+}
+
+.note-image-resize-handle--top-left {
+  top: -1.375rem;
+  left: -1.375rem;
+}
+
+.note-image-resize-handle--bottom-right {
+  right: -1.375rem;
+  bottom: -1.375rem;
+}
+
+.note-image-resize-handle:is(:hover, :focus-visible, :active)::after {
+  background: var(--nx-color-accent);
+}
+
+.note-image-resize-handle:focus-visible {
+  outline: 2px solid var(--nx-color-accent-strong);
+  outline-offset: -2px;
+}
+
+.note-image-node.is-resizing figure {
+  justify-self: start;
+  margin-inline-start: var(--nx-note-image-resize-left, 0);
+  cursor: nwse-resize;
+}
+
+.note-image-node:is(.wrap-left, .wrap-right).is-resizing {
+  width: min(48%, 30rem);
+}
+
+.note-image-node.is-resizing .note-image-controls {
+  justify-self: start;
+  margin-inline: clamp(0px, calc(var(--nx-note-image-resize-left, 0px) + (var(--nx-note-image-width) - var(--nx-note-image-controls-width)) / 2), calc(100% - var(--nx-note-image-controls-width))) 0;
+}
+
+.note-image-resize-scroll {
+  overflow-anchor: none;
+  scroll-behavior: auto;
+}
+
+.note-image-resize-space {
+  height: var(--nx-note-image-resize-space, 0);
+  min-height: var(--nx-note-image-resize-space, 0);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.note-image-preview {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  overflow: hidden;
+  width: 100vw;
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--nx-color-bg) 96%, transparent);
+  box-shadow: none;
+}
+
+.note-image-preview .app-modal__close {
+  top: max(var(--nx-space-4), env(safe-area-inset-top));
+  right: max(var(--nx-space-4), env(safe-area-inset-right));
+  z-index: 2;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--nx-color-border-strong);
+  background: var(--nx-color-surface-elevated);
+  box-shadow: var(--nx-shadow-soft);
+}
+
+.note-image-preview__title {
+  position: absolute;
   width: 1px;
-  align-self: stretch;
-  background: var(--nx-color-border);
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.note-image-preview__stage {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  place-items: center;
+  overflow: hidden;
+  padding: max(var(--nx-space-5), env(safe-area-inset-top)) max(var(--nx-space-5), env(safe-area-inset-right)) max(var(--nx-space-5), env(safe-area-inset-bottom)) max(var(--nx-space-5), env(safe-area-inset-left));
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.note-image-preview__stage:active {
+  cursor: grabbing;
+}
+
+.note-image-preview__stage img {
+  display: block;
+  width: var(--nx-image-preview-width, auto);
+  height: var(--nx-image-preview-height, auto);
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  transform: translate3d(var(--nx-image-preview-x, 0), var(--nx-image-preview-y, 0), 0) scale(var(--nx-image-preview-scale, 1));
+  transform-origin: center;
+  user-select: none;
+  will-change: transform;
 }
 
 .note-panel-toggle-list {
@@ -745,7 +953,7 @@
 
 .note-example-side-list a,
 .note-linked-list a,
-.note-file-side-list span:not(.side-list-actions) {
+.note-file-name {
   min-width: 0;
   color: inherit;
 }
@@ -754,11 +962,30 @@
   flex-shrink: 0;
 }
 
-.note-file-side-list span:not(.side-list-actions) {
+.note-file-name {
   flex: 1 1 0;
   overflow: hidden;
+  border: 0;
+  background: transparent;
+  padding: var(--nx-space-1) 0;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.note-file-name:is(:hover, :focus-visible) {
+  color: var(--nx-color-accent-strong);
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.side-panel-sheet .note-file-name {
+  min-height: 2.75rem;
+}
+
+.side-panel-sheet .note-file-export {
+  display: none;
 }
 
 .note-example-side-list strong,
@@ -784,6 +1011,11 @@
 .note-linked-list .icon-button {
   width: 1.8rem;
   height: 1.8rem;
+}
+
+.side-panel-sheet .note-file-side-list .icon-button {
+  width: 2.75rem;
+  height: 2.75rem;
 }
 
 .note-linked-panel {
