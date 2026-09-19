@@ -31,6 +31,7 @@ export function ResponsiveSidePanel({
     const scroller = scrollerRef.current;
     const sheet = sheetRef.current;
     if (!overlay || !scroller || !sheet) return;
+    const windowTitlebar = document.querySelector<HTMLElement>('.window-titlebar');
 
     const backgrounds = [document.getElementById('root'), document.querySelector<HTMLElement>('.notification-viewport')]
       .filter((element): element is HTMLElement => Boolean(element))
@@ -42,13 +43,19 @@ export function ResponsiveSidePanel({
 
     function updateViewport() {
       const viewport = window.visualViewport;
-      overlay!.style.setProperty('--nx-drawer-viewport-top', `${viewport?.offsetTop ?? 0}px`);
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportHeight = viewport?.height ?? window.innerHeight;
+      const viewportBottom = viewportTop + viewportHeight;
+      const protectedTop = Math.max(viewportTop, windowTitlebar?.getBoundingClientRect().bottom ?? viewportTop);
+      overlay!.style.setProperty('--nx-drawer-viewport-top', `${protectedTop}px`);
       overlay!.style.setProperty('--nx-drawer-viewport-left', `${viewport?.offsetLeft ?? 0}px`);
       overlay!.style.setProperty('--nx-drawer-viewport-width', `${viewport?.width ?? window.innerWidth}px`);
-      overlay!.style.setProperty('--nx-drawer-viewport-height', `${viewport?.height ?? window.innerHeight}px`);
+      overlay!.style.setProperty('--nx-drawer-viewport-height', `${Math.max(0, viewportBottom - protectedTop)}px`);
       // Resizing the visible area must not be interpreted as a dismiss swipe.
       alignOpen();
     }
+    const titlebarObserver = windowTitlebar ? new ResizeObserver(updateViewport) : null;
+    if (windowTitlebar) titlebarObserver?.observe(windowTitlebar);
     updateViewport();
     window.addEventListener('resize', updateViewport);
     window.visualViewport?.addEventListener('resize', updateViewport);
@@ -86,6 +93,7 @@ export function ResponsiveSidePanel({
     document.addEventListener('focusin', keepFocusInside);
 
     return () => {
+      titlebarObserver?.disconnect();
       window.removeEventListener('resize', updateViewport);
       window.visualViewport?.removeEventListener('resize', updateViewport);
       window.visualViewport?.removeEventListener('scroll', updateViewport);

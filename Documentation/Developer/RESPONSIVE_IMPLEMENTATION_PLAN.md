@@ -1928,3 +1928,54 @@ também confirmado anteriormente que o MCP continua operacional no desktop.
 
 Com esta entrega e avaliação, o 4A fica concluído. Toolbar 4B e
 gestos/reordenação de blocos 4C continuam separados.
+
+## 25. Primeira entrega de 4B — cabeçalho e ações da nota
+
+Implementação em 2026-09-19, avaliada em desktop estreito, tablet e mobile.
+
+- Desktop normal mantém a composição anterior. No layout adaptado sem touch,
+  destinado a janelas estreitas com rato/teclado, o cabeçalho passa para duas
+  zonas: Voltar e ações da nota na primeira linha; toolbar completa abaixo,
+  podendo quebrar em duas linhas conforme o espaço real disponível.
+- Tablet/mobile com touch reúne participação no backup, favorito e mover para a
+  lixeira num menu `⋮`. As operações e estados são os existentes. Exportação
+  `.notex` e `Saved locally` não aparecem no menu adaptado; desktop conserva-os.
+- O menu usa o componente visual, foco inicial, setas, Home/End, Escape e fecho
+  exterior já usados nos restantes menus da app. Alvos têm 44 px e as ações de
+  backup/favorito expõem o respetivo estado às tecnologias de apoio.
+- Em mobile touch até 680 px, Voltar deixa de aparecer conforme decisão
+  anterior. Tablet conserva o botão. A distinção de touch considera ponteiros
+  coarse disponíveis e `maxTouchPoints`, incluindo dispositivos híbridos; um
+  desktop amplo não entra nesta composição apenas por possuir touch.
+- O BubbleMenu de bold/italic/link deixa de ser montado na experiência touch
+  adaptada. A toolbar principal mantém os mesmos comandos. Desktop normal e
+  desktop estreito conservam o BubbleMenu por decisão do utilizador.
+- A toolbar touch continua temporariamente no cabeçalho até existir deteção do
+  teclado no passo seguinte. Não se forçou já scroll horizontal: os pickers de
+  cores e tabelas estão atualmente dentro do mesmo contentor e seriam cortados
+  por `overflow-x`. Linha única, scroll e overlays externos serão entregues em
+  conjunto para não retirar ferramentas durante o estado intermédio.
+- Foram acrescentados rótulos explícitos para incluir/excluir a nota do backup,
+  substituindo uma chave de tradução inexistente também no botão desktop.
+- O menu `⋮` usa o posicionador flutuante partilhado pelas listas: abre alinhado
+  para a esquerda do botão e muda de lado automaticamente quando o espaço do
+  viewport assim o exige. Mantém também os limites e o reposicionamento durante
+  resize/scroll.
+- Nos layouts adaptados, o cabeçalho da nota fica sticky imediatamente sob a
+  topbar. A posição usa a base real da topbar, incluindo variações de gutter e a
+  titlebar do desktop, em vez do afastamento histórico fixo de `3.5rem`. O
+  desktop normal conserva a posição anterior.
+- A aba direita renderizada por portal calcula também a área protegida pela
+  titlebar nativa do Tauri. Em desktop estreito, o título e o botão de fechar
+  começam abaixo dessa barra e a altura útil do drawer é reduzida pelo mesmo
+  valor; Web, iPad e iPhone conservam a geometria do `VisualViewport`.
+- Sem alterações a modelos, armazenamento, sync, contratos ou handlers MCP.
+
+Validação automatizada: typecheck e regras de estilos passaram. Build de
+produção executado após esta secção. A composição, ações corretas do menu e
+ausência do BubbleMenu touch foram confirmadas em janela estreita, iPad e
+iPhone. O alinhamento adaptativo do menu e a posição sticky corrigida aguardam
+a verificação final nesses dispositivos.
+
+Próxima entrega: estado do teclado/VisualViewport e reposicionamento da toolbar;
+em seguida, linha única com scroll horizontal, seleção e overlays sem clipping.

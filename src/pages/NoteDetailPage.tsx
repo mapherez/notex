@@ -7,6 +7,7 @@ import {
   Folder,
   GripVertical,
   Image as ImageIcon,
+  MoreVertical,
   Pencil,
   Plus,
   Download,
@@ -15,7 +16,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { useMenuOptionFocus } from '../core/utils/useMenuOptionFocus';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { InlineFormattedText } from '../components/editing/InlineFormattedText';
@@ -52,7 +53,8 @@ import {
 import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
 import { richTextToPlainText } from '../core/utils/richText';
 import { useClickOutside } from '../core/utils/useClickOutside';
-import { useAdaptedContent } from '../core/utils/useAdaptedContent';
+import { useAdaptedContent, useTouchInputAvailable } from '../core/utils/useAdaptedContent';
+import { useFloatingPopover } from '../core/utils/useFloatingPopover';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { sortTagsByFavoriteOrder } from '../core/utils/tagSorting';
 import { useI18n } from '../i18n/I18nProvider';
@@ -86,6 +88,8 @@ export function NoteDetailPage() {
   const navigate = useNavigate();
   const { locale, t } = useI18n();
   const adapted = useAdaptedContent();
+  const touchInputAvailable = useTouchInputAvailable();
+  const touchAdapted = adapted && touchInputAvailable;
   const [panelsOpen, setPanelsOpen] = useState(false);
   const panelsTriggerRef = useRef<HTMLButtonElement>(null);
   const createStartedRef = useRef(false);
@@ -143,6 +147,15 @@ export function NoteDetailPage() {
   const tocEntriesRef = useRef<TocEntry[]>([]);
   const tocRefreshFrameRef = useRef<number | null>(null);
   const [toolbarTarget, setToolbarTarget] = useState<NoteTiptapToolbarTarget | null>(null);
+  const [noteActionsOpen, setNoteActionsOpen] = useState(false);
+  const noteActionsRef = useRef<HTMLDivElement>(null);
+  const noteActionsMenu = useMenuOptionFocus(noteActionsOpen, () => setNoteActionsOpen(false));
+  useFloatingPopover(
+    noteActionsOpen,
+    noteActionsMenu.triggerRef,
+    noteActionsMenu.menuRef,
+    'bottom-end',
+  );
   const note = isNewNote ? undefined : notes.find((item) => item.id === id);
   const ensureAvailable = useCloudStore((state) => state.ensureAvailable);
   const transferError = useCloudStore((state) => state.error);
@@ -150,7 +163,11 @@ export function NoteDetailPage() {
   const cloudAccountId = useCloudStore((state) => state.accountId);
   const excludedNotes = useCloudStore((state) => state.excludedNotes);
   const toggleExcluded = useCloudStore((state) => state.toggleExcluded);
+  useClickOutside(noteActionsRef, noteActionsOpen, () => setNoteActionsOpen(false));
   useEffect(() => { setPanelsOpen(false); }, [adapted, id]);
+  useEffect(() => {
+    if (!touchAdapted) setNoteActionsOpen(false);
+  }, [id, touchAdapted]);
   useEffect(() => {
     let active = true;
     setDownloadError(null);
@@ -285,22 +302,28 @@ export function NoteDetailPage() {
     refreshTocEntries();
   }, [refreshTocEntries, note?.id, visibleBlocks]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const shell = document.querySelector<HTMLElement>('.note-document-shell');
-    if (!shell) return;
+    const documentTop = document.querySelector<HTMLElement>('.document-top');
+    const topbar = document.querySelector<HTMLElement>('.topbar');
+    if (!shell || !documentTop) return;
     const bars = Array.from(document.querySelectorAll<HTMLElement>('.topbar, .document-top, .note-edit-toolbar-shell'));
     function updateOffset() {
-      const bottom = Math.max(0, ...bars.map((bar) => {
-        const top = Number.parseFloat(getComputedStyle(bar).top) || 0;
-        return top + bar.getBoundingClientRect().height;
-      }));
+      if (topbar) {
+        documentTop!.style.setProperty('--nx-document-top-offset', `${topbar.getBoundingClientRect().bottom}px`);
+      }
+      const bottom = Math.max(0, ...bars.map((bar) => bar.getBoundingClientRect().bottom));
       shell!.style.setProperty('--nx-note-navigation-top', `${bottom + 16}px`);
     }
     const observer = new ResizeObserver(updateOffset);
     bars.forEach((bar) => observer.observe(bar));
     updateOffset();
     window.addEventListener('resize', updateOffset);
-    return () => { observer.disconnect(); window.removeEventListener('resize', updateOffset); };
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateOffset);
+      documentTop.style.removeProperty('--nx-document-top-offset');
+    };
   }, [note?.id]);
 
   useEffect(() => {
@@ -601,9 +624,21 @@ export function NoteDetailPage() {
     void reorderBlocks(note.id, nextIds).finally(() => setDragBlockIds(null));
   }
 
+  function moveCurrentNoteToTrash() {
+    if (!note) return;
+    void moveToTrash(note.id).then(() => {
+      pushToast(t('notes.trashChanged'), 'warning');
+      navigate('/trash');
+    });
+  }
+
   return (
     <>
-      <header className="document-top">
+      <header className={[
+        'document-top',
+        touchAdapted ? 'document-top--touch-adapted' : '',
+        adapted && !touchAdapted ? 'document-top--narrow-desktop' : '',
+      ].filter(Boolean).join(' ')}>
         <button className="back-button" type="button" onClick={() => navigate(-1)}>
           <ChevronLeft />
           {t('common.back')}
@@ -614,9 +649,61 @@ export function NoteDetailPage() {
             t={t}
           />
         </div>
+        {touchAdapted ? (
+          <div className="note-document-actions-menu" ref={noteActionsRef} onKeyDown={noteActionsMenu.onKeyDown}>
+            <button
+              className="icon-button"
+              type="button"
+              aria-label={t('notes.openMenu')}
+              aria-expanded={noteActionsOpen}
+              aria-haspopup="menu"
+              ref={noteActionsMenu.triggerRef}
+              onClick={() => setNoteActionsOpen((open) => !open)}
+            >
+              <MoreVertical />
+            </button>
+            {noteActionsOpen ? (
+              <div
+                className="floating-menu note-document-actions-popover responsive-popover"
+                role="menu"
+                ref={noteActionsMenu.menuRef}
+                onClick={noteActionsMenu.closeAndFocus}
+              >
+                {cloudAccountId ? (
+                  <button
+                    type="button"
+                    role="menuitemcheckbox"
+                    aria-checked={!excludedNotes.includes(note.id)}
+                    onClick={() => void toggleExcluded(note.id)}
+                  >
+                    <Cloud />
+                    {excludedNotes.includes(note.id)
+                      ? t('noteDetail.includeInBackup')
+                      : t('noteDetail.excludeFromBackup')}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={note.isFavorite}
+                  onClick={() => void toggleFavorite(note.id)}
+                >
+                  <Star />
+                  {note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
+                </button>
+                <button className="danger" type="button" role="menuitem" onClick={moveCurrentNoteToTrash}>
+                  <Trash2 />
+                  {t('notes.moveToTrash')}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : (
         <div className="document-actions">
-          {cloudAccountId && <button className="icon-button" type="button" aria-label={t('cloud.noteBackup')}
-            title={t('cloud.noteBackup')} aria-pressed={!excludedNotes.includes(note.id)}
+          {cloudAccountId && <button className="icon-button" type="button"
+            aria-label={excludedNotes.includes(note.id) ? t('noteDetail.includeInBackup') : t('noteDetail.excludeFromBackup')}
+            title={excludedNotes.includes(note.id) ? t('noteDetail.includeInBackup') : t('noteDetail.excludeFromBackup')}
+            aria-pressed={!excludedNotes.includes(note.id)}
             onClick={() => void toggleExcluded(note.id)}><Cloud /></button>}
           <button
             className={note.isFavorite ? 'icon-button document-actions__favorite is-active' : 'icon-button document-actions__favorite'}
@@ -645,16 +732,12 @@ export function NoteDetailPage() {
             className="icon-button danger"
             type="button"
             aria-label={t('notes.moveToTrash')}
-            onClick={() => {
-              void moveToTrash(note.id).then(() => {
-                pushToast(t('notes.trashChanged'), 'warning');
-                navigate('/trash');
-              });
-            }}
+            onClick={moveCurrentNoteToTrash}
           >
             <Trash2 />
           </button>
         </div>
+        )}
       </header>
 
       <NoteHeaderDraftProvider key={note.id} note={note} onSave={updateHeader}>
@@ -714,6 +797,7 @@ export function NoteDetailPage() {
             {visibleBlocks.map((block) => (
               <BlockEditor
                 block={block}
+                bubbleMenuEnabled={!touchAdapted}
                 contentTypingRequest={block.id === firstBlockId ? firstBlockTypingRequest : null}
                 dragged={draggedBlockId === block.id}
                 key={block.id}
@@ -1212,6 +1296,7 @@ function ThumbnailPicker({
 
 function BlockEditor({
   block,
+  bubbleMenuEnabled,
   contentTypingRequest,
   dragged,
   noteId,
@@ -1224,6 +1309,7 @@ function BlockEditor({
   onToolbarTargetChange,
 }: {
   block: NoteBlock;
+  bubbleMenuEnabled: boolean;
   contentTypingRequest?: NoteTiptapInsertTextRequest | null;
   dragged: boolean;
   noteId: string;
@@ -1395,6 +1481,7 @@ function BlockEditor({
           <NoteTiptapEditor
             autoFocus={contentActive && !contentHasContent}
             blockId={block.id}
+            bubbleMenuEnabled={bubbleMenuEnabled}
             insertTextRequest={contentTypingRequest}
             onBlur={() => {
               if (fileInsertPendingRef.current) {

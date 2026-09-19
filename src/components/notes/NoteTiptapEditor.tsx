@@ -70,6 +70,7 @@ import {
 type NoteTiptapEditorProps = {
   autoFocus?: boolean;
   blockId: string;
+  bubbleMenuEnabled?: boolean;
   disabled?: boolean;
   insertTextRequest?: NoteTiptapInsertTextRequest | null;
   onBlur?: () => void;
@@ -200,6 +201,7 @@ const extensions = createNoteContentExtensions({ fileNode: FileNode, tipNode: Ti
 export function NoteTiptapEditor({
   autoFocus = false,
   blockId,
+  bubbleMenuEnabled = true,
   disabled = false,
   insertTextRequest = null,
   onBlur,
@@ -420,7 +422,7 @@ export function NoteTiptapEditor({
       onDragOverCapture={handleImageDragOverCapture}
       onDropCapture={handleImageDropCapture}
     >
-      {editor ? (
+      {editor && bubbleMenuEnabled ? (
         <BubbleMenu
           className="note-bubble-toolbar"
           editor={editor}

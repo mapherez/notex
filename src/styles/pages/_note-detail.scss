@@ -90,6 +90,85 @@
   box-shadow: none;
 }
 
+.document-top--narrow-desktop,
+.document-top--touch-adapted {
+  display: grid;
+  top: var(
+    --nx-document-top-offset,
+    calc(var(--nx-shell-top-offset, 0px) + var(--nx-topbar-height))
+  );
+  grid-template-areas:
+    "back actions"
+    "toolbar toolbar";
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.document-top--narrow-desktop .back-button,
+.document-top--touch-adapted .back-button {
+  grid-area: back;
+  justify-self: start;
+}
+
+.document-top--narrow-desktop .document-top-toolbar,
+.document-top--touch-adapted .document-top-toolbar {
+  grid-area: toolbar;
+  width: 100%;
+  min-width: 0;
+}
+
+.document-top--narrow-desktop .document-actions,
+.document-top--touch-adapted .note-document-actions-menu {
+  grid-area: actions;
+  justify-self: end;
+}
+
+.document-top--narrow-desktop .note-tiptap-toolbar {
+  min-width: 0;
+}
+
+.note-document-actions-menu {
+  position: relative;
+  display: inline-flex;
+  z-index: 80;
+}
+
+.note-document-actions-menu > .icon-button {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.note-document-actions-popover {
+  top: calc(100% + var(--nx-space-2));
+  right: 0;
+  width: min(18rem, calc(100vw - 2 * var(--nx-page-gutter)));
+  z-index: 120;
+}
+
+.note-document-actions-popover button {
+  min-height: 2.75rem;
+}
+
+.note-document-actions-popover button.danger {
+  color: var(--nx-color-danger);
+}
+
+.note-document-actions-popover button.danger:is(:hover, :focus-visible) {
+  color: var(--nx-color-danger);
+}
+
+@media (max-width: 680px) and (any-pointer: coarse) {
+  .document-top--touch-adapted {
+    grid-template-areas:
+      ". actions"
+      "toolbar toolbar";
+  }
+
+  .document-top--touch-adapted .back-button {
+    display: none;
+  }
+}
+
 .document-actions,
 .inline-actions {
   display: flex;
