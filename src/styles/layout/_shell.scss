@@ -13,6 +13,85 @@
   grid-template-rows: var(--nx-window-titlebar-height) minmax(0, 1fr);
 }
 
+.phone-landscape-guard {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  min-height: 100vh;
+  min-height: 100dvh;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 42%, var(--nx-color-accent-soft), transparent 42%),
+    var(--nx-color-canvas);
+  color: var(--nx-color-text);
+  padding:
+    max(var(--nx-space-5), env(safe-area-inset-top))
+    max(var(--nx-space-6), env(safe-area-inset-right))
+    max(var(--nx-space-5), env(safe-area-inset-bottom))
+    max(var(--nx-space-6), env(safe-area-inset-left));
+  outline: none;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+.phone-landscape-guard__content {
+  display: grid;
+  width: min(100%, 32rem);
+  justify-items: center;
+  gap: var(--nx-space-3);
+  text-align: center;
+}
+
+.phone-landscape-guard__icon {
+  position: relative;
+  display: grid;
+  width: 4.5rem;
+  height: 4.5rem;
+  margin-bottom: var(--nx-space-2);
+  place-items: center;
+  border: 1px solid var(--nx-color-border-strong);
+  border-radius: var(--nx-radius-lg);
+  background: var(--nx-color-surface);
+  box-shadow: var(--nx-shadow-soft);
+  color: var(--nx-color-accent-strong);
+}
+
+.phone-landscape-guard__icon > svg:first-child {
+  width: 2rem;
+  height: 2rem;
+}
+
+.phone-landscape-guard__icon > svg:last-child {
+  position: absolute;
+  right: -0.55rem;
+  bottom: -0.55rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--nx-color-border-strong);
+  border-radius: 999px;
+  background: var(--nx-color-surface-elevated);
+  padding: 0.3rem;
+}
+
+.phone-landscape-guard h1,
+.phone-landscape-guard p {
+  margin: 0;
+}
+
+.phone-landscape-guard h1 {
+  font-size: clamp(1.35rem, 5vw, 1.8rem);
+  line-height: 1.15;
+}
+
+.phone-landscape-guard p {
+  max-width: 28rem;
+  color: var(--nx-color-text-muted);
+  font-size: clamp(0.9rem, 3vw, 1rem);
+  line-height: 1.55;
+}
+
 .window-titlebar {
   position: sticky;
   top: 0;

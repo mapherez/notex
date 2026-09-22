@@ -2022,11 +2022,15 @@ mantêm-se acessíveis e os menus permanecem dentro do ecrã. Desktop normal e
 desktop estreito não apresentam regressões. O header continua sticky durante o
 scroll com o teclado aberto.
 
-O editor mobile não suporta iPhone em landscape nesta fase: a altura útil com o
-teclado aberto é insuficiente para uma experiência aceitável, incluindo num
-iPhone 14 Pro Max. Um eventual aviso para regressar a portrait fica registado
-como decisão futura e não foi implementado. O iPad continua suportado em portrait
-e landscape.
+O editor mobile não suporta smartphone em landscape nesta fase: a altura útil
+com o teclado aberto é insuficiente para uma experiência aceitável, incluindo
+num iPhone 14 Pro Max. Em ecrãs touch com dimensões de smartphone, rodar para
+landscape apresenta um ecrã global que bloqueia interação e scroll, fecha o
+teclado e pede para regressar a portrait. O aviso desaparece automaticamente ao
+rodar o dispositivo. O limite combina orientação, ponteiro coarse, largura até
+64 rem e altura até 32 rem, evitando afetar iPad landscape e desktops híbridos
+com rato como ponteiro principal. O iPad continua suportado em portrait e
+landscape.
 
 Próxima entrega depois desta avaliação: 4C, interação e reordenação touch dos
 blocos com compactação temporária, linha de destino e menu mover/eliminar.

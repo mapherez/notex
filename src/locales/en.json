@@ -41,6 +41,10 @@
     "newNote": "New note",
     "expand": "Open menu"
   },
+  "orientation": {
+    "phoneLandscapeTitle": "Rotate your device",
+    "phoneLandscapeDescription": "NoteX on phones works in portrait mode. Rotate your device to continue."
+  },
   "topbar": {
     "searchPlaceholder": "Search notes, titles, tags...",
     "keyboardHint": "⌘ F",

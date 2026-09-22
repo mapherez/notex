@@ -41,6 +41,10 @@
     "newNote": "Nova nota",
     "expand": "Abrir menu"
   },
+  "orientation": {
+    "phoneLandscapeTitle": "Vira o dispositivo",
+    "phoneLandscapeDescription": "O NoteX em telemóvel funciona em modo vertical. Roda o dispositivo para continuar."
+  },
   "topbar": {
     "searchPlaceholder": "Pesquisar notas, títulos, etiquetas...",
     "keyboardHint": "⌘ F",

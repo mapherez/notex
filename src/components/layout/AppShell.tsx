@@ -10,6 +10,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useNotesStore } from '../../store/useNotesStore';
 import { AppModal } from '../ui/AppModal';
 import { LegalModal, type LegalModalKind } from '../ui/LegalModal';
+import { PhoneLandscapeGuard } from './PhoneLandscapeGuard';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { WindowTitleBar } from './WindowTitleBar';
@@ -18,6 +19,7 @@ export function AppShell() {
   const { t } = useI18n();
   const hasWindowTitleBar = isTauri();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const appShellRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
@@ -105,7 +107,7 @@ export function AppShell() {
   return (
     <div className={hasWindowTitleBar ? 'app-frame app-frame--custom-titlebar' : 'app-frame'}>
       <WindowTitleBar />
-      <div className="app-shell">
+      <div className="app-shell" ref={appShellRef}>
         <Sidebar
           open={sidebarOpen}
           onClose={closeSidebar}
@@ -144,6 +146,7 @@ export function AppShell() {
         </AppModal>
         <LegalModal kind={legalModalKind} onClose={closeLegalModal} />
       </div>
+      <PhoneLandscapeGuard backgroundRef={appShellRef} />
     </div>
   );
 }
