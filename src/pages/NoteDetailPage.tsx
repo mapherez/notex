@@ -307,10 +307,19 @@ export function NoteDetailPage() {
     const documentTop = document.querySelector<HTMLElement>('.document-top');
     const topbar = document.querySelector<HTMLElement>('.topbar');
     if (!shell || !documentTop) return;
+    const visualViewport = window.visualViewport;
+    const topbarBaseTop = topbar
+      ? Math.max(0, Number.parseFloat(window.getComputedStyle(topbar).top) || 0)
+      : 0;
     const bars = Array.from(document.querySelectorAll<HTMLElement>('.topbar, .document-top, .note-edit-toolbar-shell'));
     function updateOffset() {
       if (topbar) {
-        documentTop!.style.setProperty('--nx-document-top-offset', `${topbar.getBoundingClientRect().bottom}px`);
+        const visualViewportTop = touchAdapted
+          ? Math.max(0, visualViewport?.offsetTop ?? 0)
+          : 0;
+        topbar.style.setProperty('--nx-visual-viewport-top', `${visualViewportTop}px`);
+        const documentTopOffset = topbarBaseTop + visualViewportTop + topbar.getBoundingClientRect().height;
+        documentTop!.style.setProperty('--nx-document-top-offset', `${documentTopOffset}px`);
       }
       const bottom = Math.max(0, ...bars.map((bar) => bar.getBoundingClientRect().bottom));
       shell!.style.setProperty('--nx-note-navigation-top', `${bottom + 16}px`);
@@ -319,12 +328,17 @@ export function NoteDetailPage() {
     bars.forEach((bar) => observer.observe(bar));
     updateOffset();
     window.addEventListener('resize', updateOffset);
+    visualViewport?.addEventListener('resize', updateOffset);
+    visualViewport?.addEventListener('scroll', updateOffset);
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', updateOffset);
+      visualViewport?.removeEventListener('resize', updateOffset);
+      visualViewport?.removeEventListener('scroll', updateOffset);
+      topbar?.style.removeProperty('--nx-visual-viewport-top');
       documentTop.style.removeProperty('--nx-document-top-offset');
     };
-  }, [note?.id]);
+  }, [note?.id, touchAdapted]);
 
   useEffect(() => {
     const blockList = document.querySelector('.note-block-list');
@@ -645,6 +659,8 @@ export function NoteDetailPage() {
         </button>
         <div className="document-top-toolbar">
           <NoteTiptapToolbar
+            floatingMenus={touchAdapted}
+            scrollAffordances={touchAdapted}
             target={toolbarTarget}
             t={t}
           />
@@ -741,7 +757,10 @@ export function NoteDetailPage() {
       </header>
 
       <NoteHeaderDraftProvider key={note.id} note={note} onSave={updateHeader}>
-      <div className={`note-document-shell${adapted ? ' note-document-shell--adapted' : ''}`}>
+      <div className={[
+        'note-document-shell',
+        adapted ? 'note-document-shell--adapted' : '',
+      ].filter(Boolean).join(' ')}>
         <aside className="note-toc" aria-label={t('notes.tableOfContents')}>
           <div className="note-toc-dashes" aria-hidden="true">
             {tocEntries.map((entry) => (

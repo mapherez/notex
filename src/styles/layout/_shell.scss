@@ -546,7 +546,7 @@
 
 .topbar {
   position: sticky;
-  top: 0;
+  top: var(--nx-visual-viewport-top, 0);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -560,7 +560,7 @@
 }
 
 .app-frame--custom-titlebar .topbar {
-  top: var(--nx-window-titlebar-height);
+  top: calc(var(--nx-window-titlebar-height) + var(--nx-visual-viewport-top, 0));
 }
 
 .topbar--with-search {

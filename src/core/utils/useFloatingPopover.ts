@@ -8,6 +8,7 @@ export function useFloatingPopover(
   floatingRef: RefObject<HTMLElement>,
   placement: Placement = 'bottom-start',
   anchorKey?: number | null,
+  strategy: 'absolute' | 'fixed' = 'absolute',
 ) {
   useLayoutEffect(() => {
     const reference = referenceRef.current;
@@ -23,6 +24,7 @@ export function useFloatingPopover(
     const cleanup = autoUpdate(reference, floating, () => {
       void computePosition(reference, floating, {
         placement,
+        strategy,
         middleware: [offset(spacing('--nx-space-2')), flip({ padding }), shift({ padding }), size({
           padding,
           apply({ availableWidth, availableHeight, rects }) {
@@ -38,6 +40,16 @@ export function useFloatingPopover(
         floating.style.setProperty('--nx-popover-top', `${y}px`);
       });
     });
-    return () => { disposed = true; cleanup(); };
-  }, [open, referenceRef, floatingRef, placement, anchorKey]);
+    floating.style.position = strategy;
+    return () => {
+      disposed = true;
+      cleanup();
+      floating.style.removeProperty('position');
+      floating.style.removeProperty('--nx-popover-left');
+      floating.style.removeProperty('--nx-popover-top');
+      floating.style.removeProperty('--nx-popover-max-width');
+      floating.style.removeProperty('--nx-popover-max-height');
+      floating.style.removeProperty('--nx-popover-anchor-width');
+    };
+  }, [open, referenceRef, floatingRef, placement, anchorKey, strategy]);
 }

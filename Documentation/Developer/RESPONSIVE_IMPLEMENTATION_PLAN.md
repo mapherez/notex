@@ -1,17 +1,13 @@
 # NoteX: janela desktop de meia largura, tablet e avaliação mobile
 
-Estado: Etapas 1, 2 e 3 consideradas concluídas pelo utilizador em 2026-09-18,
-após as correções da secção 11 e a avaliação no iPad Air M3 de 13", Chrome.
-Mantém-se uma pendência transversal de altura disponível no browser, a tratar
-na Etapa 4 em coordenação com os overlays da Etapa 5 (secção 12).
+Estado: Etapas 1, 2 e 3 concluídas. O 4A foi concluído e validado em iPhone,
+iPad e desktop; inclui painéis, conteúdo largo, imagens, preview, resize e
+anexos. A primeira entrega de 4B foi igualmente validada nos três ambientes.
+A segunda entrega de 4B, toolbar touch em linha única no cabeçalho, foi
+concluída e validada em iPhone, iPad e desktop (secção 26). O 4C,
+interação e reordenação de blocos, continua por implementar.
 Esta aceitação não significa validação real de todos os browsers e dispositivos.
-Etapa 4 iniciada: acesso aos painéis, coleção no painel, swipe do menu
-esquerdo e contenção de conteúdo largo implementados (secções 17–22).
-O utilizador confirmou em iPad/iPhone os limites das imagens, a ausência de
-teclado ao tocar nelas, a posição dos controlos e a melhoria das colunas.
-Resize por pegas implementado para ensaio (secção 22); falta avaliação real.
-4B/4C definidos para ensaio, ainda sem implementação.
-Data: 2026-09-17.
+Data da última atualização: 2026-09-22.
 
 Este documento regista a análise do código e as decisões acordadas na conversa.
 Não constitui autorização para implementar todas as propostas visuais: as
@@ -1979,3 +1975,58 @@ a verificação final nesses dispositivos.
 
 Próxima entrega: estado do teclado/VisualViewport e reposicionamento da toolbar;
 em seguida, linha única com scroll horizontal, seleção e overlays sem clipping.
+
+## 26. Segunda entrega de 4B — toolbar touch em linha única
+
+Implementação ajustada e validada em 2026-09-22 em iPhone, iPad e desktop.
+
+- Em layouts touch adaptados, a toolbar permanece no cabeçalho sticky da nota e
+  deixa de tentar acompanhar o teclado virtual. No tablet fica entre `Voltar` e
+  o menu `⋮`; no smartphone, onde `Voltar` está oculto, fica imediatamente à
+  esquerda do menu.
+- A toolbar continua a ser a mesma instância React e conserva os mesmos comandos.
+  Apresenta uma única linha, alvos de 44 px e scroll horizontal por swipe.
+- Chevrons suaves são apresentados dentro das extremidades da toolbar apenas
+  quando existem comandos ocultos nessa direção: no início aparece apenas o da
+  direita, durante o percurso podem aparecer ambos e no fim apenas o da
+  esquerda. São indicadores visuais e não interferem com o swipe ou com os
+  botões.
+- Menus de cor/highlight e tabela são portados para fora do contentor de scroll
+  e posicionados com Floating UI junto ao respetivo botão, com flip e limites do
+  viewport.
+- Foi removida a deteção e o posicionamento baseados em `VisualViewport`, assim
+  como reservas de espaço específicas para o teclado. A barra nativa apresentada
+  pelo iOS continua sob controlo do browser/sistema e não é personalizada pela
+  aplicação Web.
+- Desktop normal e desktop estreito mantêm a composição anteriormente validada;
+  os chevrons aplicam-se apenas à experiência touch adaptada.
+- A infraestrutura partilhada de clique exterior, foco de menus e popovers foi
+  estendida por parâmetros opcionais; os comportamentos desktop existentes são
+  os defaults e permanecem inalterados.
+- A correção das patch notes mobile usa `100dvh` e uma grelha interna com scroll
+  limitado, impedindo que o modal ultrapasse a área visível.
+
+Validação automatizada: typecheck, regras de estilos e build passaram após o
+ajuste. Não foi executado Playwright.
+
+Correção do ensaio real: em browsers iOS, abrir o teclado pode deslocar a
+`VisualViewport` sem deslocar a viewport de layout usada por `position: sticky`.
+A topbar e o cabeçalho da nota passam a acompanhar apenas esse `offsetTop`,
+mantendo-se empilhados durante o scroll com o teclado aberto. Não é acrescentado
+espaço ao documento; quando a viewport regressa à posição normal, o offset volta
+a zero.
+
+Validação real concluída: em iPhone e iPad, a toolbar, o scroll horizontal e os
+chevrons funcionam corretamente; escrita, seleção, formatação e menus flutuantes
+mantêm-se acessíveis e os menus permanecem dentro do ecrã. Desktop normal e
+desktop estreito não apresentam regressões. O header continua sticky durante o
+scroll com o teclado aberto.
+
+O editor mobile não suporta iPhone em landscape nesta fase: a altura útil com o
+teclado aberto é insuficiente para uma experiência aceitável, incluindo num
+iPhone 14 Pro Max. Um eventual aviso para regressar a portrait fica registado
+como decisão futura e não foi implementado. O iPad continua suportado em portrait
+e landscape.
+
+Próxima entrega depois desta avaliação: 4C, interação e reordenação touch dos
+blocos com compactação temporária, linha de destino e menu mover/eliminar.

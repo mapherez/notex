@@ -17,6 +17,8 @@ import {
   Image as ImageIcon,
   Italic,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Lightbulb,
   Link2,
   List,
@@ -42,6 +44,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from 'react-dom';
 import { type Editor, type JSONContent } from '@tiptap/core';
 import { EditorContent, NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type ReactNodeViewProps } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
@@ -52,6 +55,7 @@ import { exportNoteAttachment, openNoteAttachment, resolveNoteFileSrc } from '..
 import { openExternalUrl } from "../../core/services/externalLinks";
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useMenuOptionFocus } from '../../core/utils/useMenuOptionFocus';
+import { useFloatingPopover } from '../../core/utils/useFloatingPopover';
 import { richTextToTiptapContent } from '../../core/utils/richText';
 import { formatShortcutForDisplay } from '../../core/utils/shortcutFormatting';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -584,16 +588,25 @@ export function NoteInlineTiptapEditor({
 }
 
 export function NoteTiptapToolbar({
+  floatingMenus = false,
+  menusEnabled = true,
+  scrollAffordances = false,
   target,
   t,
 }: {
+  floatingMenus?: boolean;
+  menusEnabled?: boolean;
+  scrollAffordances?: boolean;
   target: NoteTiptapToolbarTarget | null;
   t: ReturnType<typeof useI18n>['t'];
 }) {
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const [toolbarStateVersion, setToolbarStateVersion] = useState(0);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const toolsRef = useRef<HTMLDivElement>(null);
   const tableToolRef = useRef<HTMLDivElement>(null);
-  const tableMenu = useMenuOptionFocus(tableMenuOpen, () => setTableMenuOpen(false));
+  const tableMenu = useMenuOptionFocus(tableMenuOpen, () => setTableMenuOpen(false), 1, 0, !floatingMenus);
   const tableModeRef = useRef(false);
   const editor = target?.editor ?? null;
   const contentTarget = target?.kind === 'content' ? target : null;
@@ -603,7 +616,12 @@ export function NoteTiptapToolbar({
   const canEditCurrentTable = Boolean(editor?.isActive('table'));
   void toolbarStateVersion;
 
-  useClickOutside(tableToolRef, tableMenuOpen, () => setTableMenuOpen(false));
+  useClickOutside(tableToolRef, tableMenuOpen, () => setTableMenuOpen(false), floatingMenus ? tableMenu.menuRef : undefined);
+  useFloatingPopover(tableMenuOpen && floatingMenus, tableMenu.triggerRef, tableMenu.menuRef, 'top-start', null, 'fixed');
+
+  useEffect(() => {
+    if (!menusEnabled) setTableMenuOpen(false);
+  }, [menusEnabled]);
 
   useEffect(() => {
     if (!editor) {
@@ -630,6 +648,36 @@ export function NoteTiptapToolbar({
   useEffect(() => {
     tableModeRef.current = false;
   }, [editor, target]);
+
+  useLayoutEffect(() => {
+    if (!scrollAffordances) {
+      setCanScrollLeft(false);
+      setCanScrollRight(false);
+      return undefined;
+    }
+
+    const tools = toolsRef.current;
+    if (!tools) return undefined;
+
+    function updateScrollAffordances() {
+      const maxScrollLeft = Math.max(0, tools!.scrollWidth - tools!.clientWidth);
+      setCanScrollLeft(tools!.scrollLeft > 2);
+      setCanScrollRight(tools!.scrollLeft < maxScrollLeft - 2);
+    }
+
+    const observer = new ResizeObserver(updateScrollAffordances);
+    observer.observe(tools);
+    const frame = window.requestAnimationFrame(updateScrollAffordances);
+    tools.addEventListener('scroll', updateScrollAffordances, { passive: true });
+    window.addEventListener('resize', updateScrollAffordances);
+
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(frame);
+      tools.removeEventListener('scroll', updateScrollAffordances);
+      window.removeEventListener('resize', updateScrollAffordances);
+    };
+  }, [scrollAffordances]);
 
   useEffect(() => {
     function handleToolbarShortcut(event: KeyboardEvent) {
@@ -716,7 +764,10 @@ export function NoteTiptapToolbar({
     } else {
       chain.addColumnAfter().run();
     }
-    if (tableMenuOpen) tableMenu.closeAndFocus();
+    if (tableMenuOpen) {
+      if (floatingMenus) setTableMenuOpen(false);
+      else tableMenu.closeAndFocus();
+    }
   }
 
   async function executeToolbarAction(actionId: ToolbarActionId) {
@@ -840,13 +891,29 @@ export function NoteTiptapToolbar({
 
   const activeTextColor = Boolean(editor?.getAttributes('textStyle').color);
   const activeHighlightColor = Boolean(editor?.getAttributes('highlight').color);
+  const tableMenuContent = tableMenuOpen ? (
+    <div
+      className={floatingMenus ? 'markdown-table-menu responsive-popover note-toolbar-popover' : 'markdown-table-menu'}
+      ref={tableMenu.menuRef}
+    >
+      <ToolbarButton disabled={tableDisabled} label={t("editor.insertTable")} onClick={() => applyTableAction("insert-table")}><Table2 /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.addRowAbove")} onClick={() => applyTableAction("row-above")}><ArrowUp /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.addRowBelow")} onClick={() => applyTableAction("row-below")}><ArrowDown /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.addColumnLeft")} onClick={() => applyTableAction("column-left")}><ArrowLeft /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.addColumnRight")} onClick={() => applyTableAction("column-right")}><ArrowRight /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.deleteRow")} onClick={() => applyTableAction("row-delete")}><TableRowsSplit /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.deleteColumn")} onClick={() => applyTableAction("column-delete")}><TableColumnsSplit /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.deleteTable")} onClick={() => applyTableAction("table-delete")}><Delete /></ToolbarButton>
+    </div>
+  ) : null;
 
   return (
     <div
-      className="note-edit-toolbar note-tiptap-toolbar"
+      className={`note-edit-toolbar note-tiptap-toolbar${scrollAffordances ? ' note-tiptap-toolbar--scrollable' : ''}`}
       aria-label={t("editor.toolbar")}
     >
       <div
+        ref={toolsRef}
         className={
           unavailable
             ? "note-edit-toolbar__tools note-edit-toolbar__tools--disabled"
@@ -894,6 +961,8 @@ export function NoteTiptapToolbar({
           activeColor={activeTextColor}
           compact
           disabled={unavailable}
+          floatingMenus={floatingMenus}
+          menusEnabled={menusEnabled}
           onSelect={applyTextStyle}
         />
 
@@ -1044,72 +1113,15 @@ export function NoteTiptapToolbar({
             aria-expanded={tableMenuOpen}
             aria-label={t("editor.tableMenu")}
             onMouseDown={preserveToolbarSelection}
-            onClick={() => setTableMenuOpen((open) => !open)}
+            onClick={() => {
+              if (menusEnabled) setTableMenuOpen((open) => !open);
+            }}
           >
             <Table2 />
             <ChevronDown />
             <ToolbarTooltip label={t("editor.tableMenu")} shortcut={toolbarShortcutLabels.get('table')} />
           </button>
-          {tableMenuOpen ? (
-            <div className="markdown-table-menu" ref={tableMenu.menuRef}>
-              <ToolbarButton
-                disabled={tableDisabled}
-                label={t("editor.insertTable")}
-                onClick={() => applyTableAction("insert-table")}
-              >
-                <Table2 />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.addRowAbove")}
-                onClick={() => applyTableAction("row-above")}
-              >
-                <ArrowUp />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.addRowBelow")}
-                onClick={() => applyTableAction("row-below")}
-              >
-                <ArrowDown />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.addColumnLeft")}
-                onClick={() => applyTableAction("column-left")}
-              >
-                <ArrowLeft />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.addColumnRight")}
-                onClick={() => applyTableAction("column-right")}
-              >
-                <ArrowRight />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.deleteRow")}
-                onClick={() => applyTableAction("row-delete")}
-              >
-                <TableRowsSplit />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.deleteColumn")}
-                onClick={() => applyTableAction("column-delete")}
-              >
-                <TableColumnsSplit />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.deleteTable")}
-                onClick={() => applyTableAction("table-delete")}
-              >
-                <Delete />
-              </ToolbarButton>
-            </div>
-          ) : null}
+          {tableMenuContent && floatingMenus ? createPortal(tableMenuContent, document.body) : tableMenuContent}
         </div>
 
         <span className="toolbar-divider" />
@@ -1131,6 +1143,16 @@ export function NoteTiptapToolbar({
           <FileUp />
         </ToolbarButton>
       </div>
+      {scrollAffordances && canScrollLeft ? (
+        <span className="note-tiptap-toolbar__scroll-cue note-tiptap-toolbar__scroll-cue--left" aria-hidden="true">
+          <ChevronLeft />
+        </span>
+      ) : null}
+      {scrollAffordances && canScrollRight ? (
+        <span className="note-tiptap-toolbar__scroll-cue note-tiptap-toolbar__scroll-cue--right" aria-hidden="true">
+          <ChevronRight />
+        </span>
+      ) : null}
     </div>
   );
 }

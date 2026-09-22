@@ -104,6 +104,11 @@
   align-items: center;
 }
 
+.document-top--touch-adapted {
+  grid-template-areas: "back toolbar actions";
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
 .document-top--narrow-desktop .back-button,
 .document-top--touch-adapted .back-button {
   grid-area: back;
@@ -115,6 +120,68 @@
   grid-area: toolbar;
   width: 100%;
   min-width: 0;
+}
+
+.document-top--touch-adapted .note-tiptap-toolbar {
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+.document-top--touch-adapted .note-edit-toolbar__tools {
+  min-width: 0;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overflow: auto hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+}
+
+.document-top--touch-adapted .note-edit-toolbar__tools::-webkit-scrollbar {
+  display: none;
+}
+
+.document-top--touch-adapted .markdown-tool-button {
+  min-width: 2.75rem;
+  height: 2.75rem;
+}
+
+.document-top--touch-adapted .markdown-tool-tooltip {
+  display: none;
+}
+
+.note-tiptap-toolbar--scrollable {
+  position: relative;
+  overflow: hidden;
+}
+
+.note-tiptap-toolbar__scroll-cue {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  width: 1.75rem;
+  place-items: center;
+  color: color-mix(in srgb, var(--nx-color-text-muted) 78%, transparent);
+  pointer-events: none;
+}
+
+.note-tiptap-toolbar__scroll-cue svg {
+  width: 1rem;
+  height: 1rem;
+  filter: drop-shadow(0 0 0.25rem var(--nx-color-surface));
+}
+
+.note-tiptap-toolbar__scroll-cue--left {
+  left: 0;
+  background: linear-gradient(90deg, var(--nx-color-surface) 52%, transparent);
+}
+
+.note-tiptap-toolbar__scroll-cue--right {
+  right: 0;
+  background: linear-gradient(270deg, var(--nx-color-surface) 52%, transparent);
 }
 
 .document-top--narrow-desktop .document-actions,
@@ -159,9 +226,8 @@
 
 @media (max-width: 680px) and (any-pointer: coarse) {
   .document-top--touch-adapted {
-    grid-template-areas:
-      ". actions"
-      "toolbar toolbar";
+    grid-template-areas: "toolbar actions";
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .document-top--touch-adapted .back-button {

@@ -245,6 +245,15 @@ div.usage-styled-field__control {
   z-index: 65;
 }
 
+.note-toolbar-popover {
+  z-index: 115;
+}
+
+.markdown-table-menu.note-toolbar-popover {
+  width: max-content;
+  flex-wrap: wrap;
+}
+
 .markdown-preview {
   display: grid;
   gap: var(--nx-space-3);

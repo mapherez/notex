@@ -4,6 +4,7 @@ export function useClickOutside<T extends HTMLElement>(
   ref: RefObject<T | null>,
   enabled: boolean,
   onClickOutside: () => void,
+  additionalRef?: RefObject<HTMLElement | null>,
 ) {
   const callbackRef = useRef(onClickOutside);
 
@@ -19,7 +20,12 @@ export function useClickOutside<T extends HTMLElement>(
     function handlePointerDown(event: PointerEvent) {
       const node = ref.current;
       const target = event.target;
-      if (!node || !(target instanceof Node) || node.contains(target)) {
+      if (
+        !node ||
+        !(target instanceof Node) ||
+        node.contains(target) ||
+        additionalRef?.current?.contains(target)
+      ) {
         return;
       }
 
@@ -28,5 +34,5 @@ export function useClickOutside<T extends HTMLElement>(
 
     document.addEventListener('pointerdown', handlePointerDown);
     return () => document.removeEventListener('pointerdown', handlePointerDown);
-  }, [enabled, ref]);
+  }, [additionalRef, enabled, ref]);
 }
