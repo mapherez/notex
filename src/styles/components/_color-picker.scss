@@ -56,9 +56,14 @@
 
 .color-picker__menu {
   position: absolute;
-  left: 0;
-  top: calc(100% + var(--nx-space-2));
+  left: var(--nx-popover-left, 0);
+  top: var(--nx-popover-top, calc(100% + var(--nx-space-2)));
+  right: auto;
   z-index: 80;
+  max-width: var(--nx-popover-max-width, calc(100vw - (var(--nx-page-gutter) * 2)));
+  max-height: var(--nx-popover-max-height, 70dvh);
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .color-picker--disabled {

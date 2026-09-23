@@ -168,6 +168,8 @@
     "addContentBlock": "Adicionar bloco de conteúdo",
     "addTitleBlock": "Adicionar bloco de título",
     "reorderBlock": "Reordenar bloco",
+    "moveBlockUp": "Mover bloco para cima",
+    "moveBlockDown": "Mover bloco para baixo",
     "blockDeleted": "Bloco apagado",
     "deleteBlockTitle": "Apagar bloco?",
     "deleteBlockDescription": "Apagar “{{title}}”? Esta ação não pode ser desfeita.",

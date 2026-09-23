@@ -20,6 +20,7 @@ export function AppModal({
   labelledBy,
   onClose,
   open,
+  restoreFocus = true,
 }: {
   children: ReactNode;
   className?: string;
@@ -28,14 +29,17 @@ export function AppModal({
   labelledBy: string;
   onClose: () => void;
   open: boolean;
+  restoreFocus?: boolean;
 }) {
   const { t } = useI18n();
   const modalRef = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
   const dismissibleRef = useRef(dismissible);
+  const restoreFocusRef = useRef(restoreFocus);
 
   onCloseRef.current = onClose;
   dismissibleRef.current = dismissible;
+  restoreFocusRef.current = restoreFocus;
 
   useEffect(() => {
     if (!open) {
@@ -99,7 +103,7 @@ export function AppModal({
         appRoot.inert = rootWasInert;
       }
       document.body.style.overflow = previousBodyOverflow;
-      if (previouslyFocused?.isConnected) {
+      if (restoreFocusRef.current && previouslyFocused?.isConnected) {
         previouslyFocused.focus();
       }
     };

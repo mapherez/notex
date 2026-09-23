@@ -61,7 +61,11 @@
 
   .bulk-note-actions-row {
     align-items: stretch;
-    flex-direction: column;
+    flex-flow: column nowrap;
+  }
+
+  .bulk-note-actions-row .bulk-field {
+    flex: 0 0 auto;
   }
 
   .notes-filter-control,

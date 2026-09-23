@@ -83,7 +83,10 @@ type NoteTiptapEditorProps = {
   onFocus?: () => void;
   onPendingFileInsertChange?: (pending: boolean) => void;
   onRequestFileUpload: (kind: NoteFileKind) => Promise<NoteFile | null>;
+  onTouchEditStart?: () => void;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
+  touchEditing?: boolean;
+  touchMode?: boolean;
   value: TiptapDocument | null;
 };
 
@@ -153,6 +156,14 @@ type TableAction =
 
 type TextAlignment = 'center' | 'justify' | 'left' | 'right';
 
+type TouchPointer = {
+  id: number;
+  moved: boolean;
+  passive: boolean;
+  x: number;
+  y: number;
+};
+
 const toolbarShortcutBindings = new Map<ToolbarActionId, ShortcutBinding>();
 const toolbarShortcutLabels = new Map<ToolbarActionId, string>();
 const configuredShortcutSignatures = new Set<string>();
@@ -214,7 +225,10 @@ export function NoteTiptapEditor({
   onFocus,
   onPendingFileInsertChange,
   onRequestFileUpload,
+  onTouchEditStart,
   onToolbarTargetChange,
+  touchEditing = false,
+  touchMode = false,
   value,
 }: NoteTiptapEditorProps) {
   const { t } = useI18n();
@@ -234,7 +248,7 @@ export function NoteTiptapEditor({
   const lastInsertTextNonceRef = useRef<number | null>(null);
   const editor = useEditor(
     {
-      editable: !disabled,
+      editable: !disabled && (!touchMode || touchEditing),
       extensions: editorExtensions,
       content: (value ?? emptyTiptapDocument) as JSONContent,
       immediatelyRender: false,
@@ -254,6 +268,13 @@ export function NoteTiptapEditor({
     },
     [],
   );
+  const touchActivation = useTouchEditorActivation({
+    disabled,
+    editor,
+    onStart: onTouchEditStart,
+    touchEditing,
+    touchMode,
+  });
 
   const handleImageDropCapture = useCallback(
     (event: ReactDragEvent<HTMLDivElement>) => {
@@ -314,10 +335,6 @@ export function NoteTiptapEditor({
   }, [editor, onChange, onPendingFileInsertChange, onRequestFileUpload]);
 
   useEffect(() => {
-    editor?.setEditable(!disabled);
-  }, [disabled, editor]);
-
-  useEffect(() => {
     if (autoFocus && editor) {
       requestAnimationFrame(() => editor.chain().focus("end").run());
     }
@@ -333,10 +350,14 @@ export function NoteTiptapEditor({
     }
 
     lastInsertTextNonceRef.current = insertTextRequest.nonce;
+    if (touchMode && !touchEditing && !disabled) {
+      editor.setEditable(true);
+      onTouchEditStart?.();
+    }
     requestAnimationFrame(() => {
       editor.chain().focus("end").insertContent(insertTextRequest.text).run();
     });
-  }, [editor, insertTextRequest]);
+  }, [disabled, editor, insertTextRequest, onTouchEditStart, touchEditing, touchMode]);
 
   useEffect(() => {
     if (!editor || editor.isFocused) {
@@ -421,9 +442,14 @@ export function NoteTiptapEditor({
 
   return (
     <div
-      className="note-tiptap-editor"
+      className={`note-tiptap-editor${touchMode && !touchEditing ? ' is-touch-readonly' : ''}`}
       ref={editorShellRef}
       onDragOverCapture={handleImageDragOverCapture}
+      onFocusCapture={touchActivation.onFocusCapture}
+      onPointerCancelCapture={touchActivation.onPointerCancelCapture}
+      onPointerDownCapture={touchActivation.onPointerDownCapture}
+      onPointerMoveCapture={touchActivation.onPointerMoveCapture}
+      onPointerUpCapture={touchActivation.onPointerUpCapture}
       onDropCapture={handleImageDropCapture}
     >
       {editor && bubbleMenuEnabled ? (
@@ -476,8 +502,11 @@ export function NoteInlineTiptapEditor({
   onBlur,
   onChange,
   onFocus,
+  onTouchEditStart,
   onToolbarTargetChange,
   placeholder,
+  touchEditing = false,
+  touchMode = false,
   value,
 }: {
   autoFocus?: boolean;
@@ -489,8 +518,11 @@ export function NoteInlineTiptapEditor({
   onBlur?: () => void;
   onChange: (value: string, plainText: string) => void;
   onFocus?: () => void;
+  onTouchEditStart?: () => void;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
   placeholder: string;
+  touchEditing?: boolean;
+  touchMode?: boolean;
   value: string;
 }) {
   const [contentKey, setContentKey] = useState(() => value);
@@ -498,7 +530,7 @@ export function NoteInlineTiptapEditor({
   const fieldExtensions = useMemo(() => createNoteInlineExtensions(placeholder), [placeholder]);
   const editor = useEditor(
     {
-      editable: !disabled,
+      editable: !disabled && (!touchMode || touchEditing),
       extensions: fieldExtensions,
       content: richTextToTiptapContent(value),
       immediatelyRender: false,
@@ -519,10 +551,13 @@ export function NoteInlineTiptapEditor({
     },
     [],
   );
-
-  useEffect(() => {
-    editor?.setEditable(!disabled);
-  }, [disabled, editor]);
+  const touchActivation = useTouchEditorActivation({
+    disabled,
+    editor,
+    onStart: onTouchEditStart,
+    touchEditing,
+    touchMode,
+  });
 
   useEffect(() => {
     if (autoFocus && editor) {
@@ -536,10 +571,14 @@ export function NoteInlineTiptapEditor({
     }
 
     lastInsertTextNonceRef.current = insertTextRequest.nonce;
+    if (touchMode && !touchEditing && !disabled) {
+      editor.setEditable(true);
+      onTouchEditStart?.();
+    }
     requestAnimationFrame(() => {
       editor.chain().focus('end').insertContent(insertTextRequest.text).run();
     });
-  }, [editor, insertTextRequest]);
+  }, [disabled, editor, insertTextRequest, onTouchEditStart, touchEditing, touchMode]);
 
   useEffect(() => {
     if (!editor) return;
@@ -581,10 +620,142 @@ export function NoteInlineTiptapEditor({
   }, [blockId, editor, id, onToolbarTargetChange]);
 
   return (
-    <div className="note-inline-editor">
+    <div
+      className={`note-inline-editor${touchMode && !touchEditing ? ' is-touch-readonly' : ''}`}
+      onFocusCapture={touchActivation.onFocusCapture}
+      onPointerCancelCapture={touchActivation.onPointerCancelCapture}
+      onPointerDownCapture={touchActivation.onPointerDownCapture}
+      onPointerMoveCapture={touchActivation.onPointerMoveCapture}
+      onPointerUpCapture={touchActivation.onPointerUpCapture}
+    >
       <EditorContent editor={editor} />
     </div>
   );
+}
+
+function useTouchEditorActivation({
+  disabled,
+  editor,
+  onStart,
+  touchEditing,
+  touchMode,
+}: {
+  disabled: boolean;
+  editor: Editor | null;
+  onStart?: () => void;
+  touchEditing: boolean;
+  touchMode: boolean;
+}) {
+  const pointerRef = useRef<TouchPointer | null>(null);
+  const touchFocusGuardRef = useRef(false);
+  const touchFocusGuardTimerRef = useRef<number | null>(null);
+  const canEdit = !disabled && (!touchMode || touchEditing);
+
+  const releaseTouchFocusGuard = useCallback(() => {
+    if (touchFocusGuardTimerRef.current !== null) {
+      window.clearTimeout(touchFocusGuardTimerRef.current);
+    }
+    touchFocusGuardTimerRef.current = window.setTimeout(() => {
+      touchFocusGuardRef.current = false;
+      touchFocusGuardTimerRef.current = null;
+    }, 500);
+  }, []);
+
+  useEffect(() => {
+    const releaseAfterPointer = () => {
+      if (touchFocusGuardRef.current) releaseTouchFocusGuard();
+    };
+    window.addEventListener('pointerup', releaseAfterPointer, true);
+    window.addEventListener('pointercancel', releaseAfterPointer, true);
+    return () => {
+      window.removeEventListener('pointerup', releaseAfterPointer, true);
+      window.removeEventListener('pointercancel', releaseAfterPointer, true);
+      if (touchFocusGuardTimerRef.current !== null) {
+        window.clearTimeout(touchFocusGuardTimerRef.current);
+      }
+    };
+  }, [releaseTouchFocusGuard]);
+
+  useLayoutEffect(() => {
+    if (!editor) return;
+    editor.setEditable(canEdit);
+    if (touchMode && !disabled) {
+      editor.view.dom.setAttribute('tabindex', '0');
+      editor.view.dom.setAttribute('aria-readonly', canEdit ? 'false' : 'true');
+    } else {
+      editor.view.dom.removeAttribute('aria-readonly');
+    }
+  }, [canEdit, disabled, editor, touchMode]);
+
+  const activate = useCallback((x?: number, y?: number, focus = true) => {
+    if (!editor || disabled) return;
+    editor.setEditable(true);
+    onStart?.();
+    if (!focus) return;
+
+    if (typeof x === 'number' && typeof y === 'number') {
+      const position = editor.view.posAtCoords({ left: x, top: y });
+      if (position) editor.commands.setTextSelection(position.pos);
+    }
+    editor.view.focus();
+  }, [disabled, editor, onStart]);
+
+  const onFocusCapture = useCallback(() => {
+    if (touchMode && !touchEditing && !disabled && !touchFocusGuardRef.current) activate();
+  }, [activate, disabled, touchEditing, touchMode]);
+
+  const onPointerDownCapture = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!touchMode || touchEditing || disabled || !event.isPrimary) return;
+    if (event.pointerType === 'mouse') {
+      activate(undefined, undefined, false);
+      return;
+    }
+    touchFocusGuardRef.current = true;
+    if (touchFocusGuardTimerRef.current !== null) {
+      window.clearTimeout(touchFocusGuardTimerRef.current);
+      touchFocusGuardTimerRef.current = null;
+    }
+    const target = event.target instanceof Element ? event.target : null;
+    pointerRef.current = {
+      id: event.pointerId,
+      moved: false,
+      passive: Boolean(target?.closest('a, button, input, select, textarea, figure, [contenteditable="false"]')),
+      x: event.clientX,
+      y: event.clientY,
+    };
+  }, [activate, disabled, touchEditing, touchMode]);
+
+  const onPointerMoveCapture = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const pointer = pointerRef.current;
+    if (!pointer || pointer.id !== event.pointerId) return;
+    if (Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > editorSettings.blockTouch.tapMovementTolerance) {
+      pointer.moved = true;
+    }
+  }, []);
+
+  const onPointerUpCapture = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const pointer = pointerRef.current;
+    pointerRef.current = null;
+    releaseTouchFocusGuard();
+    if (!pointer || pointer.id !== event.pointerId || pointer.moved) return;
+    if (!pointer.passive) event.preventDefault();
+    activate(event.clientX, event.clientY, !pointer.passive);
+  }, [activate, releaseTouchFocusGuard]);
+
+  const onPointerCancelCapture = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (pointerRef.current?.id === event.pointerId) {
+      pointerRef.current = null;
+      releaseTouchFocusGuard();
+    }
+  }, [releaseTouchFocusGuard]);
+
+  return {
+    onFocusCapture,
+    onPointerCancelCapture,
+    onPointerDownCapture,
+    onPointerMoveCapture,
+    onPointerUpCapture,
+  };
 }
 
 export function NoteTiptapToolbar({
@@ -1347,6 +1518,9 @@ function FileNodeView({ node, selected, updateAttributes, editor, getPos }: Reac
           if (imagePointersRef.current.size === 0) suppressImageTapRef.current = false;
           const adapted = Boolean(imageNodeRef.current?.closest('.note-document-shell--adapted'));
           if (touchInput && adapted && selected && controlsOpen && src && !imageLoadFailed && !moved) {
+            if (document.activeElement instanceof HTMLElement && document.activeElement.isContentEditable) {
+              document.activeElement.blur();
+            }
             setPreviewOpen(true);
             return;
           }
@@ -1458,6 +1632,7 @@ function FileNodeView({ node, selected, updateAttributes, editor, getPos }: Reac
           alt={attrs.originalName}
           onClose={() => setPreviewOpen(false)}
           open={previewOpen}
+          restoreFocus={imagePointerTypeRef.current !== 'touch' && imagePointerTypeRef.current !== 'pen'}
           src={src}
         />
       ) : null}

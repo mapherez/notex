@@ -57,13 +57,16 @@
 
 .custom-select__menu {
   position: absolute;
-  top: calc(100% + var(--nx-space-2));
-  left: 0;
+  top: var(--nx-popover-top, calc(100% + var(--nx-space-2)));
+  left: var(--nx-popover-left, 0);
+  right: auto;
   z-index: 80;
   display: grid;
   width: max(100%, 13rem);
-  max-height: 17rem;
+  max-width: var(--nx-popover-max-width, calc(100vw - (var(--nx-page-gutter) * 2)));
+  max-height: min(17rem, var(--nx-popover-max-height, 17rem));
   overflow: auto;
+  overscroll-behavior: contain;
   gap: 0.15rem;
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-md);

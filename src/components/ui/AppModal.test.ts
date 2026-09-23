@@ -8,6 +8,7 @@ type ModalProps = {
   dismissible?: boolean;
   onClose: () => void;
   open: boolean;
+  restoreFocus?: boolean;
 };
 
 let root: Root | null = null;
@@ -81,6 +82,21 @@ describe('AppModal', () => {
     act(() => renderModalContent({ onClose, open: false }));
     expect(document.activeElement).toBe(launcher);
   });
+
+  it('can close without restoring focus to the launcher', () => {
+    const launcher = document.createElement('div');
+    launcher.contentEditable = 'true';
+    launcher.tabIndex = 0;
+    document.body.append(launcher);
+    launcher.focus();
+
+    const onClose = vi.fn();
+    renderModal({ onClose, open: true, restoreFocus: false });
+    expect(document.activeElement).toBe(document.querySelector('.app-modal__close'));
+
+    act(() => renderModalContent({ onClose, open: false, restoreFocus: false }));
+    expect(document.activeElement).not.toBe(launcher);
+  });
 });
 
 function renderModal(props: ModalProps) {
@@ -110,6 +126,7 @@ function renderModalContent(props: ModalProps) {
           labelledBy: 'test-modal-title',
           onClose: props.onClose,
           open: props.open,
+          restoreFocus: props.restoreFocus,
         },
       ),
     ),

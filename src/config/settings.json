@@ -192,6 +192,16 @@
       "maxScale": 4,
       "tapMovementTolerance": 10
     },
+    "blockTouch": {
+      "tapMovementTolerance": 10,
+      "holdDelayMs": 1000,
+      "holdHapticMs": 25,
+      "menuDelayMs": 1500,
+      "menuHapticPatternMs": [25, 60, 25],
+      "autoScrollEdgeZone": 120,
+      "autoScrollMaxPxPerSecond": 250,
+      "keyboardThreshold": 120
+    },
     "defaultTable": {
       "columns": [
         "Column 1",

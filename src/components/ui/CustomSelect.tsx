@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { TagColor } from '../../core/models/models';
 import { useClickOutside } from '../../core/utils/useClickOutside';
+import { useFloatingPopover } from '../../core/utils/useFloatingPopover';
 import { useMenuOptionFocus } from '../../core/utils/useMenuOptionFocus';
 
 export type CustomSelectOption = {
@@ -41,6 +42,7 @@ export function CustomSelect({
   const placeholderLabel = placeholder ?? '';
 
   useClickOutside(rootRef, open, () => setOpen(false));
+  useFloatingPopover(open, menu.triggerRef, menu.menuRef, 'bottom-start');
 
   useEffect(() => {
     if (disabled && open) {

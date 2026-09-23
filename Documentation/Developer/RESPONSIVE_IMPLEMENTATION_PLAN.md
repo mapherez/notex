@@ -2,12 +2,12 @@
 
 Estado: Etapas 1, 2 e 3 concluídas. O 4A foi concluído e validado em iPhone,
 iPad e desktop; inclui painéis, conteúdo largo, imagens, preview, resize e
-anexos. A primeira entrega de 4B foi igualmente validada nos três ambientes.
-A segunda entrega de 4B, toolbar touch em linha única no cabeçalho, foi
-concluída e validada em iPhone, iPad e desktop (secção 26). O 4C,
-interação e reordenação de blocos, continua por implementar.
+anexos. O 4B, incluindo a toolbar touch em linha única no cabeçalho, foi
+concluído e validado nos três ambientes. O 4C foi igualmente concluído e
+validado: leitura/edição touch, hold, drag, destino, menu persistente e drag
+desktop explícito funcionam em iPhone, iPad, desktop normal e desktop estreito.
 Esta aceitação não significa validação real de todos os browsers e dispositivos.
-Data da última atualização: 2026-09-22.
+Data da última atualização: 2026-09-23.
 
 Este documento regista a análise do código e as decisões acordadas na conversa.
 Não constitui autorização para implementar todas as propostas visuais: as
@@ -2034,3 +2034,275 @@ landscape.
 
 Próxima entrega depois desta avaliação: 4C, interação e reordenação touch dos
 blocos com compactação temporária, linha de destino e menu mover/eliminar.
+
+## 27. Primeira entrega de 4C — leitura e entrada em edição
+
+Implementação preparada em 2026-09-22 para avaliação em iPhone e iPad reais.
+Esta entrega não inclui ainda long press, reordenação ou o menu mover/eliminar.
+
+- Em layouts adaptados com touch disponível, título e conteúdo de cada bloco
+  começam em modo de leitura. As pegas de drag e o botão de eliminação usados no
+  desktop não ocupam espaço nem aparecem nesta composição.
+- Um tap curto sem movimento relevante torna apenas a região tocada editável,
+  posiciona o cursor através das coordenadas do toque e pede foco ao Tiptap. O
+  teclado virtual pode assim abrir no mesmo gesto. Tocar entre título e conteúdo
+  muda a região ativa sem criar dois editores ou dois layouts.
+- O movimento é avaliado no fim do contacto. Ultrapassar a tolerância de 10 px
+  conserva o scroll normal e não transforma o gesto em edição. O valor fica em
+  `settings.json` para ser afinado durante os testes reais e será reutilizado na
+  distinção entre scroll, hold e drag.
+- O bloco ativo recebe a moldura discreta já pertencente à linguagem visual da
+  nota. Em repouso, os limites dos blocos continuam invisíveis e não são
+  introduzidas cores de fundo permanentes.
+- Quando o teclado virtual já abriu e a altura visível regressa ao valor
+  anterior, o bloco volta automaticamente ao modo de leitura. O limiar desta
+  deteção também fica em `settings.json`. Tocar fora do bloco e da toolbar fecha
+  igualmente o estado de edição.
+- Imagens, links e controlos internos conservam as interações aprovadas. Um tap
+  numa imagem não força o teclado; o segundo tap continua a abrir o preview.
+- Em dispositivos híbridos, um clique de rato ativa o editor no `pointerdown`
+  para preservar colocação de cursor e seleção nativas. Foco por teclado ativa a
+  região imediatamente. Desktop normal e desktop estreito sem touch continuam
+  com o comportamento anterior.
+- Modelos, persistência, sync, anexos e contratos MCP não foram alterados.
+
+Validação automatizada inicial: typecheck, regras de estilos e build passaram.
+Não foi executado Playwright. Falta validar em Chrome real no iPhone e iPad: tap
+e cursor, abertura/fecho do teclado, mudança entre regiões, scroll iniciado sobre
+texto, imagem/preview e ausência das ações desktop.
+
+Depois desta avaliação, o passo seguinte de 4C adiciona o primeiro hold de um
+segundo, o estado visual de drag e a compactação temporária dos blocos, sem
+implementar ainda o segundo hold e o menu persistente.
+
+Correção após o primeiro ensaio real: abrir o preview pelo segundo tap remove
+explicitamente qualquer foco `contenteditable`. Ao fechar um preview aberto por
+touch/pen, o modal não restaura esse foco, evitando abrir o teclado virtual. O
+restauro de foco dos restantes modais e do preview usado com rato/teclado
+permanece inalterado.
+
+## 28. Segunda entrega de 4C — reconhecimento do primeiro hold
+
+Implementação preparada em 2026-09-23 para avaliação em iPhone e iPad reais.
+Esta entrega valida o gesto e a apresentação compacta antes de ligar a
+reordenação, a linha de destino, o autoscroll ou o segundo hold.
+
+- Em modo de leitura touch, manter o dedo parado durante um segundo ativa o
+  estado de preparação para drag. O atraso de 1 000 ms e a tolerância de 10 px
+  ficam em `settings.json`.
+- Movimento superior à tolerância antes desse momento cancela a preparação e
+  mantém o scroll nativo. Um tap curto continua a entrar diretamente em edição.
+- Quando o hold é reconhecido, todos os blocos passam temporariamente para uma
+  representação compacta, com a moldura do bloco, título quando existe e até
+  três linhas iniciais de texto. O bloco segurado recebe uma borda e um brilho
+  de destaque discretos.
+- A compactação é apenas visual. As instâncias Tiptap, conteúdo, ficheiros e
+  histórico permanecem montados e inalterados. O editor que recebeu o contacto
+  permanece invisível sob o resumo do bloco segurado para o browser não perder
+  o `pointerup` durante a mudança de altura.
+- A posição tocada passa a ser o centro vertical do bloco compactado. Ao
+  levantar o dedo, o conteúdo expande e o scroll restaura o mesmo ponto relativo
+  do bloco original, reduzindo saltos em blocos altos.
+- Dispositivos que implementem `navigator.vibrate` recebem uma vibração curta de
+  25 ms. Em iOS, onde esta API Web não está disponível, a moldura, o brilho e a
+  compactação dão o feedback principal.
+- Levantar o dedo ou receber `pointercancel` restaura a apresentação normal. A
+  ordem dos blocos não muda nesta entrega e o hold não abre o teclado.
+- Em modo de leitura e durante o hold, a seleção nativa e o menu contextual de
+  texto do WebKit são desativados diretamente no DOM do ProseMirror. O foco que
+  o iOS possa emitir durante um gesto touch é ignorado pelo ativador de edição;
+  foco por teclado continua a ativar o editor. A seleção normal regressa assim
+  que o bloco entra em edição.
+- Controlos internos, links e botões mantêm as respetivas ações. O gesto pode
+  começar sobre texto, espaço do bloco ou imagem; ações interativas explícitas
+  não são apropriadas pelo hold.
+- Desktop e janelas estreitas sem touch conservam o comportamento existente.
+  Modelos, persistência, sync e contratos MCP não foram alterados.
+
+Validação automatizada: typecheck e regras de estilos passaram. Build de
+produção executado sem Playwright. A validação real deve confirmar hold sobre
+texto e imagem, cancelamento por scroll antes de um segundo, ausência de teclado
+após o hold e estabilidade visual ao compactar/expandir blocos altos.
+
+Próxima entrega após esta avaliação: manter o estado depois do primeiro hold e
+ligar o movimento real, representação junto ao dedo, linha azul de destino e
+autoscroll controlado, aplicando a nova ordem apenas ao levantar o dedo.
+
+## 29. Terceira entrega de 4C — drag touch e destino explícito
+
+Implementação preparada em 2026-09-23 para avaliação em iPhone e iPad reais.
+
+- Depois de o hold de um segundo ser reconhecido, ultrapassar a tolerância de
+  movimento inicia o drag real. Um listener touch não passivo assume apenas
+  esse contacto a partir desse momento, impedindo que o WebKit o converta em
+  scroll ou seleção; antes do hold, o scroll nativo continua inalterado.
+- Assim que o hold fica ativo, qualquer `touchmove` desse contacto é bloqueado,
+  incluindo os primeiros píxeis ainda dentro da tolerância. Isto impede o iOS
+  de assumir o scroll antes de o NoteX declarar o drag e evita o `touchcancel`
+  que descartava alguns drops. O `pointerup` funciona também como fallback de
+  conclusão quando o browser não entrega o `touchend` ao handler principal.
+- O listener não passivo é preparado quando a nota abre e consulta o estado do
+  gesto por referência. Permanece inativo durante utilização normal, mas evita
+  a race do primeiro drag em que um movimento imediatamente após a compactação
+  podia chegar antes de o efeito React montar o listener e deixar o iOS assumir
+  o scroll.
+- A lista mantém a ordem original durante o movimento. O bloco de origem fica
+  como placeholder compacto e discreto, enquanto um ghost compacto acompanha o
+  dedo sem ocupar espaço no documento.
+- Uma linha azul horizontal, com extremos visíveis, indica continuamente o
+  índice exato onde o bloco será inserido. O cálculo ignora o placeholder de
+  origem e compara o dedo com o centro dos restantes blocos.
+- A linha e o ghost são overlays sem interação, posicionados através de
+  variáveis CSS atualizadas pelo gesto. Não desmontam editores nem alteram o
+  conteúdo guardado.
+- Junto ao topo e ao fundo da VisualViewport, o documento faz autoscroll com
+  aceleração proporcional à proximidade da margem. A zona central permanece
+  estável. A zona de 120 px e o máximo inicial de 250 px/s ficam em
+  `settings.json` para afinação em dispositivos reais.
+- Ao levantar o dedo, a ordem indicada é aplicada visualmente e persistida uma
+  única vez. Os blocos expandem automaticamente e o bloco movido recupera o
+  ponto relativo que estava sob o dedo, reduzindo saltos de contexto.
+- `touchcancel`, múltiplos contactos ou perda do gesto removem ghost e linha,
+  expandem os blocos e conservam a ordem original.
+- O `pointercancel` emitido pelo iOS durante um contacto touch já reconhecido
+  não encerra sozinho o drag; a conclusão fica a cargo do fluxo Touch Events.
+- Desktop e o drag por rato permanecem inalterados nesta entrega. Sync,
+  ficheiros, histórico Tiptap e contratos MCP não mudam.
+
+Validação automatizada: typecheck, regras de estilos e build de produção. Não é
+executado Playwright. A validação real deve cobrir movimentos curtos e longos,
+drop no início/meio/fim, autoscroll nas duas direções, cancelamento e blocos com
+alturas muito diferentes.
+
+Próxima entrega após aprovação: segundo hold e menu persistente com mover para
+cima, mover para baixo e eliminar.
+
+## 30. Quarta entrega de 4C — menu persistente do bloco
+
+Implementação preparada em 2026-09-23 para avaliação em iPhone e iPad reais.
+
+- Depois do primeiro hold de um segundo, manter o dedo dentro da tolerância por
+  mais 1,5 segundos abre o menu do bloco. Os dois atrasos e a tolerância continuam
+  definidos em `settings.json`.
+- O segundo estado usa uma vibração dupla curta quando `navigator.vibrate` está
+  disponível. A apresentação visual permanece o feedback principal em browsers
+  iOS que não exponham essa API.
+- O menu fica ancorado no ponto onde o hold começou, com mover para cima acima
+  desse ponto, mover para baixo abaixo e eliminar à direita. Os alvos têm 56 px
+  e uma separação generosa em redor do dedo. Junto à margem direita, eliminar
+  passa automaticamente para a esquerda; o grupo é deslocado apenas o necessário
+  para permanecer dentro da `VisualViewport`.
+- Levantar o dedo que abriu o menu não executa uma ação nem o fecha. Cada comando
+  exige um novo tap. O menu e os blocos compactos permanecem visíveis para
+  permitir vários movimentos consecutivos.
+- Mover para cima ou para baixo atualiza imediatamente a ordem visível, persiste
+  cada nova ordem de forma sequencial e acompanha o bloco focado quando ele sai
+  da área visível. As ações impossíveis no primeiro ou último índice ficam
+  desativadas.
+- Um tap fora dos três comandos fecha o menu, expande os blocos e conserva o
+  bloco movido no contexto visual. Eliminar fecha o menu e reutiliza a
+  confirmação de eliminação já existente.
+- A posição do menu não acompanha o bloco durante movimentos sucessivos: os
+  comandos continuam onde o dedo estava quando o modo foi ativado.
+- Desktop e o drag normal permanecem inalterados. Conteúdo, anexos, sync,
+  histórico Tiptap e contratos MCP não mudam.
+
+Validação automatizada concluída: typecheck, regras de estilos e build de
+produção passaram, sem Playwright. A validação real deve cobrir a abertura aos dois
+segundos, limites da viewport, movimentos repetidos, primeiro/último bloco,
+fecho por tap exterior e confirmação de eliminação.
+
+Correção após o primeiro ensaio real: os taps nos comandos deixaram de ser
+cancelados pelo listener global de `touchend`; mover e eliminar funcionam no
+menu persistente. O segundo hold usa agora mais 1,5 segundos, os alvos têm
+56×56 px com maior separação e eliminar muda automaticamente para a esquerda
+quando não cabe à direita. O utilizador validou o resultado em dispositivo real.
+
+## 31. Melhorias pendentes registadas
+
+- Página de notas em smartphone: ao selecionar uma nota pela checkbox, o painel
+  de seleção em massa fica excessivamente alto e distribui "Mover para coleção",
+  "Atribuir tags", limpar seleção e eliminar com grandes vazios verticais. Rever
+  apenas a composição mobile para usar altura determinada pelo conteúdo e gaps
+  consistentes, preservando o comportamento atual em tablet e desktop.
+  Corrigido em 2026-09-23: ao mudar o painel para coluna abaixo de 680 px, os
+  campos deixaram de herdar o `flex-basis` de 14 rem usado como largura no
+  desktop. A coluna deixa também de fazer wrap, ficando com altura determinada
+  pelo conteúdo e os gaps existentes. O resultado foi validado pelo utilizador
+  em smartphone, tablet e desktop, sem regressões nos layouts maiores.
+
+Próxima entrega de 4C: adaptar o drag por pega/rato no desktop ao modelo visual
+já aprovado — blocos compactos, ghost, linha azul de inserção e ordem aplicada
+apenas no drop — acrescentando cancelamento por `Escape` e separando conclusão
+de `pointercancel`. A reordenação por teclado permanece inalterada.
+
+## 32. Quinta entrega de 4C — drag desktop explícito
+
+Implementação preparada em 2026-09-23 para avaliação em desktop normal e
+desktop estreito.
+
+- A pega existente continua a ser o único ponto de início do drag por rato ou
+  pen. O click no conteúdo, seleção de texto e edição não iniciam reordenação.
+- Ao iniciar, a lista usa a mesma representação compacta aprovada em touch. A
+  origem permanece como placeholder tracejado e um ghost compacto acompanha o
+  ponteiro sem participar no layout.
+- Os restantes blocos conservam a ordem durante o gesto. Uma linha azul indica
+  a fronteira exata de inserção, calculada pelos centros dos blocos compactos;
+  a ordem visível só muda quando o ponteiro é libertado.
+- O autoscroll reutiliza a zona e a velocidade configuradas para 4C, com uma
+  zona central estável e aceleração junto ao topo e fundo da janela.
+- Um `pointerup` do contacto capturado conclui e persiste a ordem uma vez.
+  Movimentos desktop sucessivos são serializados para uma gravação anterior
+  não ultrapassar a seguinte.
+- `Escape`, `pointercancel` e perda inesperada de pointer capture cancelam o
+  gesto, removem ghost/linha e preservam a ordem inicial. O `pointerup` posterior
+  a `Escape` é ignorado.
+- Ao compactar e expandir, a página tenta conservar o ponto relativo do bloco
+  junto à altura onde o drag começou, reduzindo saltos em blocos grandes.
+- A reordenação por teclado e todo o fluxo touch validado permanecem
+  inalterados. Conteúdo, ficheiros, sync, histórico Tiptap e MCP não mudam.
+
+Validação automatizada concluída: typecheck, regras de estilos e build de
+produção passaram, sem Playwright.
+
+Validação real necessária: drop no início/meio/fim, blocos altos, autoscroll
+nos dois sentidos, cancelamento por `Escape`, perda de foco/captura e uma nova
+reordenação iniciada logo após a anterior.
+
+Validação real concluída pelo utilizador em desktop normal e desktop estreito:
+o drag compacto, ghost, linha de destino e aplicação da ordem funcionam como
+previsto. Foi repetida a verificação em iPhone e iPad, sem regressões no fluxo
+touch. Com esta confirmação, a Etapa 4 fica concluída.
+
+Próximo trabalho: iniciar a Etapa 5 pela revisão dos overlays existentes —
+modais, dropdowns, menus e notificacões — e dividir as correções em entregas
+pequenas antes de alterar o comportamento. A melhoria pendente do painel de
+seleção mobile continua registada separadamente na secção 31.
+
+### 33. Etapa 5A — dropdowns, menus e popovers
+
+Inventário inicial concluído. Os menus da toolbar, ações da nota, linhas de notas,
+filtros e atalhos rápidos já usam `useFloatingPopover` nos percursos adaptados.
+Os seletores reutilizáveis (`CustomSelect` e `ColorPicker`) ainda dependiam de
+posicionamento absoluto fixo, apesar de aparecerem em filtros, preferências,
+coleções, tags e formulários.
+
+Primeira entrega implementada:
+
+- `CustomSelect` e `ColorPicker` usam agora a infraestrutura partilhada de
+  Floating UI, mantendo os menus inline e os comportamentos existentes de foco,
+  Escape, setas e clique exterior;
+- os menus fazem `flip` e `shift` junto às margens, acompanham scroll/resize e
+  recebem a largura e altura realmente disponíveis;
+- a altura continua limitada ao máximo anterior e passa a ter scroll interno com
+  `overscroll-behavior: contain`, evitando propagar o fim do scroll para a página;
+- a composição normal de desktop permanece igual quando existe espaço suficiente.
+
+Validação automatizada desta entrega: typecheck, regras de estilos e build de
+produção. Validação real pendente em desktop, tablet e mobile: abrir seletores
+perto das quatro margens, confirmar inversão junto ao fundo, scroll com listas
+longas, seleção por toque e fecho por toque exterior/Escape.
+
+Próximas entregas do 5A: rever os overlays específicos que ainda não usam a base
+comum — pesquisa global, seleção de thumbnail, tags favoritas e tags em seleção
+múltipla — e só depois fechar o inventário dos restantes menus já adaptados.

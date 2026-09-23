@@ -34,6 +34,352 @@
   background: var(--nx-color-surface);
 }
 
+.note-document-shell--touch .note-block {
+  cursor: default;
+}
+
+.note-document-shell--touch .note-block:not(.is-touch-active) {
+  user-select: none;
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.note-document-shell--touch .note-block:not(.is-touch-active) :is(.note-inline-prosemirror, .note-tiptap-prosemirror),
+.note-document-shell--touch .note-block:not(.is-touch-active) :is(.note-inline-prosemirror, .note-tiptap-prosemirror) * {
+  user-select: none;
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.note-document-shell--touch .note-block:hover:not(.is-touch-active) {
+  border-color: transparent;
+  background: transparent;
+}
+
+.note-document-shell--touch .note-block.is-touch-active {
+  border-color: var(--nx-color-border);
+  background: var(--nx-color-surface);
+}
+
+.note-document-shell--touch .note-block-list.is-touch-compacted {
+  gap: var(--nx-space-2);
+  user-select: none;
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-user-select: none;
+}
+
+.note-document-shell--touch .note-block-list.is-touch-compacted .note-block {
+  min-height: 4.75rem;
+  border-color: var(--nx-color-border);
+  background: var(--nx-color-surface);
+  cursor: grabbing;
+  -webkit-touch-callout: none;
+}
+
+.note-document-shell--touch .note-block-list.is-touch-compacted .note-block.is-touch-held {
+  border-color: color-mix(in srgb, var(--nx-color-accent) 78%, var(--nx-color-border));
+  background: color-mix(in srgb, var(--nx-color-accent) 8%, var(--nx-color-surface));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--nx-color-accent) 28%, transparent),
+    0 0 1.4rem color-mix(in srgb, var(--nx-color-accent) 18%, transparent);
+}
+
+.note-document-shell--touch .note-block-list.is-touch-compacted .note-block.is-touch-dragging-source {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--nx-color-accent) 48%, var(--nx-color-border));
+  background: color-mix(in srgb, var(--nx-color-accent) 4%, var(--nx-color-surface));
+  box-shadow: none;
+}
+
+.note-document-shell--touch .note-block.is-touch-dragging-source .note-block-compact-preview {
+  opacity: 0.28;
+}
+
+.note-document-shell--touch .note-block-list.is-touch-compacted .note-block-body {
+  display: none;
+}
+
+.note-document-shell--touch .note-block-list.is-touch-compacted .note-block.is-touch-held .note-block-body {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.note-block-compact-preview {
+  display: none;
+  min-width: 0;
+  user-select: none;
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.note-block-compact-preview * {
+  user-select: none;
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-user-select: none;
+}
+
+.note-document-shell--touch .note-block-list.is-touch-compacted .note-block-compact-preview {
+  display: grid;
+  gap: var(--nx-space-1);
+  align-content: center;
+  min-height: 3.25rem;
+}
+
+.note-document-shell--touch .note-block.is-touch-held .note-block-compact-preview {
+  pointer-events: none;
+}
+
+.note-block-compact-title {
+  overflow: hidden;
+  color: var(--nx-color-text);
+  font-size: 1rem;
+  font-weight: 760;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-block-compact-content {
+  display: -webkit-box;
+  overflow: hidden;
+  max-height: 4.5em;
+  color: var(--nx-color-text-muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.note-block-list.is-desktop-drag-compacted {
+  gap: var(--nx-space-2);
+  user-select: none;
+}
+
+.note-block-list.is-desktop-drag-compacted .note-block {
+  min-height: 4.75rem;
+  border-color: var(--nx-color-border);
+  background: var(--nx-color-surface);
+  cursor: grabbing;
+}
+
+.note-block-list.is-desktop-drag-compacted .note-block-body {
+  display: none;
+}
+
+.note-block-list.is-desktop-drag-compacted .note-block-compact-preview {
+  display: grid;
+  min-height: 3.25rem;
+  align-content: center;
+  gap: var(--nx-space-1);
+}
+
+.note-block-list.is-desktop-drag-compacted .note-block-delete,
+.note-block-list.is-desktop-drag-compacted .note-block:not(.is-dragging) .note-block-handle {
+  display: none;
+}
+
+.note-block-list.is-desktop-drag-compacted .note-block.is-dragging {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--nx-color-accent) 48%, var(--nx-color-border));
+  background: color-mix(in srgb, var(--nx-color-accent) 4%, var(--nx-color-surface));
+  box-shadow: none;
+  opacity: 1;
+}
+
+.note-block-list.is-desktop-drag-compacted .note-block.is-dragging .note-block-compact-preview {
+  opacity: 0.28;
+}
+
+.note-desktop-drag-ghost {
+  cursor: grabbing;
+}
+
+.note-touch-drag-ghost {
+  position: fixed;
+  top: var(--nx-touch-drag-top, 50%);
+  left: var(--nx-touch-drag-left, 0);
+  z-index: 120;
+  display: grid;
+  width: var(--nx-touch-drag-width, 20rem);
+  min-height: 4.75rem;
+  align-content: center;
+  gap: var(--nx-space-1);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--nx-color-accent) 82%, var(--nx-color-border));
+  border-radius: var(--nx-radius-md);
+  background: color-mix(in srgb, var(--nx-color-accent) 10%, var(--nx-color-surface-elevated));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--nx-color-accent) 34%, transparent),
+    0 0.8rem 2rem rgb(0 0 0 / 30%);
+  padding: var(--nx-space-3);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.note-touch-drop-indicator {
+  position: fixed;
+  top: var(--nx-touch-drop-top, 0);
+  left: var(--nx-touch-drop-left, 0);
+  z-index: 121;
+  width: var(--nx-touch-drop-width, 0);
+  height: 3px;
+  border-radius: 999px;
+  background: var(--nx-color-accent);
+  box-shadow: 0 0 0.75rem color-mix(in srgb, var(--nx-color-accent) 58%, transparent);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.note-touch-drop-indicator::before,
+.note-touch-drop-indicator::after {
+  position: absolute;
+  top: 50%;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--nx-color-accent);
+  content: "";
+  transform: translateY(-50%);
+}
+
+.note-touch-drop-indicator::before {
+  left: 0;
+}
+
+.note-touch-drop-indicator::after {
+  right: 0;
+}
+
+.note-touch-block-menu-layer {
+  position: fixed;
+  z-index: 130;
+  inset: 0;
+  touch-action: none;
+}
+
+.note-touch-block-menu {
+  position: fixed;
+  top: var(--nx-touch-menu-top, 50%);
+  left: var(--nx-touch-menu-left, 50%);
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.note-touch-block-menu::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid color-mix(in srgb, var(--nx-color-accent) 48%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--nx-color-accent) 14%, transparent);
+  box-shadow: 0 0 1rem color-mix(in srgb, var(--nx-color-accent) 28%, transparent);
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.note-touch-block-menu-action {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--nx-color-accent) 30%, var(--nx-color-border));
+  border-radius: var(--nx-radius-md);
+  background: color-mix(in srgb, var(--nx-color-accent) 6%, var(--nx-color-surface-elevated));
+  box-shadow: var(--nx-shadow-soft);
+  color: var(--nx-color-text);
+  cursor: pointer;
+  place-items: center;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.note-touch-block-menu-action svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  stroke-width: 2;
+}
+
+.note-touch-block-menu-action.is-up {
+  transform: translate(-50%, calc(-100% - 1.75rem));
+}
+
+.note-touch-block-menu-action.is-down {
+  transform: translate(-50%, 1.75rem);
+}
+
+.note-touch-block-menu-action.is-delete {
+  border-color: color-mix(in srgb, var(--nx-color-danger) 42%, var(--nx-color-border));
+  background: color-mix(in srgb, var(--nx-color-danger) 9%, var(--nx-color-surface-elevated));
+  color: var(--nx-color-danger);
+}
+
+.note-touch-block-menu-action.is-delete.is-right {
+  transform: translate(1.75rem, -50%);
+}
+
+.note-touch-block-menu-action.is-delete.is-left {
+  transform: translate(calc(-100% - 1.75rem), -50%);
+}
+
+.note-touch-block-menu-action:active:not(:disabled) {
+  border-color: var(--nx-color-accent);
+  background: color-mix(in srgb, var(--nx-color-accent) 15%, var(--nx-color-surface-elevated));
+  box-shadow: 0 0 0 0.18rem color-mix(in srgb, var(--nx-color-accent) 22%, transparent);
+}
+
+.note-touch-block-menu-action:focus-visible {
+  outline: 2px solid var(--nx-color-accent);
+  outline-offset: 2px;
+}
+
+.note-touch-block-menu-action:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.note-document-shell--touch .note-block-handle,
+.note-document-shell--touch .note-block-delete {
+  display: none;
+}
+
+.note-document-shell--touch .note-block-title {
+  padding-inline: 0;
+}
+
+.note-document-shell--touch .is-touch-readonly {
+  cursor: default;
+  user-select: none;
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.note-document-shell--touch .is-touch-readonly :is(.note-inline-prosemirror, .note-tiptap-prosemirror) {
+  cursor: default;
+}
+
+.note-document-shell--touch .note-block.is-touch-active .note-block-zone-add {
+  display: grid;
+}
+
+.note-document-shell--touch .note-block[data-empty="true"] .note-block-zone-add {
+  display: grid;
+}
+
 @media (max-width: breakpoint("mobile")) {
   .note-document-shell--adapted {
     grid-template-columns: minmax(0, 1fr) 2.75rem;

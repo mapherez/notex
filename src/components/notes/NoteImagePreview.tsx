@@ -58,11 +58,13 @@ export function NoteImagePreview({
   alt,
   onClose,
   open,
+  restoreFocus = true,
   src,
 }: {
   alt: string;
   onClose: () => void;
   open: boolean;
+  restoreFocus?: boolean;
   src: string;
 }) {
   const { t } = useI18n();
@@ -223,6 +225,7 @@ export function NoteImagePreview({
       labelledBy="note-image-preview-title"
       onClose={onClose}
       open={open}
+      restoreFocus={restoreFocus}
     >
       <h2 className="note-image-preview__title" id="note-image-preview-title">
         {t('notes.editor.imagePreview')}

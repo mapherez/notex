@@ -168,6 +168,8 @@
     "addContentBlock": "Add content block",
     "addTitleBlock": "Add title block",
     "reorderBlock": "Reorder block",
+    "moveBlockUp": "Move block up",
+    "moveBlockDown": "Move block down",
     "blockDeleted": "Block deleted",
     "deleteBlockTitle": "Delete block?",
     "deleteBlockDescription": "Delete “{{title}}”? This cannot be undone.",
