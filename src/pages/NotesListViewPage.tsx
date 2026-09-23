@@ -1,5 +1,5 @@
 import { ChevronDown, Tag as TagIcon, Trash2, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { NoteRow } from '../components/notes/NoteRow';
 import { useAdaptedContent } from '../core/utils/useAdaptedContent';
@@ -51,12 +51,15 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
   const [trashConfirm, setTrashConfirm] = useState<TrashConfirmState>(null);
   const [activePinnedDragId, setActivePinnedDragId] = useState<string | null>(null);
+  const [pinnedDragVisual, setPinnedDragVisual] = useState<{ x: number; y: number } | null>(null);
   const [orderedPinnedDragIds, setOrderedPinnedDragIds] = useState<string[]>([]);
   const activePinnedDragIdRef = useRef<string | null>(null);
   const activePinnedPointerIdRef = useRef<number | null>(null);
   const orderedPinnedDragIdsRef = useRef<string[]>([]);
   const pinnedDragStartRef = useRef({ x: 0, y: 0 });
   const pinnedDragMovedRef = useRef(false);
+  const pinnedDragGhostRef = useRef<HTMLDivElement>(null);
+  const pinnedDropIndicatorRef = useRef<HTMLDivElement>(null);
   const pinnedKeyboardReorderPendingRef = useRef(false);
   const tagParam = searchParams.get('tag');
   const collectionParam = searchParams.get('collection');
@@ -108,6 +111,9 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
         : persistedPinnedNotes,
     [activePinnedDragId, filteredPinnedNotes, orderedPinnedDragIds, persistedPinnedNotes],
   );
+  const draggedPinnedNote = activePinnedDragId
+    ? filteredPinnedNotes.find((note) => note.id === activePinnedDragId)
+    : null;
   const regularNotes = splitPinnedLists ? filtered.filter((note) => !note.isPinned) : filtered;
   const showBulkActions = selectionEnabled && selectedNotes.length > 0;
   const trashCount = notes.filter((note) => note.isTrashed).length;
@@ -194,6 +200,39 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [activePinnedDragId, pinnedNotes]);
+
+  useLayoutEffect(() => {
+    if (!pinnedDragVisual || !activePinnedDragId) return;
+    const list = document.querySelector<HTMLElement>('.pin-list');
+    if (!list) return;
+    const listRect = list.getBoundingClientRect();
+    const candidates = Array.from(list.querySelectorAll<HTMLElement>('[data-note-id]'))
+      .filter((row) => row.dataset.noteId !== activePinnedDragId)
+      .map((row) => row.getBoundingClientRect());
+    const dropIndex = Math.max(0, pinnedNotes.findIndex((note) => note.id === activePinnedDragId));
+    let lineTop = listRect.top;
+    if (candidates.length > 0) {
+      if (dropIndex === 0) lineTop = candidates[0].top;
+      else if (dropIndex >= candidates.length) lineTop = candidates[candidates.length - 1].bottom;
+      else lineTop = (candidates[dropIndex - 1].bottom + candidates[dropIndex].top) / 2;
+    }
+
+    const viewport = window.visualViewport;
+    const viewportLeft = viewport?.offsetLeft ?? 0;
+    const viewportWidth = viewport?.width ?? window.innerWidth;
+    const ghostWidth = Math.min(listRect.width, viewportWidth - 16);
+    const desiredLeft = pinnedDragVisual.x - (pinnedDragStartRef.current.x - listRect.left);
+    const ghostLeft = Math.min(
+      viewportLeft + viewportWidth - ghostWidth - 8,
+      Math.max(viewportLeft + 8, desiredLeft),
+    );
+    pinnedDragGhostRef.current?.style.setProperty('--nx-touch-drag-left', `${ghostLeft}px`);
+    pinnedDragGhostRef.current?.style.setProperty('--nx-touch-drag-top', `${pinnedDragVisual.y}px`);
+    pinnedDragGhostRef.current?.style.setProperty('--nx-touch-drag-width', `${ghostWidth}px`);
+    pinnedDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-left', `${listRect.left}px`);
+    pinnedDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-top', `${lineTop}px`);
+    pinnedDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-width', `${listRect.width}px`);
+  }, [activePinnedDragId, pinnedDragVisual, pinnedNotes]);
 
   async function handleClearTrash() {
     if (trashCount) {
@@ -330,6 +369,8 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       return;
     }
 
+    setPinnedDragVisual({ x: clientX, y: clientY });
+
     const target = document.elementFromPoint(clientX, clientY);
     const row = target instanceof HTMLElement ? target.closest<HTMLElement>('[data-note-id]') : null;
     const overId = row?.dataset.noteId;
@@ -363,6 +404,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
     activePinnedPointerIdRef.current = null;
     pinnedDragMovedRef.current = false;
     setActivePinnedDragId(null);
+    setPinnedDragVisual(null);
   }
 
   function updateOrderedPinnedDragIds(input: string[] | ((currentIds: string[]) => string[])) {
@@ -481,6 +523,21 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       ) : (
         <EmptyState />
       )}
+      {pinnedDragVisual && draggedPinnedNote ? (
+        <>
+          <div className="pinned-note-drag-ghost" ref={pinnedDragGhostRef} aria-hidden="true">
+            <div className="pinned-note-drag-ghost__title">
+              {richTextToPlainText(draggedPinnedNote.title).trim() || t('notes.untitled')}
+            </div>
+            {richTextToPlainText(draggedPinnedNote.subtitle).trim() ? (
+              <div className="pinned-note-drag-ghost__content">
+                {richTextToPlainText(draggedPinnedNote.subtitle).trim()}
+              </div>
+            ) : null}
+          </div>
+          <div className="pinned-note-drop-indicator" ref={pinnedDropIndicatorRef} aria-hidden="true" />
+        </>
+      ) : null}
       <TrashConfirmModal
         confirmState={trashConfirm}
         onCancel={() => setTrashConfirm(null)}

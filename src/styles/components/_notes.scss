@@ -161,6 +161,84 @@
   cursor: grabbing;
 }
 
+.pinned-note-drag-ghost {
+  position: fixed;
+  top: var(--nx-touch-drag-top, 50%);
+  left: var(--nx-touch-drag-left, 0);
+  z-index: 120;
+  display: grid;
+  width: var(--nx-touch-drag-width, 20rem);
+  min-height: 4.75rem;
+  align-content: center;
+  gap: var(--nx-space-1);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--nx-color-accent) 82%, var(--nx-color-border));
+  border-radius: var(--nx-radius-md);
+  background: color-mix(in srgb, var(--nx-color-accent) 10%, var(--nx-color-surface-elevated));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--nx-color-accent) 34%, transparent),
+    0 0.8rem 2rem rgb(0 0 0 / 30%);
+  padding: var(--nx-space-3);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.pinned-note-drag-ghost__title {
+  overflow: hidden;
+  color: var(--nx-color-text);
+  font-size: 1rem;
+  font-weight: 760;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pinned-note-drag-ghost__content {
+  display: -webkit-box;
+  overflow: hidden;
+  max-height: 4.5em;
+  color: var(--nx-color-text-muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.pinned-note-drop-indicator {
+  position: fixed;
+  top: var(--nx-touch-drop-top, 0);
+  left: var(--nx-touch-drop-left, 0);
+  z-index: 121;
+  width: var(--nx-touch-drop-width, 0);
+  height: 3px;
+  border-radius: 999px;
+  background: var(--nx-color-accent);
+  box-shadow: 0 0 0.75rem color-mix(in srgb, var(--nx-color-accent) 58%, transparent);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.pinned-note-drop-indicator::before,
+.pinned-note-drop-indicator::after {
+  position: absolute;
+  top: 50%;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--nx-color-accent);
+  content: "";
+  transform: translateY(-50%);
+}
+
+.pinned-note-drop-indicator::before {
+  left: 0;
+}
+
+.pinned-note-drop-indicator::after {
+  right: 0;
+}
+
 .note-row__drag-handle svg,
 .note-row__status-button svg {
   width: 1rem;
