@@ -1,3 +1,32 @@
+# 2.4.0
+
+## What's New in NoteX
+
+This release focuses on responsive design and UI/UX improvements, introducing official support for tablets, mobile devices, and smaller desktop screens.
+It also improves touch interactions, drag and drop, image handling, menus, modals, and the editing experience across different screen sizes.
+
+### Improvements
+
+- Responsive interface for desktop, tablet, and mobile.
+- Improved layouts for Home, notes, filters, Profile, and side panels.
+- Adaptive editor toolbar with virtual keyboard support.
+- Touch-friendly side panels with swipe gestures.
+- Improved block drag and drop with compact previews and drop indicators.
+- Touch menu for moving and deleting blocks.
+- Proportional image resizing, fullscreen previews, and zoom.
+- Improved image and file attachment management.
+- Horizontal scrolling for tables and wide content.
+- Responsive dropdowns, menus, modals, and notifications.
+- General touch, scrolling, safe-area, and accessibility improvements.
+- Orientation notice for phones in landscape mode.
+- Improved bulk selection panel on mobile.
+- Improved drag and drop for pinned notes and tags, with clear previews and drop indicators.
+- Safer touch reordering with controlled scrolling, cancellation, and accessible move actions.
+- Improved sync banners and desktop update notifications.
+- Final responsive refinements across desktop, tablet, and mobile.
+- Better support for themes, languages, long content, tables, images, and attachments.
+- Improved focus, keyboard, gesture, and order persistence behavior.
+
 # 2.3.1
 
 ## What's New in NoteX
