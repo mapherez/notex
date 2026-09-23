@@ -21,6 +21,9 @@ export function NoteRow({
   note,
   onPermanentDelete,
   onPinnedDragPointerDown,
+  onPinnedDragPointerUp,
+  onPinnedDragPointerCancel,
+  onPinnedKeyboardReorder,
   onSelectionChange,
   pinnedDragActive = false,
   pinnedDragEnabled = false,
@@ -36,6 +39,9 @@ export function NoteRow({
   note: Note;
   onPermanentDelete?: (noteId: string) => void;
   onPinnedDragPointerDown?: PointerEventHandler<HTMLButtonElement>;
+  onPinnedDragPointerUp?: PointerEventHandler<HTMLButtonElement>;
+  onPinnedDragPointerCancel?: PointerEventHandler<HTMLButtonElement>;
+  onPinnedKeyboardReorder?: (direction: -1 | 1) => void;
   onSelectionChange?: (noteId: string, selected: boolean) => void;
   pinnedDragActive?: boolean;
   pinnedDragEnabled?: boolean;
@@ -122,6 +128,15 @@ export function NoteRow({
           disabled={!pinnedDragEnabled}
           title={t('notes.reorderPinned')}
           onPointerDown={pinnedDragEnabled ? onPinnedDragPointerDown : undefined}
+          onPointerUp={pinnedDragEnabled ? onPinnedDragPointerUp : undefined}
+          onPointerCancel={pinnedDragEnabled ? onPinnedDragPointerCancel : undefined}
+          onClick={(event) => event.currentTarget.focus({ preventScroll: true })}
+          onKeyDown={(event) => {
+            if (!onPinnedKeyboardReorder || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+            event.preventDefault();
+            event.stopPropagation();
+            onPinnedKeyboardReorder(event.key === 'ArrowUp' ? -1 : 1);
+          }}
         >
           <GripVertical />
         </button>

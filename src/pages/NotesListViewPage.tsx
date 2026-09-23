@@ -57,6 +57,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   const orderedPinnedDragIdsRef = useRef<string[]>([]);
   const pinnedDragStartRef = useRef({ x: 0, y: 0 });
   const pinnedDragMovedRef = useRef(false);
+  const pinnedKeyboardReorderPendingRef = useRef(false);
   const tagParam = searchParams.get('tag');
   const collectionParam = searchParams.get('collection');
   const defaultSortOrder: NotesSortOrder = mode === 'recent' ? recentNotesSortOrder : defaultNotesSortOrder;
@@ -275,12 +276,42 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       return;
     }
 
+    event.currentTarget.focus({ preventScroll: true });
+    event.currentTarget.setPointerCapture(event.pointerId);
     activePinnedDragIdRef.current = noteId;
     activePinnedPointerIdRef.current = event.pointerId;
     pinnedDragStartRef.current = { x: event.clientX, y: event.clientY };
     pinnedDragMovedRef.current = false;
     updateOrderedPinnedDragIds(persistedPinnedNotes.map((note) => note.id));
     setActivePinnedDragId(noteId);
+  }
+
+  async function movePinnedNoteWithKeyboard(noteId: string, direction: -1 | 1) {
+    if (!pinOrderingEnabled || pinnedKeyboardReorderPendingRef.current) return;
+    if (activePinnedDragIdRef.current) cancelPinnedNoteReorder();
+    const ids = persistedPinnedNotes.map((note) => note.id);
+    const index = ids.indexOf(noteId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= ids.length) return;
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    pinnedKeyboardReorderPendingRef.current = true;
+    try {
+      await reorderPinnedNotes(ids);
+      requestAnimationFrame(() => {
+        const row = Array.from(document.querySelectorAll<HTMLElement>('.pin-list [data-note-id]'))
+          .find((element) => element.dataset.noteId === noteId);
+        if (!row) return;
+        row.querySelector<HTMLButtonElement>('.note-row__drag-handle')?.focus({ preventScroll: true });
+        const rect = row.getBoundingClientRect();
+        const headerBottom = Math.max(0, ...Array.from(document.querySelectorAll<HTMLElement>('.topbar'))
+          .map((bar) => bar.getBoundingClientRect().bottom)) + 16;
+        const available = Math.max(0, window.innerHeight - headerBottom - 16);
+        const desiredTop = headerBottom + (available - Math.min(rect.height, available)) / 2;
+        window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - desiredTop), behavior: 'instant' });
+      });
+    } finally {
+      pinnedKeyboardReorderPendingRef.current = false;
+    }
   }
 
   function trackPinnedNoteReorderAt(clientX: number, clientY: number) {
@@ -310,6 +341,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   }
 
   function finishPinnedNoteReorder() {
+    if (!activePinnedDragIdRef.current) return;
     const nextIds = orderedPinnedDragIdsRef.current;
     const originalIds = persistedPinnedNotes.map((note) => note.id);
 
@@ -321,6 +353,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   }
 
   function cancelPinnedNoteReorder() {
+    if (!activePinnedDragIdRef.current) return;
     updateOrderedPinnedDragIds(persistedPinnedNotes.map((note) => note.id));
     resetPinnedDragState();
   }
@@ -360,6 +393,15 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
             : undefined
         }
         onPinnedDragPointerDown={pinOrderingEnabled && note.isPinned ? (event) => beginPinnedNoteReorder(event, note.id) : undefined}
+        onPinnedDragPointerUp={pinOrderingEnabled && note.isPinned ? (event) => {
+          if (event.pointerId === activePinnedPointerIdRef.current) finishPinnedNoteReorder();
+        } : undefined}
+        onPinnedDragPointerCancel={pinOrderingEnabled && note.isPinned ? (event) => {
+          if (event.pointerId === activePinnedPointerIdRef.current) cancelPinnedNoteReorder();
+        } : undefined}
+        onPinnedKeyboardReorder={pinOrderingEnabled && note.isPinned
+          ? (direction) => void movePinnedNoteWithKeyboard(note.id, direction)
+          : undefined}
         onSelectionChange={updateNoteSelection}
         pinnedDragActive={activePinnedDragId === note.id}
         pinnedDragEnabled={pinOrderingEnabled && note.isPinned}
