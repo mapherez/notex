@@ -17,6 +17,7 @@ import { normalizeNotesSortOrder, type NotesSortOrder } from '../core/utils/note
 import { richTextToPlainText } from '../core/utils/richText';
 import { sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
+import { useFloatingPopover } from '../core/utils/useFloatingPopover';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
 import { useNotesStore } from '../store/useNotesStore';
@@ -422,7 +423,9 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       {filtered.length ? (
         <div className={splitPinnedLists ? 'note-list-stack' : undefined}>
           {splitPinnedLists ? (
-            <div className={['note-list', 'pin-list', effectiveLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
+            <div
+              className={['note-list', 'pin-list', effectiveLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}
+            >
               {renderNoteRows(pinnedNotes)}
             </div>
           ) : null}
@@ -476,10 +479,13 @@ function BulkNoteActionsRow({
   const [tagsOpen, setTagsOpen] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
   const tagsMenuRef = useRef<HTMLDivElement>(null);
+  const tagsTriggerRef = useRef<HTMLButtonElement>(null);
+  const tagsPopoverRef = useRef<HTMLDivElement>(null);
   const sortedTags = useMemo(() => sortTagsByName(tags), [tags]);
   const partiallySelected = selectedCount > 0 && selectedCount < totalCount;
 
   useClickOutside(tagsMenuRef, tagsOpen, () => setTagsOpen(false));
+  useFloatingPopover(tagsOpen, tagsTriggerRef, tagsPopoverRef, 'bottom-start');
 
   useEffect(() => {
     if (selectAllRef.current) {
@@ -525,13 +531,13 @@ function BulkNoteActionsRow({
 
       <div className="bulk-field bulk-tags-field" ref={tagsMenuRef}>
         <span>{t('notes.bulk.assignTags')}</span>
-        <button className="bulk-tags-trigger" type="button" aria-expanded={tagsOpen} onClick={() => setTagsOpen((value) => !value)}>
+        <button className="bulk-tags-trigger" ref={tagsTriggerRef} type="button" aria-expanded={tagsOpen} onClick={() => setTagsOpen((value) => !value)}>
           <TagIcon />
           <span>{t('notes.bulk.chooseTags')}</span>
           <ChevronDown />
         </button>
         {tagsOpen ? (
-          <div className="bulk-tags-menu">
+          <div className="bulk-tags-menu" ref={tagsPopoverRef}>
             {sortedTags.length ? (
               sortedTags.map((tag) => (
                 <BulkTagCheckbox key={tag.id} tag={tag} selectedNotes={selectedNotes} onToggle={onToggleTag} />

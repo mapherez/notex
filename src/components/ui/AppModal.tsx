@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useI18n } from '../../i18n/I18nProvider';
 
@@ -32,6 +32,7 @@ export function AppModal({
   restoreFocus?: boolean;
 }) {
   const { t } = useI18n();
+  const backdropRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
   const dismissibleRef = useRef(dismissible);
@@ -40,6 +41,31 @@ export function AppModal({
   onCloseRef.current = onClose;
   dismissibleRef.current = dismissible;
   restoreFocusRef.current = restoreFocus;
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const backdrop = backdropRef.current;
+    if (!backdrop) return;
+    const element = backdrop;
+
+    function updateViewport() {
+      const viewport = window.visualViewport;
+      element.style.setProperty('--nx-modal-viewport-top', `${viewport?.offsetTop ?? 0}px`);
+      element.style.setProperty('--nx-modal-viewport-left', `${viewport?.offsetLeft ?? 0}px`);
+      element.style.setProperty('--nx-modal-viewport-width', `${viewport?.width ?? window.innerWidth}px`);
+      element.style.setProperty('--nx-modal-viewport-height', `${viewport?.height ?? window.innerHeight}px`);
+    }
+
+    updateViewport();
+    window.visualViewport?.addEventListener('resize', updateViewport);
+    window.visualViewport?.addEventListener('scroll', updateViewport);
+    window.addEventListener('resize', updateViewport);
+    return () => {
+      window.visualViewport?.removeEventListener('resize', updateViewport);
+      window.visualViewport?.removeEventListener('scroll', updateViewport);
+      window.removeEventListener('resize', updateViewport);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -116,7 +142,7 @@ export function AppModal({
   const modalClassName = ['app-modal', className].filter(Boolean).join(' ');
 
   return createPortal(
-    <div className="modal-backdrop">
+    <div className="modal-backdrop" ref={backdropRef}>
       <section
         ref={modalRef}
         className={modalClassName}

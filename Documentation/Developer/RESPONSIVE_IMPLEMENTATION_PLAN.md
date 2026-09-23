@@ -2299,10 +2299,111 @@ Primeira entrega implementada:
 - a composição normal de desktop permanece igual quando existe espaço suficiente.
 
 Validação automatizada desta entrega: typecheck, regras de estilos e build de
-produção. Validação real pendente em desktop, tablet e mobile: abrir seletores
-perto das quatro margens, confirmar inversão junto ao fundo, scroll com listas
-longas, seleção por toque e fecho por toque exterior/Escape.
+produção. Validação real concluída pelo utilizador em mobile e desktop: menus e
+dropdowns posicionam-se e fecham como esperado, sem comportamento anómalo.
 
-Próximas entregas do 5A: rever os overlays específicos que ainda não usam a base
-comum — pesquisa global, seleção de thumbnail, tags favoritas e tags em seleção
-múltipla — e só depois fechar o inventário dos restantes menus já adaptados.
+Segunda entrega implementada:
+
+- resultados da pesquisa global acompanham o campo, respeitam a largura e altura
+  disponíveis e podem inverter junto ao fundo do viewport;
+- o seletor de thumbnail reposiciona-se nas margens, substituindo a regra mobile
+  especial que forçava sempre a abertura à direita do trigger;
+- o seletor de tags favoritas mantém a pesquisa visível e limita o scroll à lista;
+- o seletor de tags da seleção múltipla passa a reposicionar-se e limita o scroll
+  interno sem mover a página.
+
+Validação real concluída pelo utilizador em mobile e desktop, sem problemas de
+posicionamento, scroll, seleção ou fecho nos quatro overlays desta entrega.
+
+Inventário final do 5A concluído:
+
+- menus da toolbar, tabelas, ações da nota, linhas de notas, filtros e atalhos
+  rápidos já usam a infraestrutura adaptativa comum;
+- o menu da conta permanece ancorado ao topo direito, onde já tem largura e
+  altura limitadas e não apresenta o problema de corte que motivou esta etapa;
+- seletores inline dos painéis laterais não são overlays e mantêm a composição;
+- estilos antigos sem componente correspondente não foram alterados.
+
+Com as duas entregas verificadas em dispositivos reais, a Etapa 5A fica
+concluída. O próximo trabalho é a Etapa 5B: auditoria dos modais existentes,
+mantendo as regras atuais de fecho e corrigindo apenas altura, scroll, safe areas
+e interação com o teclado onde necessário.
+
+### 34. Etapa 5B — modais
+
+Inventário inicial concluído. Confirmações, login Google, configuração MCP,
+exportação/importação, atalhos, termos, patch notes e preview de imagem usam
+`AppModal`. A base já fornece portal, bloqueio do fundo, focus trap, restauro de
+foco e Escape condicionado por `dismissible`; tocar no backdrop continua sem
+fechar o modal, conforme a regra existente.
+
+Primeira entrega implementada:
+
+- o backdrop acompanha posição e dimensões de `VisualViewport`, incluindo resize
+  e scroll causados pelo teclado virtual e pelas barras do browser;
+- margens usam safe areas e ficam mais compactas em mobile;
+- todos os modais recebem limites globais de largura/altura e scroll interno
+  quando o conteúdo não cabe, com `overscroll-behavior: contain`;
+- legal, atalhos e patch notes preservam as respetivas áreas internas de scroll;
+- o preview de imagem preserva o fullscreen, gestos e safe areas já validados;
+- textos extensos do resumo de importação podem quebrar sem alargar o modal.
+
+As regras funcionais e de fecho não foram alteradas. Validação real pendente em
+desktop, tablet e mobile, sobretudo com patch notes/atalhos, configuração MCP e
+um modal aberto enquanto o teclado virtual está visível.
+
+Validação automatizada concluída: os 125 testes passaram, incluindo os testes de
+focus trap, Escape, `dismissible`, backdrop e restauro de foco de `AppModal`;
+typecheck, regras de estilos e build de produção também passaram.
+
+Validação real concluída pelo utilizador em mobile e desktop, sem problemas nos
+modais auditados. A Etapa 5B fica concluída.
+
+### 35. Etapa 5C — toasts, banners e notificações
+
+Inventário inicial concluído. Updates, transferências Google Drive, conflitos e
+toasts partilham `notification-viewport`. A implementação anterior fixava toda a
+pilha no canto inferior direito através de `100dvh`, podendo ficar atrás do teclado
+ou competir com a toolbar durante edição.
+
+Primeira entrega implementada:
+
+- a camada global acompanha posição e dimensões de `VisualViewport`;
+- uma stack interna preserva a largura, ordem, scroll e interação existentes;
+- desktop mantém a stack no canto inferior direito, respeitando safe areas;
+- em tablet/mobile com touch, a stack abre no topo, abaixo da topbar, conforme a
+  decisão anterior, evitando teclado e toolbar inferior;
+- a altura disponível é limitada e o scroll fica contido na stack; detalhes de
+  sync e conflitos continuam acessíveis sem deslocar a página.
+
+Validação real pendente com toast simples, banner de sync expandido/conflito e,
+em desktop, aviso de atualização. Confirmar também abertura durante edição com o
+teclado virtual visível.
+
+Validação automatizada desta entrega: typecheck, regras de estilos e build de
+produção passaram.
+
+Validação real concluída para toasts normais, que surgem e se posicionam como
+previsto. As ações atuais que emitem toast retiram foco do editor e fecham o
+teclado, pelo que não existe um fluxo real que permita manter simultaneamente o
+teclado aberto; não será criado um comportamento artificial apenas para teste.
+
+O banner de sync não pôde ser reproduzido em mobile no `tauri:dev` sem conta
+Google. Continua na mesma stack, com os mesmos limites de viewport, safe areas e
+scroll já verificados. Esta limitação de ambiente fica registada e não bloqueia a
+conclusão do 5C. O aviso de atualização mantém-se exclusivo do desktop/Tauri.
+
+Com esta validação, a Etapa 5C fica concluída. O próximo trabalho é o 5D:
+interações touch e reordenação que existem fora do editor, sobretudo notas
+fixadas e tags favoritas, preservando scroll normal e alternativas por toque.
+
+### 36. Etapa 5D — reordenação fora do editor
+
+As experiências de ghost e indicador de destino em tags e notas fixadas foram
+revertidas depois da validação real revelar regressões no reorder. Os dois
+componentes voltaram à implementação funcional anterior, sem linhas de drop ou
+ghosts adicionais.
+
+A Etapa 5D fica novamente por implementar. Qualquer revisão futura deve partir
+do comportamento funcional restaurado, ser isolada por componente e preservar
+a versão anterior até a nova interação estar validada em desktop, iPad e iPhone.

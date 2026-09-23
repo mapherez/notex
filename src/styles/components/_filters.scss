@@ -288,13 +288,16 @@
 
 .bulk-tags-menu {
   position: absolute;
-  top: calc(100% + var(--nx-space-2));
-  left: 0;
+  top: var(--nx-popover-top, calc(100% + var(--nx-space-2)));
+  left: var(--nx-popover-left, 0);
+  right: auto;
   z-index: 75;
   display: grid;
   width: min(22rem, calc(100vw - (var(--nx-page-gutter) * 2)));
   overflow: auto;
-  max-height: 18rem;
+  max-width: var(--nx-popover-max-width, calc(100vw - (var(--nx-page-gutter) * 2)));
+  max-height: min(18rem, var(--nx-popover-max-height, 18rem));
+  overscroll-behavior: contain;
   gap: 0.15rem;
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-md);

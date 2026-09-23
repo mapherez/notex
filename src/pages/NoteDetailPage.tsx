@@ -1996,6 +1996,7 @@ function ThumbnailPicker({
   const currentThumbnail = current ?? { variant: defaultNoteThumbnailVariant };
 
   useClickOutside(pickerRef, open, () => setOpen(false));
+  useFloatingPopover(open, menu.triggerRef, menu.menuRef, 'bottom-end');
 
   return (
     <div className="thumbnail-picker" ref={pickerRef} onKeyDown={menu.onKeyDown}

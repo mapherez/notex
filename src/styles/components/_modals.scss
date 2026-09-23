@@ -1,15 +1,23 @@
 .modal-backdrop {
   position: fixed;
-  inset: 0;
+  top: var(--nx-modal-viewport-top, 0);
+  left: var(--nx-modal-viewport-left, 0);
+  width: var(--nx-modal-viewport-width, 100%);
+  height: var(--nx-modal-viewport-height, 100dvh);
   display: grid;
   place-items: center;
+  overflow: hidden;
   background: rgba(0, 0, 0, 0.48);
-  padding: var(--nx-space-5);
+  padding: max(var(--nx-space-5), env(safe-area-inset-top)) max(var(--nx-space-5), env(safe-area-inset-right)) max(var(--nx-space-5), env(safe-area-inset-bottom)) max(var(--nx-space-5), env(safe-area-inset-left));
   z-index: 120;
 }
 
 .app-modal {
   position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-card);
   background: var(--nx-color-surface-elevated);
@@ -49,7 +57,7 @@
   display: grid;
   overflow: hidden;
   width: min(100%, 58rem);
-  max-height: min(44rem, calc(100vh - 3rem));
+  max-height: min(44rem, 100%);
   grid-template-rows: auto minmax(0, 1fr);
   gap: var(--nx-space-5);
   padding: var(--nx-space-6);
@@ -82,15 +90,14 @@
 
 .shortcut-help-modal {
   width: min(100%, 43rem);
-  max-height: min(48rem, calc(100vh - 3rem));
+  max-height: min(48rem, 100%);
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .patch-notes-modal {
   overflow: hidden;
   width: min(100%, 68rem);
-  max-height: min(52rem, calc(100vh - 3rem));
-  max-height: min(52rem, calc(100dvh - 3rem));
+  max-height: min(52rem, 100%);
   gap: 0;
   grid-template-rows: auto minmax(0, 1fr);
   padding: 0;
@@ -221,6 +228,7 @@
 .choice-modal-summary-row span:last-child {
   color: var(--nx-color-text);
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .shortcut-help-list {
@@ -352,14 +360,17 @@
 }
 
 @media (max-width: 42rem) {
+  .modal-backdrop {
+    padding: max(var(--nx-space-3), env(safe-area-inset-top)) max(var(--nx-space-3), env(safe-area-inset-right)) max(var(--nx-space-3), env(safe-area-inset-bottom)) max(var(--nx-space-3), env(safe-area-inset-left));
+  }
+
   .shortcut-help-row {
     grid-template-columns: 1fr;
     gap: var(--nx-space-2);
   }
 
   .patch-notes-modal {
-    max-height: calc(100vh - 3rem);
-    max-height: calc(100dvh - 3rem);
+    max-height: 100%;
   }
 
   .patch-notes-modal__layout {

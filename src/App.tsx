@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
@@ -24,6 +24,7 @@ const NoteDetailPage = lazy(() =>
 );
 
 export function App() {
+  const notificationViewportRef = useRef<HTMLDivElement>(null);
   const settings = useAppStore((state) => state.settings);
   const status = useGoogleAccountStore((state) => state.status);
   const initialize = useGoogleAccountStore((state) => state.initialize);
@@ -33,6 +34,29 @@ export function App() {
     document.documentElement.dataset.theme = settings.theme;
     document.documentElement.lang = settings.language;
   }, [settings.language, settings.theme]);
+  useLayoutEffect(() => {
+    const element = notificationViewportRef.current;
+    if (!element) return;
+    const viewportElement = element;
+
+    function updateNotificationViewport() {
+      const viewport = window.visualViewport;
+      viewportElement.style.setProperty('--nx-notification-viewport-top', `${viewport?.offsetTop ?? 0}px`);
+      viewportElement.style.setProperty('--nx-notification-viewport-left', `${viewport?.offsetLeft ?? 0}px`);
+      viewportElement.style.setProperty('--nx-notification-viewport-width', `${viewport?.width ?? window.innerWidth}px`);
+      viewportElement.style.setProperty('--nx-notification-viewport-height', `${viewport?.height ?? window.innerHeight}px`);
+    }
+
+    updateNotificationViewport();
+    window.visualViewport?.addEventListener('resize', updateNotificationViewport);
+    window.visualViewport?.addEventListener('scroll', updateNotificationViewport);
+    window.addEventListener('resize', updateNotificationViewport);
+    return () => {
+      window.visualViewport?.removeEventListener('resize', updateNotificationViewport);
+      window.visualViewport?.removeEventListener('scroll', updateNotificationViewport);
+      window.removeEventListener('resize', updateNotificationViewport);
+    };
+  }, []);
   useEffect(() => {
     if (appReady && isTauri()) void import('./store/useLocalMcpStore').then(({ useLocalMcpStore }) => useLocalMcpStore.getState().initialize());
   }, [appReady]);
@@ -68,10 +92,12 @@ export function App() {
         )}
         <GoogleAccountModal />
         <DesktopBackupCloseGuard />
-        <div className="notification-viewport">
-          <AppUpdatePrompt enabled={appReady && isTauri()} />
-          <CloudTransferBanner />
-          <ToastViewport />
+        <div className="notification-viewport" ref={notificationViewportRef}>
+          <div className="notification-stack">
+            <AppUpdatePrompt enabled={appReady && isTauri()} />
+            <CloudTransferBanner />
+            <ToastViewport />
+          </div>
         </div>
       </BrowserRouter>
     </I18nProvider>

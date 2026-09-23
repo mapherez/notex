@@ -359,8 +359,9 @@
 
 .thumbnail-picker-menu {
   position: absolute;
-  top: calc(100% + var(--nx-space-3));
-  right: 0;
+  top: var(--nx-popover-top, calc(100% + var(--nx-space-3)));
+  left: var(--nx-popover-left, 0);
+  right: auto;
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(3, 2.9rem);
@@ -370,6 +371,10 @@
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-3);
   box-shadow: var(--nx-shadow-soft);
+  max-width: var(--nx-popover-max-width, calc(100vw - (var(--nx-page-gutter) * 2)));
+  max-height: var(--nx-popover-max-height, 70dvh);
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .thumbnail-option {

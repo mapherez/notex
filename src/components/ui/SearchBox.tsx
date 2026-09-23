@@ -6,6 +6,7 @@ import { isPrimaryShortcut } from '../../core/utils/keyboardShortcuts';
 import { normalizeSearchValue, searchNotes } from '../../core/utils/noteSearch';
 import { richTextToPlainText } from '../../core/utils/richText';
 import { useClickOutside } from '../../core/utils/useClickOutside';
+import { useFloatingPopover } from '../../core/utils/useFloatingPopover';
 import { useKeyboardListNavigation } from '../../core/utils/useKeyboardListNavigation';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useNotesStore } from '../../store/useNotesStore';
@@ -19,6 +20,7 @@ export function SearchBox({ className }: { className?: string }) {
   const resultsId = useId();
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
   const [resultsOpen, setResultsOpen] = useState(false);
   const notes = useNotesStore((state) => state.notes);
@@ -46,6 +48,7 @@ export function SearchBox({ className }: { className?: string }) {
   });
 
   useClickOutside(searchRef, showResults, () => setResultsOpen(false));
+  useFloatingPopover(showResults, searchRef, resultsRef, 'bottom-start');
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -103,7 +106,7 @@ export function SearchBox({ className }: { className?: string }) {
         <span className="kbd">{t('topbar.keyboardHint')}</span>
       </label>
       {showResults ? (
-        <div className="search-results-popover" id={resultsId} role="list" aria-label={t('topbar.searchResults')}>
+        <div className="search-results-popover" ref={resultsRef} id={resultsId} role="list" aria-label={t('topbar.searchResults')}>
           {notes.some((note) => note.cloudOnly && !note.isTrashed) && <div className="search-result-empty" role="status">{t('cloud.searchPartial')}</div>}
           {results.length ? (
             results.map((result, index) => (
