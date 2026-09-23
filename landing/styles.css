@@ -865,6 +865,14 @@ h3 {
 }
 
 @media (max-width: 520px) {
+  .site-nav nav {
+    flex-wrap: wrap;
+    column-gap: 1rem;
+    row-gap: 0.5rem;
+    overflow-x: visible;
+    white-space: normal;
+  }
+
   .nav-inner,
   .hero-inner,
   .section,

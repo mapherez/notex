@@ -2,6 +2,10 @@
 
 NoteX evolves through new features and fixes. Keep the desktop app current, and use release notes to see what changed.
 
+## What's new in 2.4.0
+
+Version 2.4.0 adds responsive layouts for desktop, tablet, and phone, along with touch-friendly navigation, block reordering, image preview and resizing, and improvements to menus, panels, and the editor. See the [tablet and phone guide](mobile-tablet.md) for the new controls. The full patch notes are available inside NoteX.
+
 ## Update the app
 
 NoteX includes an updater and a manual update check in **Profile**. When an update is available, follow the app's update prompt.

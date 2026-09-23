@@ -36,8 +36,12 @@ Check which control has focus. Arrow keys edit or navigate text inside an editor
 
 For dropdowns, press **Enter** to open first. For the thumbnail picker, navigation starts on the first thumbnail. See [shortcuts and focus](keyboard.md).
 
+## The phone shows a rotate notice
+
+NoteX on phones works in portrait orientation. Rotate your phone back to portrait to continue using the app. For navigation and touch controls, see the [tablet and phone guide](mobile-tablet.md).
+
 ## Report a reproducible problem
 
-Include your NoteX version, Windows version, the steps that led to the issue, and what you expected to happen. An exact error message and a screenshot with private content removed are useful.
+Include your NoteX version, the steps that led to the issue, and what you expected to happen. For desktop issues, include your Windows version; for browser issues, include the device and browser. An exact error message and a screenshot with private content removed are useful.
 
 If the issue involves data loss, avoid further edits until you have preserved a copy of the affected files.

@@ -1,14 +1,18 @@
 # Your first note
 
-Start with one piece of information you want to keep. This guide takes you from installing NoteX to finding that information again.
+Start with one piece of information you want to keep. This guide takes you from opening NoteX to finding that information again.
 
-## Install NoteX
+## Choose desktop or browser
+
+For Windows desktop:
 
 1. Open the [latest release on GitHub](https://github.com/mapherez/notex/releases/latest).
 2. Download the Windows installer and run it.
 3. Open NoteX. The desktop app does not require a login.
 
-Once installed, NoteX can work offline. Downloading updates and connecting an online AI service still require a connection.
+On a desktop, tablet, or phone, you can instead open the [web app](https://notex.mapherez.com/app/) and sign in with Google. Phones use portrait orientation. Read the [tablet and phone guide](mobile-tablet.md) for touch controls.
+
+The Windows app works offline after installation. In browser mode, downloaded notes can be edited offline after the app and required notes have been cached; the first visit needs internet access. Downloading desktop updates and connecting an online AI service also require a connection.
 
 ## Create and write
 
@@ -35,6 +39,6 @@ The recent-notes list follows actual note updates. Simply opening a note does no
 
 ## Keep a backup
 
-Once you have content worth keeping, export your workspace from the data-management section of **Profile**. Save the resulting `.notex` package somewhere independent of your working library.
+On Windows desktop, once you have content worth keeping, export your workspace from the data-management section of **Profile**. Save the resulting `.notex` package somewhere independent of your working library. Browser mode backs up account notes to Google Drive when connected.
 
 See [backups and imports](import-export.md) before restoring a full workspace: that operation replaces the current library.

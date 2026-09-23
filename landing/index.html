@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NoteX - Local-first notes for Windows</title>
+    <title>NoteX - Local-first notes for Windows and the web</title>
     <meta
       name="description"
-      content="NoteX is a local-first Windows app for structured notes, rich content, tags, collections, attachments, and direct AI workflows through MCP."
+      content="NoteX keeps structured notes on Windows and in the browser, with responsive layouts for tablets and phones, optional Google Drive backup, and local MCP on desktop."
     />
     <meta name="theme-color" content="#090a0c" />
-    <meta property="og:title" content="NoteX - Local-first notes for Windows" />
+    <meta property="og:title" content="NoteX - Local-first notes for Windows and the web" />
     <meta
       property="og:description"
-      content="Build a private knowledge base on your computer and connect compatible AI clients through local MCP."
+      content="Write and organize notes on Windows or in the browser, with touch-friendly layouts and optional Google Drive backup."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://notex.mapherez.com/" />
@@ -47,11 +47,11 @@
       <section id="top" class="hero" aria-labelledby="hero-title">
         <div class="hero-inner">
           <div class="hero-content">
-            <p class="eyebrow">Windows desktop · Offline by default</p>
+            <p class="eyebrow">Windows desktop · Browser on desktop, tablet, and phone</p>
             <h1 id="hero-title">Your knowledge.<br>Within reach.</h1>
             <p class="hero-copy">
               Turn scattered information into a library you can return to. Structured notes,
-              rich content, and fast search — all on your computer.
+              rich content, and fast search across desktop and browser.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="https://github.com/mapherez/notex/releases/latest">
@@ -60,19 +60,19 @@
               <a class="button button-secondary" href="https://notex.mapherez.com/app/">Open web app <span aria-hidden="true">↗</span></a>
               <a class="button button-secondary" href="./docs/quickstart.html">Get started <span aria-hidden="true">↗</span></a>
             </div>
-            <p class="hero-reassurance">No account required. Your notes stay local.</p>
+            <p class="hero-reassurance">Desktop works without an account. Browser mode uses your Google account.</p>
             <dl class="hero-facts">
               <div>
                 <dt>Local</dt>
-                <dd>SQLite storage on your device</dd>
+                <dd>Edits saved on your device</dd>
               </div>
               <div>
                 <dt>Connected</dt>
-                <dd>Direct AI workflows through MCP</dd>
+                <dd>Optional Drive backup and desktop MCP</dd>
               </div>
               <div>
                 <dt>Portable</dt>
-                <dd>Workspace and single-note exports</dd>
+                <dd>Desktop workspace and note exports</dd>
               </div>
             </dl>
           </div>
@@ -154,13 +154,23 @@
           </article>
           <article class="feature-card feature-mint">
             <span class="feature-number">05</span>
-            <h3>Local by default</h3>
-            <p>No account is required. Your working database and attachments stay on your computer.</p>
+            <h3>Work across screen sizes</h3>
+            <p>Use the browser on a desktop, tablet, or phone with layouts and controls adapted for touch.</p>
           </article>
           <article class="feature-card feature-neutral">
             <span class="feature-number">06</span>
+            <h3>Optional Drive backup</h3>
+            <p>Connect Google to back up your account library and continue working in the browser.</p>
+          </article>
+          <article class="feature-card feature-blue">
+            <span class="feature-number">07</span>
+            <h3>Local on desktop</h3>
+            <p>Use the Windows app without an account. Its SQLite database and attachments stay on your computer; Google Drive backup is optional.</p>
+          </article>
+          <article class="feature-card feature-pink">
+            <span class="feature-number">08</span>
             <h3>Portable backups</h3>
-            <p>Export your workspace as a .notex package, or share one note and its files with .notex-note.</p>
+            <p>On desktop, export your workspace as a .notex package or share one note and its files with .notex-note.</p>
           </article>
         </div>
       </section>
@@ -175,7 +185,7 @@
               and use supported AI clients to search, read, create, and edit notes.
             </p>
             <ul class="check-list">
-              <li>No NoteX account or cloud synchronization</li>
+              <li>No account or Google Drive backup required for desktop MCP</li>
               <li>Available only while NoteX and MCP are running</li>
               <li>Local Streamable HTTP connection on your computer</li>
             </ul>
@@ -200,20 +210,20 @@
       <section class="section local-section" aria-labelledby="local-title">
         <div class="section-heading">
           <p class="eyebrow">Your data</p>
-          <h2 id="local-title">A desktop app first.</h2>
+          <h2 id="local-title">Local editing wherever you work.</h2>
         </div>
         <div class="local-grid">
           <div>
             <strong>SQLite is the source of truth</strong>
-            <p>Your notes are stored in the existing local database, not mirrored to a NoteX cloud.</p>
+            <p>The desktop app saves to SQLite. Browser mode saves downloaded notes on your device and backs up account libraries to your Google Drive.</p>
           </div>
           <div>
             <strong>You control AI access</strong>
-            <p>Local MCP starts only when you enable it and stops when you choose or close NoteX.</p>
+            <p>Desktop MCP starts only when you enable it and stops when you choose or close NoteX.</p>
           </div>
           <div>
             <strong>Bring the whole workspace</strong>
-            <p>Exported packages keep the database and attached files together for local backups.</p>
+            <p>Desktop exports keep the database and attached files together for portable backups.</p>
           </div>
         </div>
       </section>
@@ -250,14 +260,15 @@
             <span class="guide-bottom">Follow the setup guide <span aria-hidden="true">→</span></span>
           </a>
         </div>
-        <div class="learn-shortcuts"><span>Already comfortable with the basics?</span><a href="./docs/keyboard.html">Keyboard workflows <span aria-hidden="true">→</span></a><a href="./docs/import-export.html">Backups & portability <span aria-hidden="true">→</span></a></div>
+        <div class="learn-shortcuts"><span>Already comfortable with the basics?</span><a href="./docs/mobile-tablet.html">Tablet & phone guide <span aria-hidden="true">→</span></a><a href="./docs/keyboard.html">Keyboard workflows <span aria-hidden="true">→</span></a><a href="./docs/import-export.html">Backups & portability <span aria-hidden="true">→</span></a></div>
       </section>
 
       <section class="section faq-section" aria-labelledby="faq-title">
         <div class="section-heading"><p class="eyebrow">Good to know</p><h2 id="faq-title">Before you get started.</h2></div>
         <div class="faq-list">
-          <details><summary>Do I need an account or internet connection?</summary><p>No account is needed for the desktop app. Writing, organizing, searching, and exporting work offline. Downloading updates and using an online AI service require a connection.</p></details>
-          <details><summary>Can I move or back up my notes?</summary><p>Yes. Export a complete workspace with its attached files as a .notex package, or a single note as .notex-note. A full-workspace import replaces the current library. <a href="./docs/import-export.html">Read the import and backup guide →</a></p></details>
+          <details><summary>Do I need an account or internet connection?</summary><p>The Windows app works without an account, including offline writing, searching, and exports. Browser mode requires a Google account; downloaded notes can be edited offline after the app and notes have been cached. Backups resume when you reconnect.</p></details>
+          <details><summary>Can I use NoteX on a tablet or phone?</summary><p>Yes. Open the web app in your browser and sign in with Google. The interface adapts to touch screens; on phones, use portrait orientation. <a href="./docs/mobile-tablet.html">Read the tablet and phone guide →</a></p></details>
+          <details><summary>Can I move or back up my notes?</summary><p>Yes. On desktop, export a complete workspace with its attached files as a .notex package, or a single note as .notex-note. A full-workspace import replaces the current library. You can also back up an account library to Google Drive. <a href="./docs/import-export.html">Read the import and backup guide →</a></p></details>
           <details><summary>Is AI required to use NoteX?</summary><p>No. Local MCP is optional and starts only when you enable it. It connects compatible clients to your library while NoteX is open. Content read by an AI client is subject to that client's own privacy settings.</p></details>
         </div>
       </section>
