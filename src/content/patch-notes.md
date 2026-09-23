@@ -27,6 +27,8 @@ It also improves touch interactions, drag and drop, image handling, menus, modal
 - Better support for themes, languages, long content, tables, images, and attachments.
 - Improved focus, keyboard, gesture, and order persistence behavior.
 
+---
+
 # 2.3.1
 
 ## What's New in NoteX
