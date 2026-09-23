@@ -1,45 +1,36 @@
 import { convertFileSrc, isTauri } from '@tauri-apps/api/core';
-import { browserFileUrl, currentBrowserStorage } from '../storage/storageRuntime';
+import { browserFileUrl, currentBrowserStorage, releaseBrowserFileUrl } from '../storage/storageRuntime';
 import { desktopInvoke as invoke } from '../storage/desktopInvoke';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import type { NoteFile, NoteFileKind } from '../models/models';
+import { createUuid } from '../utils/createUuid';
 
 type FileImportInfo = NoteFile & {
   absolutePath: string;
   kind: NoteFileKind;
 };
 
-const attachmentFilters = [
-  {
-    name: 'Supported files',
-    extensions: [
-      'apng',
-      'avif',
-      'bmp',
-      'csv',
-      'doc',
-      'docx',
-      'gif',
-      'jpeg',
-      'jpg',
-      'md',
-      'pdf',
-      'png',
-      'svg',
-      'txt',
-      'webp',
-      'xls',
-      'xlsx',
-    ],
-  },
-];
+const imageExtensions = ['apng', 'avif', 'bmp', 'gif', 'jpeg', 'jpg', 'png', 'svg', 'webp'];
+const fileExtensions = ['csv', 'doc', 'docx', 'md', 'pdf', 'txt', 'xls', 'xlsx'];
 
-export async function chooseNoteAttachment(): Promise<string | File | null> {
+function attachmentFilter(kind: NoteFileKind | 'any') {
+  return {
+    name: kind === 'image' ? 'Images' : kind === 'attachment' ? 'Documents' : 'Supported files',
+    extensions: kind === 'image'
+      ? imageExtensions
+      : kind === 'attachment'
+        ? fileExtensions
+        : [...imageExtensions, ...fileExtensions],
+  };
+}
+
+export async function chooseNoteAttachment(kind: NoteFileKind | 'any' = 'any'): Promise<string | File | null> {
+  const filter = attachmentFilter(kind);
   if (!isTauri()) {
     return new Promise((resolve) => {
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = attachmentFilters[0].extensions.map((extension) => `.${extension}`).join(',');
+      input.accept = filter.extensions.map((extension) => `.${extension}`).join(',');
       input.addEventListener('change', () => resolve(input.files?.[0] ?? null), { once: true });
       input.addEventListener('cancel', () => resolve(null), { once: true });
       input.click();
@@ -47,7 +38,7 @@ export async function chooseNoteAttachment(): Promise<string | File | null> {
   }
   const selected = await open({
     multiple: false,
-    filters: attachmentFilters,
+    filters: [filter],
   });
 
   return typeof selected === 'string' ? selected : null;
@@ -60,7 +51,7 @@ export async function importNoteAttachment(sourcePath: string | File, noteId: st
     const bytes = new Uint8Array(await sourcePath.arrayBuffer());
     let checksum = 0xcbf29ce484222325n;
     for (const byte of bytes) checksum = BigInt.asUintN(64, (checksum ^ BigInt(byte)) * 0x100000001b3n);
-    const id = crypto.randomUUID();
+    const id = createUuid();
     const relativePath = `${noteId}/${id}/${encodeURIComponent(sourcePath.name).replace(/%/g, '_')}`;
     await storage.writeBlob(relativePath, sourcePath);
     return { id, noteId, blockId: blockId ?? null, kind: sourcePath.type.startsWith('image/') ? 'image' : 'attachment',
@@ -92,7 +83,10 @@ export async function openNoteAttachment(relativePath: string) {
 }
 
 export function deleteNoteAttachment(relativePath: string) {
-  if (!isTauri()) return currentBrowserStorage().deleteBlob(relativePath);
+  if (!isTauri()) {
+    releaseBrowserFileUrl(relativePath);
+    return currentBrowserStorage().deleteBlob(relativePath);
+  }
   return invoke<void>('notex_note_file_delete', { relativePath });
 }
 

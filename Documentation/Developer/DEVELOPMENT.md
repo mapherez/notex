@@ -32,6 +32,29 @@ For Google authentication and Drive configuration, follow
 [Google OAuth and build configuration](GOOGLE_DRIVE_SETUP.md). Browser mode
 requires a Google account; desktop can run without one.
 
+### Tablet layout testing without Google login
+
+To test the browser app over your local network, add this to `.env.local`:
+
+```dotenv
+VITE_DEV_AUTH_BYPASS=true
+```
+
+Restart `npm run dev`, then open the Vite **Network** URL reachable from the
+tablet on the same network (for example, `http://192.168.1.122:5173`). No Google
+Console change is needed for this mode.
+
+The bypass opens a separate local IndexedDB library, `notex-dev-layouts`, with
+the existing default note, tags, collections and local profile. It reuses the
+normal app and editor. Changes remain in that browser at that origin; existing
+notes are not overwritten on reload. An empty library is seeded with the normal
+default data. Google login and Drive operations are unavailable in this mode,
+and the remembered Google account and its library are left untouched.
+
+The flag applies only to the Vite development server in the browser. Production
+builds, `npm run preview`, and Tauri keep their normal authentication. Set it to
+`false` (or remove it) and restart Vite to test the real Google flow again.
+
 ## Checks and builds
 
 ```bash

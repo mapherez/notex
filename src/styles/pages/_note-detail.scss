@@ -90,6 +90,151 @@
   box-shadow: none;
 }
 
+.document-top--narrow-desktop,
+.document-top--touch-adapted {
+  display: grid;
+  top: var(
+    --nx-document-top-offset,
+    calc(var(--nx-shell-top-offset, 0px) + var(--nx-topbar-height))
+  );
+  grid-template-areas:
+    "back actions"
+    "toolbar toolbar";
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.document-top--touch-adapted {
+  grid-template-areas: "back toolbar actions";
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.document-top--narrow-desktop .back-button,
+.document-top--touch-adapted .back-button {
+  grid-area: back;
+  justify-self: start;
+}
+
+.document-top--narrow-desktop .document-top-toolbar,
+.document-top--touch-adapted .document-top-toolbar {
+  grid-area: toolbar;
+  width: 100%;
+  min-width: 0;
+}
+
+.document-top--touch-adapted .note-tiptap-toolbar {
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+.document-top--touch-adapted .note-edit-toolbar__tools {
+  min-width: 0;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overflow: auto hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+}
+
+.document-top--touch-adapted .note-edit-toolbar__tools::-webkit-scrollbar {
+  display: none;
+}
+
+.document-top--touch-adapted .markdown-tool-button {
+  min-width: 2.75rem;
+  height: 2.75rem;
+}
+
+.document-top--touch-adapted .markdown-tool-tooltip {
+  display: none;
+}
+
+.note-tiptap-toolbar--scrollable {
+  position: relative;
+  overflow: hidden;
+}
+
+.note-tiptap-toolbar__scroll-cue {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  width: 1.75rem;
+  place-items: center;
+  color: color-mix(in srgb, var(--nx-color-text-muted) 78%, transparent);
+  pointer-events: none;
+}
+
+.note-tiptap-toolbar__scroll-cue svg {
+  width: 1rem;
+  height: 1rem;
+  filter: drop-shadow(0 0 0.25rem var(--nx-color-surface));
+}
+
+.note-tiptap-toolbar__scroll-cue--left {
+  left: 0;
+  background: linear-gradient(90deg, var(--nx-color-surface) 52%, transparent);
+}
+
+.note-tiptap-toolbar__scroll-cue--right {
+  right: 0;
+  background: linear-gradient(270deg, var(--nx-color-surface) 52%, transparent);
+}
+
+.document-top--narrow-desktop .document-actions,
+.document-top--touch-adapted .note-document-actions-menu {
+  grid-area: actions;
+  justify-self: end;
+}
+
+.document-top--narrow-desktop .note-tiptap-toolbar {
+  min-width: 0;
+}
+
+.note-document-actions-menu {
+  position: relative;
+  display: inline-flex;
+  z-index: 80;
+}
+
+.note-document-actions-menu > .icon-button {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.note-document-actions-popover {
+  top: calc(100% + var(--nx-space-2));
+  right: 0;
+  width: min(18rem, calc(100vw - 2 * var(--nx-page-gutter)));
+  z-index: 120;
+}
+
+.note-document-actions-popover button {
+  min-height: 2.75rem;
+}
+
+.note-document-actions-popover button.danger {
+  color: var(--nx-color-danger);
+}
+
+.note-document-actions-popover button.danger:is(:hover, :focus-visible) {
+  color: var(--nx-color-danger);
+}
+
+@media (max-width: 680px) and (any-pointer: coarse) {
+  .document-top--touch-adapted {
+    grid-template-areas: "toolbar actions";
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .document-top--touch-adapted .back-button {
+    display: none;
+  }
+}
+
 .document-actions,
 .inline-actions {
   display: flex;
@@ -214,8 +359,9 @@
 
 .thumbnail-picker-menu {
   position: absolute;
-  top: calc(100% + var(--nx-space-3));
-  right: 0;
+  top: var(--nx-popover-top, calc(100% + var(--nx-space-3)));
+  left: var(--nx-popover-left, 0);
+  right: auto;
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(3, 2.9rem);
@@ -225,6 +371,10 @@
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-3);
   box-shadow: var(--nx-shadow-soft);
+  max-width: var(--nx-popover-max-width, calc(100vw - (var(--nx-page-gutter) * 2)));
+  max-height: var(--nx-popover-max-height, 70dvh);
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .thumbnail-option {
@@ -302,6 +452,28 @@
 .editable-collection-field.editing .custom-select__chevron {
   color: inherit;
   opacity: 0.72;
+}
+
+.note-collection-field.editable-collection-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+}
+
+.note-collection-field.editing .custom-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.note-collection-field .custom-select__menu {
+  width: 100%;
+}
+
+@media (any-pointer: coarse) {
+  .note-collection-field .custom-select__option {
+    min-height: 2.75rem;
+  }
 }
 
 @each $name, $value in $palette-colors {
@@ -615,6 +787,17 @@
 .meta-value {
   color: var(--nx-color-text);
   text-align: right;
+}
+
+.meta-row--collection {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.meta-row--collection .meta-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .side-list {

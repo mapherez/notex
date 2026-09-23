@@ -1,4 +1,5 @@
 @use "../abstracts/variables" as *;
+@use "../abstracts/breakpoints" as *;
 
 .app-frame {
   display: grid;
@@ -8,7 +9,87 @@
 }
 
 .app-frame--custom-titlebar {
+  --nx-shell-top-offset: var(--nx-window-titlebar-height);
   grid-template-rows: var(--nx-window-titlebar-height) minmax(0, 1fr);
+}
+
+.phone-landscape-guard {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  min-height: 100vh;
+  min-height: 100dvh;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 42%, var(--nx-color-accent-soft), transparent 42%),
+    var(--nx-color-canvas);
+  color: var(--nx-color-text);
+  padding:
+    max(var(--nx-space-5), env(safe-area-inset-top))
+    max(var(--nx-space-6), env(safe-area-inset-right))
+    max(var(--nx-space-5), env(safe-area-inset-bottom))
+    max(var(--nx-space-6), env(safe-area-inset-left));
+  outline: none;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+.phone-landscape-guard__content {
+  display: grid;
+  width: min(100%, 32rem);
+  justify-items: center;
+  gap: var(--nx-space-3);
+  text-align: center;
+}
+
+.phone-landscape-guard__icon {
+  position: relative;
+  display: grid;
+  width: 4.5rem;
+  height: 4.5rem;
+  margin-bottom: var(--nx-space-2);
+  place-items: center;
+  border: 1px solid var(--nx-color-border-strong);
+  border-radius: var(--nx-radius-lg);
+  background: var(--nx-color-surface);
+  box-shadow: var(--nx-shadow-soft);
+  color: var(--nx-color-accent-strong);
+}
+
+.phone-landscape-guard__icon > svg:first-child {
+  width: 2rem;
+  height: 2rem;
+}
+
+.phone-landscape-guard__icon > svg:last-child {
+  position: absolute;
+  right: -0.55rem;
+  bottom: -0.55rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--nx-color-border-strong);
+  border-radius: 999px;
+  background: var(--nx-color-surface-elevated);
+  padding: 0.3rem;
+}
+
+.phone-landscape-guard h1,
+.phone-landscape-guard p {
+  margin: 0;
+}
+
+.phone-landscape-guard h1 {
+  font-size: clamp(1.35rem, 5vw, 1.8rem);
+  line-height: 1.15;
+}
+
+.phone-landscape-guard p {
+  max-width: 28rem;
+  color: var(--nx-color-text-muted);
+  font-size: clamp(0.9rem, 3vw, 1rem);
+  line-height: 1.55;
 }
 
 .window-titlebar {
@@ -137,7 +218,10 @@
   position: sticky;
   top: 0;
   display: flex;
-  height: 100vh;
+  height: calc(100dvh - var(--nx-shell-top-offset, 0px));
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   flex-direction: column;
   border-right: 1px solid var(--nx-color-border);
   background: var(--nx-color-sidebar);
@@ -147,7 +231,16 @@
 
 .app-frame--custom-titlebar .sidebar {
   top: var(--nx-window-titlebar-height);
-  height: calc(100vh - var(--nx-window-titlebar-height));
+}
+
+.sidebar > * {
+  flex-shrink: 0;
+}
+
+.sidebar .sidebar-close,
+.topbar .mobile-menu-button,
+.sidebar-backdrop {
+  display: none;
 }
 
 .sidebar-header {
@@ -288,6 +381,7 @@
   appearance: none;
   display: flex;
   min-height: 2.95rem;
+  min-width: 0;
   align-items: center;
   gap: var(--nx-space-3);
   border: 0;
@@ -299,6 +393,15 @@
   font-weight: 560;
   text-align: left;
   transition: background 160ms ease, color 160ms ease;
+}
+
+.nav-item span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nav-item svg {
+  flex-shrink: 0;
 }
 
 .nav-item--spaced {
@@ -522,32 +625,30 @@
 
 .topbar {
   position: sticky;
-  top: 0;
+  top: var(--nx-visual-viewport-top, 0);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   width: min(100%, var(--nx-content-max));
   min-height: var(--nx-topbar-height);
   margin: auto;
-  padding: var(--nx-page-gutter) var(--nx-space-8);
+  padding: var(--nx-page-gutter);
   background: color-mix(in srgb, var(--nx-color-canvas) 94%, transparent);
   backdrop-filter: blur(18px);
   z-index: 90;
 }
 
 .app-frame--custom-titlebar .topbar {
-  top: var(--nx-window-titlebar-height);
+  top: calc(var(--nx-window-titlebar-height) + var(--nx-visual-viewport-top, 0));
 }
 
 .topbar--with-search {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--nx-space-4);
 }
 
 .topbar__search-area {
-  width: min(100%, var(--nx-content-max));
-  margin: 0 auto;
-  padding-inline-end: 10rem;
+  min-width: 0;
 }
 
 .topbar--with-search .search-box-shell,
@@ -556,10 +657,7 @@
 }
 
 .topbar--with-search .topbar__actions {
-  position: absolute;
-  top: 50%;
-  right: var(--nx-page-gutter);
-  transform: translateY(-50%);
+  position: relative;
 }
 
 .search-box-shell {
@@ -582,13 +680,16 @@
 
 .search-results-popover {
   position: absolute;
-  top: calc(100% + var(--nx-space-2));
-  left: 0;
-  right: 0;
+  top: var(--nx-popover-top, calc(100% + var(--nx-space-2)));
+  left: var(--nx-popover-left, 0);
+  right: auto;
   z-index: 45;
   display: grid;
+  width: var(--nx-popover-anchor-width, 100%);
+  max-width: var(--nx-popover-max-width, calc(100vw - (var(--nx-page-gutter) * 2)));
   overflow: auto;
-  max-height: min(26rem, 70vh);
+  max-height: min(26rem, var(--nx-popover-max-height, calc(100dvh - 8rem - var(--nx-shell-top-offset, 0px))));
+  overscroll-behavior: contain;
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-md);
   background: var(--nx-color-surface-elevated);
@@ -651,4 +752,84 @@
   padding: var(--nx-space-4);
   color: var(--nx-color-text-muted);
   font-size: 0.9rem;
+}
+
+@media (max-width: breakpoint("tablet")) {
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: var(--nx-shell-top-offset, 0) auto 0 0;
+    width: min(20rem, calc(100% - 1rem));
+    visibility: hidden;
+    transform: translateX(-100%);
+    transition: transform 180ms ease;
+    z-index: 110;
+  }
+
+  .sidebar.open {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .sidebar-header {
+    justify-content: space-between;
+    gap: var(--nx-space-3);
+  }
+
+  .sidebar .sidebar-close,
+  .topbar .mobile-menu-button {
+    display: inline-grid;
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: var(--nx-shell-top-offset, 0) 0 0;
+    display: block;
+    border: 0;
+    background: rgba(0, 0, 0, 0.56);
+    z-index: 105;
+  }
+
+  .topbar,
+  .topbar--with-search {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--nx-space-3);
+  }
+}
+
+// any-pointer includes hybrid devices: a connected mouse must not reduce the
+// targets available to a finger. Keyboard hints only disappear for coarse primary input.
+@media (any-pointer: coarse) {
+  .topbar .icon-button,
+  .topbar .avatar-button,
+  .sidebar-close,
+  .sidebar .brand,
+  .sidebar .nav-item,
+  .sidebar-section-title-link,
+  .sidebar-legal-link,
+  .sidebar-version,
+  .sidebar-mcp-status,
+  .topbar .account-menu button {
+    min-width: 3rem;
+    min-height: 3rem;
+  }
+
+  .topbar .search-box input {
+    font-size: 1rem;
+  }
+}
+
+@media (pointer: coarse) {
+  .topbar .search-box .kbd {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
 }

@@ -3,7 +3,8 @@
     "title": "Getting started",
     "pages": [
       { "slug": "index", "title": "Introduction", "description": "Meet your local workspace for structured notes and connected knowledge." },
-      { "slug": "quickstart", "title": "Your first note", "description": "Install NoteX and build your first note in a few simple steps." }
+      { "slug": "quickstart", "title": "Your first note", "description": "Install NoteX and build your first note in a few simple steps." },
+      { "slug": "mobile-tablet", "title": "Tablet & phone use", "description": "Navigate, edit, and manage notes with touch controls on smaller screens." }
     ]
   },
   {
@@ -30,7 +31,7 @@
   {
     "title": "Your data",
     "pages": [
-      { "slug": "local-storage", "title": "Local storage & privacy", "description": "Understand where your notes live and what stays on your computer." },
+      { "slug": "local-storage", "title": "Local storage & privacy", "description": "Understand where desktop and browser notes are stored." },
       { "slug": "google-drive-web", "title": "Google Drive & browser mode", "description": "Connect your account, back up notes, and continue working in the browser." },
       { "slug": "import-export", "title": "Import, export & backups", "description": "Back up your workspace or share an individual note with its files." }
     ]

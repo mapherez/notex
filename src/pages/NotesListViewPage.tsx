@@ -1,7 +1,8 @@
 import { ChevronDown, Tag as TagIcon, Trash2, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { NoteRow } from '../components/notes/NoteRow';
+import { useAdaptedContent } from '../core/utils/useAdaptedContent';
 import { AppModal } from '../components/ui/AppModal';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -16,6 +17,7 @@ import { normalizeNotesSortOrder, type NotesSortOrder } from '../core/utils/note
 import { richTextToPlainText } from '../core/utils/richText';
 import { sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
+import { useFloatingPopover } from '../core/utils/useFloatingPopover';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
 import { useNotesStore } from '../store/useNotesStore';
@@ -40,6 +42,8 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   const tags = useKnowledgeStore((state) => state.tags);
   const collections = useKnowledgeStore((state) => state.collections);
   const preferredLayout = useAppStore((state) => state.settings.preferredLayout);
+  const adaptedContent = useAdaptedContent();
+  const effectiveLayout = adaptedContent ? 'list' : preferredLayout;
   const pinnedNoteIds = useAppStore((state) => state.settings.pinnedNoteIds);
   const setPreferredLayout = useAppStore((state) => state.setPreferredLayout);
   const reorderPinnedNotes = useAppStore((state) => state.reorderPinnedNotes);
@@ -47,11 +51,16 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
   const [trashConfirm, setTrashConfirm] = useState<TrashConfirmState>(null);
   const [activePinnedDragId, setActivePinnedDragId] = useState<string | null>(null);
+  const [pinnedDragVisual, setPinnedDragVisual] = useState<{ x: number; y: number } | null>(null);
   const [orderedPinnedDragIds, setOrderedPinnedDragIds] = useState<string[]>([]);
   const activePinnedDragIdRef = useRef<string | null>(null);
+  const activePinnedPointerIdRef = useRef<number | null>(null);
   const orderedPinnedDragIdsRef = useRef<string[]>([]);
   const pinnedDragStartRef = useRef({ x: 0, y: 0 });
   const pinnedDragMovedRef = useRef(false);
+  const pinnedDragGhostRef = useRef<HTMLDivElement>(null);
+  const pinnedDropIndicatorRef = useRef<HTMLDivElement>(null);
+  const pinnedKeyboardReorderPendingRef = useRef(false);
   const tagParam = searchParams.get('tag');
   const collectionParam = searchParams.get('collection');
   const defaultSortOrder: NotesSortOrder = mode === 'recent' ? recentNotesSortOrder : defaultNotesSortOrder;
@@ -102,6 +111,9 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
         : persistedPinnedNotes,
     [activePinnedDragId, filteredPinnedNotes, orderedPinnedDragIds, persistedPinnedNotes],
   );
+  const draggedPinnedNote = activePinnedDragId
+    ? filteredPinnedNotes.find((note) => note.id === activePinnedDragId)
+    : null;
   const regularNotes = splitPinnedLists ? filtered.filter((note) => !note.isPinned) : filtered;
   const showBulkActions = selectionEnabled && selectedNotes.length > 0;
   const trashCount = notes.filter((note) => note.isTrashed).length;
@@ -134,7 +146,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
 
   useEffect(() => {
     if (!pinOrderingEnabled && activePinnedDragIdRef.current) {
-      finishPinnedNoteReorder();
+      cancelPinnedNoteReorder();
     }
   }, [pinOrderingEnabled]);
 
@@ -144,11 +156,26 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
     }
 
     function handlePointerMove(event: globalThis.PointerEvent) {
+      if (event.pointerId !== activePinnedPointerIdRef.current) return;
       trackPinnedNoteReorderAt(event.clientX, event.clientY);
     }
 
-    function handlePointerUp() {
+    function handlePointerUp(event: globalThis.PointerEvent) {
+      if (event.pointerId !== activePinnedPointerIdRef.current) return;
       finishPinnedNoteReorder();
+    }
+
+    function handlePointerCancel(event: globalThis.PointerEvent) {
+      if (event.pointerId !== activePinnedPointerIdRef.current) return;
+      cancelPinnedNoteReorder();
+    }
+
+    function handleAdditionalPointer(event: globalThis.PointerEvent) {
+      if (event.pointerId !== activePinnedPointerIdRef.current) cancelPinnedNoteReorder();
+    }
+
+    function handleBlur() {
+      cancelPinnedNoteReorder();
     }
 
     function handleKeyDown(event: globalThis.KeyboardEvent) {
@@ -159,14 +186,53 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerCancel);
+    window.addEventListener('pointerdown', handleAdditionalPointer);
+    window.addEventListener('blur', handleBlur);
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerCancel);
+      window.removeEventListener('pointerdown', handleAdditionalPointer);
+      window.removeEventListener('blur', handleBlur);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [activePinnedDragId, pinnedNotes]);
+
+  useLayoutEffect(() => {
+    if (!pinnedDragVisual || !activePinnedDragId) return;
+    const list = document.querySelector<HTMLElement>('.pin-list');
+    if (!list) return;
+    const listRect = list.getBoundingClientRect();
+    const candidates = Array.from(list.querySelectorAll<HTMLElement>('[data-note-id]'))
+      .filter((row) => row.dataset.noteId !== activePinnedDragId)
+      .map((row) => row.getBoundingClientRect());
+    const dropIndex = Math.max(0, pinnedNotes.findIndex((note) => note.id === activePinnedDragId));
+    let lineTop = listRect.top;
+    if (candidates.length > 0) {
+      if (dropIndex === 0) lineTop = candidates[0].top;
+      else if (dropIndex >= candidates.length) lineTop = candidates[candidates.length - 1].bottom;
+      else lineTop = (candidates[dropIndex - 1].bottom + candidates[dropIndex].top) / 2;
+    }
+
+    const viewport = window.visualViewport;
+    const viewportLeft = viewport?.offsetLeft ?? 0;
+    const viewportWidth = viewport?.width ?? window.innerWidth;
+    const ghostWidth = Math.min(listRect.width, viewportWidth - 16);
+    const desiredLeft = pinnedDragVisual.x - (pinnedDragStartRef.current.x - listRect.left);
+    const ghostLeft = Math.min(
+      viewportLeft + viewportWidth - ghostWidth - 8,
+      Math.max(viewportLeft + 8, desiredLeft),
+    );
+    pinnedDragGhostRef.current?.style.setProperty('--nx-touch-drag-left', `${ghostLeft}px`);
+    pinnedDragGhostRef.current?.style.setProperty('--nx-touch-drag-top', `${pinnedDragVisual.y}px`);
+    pinnedDragGhostRef.current?.style.setProperty('--nx-touch-drag-width', `${ghostWidth}px`);
+    pinnedDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-left', `${listRect.left}px`);
+    pinnedDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-top', `${lineTop}px`);
+    pinnedDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-width', `${listRect.width}px`);
+  }, [activePinnedDragId, pinnedDragVisual, pinnedNotes]);
 
   async function handleClearTrash() {
     if (trashCount) {
@@ -249,11 +315,42 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       return;
     }
 
+    event.currentTarget.focus({ preventScroll: true });
+    event.currentTarget.setPointerCapture(event.pointerId);
     activePinnedDragIdRef.current = noteId;
+    activePinnedPointerIdRef.current = event.pointerId;
     pinnedDragStartRef.current = { x: event.clientX, y: event.clientY };
     pinnedDragMovedRef.current = false;
     updateOrderedPinnedDragIds(persistedPinnedNotes.map((note) => note.id));
     setActivePinnedDragId(noteId);
+  }
+
+  async function movePinnedNoteWithKeyboard(noteId: string, direction: -1 | 1) {
+    if (!pinOrderingEnabled || pinnedKeyboardReorderPendingRef.current) return;
+    if (activePinnedDragIdRef.current) cancelPinnedNoteReorder();
+    const ids = persistedPinnedNotes.map((note) => note.id);
+    const index = ids.indexOf(noteId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= ids.length) return;
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    pinnedKeyboardReorderPendingRef.current = true;
+    try {
+      await reorderPinnedNotes(ids);
+      requestAnimationFrame(() => {
+        const row = Array.from(document.querySelectorAll<HTMLElement>('.pin-list [data-note-id]'))
+          .find((element) => element.dataset.noteId === noteId);
+        if (!row) return;
+        row.querySelector<HTMLButtonElement>('.note-row__drag-handle')?.focus({ preventScroll: true });
+        const rect = row.getBoundingClientRect();
+        const headerBottom = Math.max(0, ...Array.from(document.querySelectorAll<HTMLElement>('.topbar'))
+          .map((bar) => bar.getBoundingClientRect().bottom)) + 16;
+        const available = Math.max(0, window.innerHeight - headerBottom - 16);
+        const desiredTop = headerBottom + (available - Math.min(rect.height, available)) / 2;
+        window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - desiredTop), behavior: 'instant' });
+      });
+    } finally {
+      pinnedKeyboardReorderPendingRef.current = false;
+    }
   }
 
   function trackPinnedNoteReorderAt(clientX: number, clientY: number) {
@@ -272,6 +369,8 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       return;
     }
 
+    setPinnedDragVisual({ x: clientX, y: clientY });
+
     const target = document.elementFromPoint(clientX, clientY);
     const row = target instanceof HTMLElement ? target.closest<HTMLElement>('[data-note-id]') : null;
     const overId = row?.dataset.noteId;
@@ -283,6 +382,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   }
 
   function finishPinnedNoteReorder() {
+    if (!activePinnedDragIdRef.current) return;
     const nextIds = orderedPinnedDragIdsRef.current;
     const originalIds = persistedPinnedNotes.map((note) => note.id);
 
@@ -294,14 +394,17 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   }
 
   function cancelPinnedNoteReorder() {
+    if (!activePinnedDragIdRef.current) return;
     updateOrderedPinnedDragIds(persistedPinnedNotes.map((note) => note.id));
     resetPinnedDragState();
   }
 
   function resetPinnedDragState() {
     activePinnedDragIdRef.current = null;
+    activePinnedPointerIdRef.current = null;
     pinnedDragMovedRef.current = false;
     setActivePinnedDragId(null);
+    setPinnedDragVisual(null);
   }
 
   function updateOrderedPinnedDragIds(input: string[] | ((currentIds: string[]) => string[])) {
@@ -321,7 +424,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       <NoteRow
         key={note.id}
         collections={collections}
-        layout={preferredLayout}
+        layout={effectiveLayout}
         note={note}
         onPermanentDelete={
           mode === 'trash'
@@ -332,6 +435,15 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
             : undefined
         }
         onPinnedDragPointerDown={pinOrderingEnabled && note.isPinned ? (event) => beginPinnedNoteReorder(event, note.id) : undefined}
+        onPinnedDragPointerUp={pinOrderingEnabled && note.isPinned ? (event) => {
+          if (event.pointerId === activePinnedPointerIdRef.current) finishPinnedNoteReorder();
+        } : undefined}
+        onPinnedDragPointerCancel={pinOrderingEnabled && note.isPinned ? (event) => {
+          if (event.pointerId === activePinnedPointerIdRef.current) cancelPinnedNoteReorder();
+        } : undefined}
+        onPinnedKeyboardReorder={pinOrderingEnabled && note.isPinned
+          ? (direction) => void movePinnedNoteWithKeyboard(note.id, direction)
+          : undefined}
         onSelectionChange={updateNoteSelection}
         pinnedDragActive={activePinnedDragId === note.id}
         pinnedDragEnabled={pinOrderingEnabled && note.isPinned}
@@ -346,7 +458,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   }
 
   return (
-    <div className="page-content list-page-grid">
+    <div className={`page-content list-page-grid${adaptedContent ? ' adapted-content' : ''}`}>
       <header className="page-header-actions">
         <span>
           <h1 className="page-title">{copy.title}</h1>
@@ -395,13 +507,15 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       {filtered.length ? (
         <div className={splitPinnedLists ? 'note-list-stack' : undefined}>
           {splitPinnedLists ? (
-            <div className={['note-list', 'pin-list', preferredLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
+            <div
+              className={['note-list', 'pin-list', effectiveLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}
+            >
               {renderNoteRows(pinnedNotes)}
             </div>
           ) : null}
 
           {regularNotes.length ? (
-            <div className={['note-list', splitPinnedLists && 'unpinned-list', preferredLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
+            <div className={['note-list', splitPinnedLists && 'unpinned-list', effectiveLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
               {renderNoteRows(regularNotes)}
             </div>
           ) : null}
@@ -409,6 +523,21 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       ) : (
         <EmptyState />
       )}
+      {pinnedDragVisual && draggedPinnedNote ? (
+        <>
+          <div className="pinned-note-drag-ghost" ref={pinnedDragGhostRef} aria-hidden="true">
+            <div className="pinned-note-drag-ghost__title">
+              {richTextToPlainText(draggedPinnedNote.title).trim() || t('notes.untitled')}
+            </div>
+            {richTextToPlainText(draggedPinnedNote.subtitle).trim() ? (
+              <div className="pinned-note-drag-ghost__content">
+                {richTextToPlainText(draggedPinnedNote.subtitle).trim()}
+              </div>
+            ) : null}
+          </div>
+          <div className="pinned-note-drop-indicator" ref={pinnedDropIndicatorRef} aria-hidden="true" />
+        </>
+      ) : null}
       <TrashConfirmModal
         confirmState={trashConfirm}
         onCancel={() => setTrashConfirm(null)}
@@ -449,10 +578,13 @@ function BulkNoteActionsRow({
   const [tagsOpen, setTagsOpen] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
   const tagsMenuRef = useRef<HTMLDivElement>(null);
+  const tagsTriggerRef = useRef<HTMLButtonElement>(null);
+  const tagsPopoverRef = useRef<HTMLDivElement>(null);
   const sortedTags = useMemo(() => sortTagsByName(tags), [tags]);
   const partiallySelected = selectedCount > 0 && selectedCount < totalCount;
 
   useClickOutside(tagsMenuRef, tagsOpen, () => setTagsOpen(false));
+  useFloatingPopover(tagsOpen, tagsTriggerRef, tagsPopoverRef, 'bottom-start');
 
   useEffect(() => {
     if (selectAllRef.current) {
@@ -498,13 +630,13 @@ function BulkNoteActionsRow({
 
       <div className="bulk-field bulk-tags-field" ref={tagsMenuRef}>
         <span>{t('notes.bulk.assignTags')}</span>
-        <button className="bulk-tags-trigger" type="button" aria-expanded={tagsOpen} onClick={() => setTagsOpen((value) => !value)}>
+        <button className="bulk-tags-trigger" ref={tagsTriggerRef} type="button" aria-expanded={tagsOpen} onClick={() => setTagsOpen((value) => !value)}>
           <TagIcon />
           <span>{t('notes.bulk.chooseTags')}</span>
           <ChevronDown />
         </button>
         {tagsOpen ? (
-          <div className="bulk-tags-menu">
+          <div className="bulk-tags-menu" ref={tagsPopoverRef}>
             {sortedTags.length ? (
               sortedTags.map((tag) => (
                 <BulkTagCheckbox key={tag.id} tag={tag} selectedNotes={selectedNotes} onToggle={onToggleTag} />

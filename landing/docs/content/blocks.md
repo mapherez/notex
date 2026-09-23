@@ -12,13 +12,15 @@ You can still use headings inside a block. Block titles are especially useful wh
 
 Drag a block by its reorder handle to move it to another position.
 
+On a touch screen, press and hold a block, then drag it. A compact preview and drop indicator show the destination. Keep holding without dragging to open a menu with **Move block up**, **Move block down**, and **Delete**. See the [tablet and phone guide](mobile-tablet.md#move-and-manage-blocks-by-touch).
+
 For keyboard control:
 
 1. Click the reorder handle, or reach it using **Tab**.
 2. Press **Up** to move the block one position earlier, or **Down** to move it one position later.
 3. Repeat as needed. The handle keeps focus and the page follows the moved block so it stays in view.
 
-The first block cannot move farther up, and the last block cannot move farther down. Clicking the handle gives it keyboard focus without removing drag-and-drop behavior.
+The first block cannot move farther up, and the last block cannot move farther down. Clicking the handle gives it keyboard focus without removing drag-and-drop behavior. You can also press **Escape** to cancel an active drag.
 
 ## Navigate a long note
 

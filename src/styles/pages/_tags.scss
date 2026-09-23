@@ -172,17 +172,22 @@
 
 .tags-favorite-picker-menu {
   position: absolute;
-  top: calc(100% + var(--nx-space-2));
-  right: 0;
+  top: var(--nx-popover-top, calc(100% + var(--nx-space-2)));
+  left: var(--nx-popover-left, 0);
+  right: auto;
   z-index: 80;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   width: min(22rem, calc(100vw - (var(--nx-page-gutter) * 2)));
+  max-width: var(--nx-popover-max-width, calc(100vw - (var(--nx-page-gutter) * 2)));
+  max-height: var(--nx-popover-max-height, 70dvh);
   gap: var(--nx-space-2);
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-md);
   background: var(--nx-color-surface-elevated);
   padding: var(--nx-space-2);
   box-shadow: var(--nx-shadow-soft);
+  overflow: hidden;
 }
 
 .tags-favorite-picker-search {
@@ -208,8 +213,10 @@
 
 .tags-favorite-picker-options {
   display: grid;
+  min-height: 0;
   overflow: auto;
   max-height: 15rem;
+  overscroll-behavior: contain;
   gap: 0.15rem;
 }
 

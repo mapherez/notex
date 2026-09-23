@@ -1,10 +1,8 @@
 @media (max-width: 1180px) {
-  .dashboard-layout,
   .document-shell {
     grid-template-columns: 1fr;
   }
 
-  .dashboard-side,
   .document-aside {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -12,57 +10,6 @@
 }
 
 @media (max-width: 900px) {
-  .app-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    position: fixed;
-    transform: translateX(-100%);
-    transition: transform 180ms ease;
-  }
-
-  .app-frame--custom-titlebar .sidebar {
-    top: var(--nx-window-titlebar-height);
-    height: calc(100vh - var(--nx-window-titlebar-height));
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .sidebar-backdrop {
-    position: fixed;
-    inset: 0;
-    display: block;
-    border: 0;
-    background: rgba(0, 0, 0, 0.56);
-    z-index: 15;
-  }
-
-  .mobile-menu-button {
-    display: inline-grid;
-  }
-
-  .topbar,
-  .topbar--with-search {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: var(--nx-space-3);
-  }
-
-  .topbar__search-area {
-    width: auto;
-    margin: 0;
-    padding-right: 0;
-  }
-
-  .topbar--with-search .topbar__actions {
-    position: relative;
-    top: auto;
-    right: auto;
-    transform: none;
-  }
-
   .note-edit-toolbar-shell {
     padding: 0 var(--nx-page-gutter) var(--nx-space-2);
   }
@@ -85,48 +32,6 @@
     min-width: 0;
   }
 
-  .stats-grid,
-  .profile-stat-grid,
-  .dashboard-side,
-  .quick-pin-row,
-  .database-management-grid,
-  .collections-layout,
-  .collection-grid,
-  .tags-layout,
-  .tag-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .database-management-grid .database-path-row + .database-path-row,
-  .profile-stat-grid .profile-row + .profile-row,
-  .profile-stat-grid .settings-row + .settings-row {
-    border-left: 0;
-  }
-
-  .database-management-grid .database-path-row {
-    padding: var(--nx-space-4) 0;
-  }
-
-  .database-management-grid .database-path-row:first-child {
-    padding-top: 0;
-  }
-
-  .database-management-grid .database-path-row + .database-path-row {
-    border-top: 1px solid var(--nx-color-border);
-  }
-
-  .profile-stat-grid .profile-row,
-  .profile-stat-grid .settings-row {
-    border-top: 1px solid var(--nx-color-border);
-    padding: var(--nx-space-4) 0;
-  }
-
-  .profile-stat-grid .profile-row:first-child,
-  .profile-stat-grid .settings-row:first-child {
-    border-top: 0;
-    padding-top: 0;
-  }
-
   .notes-filter-control,
   .notes-filter-order {
     flex: 1 1 14rem;
@@ -136,77 +41,6 @@
 @media (max-width: 680px) {
   :root {
     --nx-page-gutter: 1rem;
-  }
-
-  .topbar__actions .avatar {
-    display: none;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .quick-pin-picker {
-    min-width: min(18rem, calc(100vw - 2rem));
-  }
-
-  .note-row {
-    grid-template-columns: 1.35rem 3rem minmax(0, 1fr) auto;
-    min-height: 4.8rem;
-  }
-
-  .note-row.with-pin-indicator {
-    grid-template-columns: 1.35rem 3rem minmax(0, 1fr) auto;
-  }
-
-  .note-row.selectable.with-pin-indicator {
-    grid-template-columns: 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
-  }
-
-  .note-row.with-drag-handle.with-pin-indicator {
-    grid-template-columns: 1.35rem 1.35rem 3rem minmax(0, 1fr) auto;
-  }
-
-  .note-row.selectable.with-drag-handle.with-pin-indicator {
-    grid-template-columns: 1.35rem 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
-  }
-
-  .note-row__status-stack,
-  .note-row__drag-handle,
-  .note-row__status-button {
-    width: 1.35rem;
-  }
-
-  .note-row__drag-handle,
-  .note-row__status-button {
-    height: 1.35rem;
-  }
-
-  .note-row .note-row__badges,
-  .note-row .tag-chip,
-  .note-row .icon-button {
-    display: none;
-  }
-
-  .notes-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .notes-grid .note-row .note-row__badges {
-    display: flex;
-  }
-
-  .notes-grid .note-row .tag-chip {
-    display: inline-flex;
-  }
-
-  .notes-grid .note-row .icon-button {
-    display: inline-grid;
-  }
-
-  .note-thumb {
-    width: 3rem;
-    height: 3rem;
   }
 
   .usage-table {
@@ -227,7 +61,11 @@
 
   .bulk-note-actions-row {
     align-items: stretch;
-    flex-direction: column;
+    flex-flow: column nowrap;
+  }
+
+  .bulk-note-actions-row .bulk-field {
+    flex: 0 0 auto;
   }
 
   .notes-filter-control,
@@ -271,14 +109,6 @@
     justify-content: flex-end;
   }
 
-  .note-row.selectable {
-    grid-template-columns: 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
-  }
-
-  .note-row.selectable.with-pin-indicator {
-    grid-template-columns: 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
-  }
-
   .note-row.selectable.with-drag-handle.with-pin-indicator {
     grid-template-columns: 1.35rem 1.6rem 1.35rem 3rem minmax(0, 1fr) auto;
   }
@@ -317,22 +147,6 @@
   .document-edit-actions {
     width: 100%;
     justify-content: flex-start;
-  }
-
-  .thumbnail-picker-menu {
-    right: auto;
-    left: 0;
-  }
-
-  .profile-row,
-  .settings-row {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .profile-row .custom-select,
-  .settings-row .custom-select {
-    grid-column: 2;
-    width: 100%;
   }
 
   .mcp-configuration-list__row {

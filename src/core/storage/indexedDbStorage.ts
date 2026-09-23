@@ -1,5 +1,6 @@
 import type { NoteXStorageDatabase, StorageTable } from '../db/notexDb';
 import { hasBackupChange, type PendingBackup } from './backupState';
+import { createUuid } from '../utils/createUuid';
 import type { CatalogEntry, DriveCatalog, NoteBackup } from '../cloud/backupFormat';
 import type { NoteSnapshot } from '../cloud/cloudStorage';
 
@@ -99,7 +100,7 @@ export class IndexedDbStorage {
       const pending = await request<PendingBackup | undefined>(outbox.get(entityId));
       const now = Date.now();
       await request(outbox.put({
-        entityId, kind: name === 'notes' ? 'note' : 'library', changeToken: crypto.randomUUID(),
+      entityId, kind: name === 'notes' ? 'note' : 'library', changeToken: createUuid(),
         version: name === 'notes' ? Number(after?.version ?? Number(before?.version ?? 0) + 1) : (pending?.version ?? 0) + 1,
         deleted: after === undefined && name === 'notes',
         firstChangedAt: pending?.firstChangedAt ?? now, lastChangedAt: now,

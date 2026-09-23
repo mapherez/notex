@@ -1,0 +1,154 @@
+// Page columns measure the space left after navigation; modules measure themselves.
+.profile-layout > .profile-section {
+  container: profile-module / inline-size;
+}
+
+.profile-page-header {
+  flex-wrap: wrap;
+}
+
+.profile-section-title,
+.profile-card .handle,
+.profile-row-label,
+.profile-row-description,
+.mcp-command-button > span {
+  overflow-wrap: anywhere;
+}
+
+.profile-preferences-section:focus-within {
+  position: relative;
+  z-index: 1;
+}
+
+.profile-preferences-section .custom-select {
+  min-width: 0;
+  width: 9.5rem;
+  max-width: 100%;
+}
+
+.profile-preferences-section .custom-select__menu {
+  width: 100%;
+}
+
+.profile-account-actions .google-sign-in-button {
+  white-space: normal;
+}
+
+.profile-drive-status__label,
+.mcp-account-row > span,
+.database-path-row > span {
+  min-width: 0;
+}
+
+.profile-drive-status__label > svg {
+  flex-shrink: 0;
+}
+
+.profile-drive-status__label > span {
+  overflow-wrap: anywhere;
+}
+
+.mcp-profile-section__header {
+  flex-wrap: wrap;
+}
+
+// Shared divider geometry for statistics and database paths at each column count.
+@mixin divided-grid($grid, $row, $columns) {
+  #{$grid} {
+    grid-template-columns: repeat($columns, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  #{$grid} #{$row}:nth-child(n) {
+    border: 0;
+    padding: var(--nx-space-4);
+  }
+
+  #{$grid} #{$row}:nth-child(n + #{$columns + 1}) {
+    border-top: 1px solid var(--nx-color-border);
+  }
+
+  #{$grid} #{$row}:not(:nth-child(#{$columns}n + 1)) {
+    border-left: 1px solid var(--nx-color-border);
+  }
+
+  #{$grid} #{$row}:nth-child(#{$columns}n + 1) {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  #{$grid} #{$row}:nth-child(#{$columns}n),
+  #{$grid} #{$row}:last-child {
+    padding-right: 0;
+  }
+}
+
+@include divided-grid('.profile-stat-grid', '.profile-row', 1);
+@include divided-grid('.database-management-grid', '.database-path-row', 1);
+
+@container page (min-width: 42rem) {
+  .profile-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-module--wide {
+    grid-column: span 2;
+  }
+}
+
+@container page (min-width: 68rem) {
+  .profile-layout {
+    grid-template-columns: 15.3rem minmax(24rem, 1fr) minmax(20rem, 24.5rem);
+  }
+}
+
+// Icon, copy, selector and gaps fit beside each other from roughly 23.5rem.
+@container profile-module (max-width: 23.5rem) {
+  .profile-preferences-section .profile-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .profile-preferences-section .custom-select {
+    grid-column: 2;
+    width: 100%;
+  }
+}
+
+@container profile-module (min-width: 26rem) {
+  @include divided-grid('.profile-stat-grid', '.profile-row', 2);
+}
+
+@container profile-module (min-width: 42rem) {
+  @include divided-grid('.profile-stat-grid', '.profile-row', 3);
+}
+
+@container profile-module (min-width: 64rem) {
+  @include divided-grid('.profile-stat-grid', '.profile-row', 5);
+}
+
+@container profile-module (min-width: 38rem) {
+  @include divided-grid('.database-management-grid', '.database-path-row', 2);
+}
+
+@container profile-module (min-width: 58rem) {
+  @include divided-grid('.database-management-grid', '.database-path-row', 3);
+}
+
+@media (any-pointer: coarse) {
+  .profile-page :is(
+    .custom-select__trigger,
+    .custom-select__option,
+    .profile-sign-out-button,
+    .google-sign-in-button,
+    .profile-backup-button,
+    .profile-action-row,
+    .mcp-command-button
+  ) {
+    min-height: 3rem;
+  }
+
+  .profile-page :is(.icon-button, .mcp-configure-button) {
+    min-width: 3rem;
+    min-height: 3rem;
+  }
+}

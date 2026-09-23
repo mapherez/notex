@@ -305,7 +305,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="page-content list-page-grid">
+    <div className="page-content list-page-grid profile-page">
       <header className="profile-page-header">
         <div>
           <h1 className="page-title">{t("profile.title")}</h1>

@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import type { TagColor } from '../../core/models/models';
 import { tagColorOptions } from '../../core/utils/tagColors';
 import { useClickOutside } from '../../core/utils/useClickOutside';
+import { useFloatingPopover } from '../../core/utils/useFloatingPopover';
 import { useI18n } from '../../i18n/I18nProvider';
 
 const colorPickerColumnCount = 5;
@@ -30,11 +31,13 @@ export function ColorPicker({
   const [activeIndex, setActiveIndex] = useState(() => selectedColorIndex(value));
   const pickerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const selectedLabel = t(`tags.colors.${value}`);
   const activeColor = tagColorOptions[activeIndex] ?? value;
 
   useClickOutside(pickerRef, open, () => setOpen(false));
+  useFloatingPopover(open, triggerRef, menuRef, 'bottom-start');
 
   useEffect(() => {
     if (disabled && open) {
@@ -150,7 +153,7 @@ export function ColorPicker({
         <ChevronDown className="color-picker__chevron" />
       </button>
       {open ? (
-        <div className="color-picker__menu color-palette-menu" id={menuId} role="listbox" aria-label={ariaLabel}>
+        <div className="color-picker__menu color-palette-menu" ref={menuRef} id={menuId} role="listbox" aria-label={ariaLabel}>
           {tagColorOptions.map((color, index) => (
             <button
               className={clsx(

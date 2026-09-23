@@ -15,6 +15,7 @@ import { stableStringify } from '../core/utils/stableJson';
 import { downloadCloudNote, withCloudMetadata, markCloudDeleted } from '../core/cloud/cloudView';
 import { beginLocalSave } from '../core/mcp/noteMutationCoordinator';
 import { deleteNoteAttachment, importNoteAttachment } from '../core/services/noteFiles';
+import { createUuid } from '../core/utils/createUuid';
 
 type NoteInput = {
   collectionId?: string | null;
@@ -86,6 +87,22 @@ export const emptyTiptapDocument: TiptapDocument = {
   type: 'doc',
   content: [{ type: 'paragraph' }],
 };
+
+const noteContentMutationQueues = new Map<string, Promise<void>>();
+
+async function runNoteContentMutation<T>(noteId: string, mutation: () => Promise<T>): Promise<T> {
+  const previous = noteContentMutationQueues.get(noteId) ?? Promise.resolve();
+  const result = previous.catch(() => undefined).then(mutation);
+  const tail = result.then(() => undefined, () => undefined);
+  noteContentMutationQueues.set(noteId, tail);
+  try {
+    return await result;
+  } finally {
+    if (noteContentMutationQueues.get(noteId) === tail) {
+      noteContentMutationQueues.delete(noteId);
+    }
+  }
+}
 
 export const useNotesStore = create<NotesStore>((set, get) => ({
   notes: [],
@@ -355,7 +372,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
     return block;
   },
-  updateBlock: async (noteId, blockId, input) => {
+  updateBlock: (noteId, blockId, input) => runNoteContentMutation(noteId, async () => {
     const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
       return;
@@ -387,7 +404,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       await db.notes.put(stripNoteRelations(updated));
     });
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
-  },
+  }),
   reorderBlocks: async (noteId, blockIds) => {
     const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
@@ -431,6 +448,11 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       .map((block, index) => ({ ...block, sortOrder: index }));
     const files = (note.files ?? []).filter((file) => file.blockId !== blockId);
     const updated = finalizeNote({ ...note, blocks, files });
+    await Promise.all(
+      uniqueIds(removedFiles.map((file) => file.relativePath)).map((relativePath) =>
+        deleteNoteAttachment(relativePath),
+      ),
+    );
     await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
       await db.noteBlocks.delete(blockId);
       await db.noteFiles.where('blockId').equals(blockId).delete();
@@ -438,43 +460,51 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       await db.notes.put(stripNoteRelations(updated));
     });
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
-    await Promise.allSettled(
-      uniqueIds(removedFiles.map((file) => file.relativePath)).map((relativePath) =>
-        deleteNoteAttachment(relativePath),
-      ),
-    );
   },
-  importFileForBlock: async (sourcePath, noteId, blockId) => {
+  importFileForBlock: (sourcePath, noteId, blockId) => runNoteContentMutation(noteId, async () => {
     const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
       return null;
     }
     const finishSave = beginLocalSave(noteId, 'attachment-import');
     try {
-    const imported = await importNoteAttachment(sourcePath, noteId, blockId);
-    const file: NoteFile = {
-      id: imported.id,
-      noteId: imported.noteId,
-      blockId: imported.blockId,
-      kind: imported.kind as NoteFileKind,
-      originalName: imported.originalName,
-      mimeType: imported.mimeType,
-      sizeBytes: imported.sizeBytes,
-      checksum: imported.checksum,
-      relativePath: imported.relativePath,
-      createdAt: imported.createdAt,
-    };
-    const current = findNote(get().notes, noteId);
-    if (!current || (blockId && !current.blocks?.some((block) => block.id === blockId))) return null;
-    const updated = finalizeNote({ ...current, files: [...(current.files ?? []), file] });
-    await db.transaction('rw', [db.notes, db.noteFiles], async (db) => {
-      await db.noteFiles.put(file);
-      await db.notes.put(stripNoteRelations(updated));
-    });
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
-    return file;
-    } finally { finishSave(); }
-  },
+      // Placement belongs to the note model, not to the physical import. Images
+      // follow their editor block; ordinary attachments live only in the panel.
+      const imported = await importNoteAttachment(sourcePath, noteId, null);
+      const fileBlockId = imported.kind === 'image' ? blockId : null;
+      const file: NoteFile = {
+        id: imported.id,
+        noteId: imported.noteId,
+        blockId: fileBlockId,
+        kind: imported.kind as NoteFileKind,
+        originalName: imported.originalName,
+        mimeType: imported.mimeType,
+        sizeBytes: imported.sizeBytes,
+        checksum: imported.checksum,
+        relativePath: imported.relativePath,
+        createdAt: imported.createdAt,
+      };
+      const current = findNote(get().notes, noteId);
+      if (!current || (fileBlockId && !current.blocks?.some((block) => block.id === fileBlockId))) {
+        await deleteNoteAttachment(imported.relativePath);
+        return null;
+      }
+      const updated = finalizeNote({ ...current, files: [...(current.files ?? []), file] });
+      try {
+        await db.transaction('rw', [db.notes, db.noteFiles], async (db) => {
+          await db.noteFiles.put(file);
+          await db.notes.put(stripNoteRelations(updated));
+        });
+      } catch (error) {
+        await deleteNoteAttachment(file.relativePath);
+        throw error;
+      }
+      set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+      return file;
+    } finally {
+      finishSave();
+    }
+  }),
   deleteFile: async (noteId, fileId) => {
     const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
@@ -497,6 +527,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       blocks,
       files: (note.files ?? []).filter((file) => file.id !== fileId),
     });
+    await deleteNoteAttachment(file.relativePath);
     await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
       if (changedBlocks.length) {
         await db.noteBlocks.bulkPut(changedBlocks);
@@ -504,9 +535,6 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       await db.noteFiles.delete(fileId);
       await db.notes.put(stripNoteRelations(updated));
     });
-    if (file) {
-      await deleteNoteAttachment(file.relativePath);
-    }
     set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
   },
   moveNoteToTrash: async (noteId) => {
@@ -529,7 +557,6 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
   deleteNotesPermanently: async (noteIds) => {
     for (const id of noteIds) if (get().notes.find((note) => note.id === id)?.cloudOnly) await downloadCloudNote(id);
-    markCloudDeleted(noteIds);
     const ids = uniqueIds(noteIds);
     if (!ids.length) {
       return;
@@ -540,13 +567,14 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
         .filter((note) => idSet.has(note.id))
         .flatMap((note) => (note.files ?? []).map((file) => file.relativePath)),
     );
+    await Promise.all(attachmentPaths.map((relativePath) => deleteNoteAttachment(relativePath)));
     await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
       await db.notes.bulkDelete(ids);
       await db.noteBlocks.where('noteId').anyOf(ids).delete();
       await db.noteFiles.where('noteId').anyOf(ids).delete();
     });
+    markCloudDeleted(ids);
     set((state) => ({ notes: state.notes.filter((note) => !idSet.has(note.id)) }));
-    await Promise.allSettled(attachmentPaths.map((relativePath) => deleteNoteAttachment(relativePath)));
   },
   clearTrash: async () => {
     await get().deleteNotesPermanently(get().notes.filter((note) => note.isTrashed).map((note) => note.id));
@@ -716,7 +744,7 @@ function groupBy<T>(items: T[], key: (item: T) => string) {
 }
 
 function createId() {
-  return crypto.randomUUID();
+  return createUuid();
 }
 
 async function findAvailableNote(notes: Note[], noteId: string) {

@@ -1,0 +1,167 @@
+@use "../abstracts/breakpoints" as *;
+
+// Wrappers have no layout box around the persistent desktop sidebar.
+.sidebar-drawer,
+.sidebar-drawer-scroller {
+  display: contents;
+}
+
+@media (max-width: breakpoint("tablet")) {
+  .sidebar-drawer {
+    --nx-sidebar-drawer-width: min(20rem, calc(100% - 1rem));
+    position: fixed;
+    inset: var(--nx-shell-top-offset, 0) 0 0;
+    display: block;
+    height: calc(100dvh - var(--nx-shell-top-offset, 0px));
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 110;
+  }
+
+  .sidebar-drawer.is-open {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .sidebar-drawer-scroller {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--nx-sidebar-drawer-width) 100%;
+    height: 100%;
+    overflow: auto hidden;
+    overscroll-behavior: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    z-index: 110;
+  }
+
+  .sidebar-drawer .sidebar {
+    position: relative;
+    inset: auto;
+    grid-row: 1;
+    grid-column: 1;
+    width: auto;
+    min-height: 0;
+    height: 100%;
+    overflow-x: hidden;
+    transform: none;
+    transition: none;
+    scroll-snap-align: start;
+  }
+
+  .sidebar-drawer-spacer {
+    grid-row: 1;
+    grid-column: 2;
+    scroll-snap-align: end;
+  }
+}
+
+.side-panel-overlay {
+  --nx-drawer-width: min(26rem, calc(100% - var(--nx-space-4)));
+  position: fixed;
+  top: var(--nx-drawer-viewport-top, 0);
+  left: var(--nx-drawer-viewport-left, 0);
+  z-index: 115;
+  width: var(--nx-drawer-viewport-width, 100%);
+  height: var(--nx-drawer-viewport-height, 100dvh);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.side-panel-overlay.is-open {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.side-panel-scroller {
+  position: relative;
+  display: grid;
+  grid-template-columns: 100% var(--nx-drawer-width);
+  height: 100%;
+  overflow: auto hidden;
+  overscroll-behavior: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.side-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--nx-color-canvas) 56%, transparent);
+  padding: 0;
+}
+
+.side-panel-spacer {
+  grid-row: 1;
+  grid-column: 1;
+  scroll-snap-align: start;
+}
+
+.side-panel-sheet {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-row: 1;
+  grid-column: 2;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  border-left: 1px solid var(--nx-color-border);
+  background: var(--nx-color-canvas);
+  box-shadow: var(--nx-shadow-soft);
+  outline: none;
+  scroll-snap-align: end;
+}
+
+.side-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nx-space-3);
+  border-bottom: 1px solid var(--nx-color-border);
+  padding: max(var(--nx-space-3), env(safe-area-inset-top)) var(--nx-space-4) var(--nx-space-3);
+}
+
+.side-panel-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.side-panel-sheet .side-panel-close,
+.side-panel-content .icon-button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+.side-panel-content.document-aside {
+  grid-template-columns: minmax(0, 1fr);
+  align-self: stretch;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden auto;
+  overscroll-behavior-y: contain;
+  padding: var(--nx-space-4) var(--nx-space-4) max(var(--nx-space-4), env(safe-area-inset-bottom));
+}
+
+// Native horizontal swiping dismisses the sheet; text/interactive regions
+// retain their own vertical scrolling, selection and controls.
+.side-panel-content :is(input, textarea, [contenteditable="true"], button, a, .sortable-tag-list__item, .custom-select, .color-picker) {
+  touch-action: pan-y pinch-zoom;
+}
+
+@media (max-width: breakpoint("mobile")) {
+  .side-panel-close:not(:focus-visible) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

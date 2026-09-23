@@ -2,7 +2,7 @@
 
 NoteX is an app for keeping useful information together on Windows and in the browser: project decisions, recipes, references, study material, and anything you want to find again. Notes can contain several titled blocks, rich text, images, and attached files.
 
-Your working library stays on your computer. You can use the desktop app without an account or an internet connection.
+Edits are saved locally on the device you use. The Windows app works without an account or an internet connection. Browser mode uses a Google account, with optional offline editing after the app and notes have been downloaded.
 
 ## Start with a note
 
@@ -32,6 +32,10 @@ The optional local MCP server lets a compatible AI client search, read, create, 
 
 Start with [connecting an AI client](mcp-setup.md), then explore [tools and workflows](mcp-workflows.md).
 
+## Use NoteX on desktop, tablet, and phone
+
+NoteX 2.4.0 adds responsive layouts and touch controls for smaller screens. In the browser, you can open navigation and note details as side panels, edit with the on-screen keyboard, move blocks by touch, and preview images with zoom. On phones, NoteX works in portrait orientation. See [the tablet and phone guide](mobile-tablet.md) for the controls and current limits.
+
 ## Back up to Google Drive and use the browser
 
 In NoteX 2.3.0, connect your Google account for backups to your own Drive.
@@ -39,5 +43,4 @@ Desktop login is optional; browser mode requires login and stores downloaded
 notes locally in your browser. See [Google Drive and browser mode](google-drive-web.md)
 for automatic backups, accounts, downloads, and offline work.
 
-Local MCP and full-workspace import/export controls are desktop features.
-Hosted MCP and tablet/mobile layouts are planned separately.
+Local MCP and full-workspace import/export controls are desktop features. Browser mode is available on desktop, tablet, and phone; hosted MCP is not available.

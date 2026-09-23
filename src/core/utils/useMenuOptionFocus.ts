@@ -2,18 +2,24 @@ import { useEffect, useRef, type KeyboardEvent } from 'react';
 
 // DOM focus follows the highlighted option; selection remains an explicit click
 // or Enter. Shared by dropdowns and the thumbnail grid.
-export function useMenuOptionFocus(open: boolean, close: () => void, columns = 1, initialIndex = 0) {
+export function useMenuOptionFocus(
+  open: boolean,
+  close: () => void,
+  columns = 1,
+  initialIndex = 0,
+  focusOnOpen = true,
+) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const options = () => Array.from(menuRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') ?? []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !focusOnOpen) return;
     const items = options();
     (items[initialIndex] ?? items[0])?.focus({ preventScroll: true });
     // Initialize only when opening; changing the selected value must not steal focus.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [focusOnOpen, open]);
 
   function closeAndFocus() {
     close();

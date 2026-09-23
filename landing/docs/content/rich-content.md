@@ -20,11 +20,15 @@ Tables work well for information that benefits from rows and columns: comparison
 
 Insert a table through the editor controls. Table actions let you change the structure as your content grows. You can navigate the table-action menu with the keyboard as well.
 
+On a smaller screen, scroll horizontally within a wide table to see the remaining columns.
+
 Keep very long prose in ordinary blocks so it remains comfortable to read.
 
 ## Images and attachments
 
 Add images or files using the editor controls. Inline images can also be added by dragging and dropping them into the editor.
+
+Resize an inline image while keeping its proportions, or open it for a larger preview. In the preview, pinch to zoom on a touch screen and drag a zoomed image to inspect it.
 
 NoteX stores imported files with the local library. Opening an attachment uses its stored copy, so it does not depend on the original file remaining in your Downloads folder.
 

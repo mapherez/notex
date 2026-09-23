@@ -1,7 +1,7 @@
 import { Plus, X } from 'lucide-react';
 import { isTauri } from '@tauri-apps/api/core';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Note } from '../../core/models/models';
 import { richTextToPlainText } from '../../core/utils/richText';
 import { isPrimaryShortcut } from '../../core/utils/keyboardShortcuts';
@@ -10,6 +10,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useNotesStore } from '../../store/useNotesStore';
 import { AppModal } from '../ui/AppModal';
 import { LegalModal, type LegalModalKind } from '../ui/LegalModal';
+import { PhoneLandscapeGuard } from './PhoneLandscapeGuard';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { WindowTitleBar } from './WindowTitleBar';
@@ -18,6 +19,10 @@ export function AppShell() {
   const { t } = useI18n();
   const hasWindowTitleBar = isTauri();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const appShellRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
   const [confirmNewNoteOpen, setConfirmNewNoteOpen] = useState(false);
   const [creatingNote, setCreatingNote] = useState(false);
   const location = useLocation();
@@ -72,11 +77,13 @@ export function AppShell() {
     function handleGlobalShortcut(event: KeyboardEvent) {
       if (isPrimaryShortcut(event, 'n')) {
         event.preventDefault();
+        setSidebarOpen(false);
         void requestNewNote();
       }
 
       if (isPrimaryShortcut(event, 'p')) {
         event.preventDefault();
+        setSidebarOpen(false);
         navigate('/profile');
       }
     }
@@ -87,6 +94,10 @@ export function AppShell() {
 
   const legalModalKind = readLegalModalKind(searchParams.get('modal'));
 
+  useEffect(() => {
+    closeSidebar();
+  }, [location.pathname, location.search, closeSidebar]);
+
   function closeLegalModal() {
     const nextSearchParams = new URLSearchParams(searchParams);
     nextSearchParams.delete('modal');
@@ -96,10 +107,21 @@ export function AppShell() {
   return (
     <div className={hasWindowTitleBar ? 'app-frame app-frame--custom-titlebar' : 'app-frame'}>
       <WindowTitleBar />
-      <div className="app-shell">
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onCreateNote={() => void requestNewNote()} />
-        <main className="main-shell">
-          <TopBar showSearch onMenuClick={() => setSidebarOpen(true)} />
+      <div className="app-shell" ref={appShellRef}>
+        <Sidebar
+          open={sidebarOpen}
+          onClose={closeSidebar}
+          onCreateNote={() => void requestNewNote()}
+          backgroundRef={mainRef}
+          triggerRef={menuTriggerRef}
+        />
+        <main className="main-shell" ref={mainRef}>
+          <TopBar
+            showSearch
+            sidebarOpen={sidebarOpen}
+            menuTriggerRef={menuTriggerRef}
+            onMenuClick={() => setSidebarOpen(true)}
+          />
           <Outlet />
         </main>
         <AppModal
@@ -124,6 +146,7 @@ export function AppShell() {
         </AppModal>
         <LegalModal kind={legalModalKind} onClose={closeLegalModal} />
       </div>
+      <PhoneLandscapeGuard backgroundRef={appShellRef} />
     </div>
   );
 }

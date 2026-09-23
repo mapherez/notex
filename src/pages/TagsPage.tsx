@@ -15,6 +15,7 @@ import {
 } from '../core/utils/keyboardShortcuts';
 import { sortTagsByFavoriteOrder, sortTagsByName } from '../core/utils/tagSorting';
 import { useClickOutside } from '../core/utils/useClickOutside';
+import { useFloatingPopover } from '../core/utils/useFloatingPopover';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAppStore } from '../store/useAppStore';
@@ -44,6 +45,7 @@ export function TagsPage() {
   const editSaveButtonRef = useRef<HTMLButtonElement>(null);
   const newNameInputRef = useRef<HTMLInputElement>(null);
   const favoritePickerRef = useRef<HTMLDivElement>(null);
+  const favoriteMenuRef = useRef<HTMLDivElement>(null);
   const favoriteSearchRef = useRef<HTMLInputElement>(null);
   const favoriteTriggerRef = useRef<HTMLButtonElement>(null);
   const tags = useKnowledgeStore((state) => state.tags);
@@ -103,6 +105,7 @@ export function TagsPage() {
   });
 
   useClickOutside(favoritePickerRef, favoritePickerOpen, closeFavoritePicker);
+  useFloatingPopover(favoritePickerOpen, favoriteTriggerRef, favoriteMenuRef, 'bottom-end');
 
   useEffect(() => {
     if (favoritePickerOpen) {
@@ -376,7 +379,7 @@ export function TagsPage() {
                   {t('common.add')}
                 </button>
                 {favoritePickerOpen ? (
-                  <div className="tags-favorite-picker-menu">
+                  <div className="tags-favorite-picker-menu" ref={favoriteMenuRef}>
                     <label className="tags-favorite-picker-search">
                       <Search />
                       <input

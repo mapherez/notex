@@ -12,6 +12,8 @@ Removing the favorite mark does not remove the note from your library.
 
 Pin notes that should stay easy to reach in your lists. Pinned notes have their own section and can be manually reordered.
 
+When you drag a pinned note to reorder it, a preview and drop indicator show the intended position. Keyboard move actions are also available when dragging is inconvenient. Tags can be reordered in the same way where their order is editable.
+
 Favorites and pins are independent: a note can use either or both. A useful distinction is to favorite long-term references and pin notes relevant to your current work.
 
 ## Recent notes

@@ -1,4 +1,4 @@
-import { Node, mergeAttributes, wrappingInputRule, type Extensions } from '@tiptap/core';
+import { Extension, Node, mergeAttributes, wrappingInputRule, type Extensions } from '@tiptap/core';
 import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import Link from '@tiptap/extension-link';
@@ -11,7 +11,9 @@ import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import UnderlineExtension from '@tiptap/extension-underline';
 import type { Node as ProseMirrorNode, NodeType } from '@tiptap/pm/model';
+import { Plugin } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
+import { editorSettings } from '../../config/appSettings';
 
 export const NoteFileNode = Node.create({
   name: 'noteFile',
@@ -32,7 +34,7 @@ export const NoteFileNode = Node.create({
       relativePath: { default: '' },
       createdAt: { default: '' },
       align: { default: 'center' },
-      width: { default: 420 },
+      width: { default: editorSettings.imageSizing.defaultWidth },
       wrap: { default: 'none' },
     };
   },
@@ -67,6 +69,45 @@ export const NoteTipNode = Node.create({
     return ['notex-tip', mergeAttributes(HTMLAttributes), 0];
   },
 });
+
+/**
+ * File removal is destructive: keep it outside undo history and refuse any
+ * later transaction that tries to restore an ID whose binary was deleted.
+ */
+export function createPermanentNoteFileRemovalExtension(onFilesRemoved: (fileIds: string[]) => void) {
+  const deletedFileIds = new Set<string>();
+  return Extension.create({
+    name: 'permanentNoteFileRemoval',
+    addProseMirrorPlugins() {
+      return [new Plugin({
+        filterTransaction(transaction, state) {
+          if (!transaction.docChanged) return true;
+          const before = noteFileIds(state.doc);
+          const after = noteFileIds(transaction.doc);
+          if ([...after].some((fileId) => deletedFileIds.has(fileId) && !before.has(fileId))) {
+            return false;
+          }
+          const removed = [...before].filter((fileId) => !after.has(fileId));
+          if (removed.length) {
+            transaction.setMeta('addToHistory', false);
+            removed.forEach((fileId) => deletedFileIds.add(fileId));
+            queueMicrotask(() => onFilesRemoved(removed));
+          }
+          return true;
+        },
+      })];
+    },
+  });
+}
+
+function noteFileIds(document: ProseMirrorNode) {
+  const ids = new Set<string>();
+  document.descendants((node) => {
+    if (node.type.name === 'noteFile' && typeof node.attrs.id === 'string') ids.add(node.attrs.id);
+    return true;
+  });
+  return ids;
+}
 
 const dotBulletListInputRegex = /^\s*(\.)\s$/;
 const numberSpaceOrderedListInputRegex = /^(\d+)\s$/;

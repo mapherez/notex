@@ -1,5 +1,7 @@
 import {
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   Check,
   Cloud,
   ExternalLink,
@@ -7,6 +9,7 @@ import {
   Folder,
   GripVertical,
   Image as ImageIcon,
+  MoreVertical,
   Pencil,
   Plus,
   Download,
@@ -15,10 +18,11 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { useMenuOptionFocus } from '../core/utils/useMenuOptionFocus';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { InlineFormattedText } from '../components/editing/InlineFormattedText';
+import { NoteHeaderDraftProvider, useNoteHeaderDraft } from '../components/notes/NoteHeaderDraft';
 import { StyledTextField } from '../components/editing/TextStyleToolbar';
 import {
   NoteInlineTiptapEditor,
@@ -34,10 +38,11 @@ import { AppModal } from '../components/ui/AppModal';
 import { EmptyState } from '../components/ui/EmptyState';
 import { NoteThumbnail } from '../components/ui/NoteThumbnail';
 import { Panel } from '../components/ui/Panel';
+import { ResponsiveSidePanel } from '../components/ui/ResponsiveSidePanel';
 import { SortableTagList } from '../components/ui/SortableTagList';
 import { TagChip } from '../components/ui/TagChip';
-import { appLimits, defaultNewTagColor, defaultNoteThumbnailVariant, thumbnailOptions } from '../config/appSettings';
-import type { Collection, Note, NoteBlock, NoteFile, NoteThumbnail as NoteThumbnailModel, Tag, TagColor, TiptapDocument } from '../core/models/models';
+import { appLimits, defaultNewTagColor, defaultNoteThumbnailVariant, editorSettings, thumbnailOptions } from '../config/appSettings';
+import type { Collection, Note, NoteBlock, NoteFile, NoteFileKind, NoteThumbnail as NoteThumbnailModel, Tag, TagColor, TiptapDocument } from '../core/models/models';
 import { beginLocalSave, setLocalDraftPending } from '../core/mcp/noteMutationCoordinator';
 import { chooseNoteAttachment, exportNoteAttachment, openNoteAttachment } from '../core/services/noteFiles';
 import { chooseNotexNoteExportDestination, createNotexNoteTempExport } from '../core/services/notexNotePackage';
@@ -50,6 +55,8 @@ import {
 import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
 import { richTextToPlainText } from '../core/utils/richText';
 import { useClickOutside } from '../core/utils/useClickOutside';
+import { useAdaptedContent, useTouchInputAvailable } from '../core/utils/useAdaptedContent';
+import { useFloatingPopover } from '../core/utils/useFloatingPopover';
 import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
 import { sortTagsByFavoriteOrder } from '../core/utils/tagSorting';
 import { useI18n } from '../i18n/I18nProvider';
@@ -77,11 +84,52 @@ type TocEntry = {
   level: 1 | 2 | 3;
 };
 
+type TouchHoldState = {
+  anchorRatio: number;
+  blockId: string;
+  dragging: boolean;
+  dropIndex: number;
+  ghostLeft: number;
+  ghostWidth: number;
+  lineLeft: number;
+  lineTop: number;
+  lineWidth: number;
+  menuDeleteSide: 'left' | 'right';
+  menuLeft: number;
+  menuOpen: boolean;
+  menuTop: number;
+  startX: number;
+  startY: number;
+  x: number;
+  y: number;
+};
+
+type DesktopDragState = {
+  anchorRatio: number;
+  anchorY: number;
+  blockId: string;
+  dropIndex: number;
+  ghostLeft: number;
+  ghostWidth: number;
+  grabOffsetX: number;
+  lineLeft: number;
+  lineTop: number;
+  lineWidth: number;
+  pointerId: number;
+  x: number;
+  y: number;
+};
+
 export function NoteDetailPage() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { locale, t } = useI18n();
+  const adapted = useAdaptedContent();
+  const touchInputAvailable = useTouchInputAvailable();
+  const touchAdapted = adapted && touchInputAvailable;
+  const [panelsOpen, setPanelsOpen] = useState(false);
+  const panelsTriggerRef = useRef<HTMLButtonElement>(null);
   const createStartedRef = useRef(false);
   const isNewNote = id === 'new';
   const notes = useNotesStore((state) => state.notes);
@@ -130,13 +178,44 @@ export function NoteDetailPage() {
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkInput, setLinkInput] = useState('');
   const [selectedLinkedNoteId, setSelectedLinkedNoteId] = useState<string | null>(null);
-  const dragBlockIdsRef = useRef<string[] | null>(null);
   const draggedBlockIdRef = useRef<string | null>(null);
+  const [desktopDragState, setDesktopDragState] = useState<DesktopDragState | null>(null);
+  const desktopDragStateRef = useRef<DesktopDragState | null>(null);
+  const desktopInitialBlockIdsRef = useRef<string[]>([]);
+  const desktopDragCompactionPendingRef = useRef(false);
+  const desktopDragReleaseAnchorRef = useRef<DesktopDragState | null>(null);
+  const desktopDragPersistQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const desktopDragPersistRevisionRef = useRef(0);
+  const desktopDragGhostRef = useRef<HTMLDivElement>(null);
+  const desktopDropIndicatorRef = useRef<HTMLDivElement>(null);
   const keyboardReorderPendingRef = useRef(false);
   const typingRequestNonceRef = useRef(0);
   const tocEntriesRef = useRef<TocEntry[]>([]);
   const tocRefreshFrameRef = useRef<number | null>(null);
   const [toolbarTarget, setToolbarTarget] = useState<NoteTiptapToolbarTarget | null>(null);
+  const [touchActiveBlockId, setTouchActiveBlockId] = useState<string | null>(null);
+  const [touchHoldState, setTouchHoldState] = useState<TouchHoldState | null>(null);
+  const touchHoldStateRef = useRef<TouchHoldState | null>(null);
+  const touchInitialBlockIdsRef = useRef<string[]>([]);
+  const touchMenuBlockIdsRef = useRef<string[]>([]);
+  const touchMenuMoveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const touchMenuMoveRevisionRef = useRef(0);
+  const touchReleaseAnchorRef = useRef<TouchHoldState | null>(null);
+  const finishTouchDragRef = useRef<(cancelled: boolean) => void>(() => undefined);
+  const touchDragGhostRef = useRef<HTMLDivElement>(null);
+  const touchDropIndicatorRef = useRef<HTMLDivElement>(null);
+  const touchBlockMenuRef = useRef<HTMLDivElement>(null);
+  const touchViewportHeightRef = useRef(0);
+  const touchKeyboardSeenRef = useRef(false);
+  const [noteActionsOpen, setNoteActionsOpen] = useState(false);
+  const noteActionsRef = useRef<HTMLDivElement>(null);
+  const noteActionsMenu = useMenuOptionFocus(noteActionsOpen, () => setNoteActionsOpen(false));
+  useFloatingPopover(
+    noteActionsOpen,
+    noteActionsMenu.triggerRef,
+    noteActionsMenu.menuRef,
+    'bottom-end',
+  );
   const note = isNewNote ? undefined : notes.find((item) => item.id === id);
   const ensureAvailable = useCloudStore((state) => state.ensureAvailable);
   const transferError = useCloudStore((state) => state.error);
@@ -144,6 +223,27 @@ export function NoteDetailPage() {
   const cloudAccountId = useCloudStore((state) => state.accountId);
   const excludedNotes = useCloudStore((state) => state.excludedNotes);
   const toggleExcluded = useCloudStore((state) => state.toggleExcluded);
+  useClickOutside(noteActionsRef, noteActionsOpen, () => setNoteActionsOpen(false));
+  useEffect(() => { setPanelsOpen(false); }, [adapted, id]);
+  useEffect(() => {
+    if (!touchAdapted) setNoteActionsOpen(false);
+  }, [id, touchAdapted]);
+  useEffect(() => {
+    setTouchActiveBlockId(null);
+    desktopDragStateRef.current = null;
+    desktopInitialBlockIdsRef.current = [];
+    desktopDragReleaseAnchorRef.current = null;
+    draggedBlockIdRef.current = null;
+    setDesktopDragState(null);
+    setDraggedBlockId(null);
+    setDragBlockIds(null);
+    touchHoldStateRef.current = null;
+    touchInitialBlockIdsRef.current = [];
+    touchMenuBlockIdsRef.current = [];
+    setTouchHoldState(null);
+    setToolbarTarget(null);
+    touchKeyboardSeenRef.current = false;
+  }, [id, touchAdapted]);
   useEffect(() => {
     let active = true;
     setDownloadError(null);
@@ -190,6 +290,16 @@ export function NoteDetailPage() {
     const orderedIds = new Set(ordered.map((block) => block.id));
     return [...ordered, ...blocks.filter((block) => !orderedIds.has(block.id))];
   }, [dragBlockIds, note?.blocks]);
+  const touchHeldBlock = touchHoldState
+    ? (note?.blocks ?? []).find((block) => block.id === touchHoldState.blockId) ?? null
+    : null;
+  const desktopDraggedBlock = desktopDragState
+    ? (note?.blocks ?? []).find((block) => block.id === desktopDragState.blockId) ?? null
+    : null;
+  const touchMenuBlockIds = dragBlockIds ?? (note?.blocks ?? []).map((block) => block.id);
+  const touchMenuBlockIndex = touchHoldState?.menuOpen
+    ? touchMenuBlockIds.indexOf(touchHoldState.blockId)
+    : -1;
   const firstBlockId = (note?.blocks ?? [])[0]?.id ?? null;
   const linkedNotes = useMemo(
     () => note?.linkedNoteIds.flatMap((linkedId) => notes.find((item) => item.id === linkedId && !item.isTrashed) ?? []) ?? [],
@@ -274,27 +384,439 @@ export function NoteDetailPage() {
     }
   }, [note, toolbarTarget]);
 
+  const activateTouchBlock = useCallback((blockId: string) => {
+    if (!touchAdapted) return;
+    if (!touchActiveBlockId) {
+      touchViewportHeightRef.current = window.visualViewport?.height ?? window.innerHeight;
+      touchKeyboardSeenRef.current = false;
+    }
+    setTouchActiveBlockId(blockId);
+  }, [touchActiveBlockId, touchAdapted]);
+
+  const deactivateTouchBlock = useCallback((blockId?: string) => {
+    setTouchActiveBlockId((current) => (blockId && current !== blockId ? current : null));
+    setToolbarTarget((current) => (!blockId || current?.blockId === blockId ? null : current));
+  }, []);
+
+  const beginTouchBlockHold = useCallback((blockId: string, x: number, y: number) => {
+    const block = document.getElementById(`block-${blockId}`);
+    const rect = block?.getBoundingClientRect();
+    const blockList = block?.closest<HTMLElement>('.note-block-list');
+    const listRect = blockList?.getBoundingClientRect();
+    const blockIds = (note?.blocks ?? []).map((item) => item.id);
+    const sourceIndex = Math.max(0, blockIds.indexOf(blockId));
+    const anchorRatio = rect && rect.height > 0
+      ? Math.min(1, Math.max(0, (y - rect.top) / rect.height))
+      : 0.5;
+    const nextState: TouchHoldState = {
+      anchorRatio,
+      blockId,
+      dragging: false,
+      dropIndex: sourceIndex,
+      ghostLeft: listRect?.left ?? rect?.left ?? 0,
+      ghostWidth: listRect?.width ?? rect?.width ?? 0,
+      lineLeft: listRect?.left ?? rect?.left ?? 0,
+      lineTop: rect?.top ?? y,
+      lineWidth: listRect?.width ?? rect?.width ?? 0,
+      menuDeleteSide: 'right',
+      menuLeft: x,
+      menuOpen: false,
+      menuTop: y,
+      startX: x,
+      startY: y,
+      x,
+      y,
+    };
+    touchHoldStateRef.current = nextState;
+    touchInitialBlockIdsRef.current = blockIds;
+    touchMenuBlockIdsRef.current = blockIds;
+    setTouchHoldState(nextState);
+    if (typeof navigator.vibrate === 'function') {
+      navigator.vibrate(editorSettings.blockTouch.holdHapticMs);
+    }
+  }, [note?.blocks]);
+
+  const endTouchBlockHold = useCallback((blockId: string) => {
+    const current = touchHoldStateRef.current;
+    if (current?.blockId !== blockId) return;
+    if (current.dragging) {
+      finishTouchDragRef.current(false);
+      return;
+    }
+    if (current.menuOpen) return;
+    touchReleaseAnchorRef.current = current;
+    touchHoldStateRef.current = null;
+    setTouchHoldState(null);
+  }, []);
+
+  const openTouchBlockMenu = useCallback((blockId: string, x: number, y: number) => {
+    const current = touchHoldStateRef.current;
+    if (!current || current.blockId !== blockId || current.dragging) return;
+    const viewport = window.visualViewport;
+    const viewportLeft = viewport?.offsetLeft ?? 0;
+    const viewportTop = viewport?.offsetTop ?? 0;
+    const viewportWidth = viewport?.width ?? window.innerWidth;
+    const viewportHeight = viewport?.height ?? window.innerHeight;
+    const viewportRight = viewportLeft + viewportWidth;
+    const actionExtent = 84;
+    const viewportPadding = 12;
+    const canShowDeleteRight = x + actionExtent <= viewportRight - viewportPadding;
+    const canShowDeleteLeft = x - actionExtent >= viewportLeft + viewportPadding;
+    const menuDeleteSide: TouchHoldState['menuDeleteSide'] = canShowDeleteRight || !canShowDeleteLeft
+      ? 'right'
+      : 'left';
+    const horizontalStartEdge = menuDeleteSide === 'left' ? actionExtent + viewportPadding : 32;
+    const horizontalEndEdge = menuDeleteSide === 'right' ? actionExtent + viewportPadding : 32;
+    const verticalEdge = actionExtent + viewportPadding;
+    const nextState: TouchHoldState = {
+      ...current,
+      menuLeft: Math.min(
+        viewportLeft + viewportWidth - horizontalEndEdge,
+        Math.max(viewportLeft + horizontalStartEdge, x),
+      ),
+      menuDeleteSide,
+      menuOpen: true,
+      menuTop: Math.min(
+        viewportTop + viewportHeight - verticalEdge,
+        Math.max(viewportTop + verticalEdge, y),
+      ),
+    };
+    touchHoldStateRef.current = nextState;
+    setTouchHoldState(nextState);
+    if (typeof navigator.vibrate === 'function') {
+      navigator.vibrate(editorSettings.blockTouch.menuHapticPatternMs);
+    }
+  }, []);
+
+  const closeTouchBlockMenu = useCallback(() => {
+    const current = touchHoldStateRef.current;
+    if (!current?.menuOpen) return;
+    touchReleaseAnchorRef.current = current;
+    touchHoldStateRef.current = null;
+    setTouchHoldState(null);
+  }, []);
+
+  useLayoutEffect(() => {
+    const anchor = touchHoldState ?? touchReleaseAnchorRef.current;
+    if (!anchor) return;
+    if (touchHoldState?.dragging) return;
+    const heldBlock = document.getElementById(`block-${anchor.blockId}`);
+    if (!heldBlock) return;
+    const rect = heldBlock.getBoundingClientRect();
+    const targetY = touchHoldState
+      ? rect.top + rect.height / 2
+      : rect.top + rect.height * anchor.anchorRatio;
+    const offset = targetY - anchor.y;
+    if (Math.abs(offset) > 1) {
+      window.scrollBy({ top: offset, behavior: 'instant' });
+    }
+    if (!touchHoldState) touchReleaseAnchorRef.current = null;
+  }, [touchHoldState]);
+
+  useLayoutEffect(() => {
+    if (!touchHoldState?.dragging) return;
+    touchDragGhostRef.current?.style.setProperty('--nx-touch-drag-left', `${touchHoldState.ghostLeft}px`);
+    touchDragGhostRef.current?.style.setProperty('--nx-touch-drag-top', `${touchHoldState.y}px`);
+    touchDragGhostRef.current?.style.setProperty('--nx-touch-drag-width', `${touchHoldState.ghostWidth}px`);
+    touchDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-left', `${touchHoldState.lineLeft}px`);
+    touchDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-top', `${touchHoldState.lineTop}px`);
+    touchDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-width', `${touchHoldState.lineWidth}px`);
+  }, [touchHoldState]);
+
+  useLayoutEffect(() => {
+    const current = desktopDragState;
+    if (current && desktopDragCompactionPendingRef.current) {
+      const heldBlock = document.getElementById(`block-${current.blockId}`);
+      if (!heldBlock) return;
+      const rect = heldBlock.getBoundingClientRect();
+      const targetY = rect.top + rect.height * current.anchorRatio;
+      const offset = targetY - current.anchorY;
+      desktopDragCompactionPendingRef.current = false;
+      if (Math.abs(offset) > 1) window.scrollBy({ top: offset, behavior: 'instant' });
+      updateDesktopDragPosition(current.x, current.y);
+      return;
+    }
+    if (current) return;
+
+    const releaseAnchor = desktopDragReleaseAnchorRef.current;
+    if (!releaseAnchor) return;
+    const heldBlock = document.getElementById(`block-${releaseAnchor.blockId}`);
+    if (!heldBlock) {
+      desktopDragReleaseAnchorRef.current = null;
+      return;
+    }
+    const rect = heldBlock.getBoundingClientRect();
+    const targetY = rect.top + rect.height * releaseAnchor.anchorRatio;
+    const offset = targetY - releaseAnchor.anchorY;
+    if (Math.abs(offset) > 1) window.scrollBy({ top: offset, behavior: 'instant' });
+    desktopDragReleaseAnchorRef.current = null;
+  }, [desktopDragState, dragBlockIds]);
+
+  useLayoutEffect(() => {
+    if (!desktopDragState) return;
+    desktopDragGhostRef.current?.style.setProperty('--nx-touch-drag-left', `${desktopDragState.ghostLeft}px`);
+    desktopDragGhostRef.current?.style.setProperty('--nx-touch-drag-top', `${desktopDragState.y}px`);
+    desktopDragGhostRef.current?.style.setProperty('--nx-touch-drag-width', `${desktopDragState.ghostWidth}px`);
+    desktopDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-left', `${desktopDragState.lineLeft}px`);
+    desktopDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-top', `${desktopDragState.lineTop}px`);
+    desktopDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-width', `${desktopDragState.lineWidth}px`);
+  }, [desktopDragState]);
+
+  useLayoutEffect(() => {
+    if (!touchHoldState?.menuOpen) return;
+    touchBlockMenuRef.current?.style.setProperty('--nx-touch-menu-left', `${touchHoldState.menuLeft}px`);
+    touchBlockMenuRef.current?.style.setProperty('--nx-touch-menu-top', `${touchHoldState.menuTop}px`);
+  }, [touchHoldState]);
+
+  useEffect(() => {
+    if (!touchAdapted || !note) return undefined;
+    const noteId = note.id;
+    let animationFrame: number | null = null;
+    let lastFrameTime = performance.now();
+
+    function updateDragPosition(clientX: number, clientY: number, forceDragging = false) {
+      const current = touchHoldStateRef.current;
+      if (!current) return false;
+      if (current.menuOpen) return false;
+      const moved = Math.hypot(clientX - current.startX, clientY - current.startY);
+      if (!current.dragging && !forceDragging && moved <= editorSettings.blockTouch.tapMovementTolerance) {
+        return false;
+      }
+
+      const blockList = document.querySelector<HTMLElement>('.note-block-list');
+      if (!blockList) return false;
+      const listRect = blockList.getBoundingClientRect();
+      const candidates = Array.from(blockList.querySelectorAll<HTMLElement>('[data-note-block-id]'))
+        .filter((element) => element.dataset.noteBlockId !== current.blockId)
+        .map((element) => ({ element, rect: element.getBoundingClientRect() }));
+      let dropIndex = candidates.findIndex(({ rect }) => clientY < rect.top + rect.height / 2);
+      if (dropIndex < 0) dropIndex = candidates.length;
+
+      let lineTop = listRect.top;
+      if (candidates.length > 0) {
+        if (dropIndex === 0) {
+          lineTop = candidates[0].rect.top;
+        } else if (dropIndex === candidates.length) {
+          lineTop = candidates[candidates.length - 1].rect.bottom;
+        } else {
+          lineTop = (candidates[dropIndex - 1].rect.bottom + candidates[dropIndex].rect.top) / 2;
+        }
+      }
+
+      const viewport = window.visualViewport;
+      const viewportLeft = viewport?.offsetLeft ?? 0;
+      const viewportWidth = viewport?.width ?? window.innerWidth;
+      const sourceBlock = document.getElementById(`block-${current.blockId}`);
+      const sourceRect = sourceBlock?.getBoundingClientRect();
+      const grabOffsetX = current.startX - (sourceRect?.left ?? listRect.left);
+      const ghostWidth = Math.min(listRect.width, viewportWidth - 16);
+      const desiredLeft = clientX - grabOffsetX;
+      const ghostLeft = Math.min(
+        viewportLeft + viewportWidth - ghostWidth - 8,
+        Math.max(viewportLeft + 8, desiredLeft),
+      );
+      const nextState: TouchHoldState = {
+        ...current,
+        dragging: true,
+        dropIndex,
+        ghostLeft,
+        ghostWidth,
+        lineLeft: listRect.left,
+        lineTop,
+        lineWidth: listRect.width,
+        x: clientX,
+        y: clientY,
+      };
+      touchHoldStateRef.current = nextState;
+      setTouchHoldState(nextState);
+      if (animationFrame === null) {
+        lastFrameTime = performance.now();
+        animationFrame = window.requestAnimationFrame(runAutoScroll);
+      }
+      return true;
+    }
+
+    function finishTouchDrag(cancelled: boolean) {
+      const current = touchHoldStateRef.current;
+      if (!current) return;
+      if (current.menuOpen) return;
+      touchReleaseAnchorRef.current = current;
+      touchHoldStateRef.current = null;
+
+      if (cancelled || !current.dragging) {
+        setTouchHoldState(null);
+        return;
+      }
+
+      const initialBlockIds = touchInitialBlockIdsRef.current;
+      const remainingIds = initialBlockIds.filter((blockId) => blockId !== current.blockId);
+      const targetIndex = Math.min(remainingIds.length, Math.max(0, current.dropIndex));
+      const nextIds = [...remainingIds];
+      nextIds.splice(targetIndex, 0, current.blockId);
+      setDragBlockIds(nextIds);
+      setTouchHoldState(null);
+      if (arraysEqual(nextIds, initialBlockIds)) {
+        setDragBlockIds(null);
+        return;
+      }
+      void reorderBlocks(noteId, nextIds).finally(() => setDragBlockIds(null));
+    }
+
+    function handleTouchMove(event: globalThis.TouchEvent) {
+      if (!touchHoldStateRef.current) return;
+      if (event.touches.length !== 1) {
+        finishTouchDrag(true);
+        return;
+      }
+      if (touchHoldStateRef.current?.menuOpen) {
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target?.closest('.note-touch-block-menu-action') && event.cancelable) {
+          event.preventDefault();
+        }
+        return;
+      }
+      if (event.cancelable) event.preventDefault();
+      const touch = event.touches[0];
+      updateDragPosition(touch.clientX, touch.clientY);
+    }
+
+    function handleTouchEnd(event: globalThis.TouchEvent) {
+      const current = touchHoldStateRef.current;
+      if (current?.menuOpen) return;
+      if (current?.dragging && event.cancelable) event.preventDefault();
+      finishTouchDrag(false);
+    }
+
+    function handleTouchCancel() {
+      finishTouchDrag(true);
+    }
+
+    function runAutoScroll(frameTime: number) {
+      const current = touchHoldStateRef.current;
+      if (!current?.dragging) {
+        animationFrame = null;
+        return;
+      }
+      const elapsedSeconds = Math.min(0.05, Math.max(0, frameTime - lastFrameTime) / 1000);
+      lastFrameTime = frameTime;
+      const viewport = window.visualViewport;
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportHeight = viewport?.height ?? window.innerHeight;
+      const viewportBottom = viewportTop + viewportHeight;
+      const zone = Math.min(editorSettings.blockTouch.autoScrollEdgeZone, viewportHeight / 3);
+      let velocity = 0;
+      if (current.y < viewportTop + zone) {
+        const intensity = Math.min(1, Math.max(0, (viewportTop + zone - current.y) / zone));
+        velocity = -editorSettings.blockTouch.autoScrollMaxPxPerSecond * intensity;
+      } else if (current.y > viewportBottom - zone) {
+        const intensity = Math.min(1, Math.max(0, (current.y - (viewportBottom - zone)) / zone));
+        velocity = editorSettings.blockTouch.autoScrollMaxPxPerSecond * intensity;
+      }
+      if (velocity !== 0) {
+        window.scrollBy(0, velocity * elapsedSeconds);
+        updateDragPosition(current.x, current.y, true);
+      }
+      animationFrame = window.requestAnimationFrame(runAutoScroll);
+    }
+
+    window.addEventListener('touchmove', handleTouchMove, { capture: true, passive: false });
+    window.addEventListener('touchend', handleTouchEnd, { capture: true, passive: false });
+    window.addEventListener('touchcancel', handleTouchCancel, { capture: true, passive: true });
+    finishTouchDragRef.current = finishTouchDrag;
+    return () => {
+      window.removeEventListener('touchmove', handleTouchMove, true);
+      window.removeEventListener('touchend', handleTouchEnd, true);
+      window.removeEventListener('touchcancel', handleTouchCancel, true);
+      if (finishTouchDragRef.current === finishTouchDrag) {
+        finishTouchDragRef.current = () => undefined;
+      }
+      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
+    };
+  }, [note?.id, reorderBlocks, touchAdapted]);
+
+  useEffect(() => {
+    if (!touchAdapted || !touchActiveBlockId) return undefined;
+    const visualViewport = window.visualViewport;
+
+    function updateKeyboardState() {
+      const currentHeight = visualViewport?.height ?? window.innerHeight;
+      const heightLoss = touchViewportHeightRef.current - currentHeight;
+      if (heightLoss >= editorSettings.blockTouch.keyboardThreshold) {
+        touchKeyboardSeenRef.current = true;
+        return;
+      }
+      if (touchKeyboardSeenRef.current && heightLoss <= editorSettings.blockTouch.keyboardThreshold / 2) {
+        const activeElement = document.activeElement;
+        if (activeElement instanceof HTMLElement && activeElement.isContentEditable) {
+          activeElement.blur();
+        }
+        deactivateTouchBlock(touchActiveBlockId ?? undefined);
+        touchKeyboardSeenRef.current = false;
+      }
+    }
+
+    visualViewport?.addEventListener('resize', updateKeyboardState);
+    window.addEventListener('resize', updateKeyboardState);
+    return () => {
+      visualViewport?.removeEventListener('resize', updateKeyboardState);
+      window.removeEventListener('resize', updateKeyboardState);
+    };
+  }, [deactivateTouchBlock, touchActiveBlockId, touchAdapted]);
+
+  useEffect(() => {
+    if (!touchAdapted || !touchActiveBlockId) return undefined;
+
+    function handlePointerDown(event: globalThis.PointerEvent) {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target || target.closest('.note-block, .document-top-toolbar, .note-toolbar-popover')) return;
+      deactivateTouchBlock(touchActiveBlockId ?? undefined);
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    return () => document.removeEventListener('pointerdown', handlePointerDown, true);
+  }, [deactivateTouchBlock, touchActiveBlockId, touchAdapted]);
+
   useEffect(() => {
     refreshTocEntries();
   }, [refreshTocEntries, note?.id, visibleBlocks]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const shell = document.querySelector<HTMLElement>('.note-document-shell');
-    if (!shell) return;
+    const documentTop = document.querySelector<HTMLElement>('.document-top');
+    const topbar = document.querySelector<HTMLElement>('.topbar');
+    if (!shell || !documentTop) return;
+    const visualViewport = window.visualViewport;
+    const topbarBaseTop = topbar
+      ? Math.max(0, Number.parseFloat(window.getComputedStyle(topbar).top) || 0)
+      : 0;
     const bars = Array.from(document.querySelectorAll<HTMLElement>('.topbar, .document-top, .note-edit-toolbar-shell'));
     function updateOffset() {
-      const bottom = Math.max(0, ...bars.map((bar) => {
-        const top = Number.parseFloat(getComputedStyle(bar).top) || 0;
-        return top + bar.getBoundingClientRect().height;
-      }));
+      if (topbar) {
+        const visualViewportTop = touchAdapted
+          ? Math.max(0, visualViewport?.offsetTop ?? 0)
+          : 0;
+        topbar.style.setProperty('--nx-visual-viewport-top', `${visualViewportTop}px`);
+        const documentTopOffset = topbarBaseTop + visualViewportTop + topbar.getBoundingClientRect().height;
+        documentTop!.style.setProperty('--nx-document-top-offset', `${documentTopOffset}px`);
+      }
+      const bottom = Math.max(0, ...bars.map((bar) => bar.getBoundingClientRect().bottom));
       shell!.style.setProperty('--nx-note-navigation-top', `${bottom + 16}px`);
     }
     const observer = new ResizeObserver(updateOffset);
     bars.forEach((bar) => observer.observe(bar));
     updateOffset();
     window.addEventListener('resize', updateOffset);
-    return () => { observer.disconnect(); window.removeEventListener('resize', updateOffset); };
-  }, [note?.id]);
+    visualViewport?.addEventListener('resize', updateOffset);
+    visualViewport?.addEventListener('scroll', updateOffset);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateOffset);
+      visualViewport?.removeEventListener('resize', updateOffset);
+      visualViewport?.removeEventListener('scroll', updateOffset);
+      topbar?.style.removeProperty('--nx-visual-viewport-top');
+      documentTop.style.removeProperty('--nx-document-top-offset');
+    };
+  }, [note?.id, touchAdapted]);
 
   useEffect(() => {
     const blockList = document.querySelector('.note-block-list');
@@ -335,6 +857,7 @@ export function NoteDetailPage() {
         !note ||
         deleteBlockState ||
         draggedBlockId ||
+        panelsOpen ||
         !isPlainTypingShortcut(event) ||
         isEditableShortcutTarget(event.target)
       ) {
@@ -362,39 +885,88 @@ export function NoteDetailPage() {
 
     window.addEventListener('keydown', handleInitialTyping);
     return () => window.removeEventListener('keydown', handleInitialTyping);
-  }, [deleteBlockState, draggedBlockId, firstBlockId, note]);
+  }, [deleteBlockState, draggedBlockId, firstBlockId, note, panelsOpen]);
 
   useEffect(() => {
     if (!draggedBlockId) {
       return undefined;
     }
 
+    let animationFrame: number | null = null;
+    let lastFrameTime = performance.now();
+
     function handlePointerMove(event: globalThis.PointerEvent) {
+      const current = desktopDragStateRef.current;
+      if (!current || event.pointerId !== current.pointerId) return;
+      if (event.cancelable) event.preventDefault();
+      updateDesktopDragPosition(event.clientX, event.clientY);
+    }
+
+    function handlePointerEnd(event: globalThis.PointerEvent) {
+      const current = desktopDragStateRef.current;
+      if (!current || event.pointerId !== current.pointerId) return;
+      finishDesktopBlockDrag(false);
+    }
+
+    function handlePointerCancel(event: globalThis.PointerEvent) {
+      const current = desktopDragStateRef.current;
+      if (!current || event.pointerId !== current.pointerId) return;
+      finishDesktopBlockDrag(true);
+    }
+
+    function handleLostPointerCapture(event: globalThis.PointerEvent) {
+      const current = desktopDragStateRef.current;
+      if (!current || event.pointerId !== current.pointerId) return;
+      finishDesktopBlockDrag(true);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape' || !desktopDragStateRef.current) return;
       event.preventDefault();
-      const blockList = document.querySelector('.note-block-list');
-      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-note-block-id]');
-      if (!blockList || !target || !blockList.contains(target)) {
+      event.stopPropagation();
+      finishDesktopBlockDrag(true);
+    }
+
+    function runAutoScroll(frameTime: number) {
+      const current = desktopDragStateRef.current;
+      if (!current) {
+        animationFrame = null;
         return;
       }
-
-      const overBlockId = target.dataset.noteBlockId;
-      if (overBlockId) {
-        previewBlockReorder(overBlockId);
+      const elapsedSeconds = Math.min(0.05, Math.max(0, frameTime - lastFrameTime) / 1000);
+      lastFrameTime = frameTime;
+      const viewportTop = 0;
+      const viewportBottom = window.innerHeight;
+      const zone = Math.min(editorSettings.blockTouch.autoScrollEdgeZone, window.innerHeight / 3);
+      let velocity = 0;
+      if (current.y < viewportTop + zone) {
+        const intensity = Math.min(1, Math.max(0, (viewportTop + zone - current.y) / zone));
+        velocity = -editorSettings.blockTouch.autoScrollMaxPxPerSecond * intensity;
+      } else if (current.y > viewportBottom - zone) {
+        const intensity = Math.min(1, Math.max(0, (current.y - (viewportBottom - zone)) / zone));
+        velocity = editorSettings.blockTouch.autoScrollMaxPxPerSecond * intensity;
       }
+      if (velocity !== 0) {
+        window.scrollBy(0, velocity * elapsedSeconds);
+        updateDesktopDragPosition(current.x, current.y);
+      }
+      animationFrame = window.requestAnimationFrame(runAutoScroll);
     }
 
-    function handlePointerEnd() {
-      finishBlockDrag();
-    }
-
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerEnd);
-    window.addEventListener('pointercancel', handlePointerEnd);
+    window.addEventListener('pointermove', handlePointerMove, { capture: true });
+    window.addEventListener('pointerup', handlePointerEnd, { capture: true });
+    window.addEventListener('pointercancel', handlePointerCancel, { capture: true });
+    window.addEventListener('lostpointercapture', handleLostPointerCapture, { capture: true });
+    window.addEventListener('keydown', handleEscape, { capture: true });
+    animationFrame = window.requestAnimationFrame(runAutoScroll);
 
     return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerEnd);
-      window.removeEventListener('pointercancel', handlePointerEnd);
+      window.removeEventListener('pointermove', handlePointerMove, true);
+      window.removeEventListener('pointerup', handlePointerEnd, true);
+      window.removeEventListener('pointercancel', handlePointerCancel, true);
+      window.removeEventListener('lostpointercapture', handleLostPointerCapture, true);
+      window.removeEventListener('keydown', handleEscape, true);
+      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
     };
   }, [draggedBlockId]);
 
@@ -442,6 +1014,18 @@ export function NoteDetailPage() {
     await deleteBlock(note.id, deleteBlockState.blockId);
     setDeleteBlockState(null);
     pushToast(t('notes.blockDeleted'), 'warning');
+  }
+
+  async function handleDeleteFile(fileId: string) {
+    const exists = useNotesStore.getState().notes
+      .find((item) => item.id === note?.id)?.files?.some((file) => file.id === fileId);
+    if (!note || !exists) return;
+    try {
+      await deleteFile(note.id, fileId);
+      pushToast(t('notes.fileDeleted'), 'warning');
+    } catch {
+      pushToast(t('notes.fileDeleteFailed'), 'warning');
+    }
   }
 
   function startExampleEdit(index: number, example: string) {
@@ -498,19 +1082,39 @@ export function NoteDetailPage() {
   }
 
   function startBlockDrag(event: PointerEvent<HTMLButtonElement>, blockId: string) {
-    if (!note) {
-      return;
-    }
-    if (event.button !== 0) {
-      return;
-    }
+    if (!note || event.button !== 0 || event.pointerType === 'touch') return;
+    const block = document.getElementById(`block-${blockId}`);
+    const blockList = block?.closest<HTMLElement>('.note-block-list');
+    const rect = block?.getBoundingClientRect();
+    const listRect = blockList?.getBoundingClientRect();
+    if (!rect || !listRect) return;
     event.preventDefault();
     event.currentTarget.focus({ preventScroll: true });
     event.currentTarget.setPointerCapture(event.pointerId);
-    const blockIds = (note.blocks ?? []).map((block) => block.id);
-    dragBlockIdsRef.current = blockIds;
+    const blockIds = dragBlockIds ?? (note.blocks ?? []).map((block) => block.id);
+    const sourceIndex = Math.max(0, blockIds.indexOf(blockId));
+    const nextState: DesktopDragState = {
+      anchorRatio: rect.height > 0
+        ? Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height))
+        : 0.5,
+      anchorY: event.clientY,
+      blockId,
+      dropIndex: sourceIndex,
+      ghostLeft: listRect.left,
+      ghostWidth: listRect.width,
+      grabOffsetX: event.clientX - listRect.left,
+      lineLeft: listRect.left,
+      lineTop: rect.top,
+      lineWidth: listRect.width,
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+    desktopInitialBlockIdsRef.current = blockIds;
+    desktopDragCompactionPendingRef.current = true;
+    desktopDragStateRef.current = nextState;
     draggedBlockIdRef.current = blockId;
-    setDragBlockIds(blockIds);
+    setDesktopDragState(nextState);
     setDraggedBlockId(blockId);
   }
 
@@ -543,60 +1147,198 @@ export function NoteDetailPage() {
     } finally { keyboardReorderPendingRef.current = false; }
   }
 
-  function previewBlockReorder(overBlockId: string) {
-    const activeBlockId = draggedBlockIdRef.current;
-    if (!note || !activeBlockId || activeBlockId === overBlockId) {
-      return;
-    }
-    setDragBlockIds((current) => {
-      const blockIds = current ?? (note.blocks ?? []).map((block) => block.id);
-      const fromIndex = blockIds.indexOf(activeBlockId);
-      const toIndex = blockIds.indexOf(overBlockId);
-      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
-        return current;
+  function updateDesktopDragPosition(clientX: number, clientY: number) {
+    const current = desktopDragStateRef.current;
+    if (!current) return;
+    const blockList = document.querySelector<HTMLElement>('.note-block-list');
+    if (!blockList) return;
+    const listRect = blockList.getBoundingClientRect();
+    const candidates = Array.from(blockList.querySelectorAll<HTMLElement>('[data-note-block-id]'))
+      .filter((element) => element.dataset.noteBlockId !== current.blockId)
+      .map((element) => element.getBoundingClientRect());
+    let dropIndex = candidates.findIndex((rect) => clientY < rect.top + rect.height / 2);
+    if (dropIndex < 0) dropIndex = candidates.length;
+
+    let lineTop = listRect.top;
+    if (candidates.length > 0) {
+      if (dropIndex === 0) {
+        lineTop = candidates[0].top;
+      } else if (dropIndex === candidates.length) {
+        lineTop = candidates[candidates.length - 1].bottom;
+      } else {
+        lineTop = (candidates[dropIndex - 1].bottom + candidates[dropIndex].top) / 2;
       }
-      const nextIds = [...blockIds];
-      const [moved] = nextIds.splice(fromIndex, 1);
-      nextIds.splice(toIndex, 0, moved);
-      dragBlockIdsRef.current = nextIds;
-      return nextIds;
+    }
+
+    const viewportWidth = window.innerWidth;
+    const ghostWidth = Math.min(listRect.width, viewportWidth - 16);
+    const desiredLeft = clientX - current.grabOffsetX;
+    const nextState: DesktopDragState = {
+      ...current,
+      dropIndex,
+      ghostLeft: Math.min(viewportWidth - ghostWidth - 8, Math.max(8, desiredLeft)),
+      ghostWidth,
+      lineLeft: listRect.left,
+      lineTop,
+      lineWidth: listRect.width,
+      x: clientX,
+      y: clientY,
+    };
+    desktopDragStateRef.current = nextState;
+    setDesktopDragState(nextState);
+  }
+
+  function finishDesktopBlockDrag(cancelled: boolean) {
+    const current = desktopDragStateRef.current;
+    if (!note || !current) return;
+    const initialBlockIds = desktopInitialBlockIdsRef.current;
+    desktopDragReleaseAnchorRef.current = current;
+    desktopDragStateRef.current = null;
+    desktopDragCompactionPendingRef.current = false;
+    setDraggedBlockId(null);
+    setDesktopDragState(null);
+    draggedBlockIdRef.current = null;
+
+    if (cancelled) return;
+
+    const remainingIds = initialBlockIds.filter((blockId) => blockId !== current.blockId);
+    const targetIndex = Math.min(remainingIds.length, Math.max(0, current.dropIndex));
+    const nextIds = [...remainingIds];
+    nextIds.splice(targetIndex, 0, current.blockId);
+    if (arraysEqual(nextIds, initialBlockIds)) return;
+
+    setDragBlockIds(nextIds);
+    const revision = ++desktopDragPersistRevisionRef.current;
+    const persistMove = desktopDragPersistQueueRef.current
+      .catch(() => undefined)
+      .then(() => reorderBlocks(note.id, nextIds));
+    desktopDragPersistQueueRef.current = persistMove;
+    void persistMove.finally(() => {
+      if (desktopDragPersistRevisionRef.current === revision) setDragBlockIds(null);
     });
   }
 
-  function finishBlockDrag() {
-    if (!note) {
-      return;
-    }
-    const nextIds = dragBlockIdsRef.current;
-    const currentIds = (note.blocks ?? []).map((block) => block.id);
-    setDraggedBlockId(null);
-    dragBlockIdsRef.current = null;
-    draggedBlockIdRef.current = null;
+  function moveTouchMenuBlock(direction: -1 | 1) {
+    const current = touchHoldStateRef.current;
+    if (!note || !current?.menuOpen) return;
+    const blockIds = touchMenuBlockIdsRef.current.length > 0
+      ? [...touchMenuBlockIdsRef.current]
+      : (note.blocks ?? []).map((block) => block.id);
+    const index = blockIds.indexOf(current.blockId);
+    const targetIndex = index + direction;
+    if (index < 0 || targetIndex < 0 || targetIndex >= blockIds.length) return;
+    [blockIds[index], blockIds[targetIndex]] = [blockIds[targetIndex], blockIds[index]];
+    touchMenuBlockIdsRef.current = blockIds;
+    touchInitialBlockIdsRef.current = blockIds;
+    setDragBlockIds(blockIds);
 
-    if (!nextIds || arraysEqual(nextIds, currentIds)) {
-      setDragBlockIds(null);
-      return;
-    }
+    const revision = ++touchMenuMoveRevisionRef.current;
+    const persistMove = touchMenuMoveQueueRef.current
+      .catch(() => undefined)
+      .then(() => reorderBlocks(note.id, blockIds));
+    touchMenuMoveQueueRef.current = persistMove;
+    void persistMove.finally(() => {
+      if (touchMenuMoveRevisionRef.current === revision) setDragBlockIds(null);
+    });
 
-    void reorderBlocks(note.id, nextIds).finally(() => setDragBlockIds(null));
+    requestAnimationFrame(() => {
+      const element = document.getElementById(`block-${current.blockId}`);
+      if (!element) return;
+      const rect = element.getBoundingClientRect();
+      const headerBottom = Math.max(0, ...Array.from(document.querySelectorAll<HTMLElement>('.topbar, .document-top, .note-edit-toolbar-shell'))
+        .map((bar) => bar.getBoundingClientRect().bottom)) + 16;
+      const viewport = window.visualViewport;
+      const viewportBottom = (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight) - 16;
+      if (rect.top < headerBottom) {
+        window.scrollBy({ top: rect.top - headerBottom, behavior: 'smooth' });
+      } else if (rect.bottom > viewportBottom) {
+        window.scrollBy({ top: rect.bottom - viewportBottom, behavior: 'smooth' });
+      }
+    });
+  }
+
+  function moveCurrentNoteToTrash() {
+    if (!note) return;
+    void moveToTrash(note.id).then(() => {
+      pushToast(t('notes.trashChanged'), 'warning');
+      navigate('/trash');
+    });
   }
 
   return (
     <>
-      <header className="document-top">
+      <header className={[
+        'document-top',
+        touchAdapted ? 'document-top--touch-adapted' : '',
+        adapted && !touchAdapted ? 'document-top--narrow-desktop' : '',
+      ].filter(Boolean).join(' ')}>
         <button className="back-button" type="button" onClick={() => navigate(-1)}>
           <ChevronLeft />
           {t('common.back')}
         </button>
         <div className="document-top-toolbar">
           <NoteTiptapToolbar
+            floatingMenus={touchAdapted}
+            scrollAffordances={touchAdapted}
             target={toolbarTarget}
             t={t}
           />
         </div>
+        {touchAdapted ? (
+          <div className="note-document-actions-menu" ref={noteActionsRef} onKeyDown={noteActionsMenu.onKeyDown}>
+            <button
+              className="icon-button"
+              type="button"
+              aria-label={t('notes.openMenu')}
+              aria-expanded={noteActionsOpen}
+              aria-haspopup="menu"
+              ref={noteActionsMenu.triggerRef}
+              onClick={() => setNoteActionsOpen((open) => !open)}
+            >
+              <MoreVertical />
+            </button>
+            {noteActionsOpen ? (
+              <div
+                className="floating-menu note-document-actions-popover responsive-popover"
+                role="menu"
+                ref={noteActionsMenu.menuRef}
+                onClick={noteActionsMenu.closeAndFocus}
+              >
+                {cloudAccountId ? (
+                  <button
+                    type="button"
+                    role="menuitemcheckbox"
+                    aria-checked={!excludedNotes.includes(note.id)}
+                    onClick={() => void toggleExcluded(note.id)}
+                  >
+                    <Cloud />
+                    {excludedNotes.includes(note.id)
+                      ? t('noteDetail.includeInBackup')
+                      : t('noteDetail.excludeFromBackup')}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={note.isFavorite}
+                  onClick={() => void toggleFavorite(note.id)}
+                >
+                  <Star />
+                  {note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
+                </button>
+                <button className="danger" type="button" role="menuitem" onClick={moveCurrentNoteToTrash}>
+                  <Trash2 />
+                  {t('notes.moveToTrash')}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : (
         <div className="document-actions">
-          {cloudAccountId && <button className="icon-button" type="button" aria-label={t('cloud.noteBackup')}
-            title={t('cloud.noteBackup')} aria-pressed={!excludedNotes.includes(note.id)}
+          {cloudAccountId && <button className="icon-button" type="button"
+            aria-label={excludedNotes.includes(note.id) ? t('noteDetail.includeInBackup') : t('noteDetail.excludeFromBackup')}
+            title={excludedNotes.includes(note.id) ? t('noteDetail.includeInBackup') : t('noteDetail.excludeFromBackup')}
+            aria-pressed={!excludedNotes.includes(note.id)}
             onClick={() => void toggleExcluded(note.id)}><Cloud /></button>}
           <button
             className={note.isFavorite ? 'icon-button document-actions__favorite is-active' : 'icon-button document-actions__favorite'}
@@ -625,19 +1367,20 @@ export function NoteDetailPage() {
             className="icon-button danger"
             type="button"
             aria-label={t('notes.moveToTrash')}
-            onClick={() => {
-              void moveToTrash(note.id).then(() => {
-                pushToast(t('notes.trashChanged'), 'warning');
-                navigate('/trash');
-              });
-            }}
+            onClick={moveCurrentNoteToTrash}
           >
             <Trash2 />
           </button>
         </div>
+        )}
       </header>
 
-      <div className="note-document-shell">
+      <NoteHeaderDraftProvider key={note.id} note={note} onSave={updateHeader}>
+      <div className={[
+        'note-document-shell',
+        adapted ? 'note-document-shell--adapted' : '',
+        touchAdapted ? 'note-document-shell--touch' : '',
+      ].filter(Boolean).join(' ')}>
         <aside className="note-toc" aria-label={t('notes.tableOfContents')}>
           <div className="note-toc-dashes" aria-hidden="true">
             {tocEntries.map((entry) => (
@@ -680,10 +1423,8 @@ export function NoteDetailPage() {
 
         <main className="note-document-main">
           <NoteHeader
-            collections={collections}
             note={note}
             noteTags={noteTags}
-            onChange={(input) => updateHeader(note.id, input)}
             onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
             onThumbnailChange={(thumbnail) => void updateThumbnail(note.id, thumbnail)}
             onToolbarTargetChange={setToolbarTarget}
@@ -691,37 +1432,147 @@ export function NoteDetailPage() {
             typingRequest={headerTypingRequest}
           />
 
-          <section className={draggedBlockId ? 'note-block-list is-reordering' : 'note-block-list'}>
+          <section className={[
+            'note-block-list',
+            draggedBlockId ? 'is-reordering' : '',
+            desktopDragState ? 'is-desktop-drag-compacted' : '',
+            touchHoldState ? 'is-touch-compacted' : '',
+          ].filter(Boolean).join(' ')}>
             {visibleBlocks.map((block) => (
               <BlockEditor
                 block={block}
+                bubbleMenuEnabled={!touchAdapted}
                 contentTypingRequest={block.id === firstBlockId ? firstBlockTypingRequest : null}
                 dragged={draggedBlockId === block.id}
                 key={block.id}
                 noteId={note.id}
                 onDelete={() => setDeleteBlockState({ blockId: block.id, title: richTextToPlainText(block.title).trim() || t('notes.untitledBlock') })}
-                onDeleteFile={async (fileId) => {
-                  await deleteFile(note.id, fileId);
-                  pushToast(t('notes.fileDeleted'), 'warning');
-                }}
+                onDeleteFile={handleDeleteFile}
                 onDragStart={(event) => startBlockDrag(event, block.id)}
                 onKeyboardReorder={(direction) => void moveBlockWithKeyboard(block.id, direction)}
-                onRequestFileUpload={async () => {
-                  const sourcePath = await chooseNoteAttachment();
-                  if (!sourcePath) {
+                onRequestFileUpload={async (kind) => {
+                  try {
+                    const sourcePath = await chooseNoteAttachment(kind);
+                    if (!sourcePath) {
+                      return null;
+                    }
+                    const file = await importFileForBlock(sourcePath, note.id, block.id);
+                    if (file) {
+                      pushToast(t('notes.fileAdded'), 'success');
+                    }
+                    return file;
+                  } catch {
+                    pushToast(t('notes.fileAddFailed'), 'warning');
                     return null;
                   }
-                  const file = await importFileForBlock(sourcePath, note.id, block.id);
-                  if (file) {
-                    pushToast(t('notes.fileAdded'), 'success');
-                  }
-                  return file;
                 }}
+                onTouchHoldEnd={() => endTouchBlockHold(block.id)}
+                onTouchHoldStart={(x, y) => beginTouchBlockHold(block.id, x, y)}
+                onTouchMenuOpen={(x, y) => openTouchBlockMenu(block.id, x, y)}
+                onTouchActivate={() => activateTouchBlock(block.id)}
                 onToolbarTargetChange={setToolbarTarget}
                 onTocChange={refreshTocEntries}
+                touchActive={touchActiveBlockId === block.id}
+                touchCompacted={Boolean(touchHoldState || desktopDragState)}
+                touchDragging={touchHoldState?.blockId === block.id && touchHoldState.dragging}
+                touchHeld={touchHoldState?.blockId === block.id}
+                touchHoldEnabled={touchAdapted && !touchActiveBlockId && !draggedBlockId}
+                touchMenuOpen={touchHoldState?.blockId === block.id && touchHoldState.menuOpen}
+                touchMode={touchAdapted}
               />
             ))}
           </section>
+
+          {touchHoldState?.dragging && touchHeldBlock ? (
+            <>
+              <div className="note-touch-drag-ghost" ref={touchDragGhostRef} aria-hidden="true">
+                {richTextToPlainText(touchHeldBlock.title).trim() ? (
+                  <div className="note-block-compact-title">{richTextToPlainText(touchHeldBlock.title).trim()}</div>
+                ) : null}
+                {touchHeldBlock.contentText.trim() ? (
+                  <div className="note-block-compact-content">{touchHeldBlock.contentText.trim()}</div>
+                ) : null}
+              </div>
+              <div className="note-touch-drop-indicator" ref={touchDropIndicatorRef} aria-hidden="true" />
+            </>
+          ) : null}
+
+          {desktopDragState && desktopDraggedBlock ? (
+            <>
+              <div
+                className="note-touch-drag-ghost note-desktop-drag-ghost"
+                ref={desktopDragGhostRef}
+                aria-hidden="true"
+              >
+                {richTextToPlainText(desktopDraggedBlock.title).trim() ? (
+                  <div className="note-block-compact-title">{richTextToPlainText(desktopDraggedBlock.title).trim()}</div>
+                ) : null}
+                {desktopDraggedBlock.contentText.trim() ? (
+                  <div className="note-block-compact-content">{desktopDraggedBlock.contentText.trim()}</div>
+                ) : null}
+              </div>
+              <div
+                className="note-touch-drop-indicator note-desktop-drop-indicator"
+                ref={desktopDropIndicatorRef}
+                aria-hidden="true"
+              />
+            </>
+          ) : null}
+
+          {touchHoldState?.menuOpen && touchHeldBlock ? (
+            <div
+              className="note-touch-block-menu-layer"
+              onPointerDown={(event) => {
+                if (event.target === event.currentTarget) closeTouchBlockMenu();
+              }}
+            >
+              <div
+                className="note-touch-block-menu"
+                ref={touchBlockMenuRef}
+                role="menu"
+                aria-label={t('notes.reorderBlock')}
+              >
+                <button
+                  className="note-touch-block-menu-action is-up"
+                  type="button"
+                  role="menuitem"
+                  aria-label={t('notes.moveBlockUp')}
+                  title={t('notes.moveBlockUp')}
+                  disabled={touchMenuBlockIndex <= 0}
+                  onClick={() => moveTouchMenuBlock(-1)}
+                >
+                  <ChevronUp aria-hidden="true" />
+                </button>
+                <button
+                  className="note-touch-block-menu-action is-down"
+                  type="button"
+                  role="menuitem"
+                  aria-label={t('notes.moveBlockDown')}
+                  title={t('notes.moveBlockDown')}
+                  disabled={touchMenuBlockIndex < 0 || touchMenuBlockIndex >= touchMenuBlockIds.length - 1}
+                  onClick={() => moveTouchMenuBlock(1)}
+                >
+                  <ChevronDown aria-hidden="true" />
+                </button>
+                <button
+                  className={`note-touch-block-menu-action is-delete is-${touchHoldState.menuDeleteSide}`}
+                  type="button"
+                  role="menuitem"
+                  aria-label={t('common.delete')}
+                  title={t('common.delete')}
+                  onClick={() => {
+                    closeTouchBlockMenu();
+                    setDeleteBlockState({
+                      blockId: touchHeldBlock.id,
+                      title: richTextToPlainText(touchHeldBlock.title).trim() || t('notes.untitledBlock'),
+                    });
+                  }}
+                >
+                  <Trash2 aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="note-add-block-row">
             <button type="button" aria-label={t('notes.addContentBlock')} title={t('notes.addContentBlock')} onClick={() => void addContentBlock('content')}>
@@ -730,7 +1581,17 @@ export function NoteDetailPage() {
           </div>
         </main>
 
-        <aside className="document-aside note-document-aside">
+        {adapted ? (
+          <div className="note-panels-navigation">
+            <button ref={panelsTriggerRef} className="icon-button" type="button" aria-label={t('noteDetail.openPanels')}
+              title={t('noteDetail.openPanels')} aria-controls="note-detail-panels" aria-expanded={panelsOpen}
+              onClick={() => setPanelsOpen(true)}>
+              <ChevronLeft aria-hidden="true" />
+            </button>
+          </div>
+        ) : null}
+        <ResponsiveSidePanel compact={adapted} id="note-detail-panels" label={t('noteDetail.panels')}
+          open={panelsOpen} onClose={() => setPanelsOpen(false)} triggerRef={panelsTriggerRef}>
           <Panel title={t('noteDetail.metadata')}>
             <div className="meta-list">
               <div className="meta-row">
@@ -741,7 +1602,7 @@ export function NoteDetailPage() {
                 <span>{t('noteDetail.updatedAt')}</span>
                 <span className="meta-value">{formatDate(note.updatedAt, locale)}</span>
               </div>
-              <div className="meta-row">
+              <div className="meta-row meta-row--collection">
                 <span>{t('noteDetail.collectionLabel')}</span>
                 <span className="meta-value">{collections.find((collection) => collection.id === note.collectionId)?.name ?? t('noteDetail.noCollection')}</span>
               </div>
@@ -750,6 +1611,10 @@ export function NoteDetailPage() {
                 <span className="meta-value">{user?.name || note.authorId || 'Local user'}</span>
               </div>
             </div>
+          </Panel>
+
+          <Panel title={t('noteDetail.collectionLabel')}>
+            <NoteCollectionField collections={collections} t={t} />
           </Panel>
 
           <Panel title={t('noteDetail.tags')}>
@@ -920,19 +1785,23 @@ export function NoteDetailPage() {
                 {note.files.map((file) => (
                   <li key={file.id}>
                     {file.kind === 'image' ? <ImageIcon /> : <FileText />}
-                    <span title={file.originalName}>{file.originalName}</span>
+                    <button
+                      className="note-file-name"
+                      type="button"
+                      title={file.originalName}
+                      onClick={() => void openNoteAttachment(file.relativePath)}
+                    >
+                      {file.originalName}
+                    </button>
                     <span className="side-list-actions">
-                      <button className="icon-button" type="button" aria-label={t('common.open')} onClick={() => void openNoteAttachment(file.relativePath)}>
-                        <FileText />
-                      </button>
-                      <button className="icon-button" type="button" aria-label={t('common.export')} onClick={() => void exportNoteAttachment(file)}>
+                      <button className="icon-button note-file-export" type="button" aria-label={t('common.export')} onClick={() => void exportNoteAttachment(file)}>
                         <Download />
                       </button>
                       <button
                         className="icon-button danger"
                         type="button"
                         aria-label={t('common.delete')}
-                        onClick={() => void deleteFile(note.id, file.id).then(() => pushToast(t('notes.fileDeleted'), 'warning'))}
+                        onClick={() => void handleDeleteFile(file.id)}
                       >
                         <Trash2 />
                       </button>
@@ -944,8 +1813,9 @@ export function NoteDetailPage() {
               <p className="inline-help">{t('notes.noFiles')}</p>
             )}
           </Panel>
-        </aside>
+        </ResponsiveSidePanel>
       </div>
+      </NoteHeaderDraftProvider>
 
       <ExportNoteConfirmModal
         disabled={isExportingNote}
@@ -1030,103 +1900,26 @@ function ExportNoteConfirmModal({
 }
 
 function NoteHeader({
-  collections,
   note,
   noteTags,
-  onChange,
   onTagsChange,
   onThumbnailChange,
   onToolbarTargetChange,
   t,
   typingRequest,
 }: {
-  collections: Collection[];
   note: Note;
   noteTags: Tag[];
-  onChange: (input: { collectionId?: string | null; subtitle?: string; title?: string }) => Promise<void>;
   onTagsChange: (tagIds: string[]) => void;
   onThumbnailChange: (thumbnail: NoteThumbnailModel) => void;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
   t: ReturnType<typeof useI18n>['t'];
   typingRequest?: HeaderTypingRequest | null;
 }) {
-  const [title, setTitle] = useState(note.title);
-  const [subtitle, setSubtitle] = useState(note.subtitle);
-  const [collectionId, setCollectionId] = useState(note.collectionId ?? '');
-  const saveTimeoutRef = useRef<number | null>(null);
-  const draftRevisionRef = useRef(0);
-  const draftSourceId = 'header';
-
-  useEffect(() => {
-    setTitle(note.title);
-    setSubtitle(note.subtitle);
-    setCollectionId(note.collectionId ?? '');
-  }, [note.id, note.title, note.subtitle, note.collectionId]);
-
-  useEffect(() => () => {
-    draftRevisionRef.current += 1;
-    setLocalDraftPending(note.id, draftSourceId, false);
-  }, [note.id]);
-
-  useEffect(() => {
-    if (title === note.title && subtitle === note.subtitle && collectionId === (note.collectionId ?? '')) {
-      draftRevisionRef.current += 1;
-      setLocalDraftPending(note.id, draftSourceId, false);
-      return undefined;
-    }
-    const draftRevision = ++draftRevisionRef.current;
-    setLocalDraftPending(note.id, draftSourceId, true);
-    if (saveTimeoutRef.current) {
-      window.clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = window.setTimeout(() => {
-      const finishSave = beginLocalSave(note.id, draftSourceId);
-      void (async () => {
-        let saved = false;
-        try {
-          await onChange({ title, subtitle, collectionId: collectionId || null });
-          saved = true;
-        } catch {
-          // Keep the draft registered so a remote mutation cannot overwrite it.
-        } finally {
-          finishSave();
-          if (saved && draftRevisionRef.current === draftRevision) {
-            setLocalDraftPending(note.id, draftSourceId, false);
-          }
-        }
-      })();
-    }, 650);
-    return () => {
-      if (saveTimeoutRef.current) {
-        window.clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [collectionId, note.collectionId, note.subtitle, note.title, onChange, subtitle, title]);
-
-  const selectedCollection = collections.find((collection) => collection.id === collectionId);
+  const { title, subtitle, setTitle, setSubtitle } = useNoteHeaderDraft();
 
   return (
     <section className="document-heading note-document-heading">
-      <div className="document-meta-row">
-        <div className={`editable-collection-field editing ${selectedCollection?.color ?? 'neutral'}`}>
-          <Folder />
-          <CustomSelect
-            ariaLabel={t('noteDetail.collectionLabel')}
-            emptyText={t('notes.filters.noCollections')}
-            onChange={setCollectionId}
-            options={[
-              { label: t('noteDetail.noCollection'), value: '' },
-              ...collections.map((collection) => ({
-                color: collection.color,
-                label: collection.name,
-                value: collection.id,
-              })),
-            ]}
-            value={collectionId}
-          />
-        </div>
-      </div>
-
       <div className="document-title-row">
         <div className="document-title-stack">
           <NoteInlineTiptapEditor
@@ -1165,6 +1958,29 @@ function NoteHeader({
   );
 }
 
+function NoteCollectionField({ collections, t }: {
+  collections: Collection[];
+  t: ReturnType<typeof useI18n>['t'];
+}) {
+  const { collectionId, setCollectionId } = useNoteHeaderDraft();
+  const selectedCollection = collections.find((collection) => collection.id === collectionId);
+  return (
+    <div className={`editable-collection-field editing note-collection-field ${selectedCollection?.color ?? 'neutral'}`}>
+      <Folder aria-hidden="true" />
+      <CustomSelect
+        ariaLabel={t('noteDetail.collectionLabel')}
+        emptyText={t('notes.filters.noCollections')}
+        onChange={setCollectionId}
+        options={[
+          { label: t('noteDetail.noCollection'), value: '' },
+          ...collections.map((collection) => ({ color: collection.color, label: collection.name, value: collection.id })),
+        ]}
+        value={collectionId}
+      />
+    </div>
+  );
+}
+
 function ThumbnailPicker({
   current,
   onSelect,
@@ -1180,6 +1996,7 @@ function ThumbnailPicker({
   const currentThumbnail = current ?? { variant: defaultNoteThumbnailVariant };
 
   useClickOutside(pickerRef, open, () => setOpen(false));
+  useFloatingPopover(open, menu.triggerRef, menu.menuRef, 'bottom-end');
 
   return (
     <div className="thumbnail-picker" ref={pickerRef} onKeyDown={menu.onKeyDown}
@@ -1226,6 +2043,7 @@ function ThumbnailPicker({
 
 function BlockEditor({
   block,
+  bubbleMenuEnabled,
   contentTypingRequest,
   dragged,
   noteId,
@@ -1234,10 +2052,22 @@ function BlockEditor({
   onDragStart,
   onKeyboardReorder,
   onRequestFileUpload,
+  onTouchHoldEnd,
+  onTouchHoldStart,
+  onTouchMenuOpen,
+  onTouchActivate,
   onTocChange,
   onToolbarTargetChange,
+  touchActive,
+  touchCompacted,
+  touchDragging,
+  touchHeld,
+  touchHoldEnabled,
+  touchMenuOpen,
+  touchMode,
 }: {
   block: NoteBlock;
+  bubbleMenuEnabled: boolean;
   contentTypingRequest?: NoteTiptapInsertTextRequest | null;
   dragged: boolean;
   noteId: string;
@@ -1245,9 +2075,20 @@ function BlockEditor({
   onDeleteFile: (fileId: string) => Promise<void>;
   onDragStart: (event: PointerEvent<HTMLButtonElement>) => void;
   onKeyboardReorder: (direction: -1 | 1) => void;
-  onRequestFileUpload: () => Promise<NoteFile | null>;
+  onRequestFileUpload: (kind: NoteFileKind) => Promise<NoteFile | null>;
+  onTouchHoldEnd: () => void;
+  onTouchHoldStart: (x: number, y: number) => void;
+  onTouchMenuOpen: (x: number, y: number) => void;
+  onTouchActivate: () => void;
   onTocChange: () => void;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
+  touchActive: boolean;
+  touchCompacted: boolean;
+  touchDragging: boolean;
+  touchHeld: boolean;
+  touchHoldEnabled: boolean;
+  touchMenuOpen: boolean;
+  touchMode: boolean;
 }) {
   const { t } = useI18n();
   const updateBlock = useNotesStore((state) => state.updateBlock);
@@ -1256,12 +2097,25 @@ function BlockEditor({
   const [contentText, setContentText] = useState(block.contentText);
   const [titleActive, setTitleActive] = useState(false);
   const [contentActive, setContentActive] = useState(false);
+  const [touchEditingRegion, setTouchEditingRegion] = useState<'content' | 'title' | null>(null);
   const saveTimeoutRef = useRef<number | null>(null);
   const draftRevisionRef = useRef(0);
   const lastTypingNonceRef = useRef<number | null>(null);
   const contentJsonRef = useRef<TiptapDocument | null>(contentJson);
   const contentTextRef = useRef(contentText);
   const fileInsertPendingRef = useRef(false);
+  const touchHoldTimerRef = useRef<number | null>(null);
+  const touchMenuTimerRef = useRef<number | null>(null);
+  const touchHoldPointerRef = useRef<{
+    activated: boolean;
+    id: number;
+    menuOpened: boolean;
+    pointerType: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const suppressHoldClickRef = useRef(false);
+  const suppressHoldClickTimerRef = useRef<number | null>(null);
   const titleHasContent = richTextToPlainText(title).trim().length > 0;
   const contentHasContent = hasTiptapContent(contentJson, contentText);
   const titleVisible = titleHasContent || titleActive;
@@ -1269,15 +2123,128 @@ function BlockEditor({
   const blockIsEmpty = !titleVisible && !contentVisible;
   const draftSourceId = `block:${block.id}`;
 
+  function clearTouchHoldTimer() {
+    if (touchHoldTimerRef.current !== null) {
+      window.clearTimeout(touchHoldTimerRef.current);
+      touchHoldTimerRef.current = null;
+    }
+  }
+
+  function clearTouchMenuTimer() {
+    if (touchMenuTimerRef.current !== null) {
+      window.clearTimeout(touchMenuTimerRef.current);
+      touchMenuTimerRef.current = null;
+    }
+  }
+
+  function handleTouchHoldPointerDown(event: PointerEvent<HTMLElement>) {
+    if (!touchHoldEnabled || !event.isPrimary || event.pointerType === 'mouse') return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest('a, button, input, select, textarea, [role="button"]')) return;
+    clearTouchHoldTimer();
+    clearTouchMenuTimer();
+    touchHoldPointerRef.current = {
+      activated: false,
+      id: event.pointerId,
+      menuOpened: false,
+      pointerType: event.pointerType,
+      x: event.clientX,
+      y: event.clientY,
+    };
+    touchHoldTimerRef.current = window.setTimeout(() => {
+      const pointer = touchHoldPointerRef.current;
+      if (!pointer || pointer.id !== event.pointerId) return;
+      pointer.activated = true;
+      touchHoldTimerRef.current = null;
+      onTouchHoldStart(pointer.x, pointer.y);
+      touchMenuTimerRef.current = window.setTimeout(() => {
+        const heldPointer = touchHoldPointerRef.current;
+        if (!heldPointer || heldPointer.id !== event.pointerId || !heldPointer.activated) return;
+        heldPointer.menuOpened = true;
+        touchMenuTimerRef.current = null;
+        onTouchMenuOpen(heldPointer.x, heldPointer.y);
+      }, editorSettings.blockTouch.menuDelayMs);
+    }, editorSettings.blockTouch.holdDelayMs);
+  }
+
+  function handleTouchHoldPointerMove(event: PointerEvent<HTMLElement>) {
+    const pointer = touchHoldPointerRef.current;
+    if (!pointer || pointer.id !== event.pointerId) return;
+    if (!pointer.activated && Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > editorSettings.blockTouch.tapMovementTolerance) {
+      clearTouchHoldTimer();
+      clearTouchMenuTimer();
+      touchHoldPointerRef.current = null;
+      return;
+    }
+    if (pointer.activated) {
+      if (Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > editorSettings.blockTouch.tapMovementTolerance) {
+        clearTouchMenuTimer();
+      }
+      event.preventDefault();
+    }
+  }
+
+  function suppressClickAfterHold() {
+    suppressHoldClickRef.current = true;
+    if (suppressHoldClickTimerRef.current !== null) {
+      window.clearTimeout(suppressHoldClickTimerRef.current);
+    }
+    suppressHoldClickTimerRef.current = window.setTimeout(() => {
+      suppressHoldClickRef.current = false;
+      suppressHoldClickTimerRef.current = null;
+    }, 400);
+  }
+
+  function handleTouchHoldPointerUp(event: PointerEvent<HTMLElement>) {
+    const pointer = touchHoldPointerRef.current;
+    if (!pointer || pointer.id !== event.pointerId) return;
+    const activated = pointer.activated || touchHeld;
+    clearTouchHoldTimer();
+    clearTouchMenuTimer();
+    touchHoldPointerRef.current = null;
+    if (!activated) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressClickAfterHold();
+    if (pointer.menuOpened || touchMenuOpen) return;
+    onTouchHoldEnd();
+  }
+
+  function handleTouchHoldPointerCancel(event: PointerEvent<HTMLElement>) {
+    const pointer = touchHoldPointerRef.current;
+    if (!pointer || pointer.id !== event.pointerId) return;
+    const activated = pointer.activated || touchHeld;
+    clearTouchHoldTimer();
+    clearTouchMenuTimer();
+    touchHoldPointerRef.current = null;
+    if (activated && pointer.pointerType === 'touch') return;
+    if (activated) onTouchHoldEnd();
+  }
+
+  function beginTouchEditing(region: 'content' | 'title') {
+    if (!touchMode) return;
+    setTouchEditingRegion(region);
+    onTouchActivate();
+  }
+
   useEffect(() => {
     setTitle(block.title);
     setContentJson(block.contentJson);
     setContentText(block.contentText);
   }, [block.id, block.title, block.contentJson, block.contentText]);
 
+  useEffect(() => {
+    if (!touchActive) setTouchEditingRegion(null);
+  }, [touchActive]);
+
   useEffect(() => () => {
     draftRevisionRef.current += 1;
     setLocalDraftPending(noteId, draftSourceId, false);
+    clearTouchHoldTimer();
+    clearTouchMenuTimer();
+    if (suppressHoldClickTimerRef.current !== null) {
+      window.clearTimeout(suppressHoldClickTimerRef.current);
+    }
   }, [draftSourceId, noteId]);
 
   useEffect(() => {
@@ -1293,6 +2260,7 @@ function BlockEditor({
     lastTypingNonceRef.current = contentTypingRequest.nonce;
     setContentJson((current) => current ?? emptyTiptapDocument);
     setContentActive(true);
+    beginTouchEditing('content');
   }, [contentTypingRequest]);
 
   useEffect(() => {
@@ -1353,10 +2321,29 @@ function BlockEditor({
 
   return (
     <article
-      className={dragged ? 'note-block is-dragging' : 'note-block'}
+      className={[
+        'note-block',
+        dragged ? 'is-dragging' : '',
+        touchActive ? 'is-touch-active' : '',
+        touchDragging ? 'is-touch-dragging-source' : '',
+        touchHeld ? 'is-touch-held' : '',
+      ].filter(Boolean).join(' ')}
       data-note-block-id={block.id}
       id={`block-${block.id}`}
       data-empty={blockIsEmpty ? 'true' : undefined}
+      onContextMenuCapture={(event) => {
+        if (touchHoldEnabled || touchHeld) event.preventDefault();
+      }}
+      onClickCapture={(event) => {
+        if (!suppressHoldClickRef.current) return;
+        suppressHoldClickRef.current = false;
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+      onPointerCancelCapture={handleTouchHoldPointerCancel}
+      onPointerDownCapture={handleTouchHoldPointerDown}
+      onPointerMoveCapture={handleTouchHoldPointerMove}
+      onPointerUpCapture={handleTouchHoldPointerUp}
     >
       <button
         className="note-block-handle"
@@ -1374,6 +2361,14 @@ function BlockEditor({
       >
         <GripVertical />
       </button>
+      <div className="note-block-compact-preview" hidden={!touchCompacted}>
+        {richTextToPlainText(title).trim() ? (
+          <div className="note-block-compact-title">{richTextToPlainText(title).trim()}</div>
+        ) : null}
+        {contentText.trim() ? (
+          <div className="note-block-compact-content">{contentText.trim()}</div>
+        ) : null}
+      </div>
       <div className="note-block-body">
         {titleVisible ? (
           <NoteInlineTiptapEditor
@@ -1391,7 +2386,10 @@ function BlockEditor({
               onTocChange();
             }}
             onToolbarTargetChange={onToolbarTargetChange}
+            onTouchEditStart={() => beginTouchEditing('title')}
             placeholder=""
+            touchEditing={touchActive && touchEditingRegion === 'title'}
+            touchMode={touchMode}
             value={title}
           />
         ) : (
@@ -1400,7 +2398,10 @@ function BlockEditor({
             type="button"
             aria-label={t('notes.addTitleBlock')}
             title={t('notes.addTitleBlock')}
-            onClick={() => setTitleActive(true)}
+            onClick={() => {
+              setTitleActive(true);
+              beginTouchEditing('title');
+            }}
           >
             <Plus />
           </button>
@@ -1409,6 +2410,7 @@ function BlockEditor({
           <NoteTiptapEditor
             autoFocus={contentActive && !contentHasContent}
             blockId={block.id}
+            bubbleMenuEnabled={bubbleMenuEnabled}
             insertTextRequest={contentTypingRequest}
             onBlur={() => {
               if (fileInsertPendingRef.current) {
@@ -1429,7 +2431,10 @@ function BlockEditor({
             onFocus={() => setContentActive(true)}
             onPendingFileInsertChange={setFileInsertPending}
             onRequestFileUpload={onRequestFileUpload}
+            onTouchEditStart={() => beginTouchEditing('content')}
             onToolbarTargetChange={onToolbarTargetChange}
+            touchEditing={touchActive && touchEditingRegion === 'content'}
+            touchMode={touchMode}
             value={contentJson ?? emptyTiptapDocument}
           />
         ) : (
@@ -1441,6 +2446,7 @@ function BlockEditor({
             onClick={() => {
               setContentJson((current) => current ?? emptyTiptapDocument);
               setContentActive(true);
+              beginTouchEditing('content');
             }}
           >
             <Plus />

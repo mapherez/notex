@@ -131,9 +131,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
   reorderPinnedNotes: async (noteIds) => {
     const current = get().settings.pinnedNoteIds;
-    const currentSet = new Set(current);
-    const orderedIds = noteIds.filter((noteId) => currentSet.has(noteId));
-    const pinnedNoteIds = [...orderedIds, ...current.filter((noteId) => !orderedIds.includes(noteId))];
+    const orderedIds = [...new Set(noteIds)];
+    const orderedSet = new Set(orderedIds);
+    const pinnedNoteIds = [...orderedIds, ...current.filter((noteId) => !orderedSet.has(noteId))];
     const settings = { ...get().settings, pinnedNoteIds };
     await updateSettings(set, settings);
   },

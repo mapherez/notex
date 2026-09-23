@@ -1,0 +1,430 @@
+.page-content {
+  container: page / inline-size;
+}
+
+.dashboard-main {
+  min-width: 0;
+  container: dashboard / inline-size;
+}
+
+.note-list {
+  min-width: 0;
+  container: note-list / inline-size;
+}
+
+.note-row__thumbnail .note-thumb {
+  display: block;
+  width: 3.7rem;
+  height: 3.7rem;
+}
+
+.collection-grid,
+.tag-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+}
+
+.notes-filter-control,
+.notes-filter-order,
+.bulk-field {
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+
+.notes-filter-menu,
+.bulk-tags-menu {
+  width: 100%;
+  min-width: 0;
+}
+
+.responsive-popover {
+  position: absolute;
+  top: var(--nx-popover-top, 0);
+  left: var(--nx-popover-left, 0);
+  right: auto;
+  max-width: var(--nx-popover-max-width, calc(100vw - 2rem));
+  max-height: min(26rem, var(--nx-popover-max-height, 70dvh));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.notes-filter-menu.responsive-popover {
+  width: var(--nx-popover-anchor-width, 100%);
+}
+
+.quick-pin-picker.responsive-popover {
+  width: 18rem;
+  min-width: 0;
+}
+
+.notes-filter-options button {
+  overflow-wrap: anywhere;
+}
+
+.page-header-actions,
+.collection-card-header,
+.tag-card-header {
+  flex-wrap: wrap;
+}
+
+.collection-card-main .stat-label,
+.collection-card-main .stat-delta {
+  overflow-wrap: anywhere;
+}
+
+@container page (max-width: 70rem) {
+  .dashboard-layout,
+  .collections-layout,
+  .tags-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-side {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  }
+}
+
+@container dashboard (max-width: 48rem) {
+  .stat-card {
+    min-height: 9rem;
+    gap: var(--nx-space-3);
+    padding: var(--nx-space-4);
+  }
+}
+
+// Metadata remains in the original desktop grid; adapted cards wrap it together.
+.note-row__metadata {
+  display: contents;
+}
+
+.adapted-content {
+  .notes-filter-view {
+    display: none;
+  }
+
+  .note-list {
+    display: grid;
+    gap: var(--nx-space-4);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  // Drag/title and selection/subtitle share rows, with status actions in the footer.
+  @each $selectable in false, true {
+    @each $draggable in false, true {
+      $suffix: '';
+      $header: 'title thumb actions';
+      $summary: 'summary summary summary';
+      $footer: 'metadata metadata status';
+      $summary-footer: $footer;
+      $columns: minmax(0, 1fr) 3.7rem auto;
+
+      @if $selectable { $suffix: '#{$suffix}.selectable'; }
+
+      @if $draggable { $suffix: '#{$suffix}.with-drag-handle'; }
+
+      @if $selectable or $draggable {
+        $columns: auto $columns;
+        $header: '. title thumb actions';
+        $summary: '. summary summary summary';
+        $footer: 'metadata metadata status status';
+        $summary-footer: $footer;
+      }
+
+      @if $draggable {
+        $header: 'drag title thumb actions';
+      }
+
+      @if $selectable {
+        $summary: 'select summary summary summary';
+
+        @if $draggable {
+          // With no subtitle, selection shares the metadata row rather than a blank row.
+          $footer: 'select metadata status status';
+        } @else {
+          $header: 'select title thumb actions';
+        }
+      }
+
+      $summary-header: $header;
+
+      @if $selectable and not $draggable {
+        $summary-header: '. title thumb actions';
+      }
+
+      .note-row#{$suffix} {
+        grid-template: '#{$header}' auto '#{$footer}' auto / $columns;
+        min-height: 0;
+        gap: var(--nx-space-3);
+        border: 1px solid var(--nx-color-border);
+        border-radius: var(--nx-radius-card);
+        background: var(--nx-color-surface);
+        padding: var(--nx-space-4);
+
+        &:has(.note-row__intro, .note-row__summary-preview) {
+          grid-template: '#{$summary-header}' auto '#{$summary}' auto '#{$summary-footer}' auto / $columns;
+        }
+      }
+    }
+  }
+  .note-row__drag-handle { grid-area: drag; }
+  .note-select-control { grid-area: select; }
+
+  .note-row-actions {
+    grid-area: actions;
+    justify-self: end;
+  }
+
+  .note-row__thumbnail { grid-area: thumb; }
+
+  .note-row__status-stack {
+    grid-area: status;
+    display: flex;
+    gap: var(--nx-space-1);
+    width: auto;
+    justify-self: end;
+  }
+
+  .note-row__drag-handle:not(:disabled) {
+    touch-action: none;
+    user-select: none;
+  }
+
+  .note-row__content { display: contents; }
+  .note-row__title-line { grid-area: title; }
+
+  .note-row__title {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .note-row__intro,
+  .note-row__summary-preview {
+    grid-area: summary;
+    min-width: 0;
+    margin: 0;
+    max-height: none;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.75;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .note-row__metadata {
+    grid-area: metadata;
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--nx-space-2) var(--nx-space-3);
+  }
+
+  .note-row__badges {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    gap: var(--nx-space-2);
+  }
+
+  .note-row .collection-chip { max-width: 100%; }
+
+  .note-row__tag-chain {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 100%;
+    gap: var(--nx-space-2);
+    margin-left: 0;
+    overflow: visible;
+  }
+
+  .note-row__tag-chain-item {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .note-row__tag-chain-item::after { display: none; }
+
+  .note-row__tag-chain-item .tag-chip,
+  .note-row__tag-chain-item:hover .tag-chip,
+  .note-row__tag-chain-item:focus-within .tag-chip {
+    max-width: 100%;
+    transform: none;
+  }
+
+  .note-row__time { margin-left: auto; }
+
+  .note-row:hover,
+  .note-row.is-dragging {
+    background: var(--nx-color-hover);
+  }
+
+  .pin-list .note-row {
+    border-color: color-mix(in srgb, var(--nx-color-accent) 26%, var(--nx-color-border));
+  }
+
+  .stats-grid,
+  .quick-pin-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+// At mobile widths the thumbnail moves into the footer to keep text beside its control.
+@container note-list (max-width: 34rem) {
+  @each $selectable in false, true {
+    @each $draggable in false, true {
+      $suffix: '';
+      $header: 'title title actions';
+      $summary: 'summary summary summary';
+      $footer: 'thumb metadata metadata';
+      $status: 'status status status';
+      $summary-footer: $footer;
+      $summary-status: $status;
+
+      @if $selectable { $suffix: '#{$suffix}.selectable'; }
+
+      @if $draggable { $suffix: '#{$suffix}.with-drag-handle'; }
+
+      @if $draggable {
+        $header: 'drag title actions';
+        $summary: '. summary summary';
+      }
+
+      @if $selectable {
+        $summary: 'select summary summary';
+
+        @if $draggable {
+          $footer: 'select metadata metadata';
+          $status: 'thumb status status';
+        } @else {
+          $header: 'select title actions';
+        }
+      }
+
+      $summary-header: $header;
+
+      @if $selectable and not $draggable {
+        $summary-header: '. title actions';
+      }
+
+      .adapted-content .note-row#{$suffix} {
+        --nx-note-control-size: 2.75rem;
+
+        grid-template: '#{$header}' auto '#{$footer}' auto '#{$status}' auto / 2.75rem minmax(0, 1fr) auto;
+        column-gap: var(--nx-space-2);
+
+        &:has(.note-row__intro, .note-row__summary-preview) {
+          grid-template: '#{$summary-header}' auto '#{$summary}' auto '#{$summary-footer}' auto '#{$summary-status}' auto / 2.75rem minmax(0, 1fr) auto;
+        }
+      }
+    }
+  }
+
+  .adapted-content .note-row__status-stack { justify-self: end; }
+
+  .adapted-content .note-row__thumbnail .note-thumb {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+
+@container dashboard (max-width: 41rem) {
+  .adapted-content .stats-grid,
+  .adapted-content .quick-pin-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+// Three tablet columns keep the title readable by putting it below the thumbnail.
+@container dashboard (max-width: 48rem) {
+  .adapted-content .quick-pin-card {
+    min-height: 9.5rem;
+  }
+
+  .adapted-content .quick-pin-card:not(.empty) {
+    grid-template-columns: minmax(0, 1fr);
+    padding-right: var(--nx-space-4);
+  }
+
+  .adapted-content .quick-pin-copy strong {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+@container dashboard (max-width: 25rem) {
+  .adapted-content .quick-pin-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+@container dashboard (max-width: 21rem) {
+  .adapted-content .stats-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (any-pointer: coarse) {
+  .adapted-content .note-row :is(.note-row__status-button, .note-row__drag-handle, .note-select-control, .icon-button) {
+    min-width: var(--nx-note-control-size, 3rem);
+    min-height: var(--nx-note-control-size, 3rem);
+  }
+
+  .note-row-menu button,
+  .note-row-menu > a,
+  .note-row .tag-chip,
+  .note-row .collection-chip,
+  .notes-filter-trigger,
+  .notes-filter-view-button,
+  .notes-filter-clear,
+  .notes-filter-options button,
+  .bulk-tags-trigger,
+  .bulk-clear-button,
+  .bulk-delete-button,
+  .bulk-selection-summary,
+  .bulk-tag-option,
+  .list-page-grid .custom-select__trigger,
+  .collection-action-button,
+  .collection-create-actions > button,
+  .tag-create-actions > button,
+  .tag-card .icon-button,
+  .tag-card-actions button,
+  .quick-pin-edit,
+  .quick-pin-clear,
+  .quick-pin-options button,
+  .dashboard-side .submit-button {
+    min-width: 3rem;
+    min-height: 3rem;
+  }
+
+  .notes-filter-toggle {
+    height: auto;
+  }
+
+  .quick-pin-card:not(.empty) {
+    padding-right: 4rem;
+  }
+
+  .quick-pin-edit {
+    top: var(--nx-space-2);
+    right: var(--nx-space-2);
+  }
+
+  .quick-pin-search,
+  .notes-filter-search {
+    min-height: 3rem;
+  }
+
+  .quick-pin-search input,
+  .notes-filter-search input,
+  .collection-create-card input,
+  .collection-edit-form input,
+  .tag-create-card input,
+  .tag-edit-form input,
+  .dashboard-side textarea {
+    font-size: 1rem;
+  }
+}

@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Note } from '../models/models';
 import { IndexedDbStorage } from './indexedDbStorage';
 
@@ -17,9 +17,17 @@ function note(id = 'note', title = 'Original', version = 1): Note {
     stats: { wordCount: 1, characterCount: 8, readingTimeMinutes: 1 },
   };
 }
-afterEach(() => { for (const storage of opened.splice(0)) storage.close(); });
+afterEach(() => { for (const storage of opened.splice(0)) storage.close(); vi.unstubAllGlobals(); });
 
 describe('IndexedDB account libraries', () => {
+  it('writes and persists records without randomUUID, as on HTTP over the local network', async () => {
+    const storage = await open();
+    const getRandomValues = crypto.getRandomValues.bind(crypto);
+    vi.stubGlobal('crypto', { getRandomValues });
+    await storage.db.notes.put(note());
+    expect(await storage.db.notes.get('note')).toEqual(note());
+    expect((await storage.pending())[0].changeToken).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  });
   it('requires an account and persists independently across closing and reopening', async () => {
     await expect(IndexedDbStorage.open('')).rejects.toThrow();
     const account = crypto.randomUUID();

@@ -17,6 +17,8 @@ import {
   Image as ImageIcon,
   Italic,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Lightbulb,
   Link2,
   List,
@@ -34,6 +36,7 @@ import {
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -41,24 +44,29 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from 'react-dom';
 import { type Editor, type JSONContent } from '@tiptap/core';
 import { EditorContent, NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type ReactNodeViewProps } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import { TextStyleToolbar } from '../editing/TextStyleToolbar';
 import type { InlineStyleColor, InlineStyleKind } from '../../core/utils/inlineFormatting';
-import type { NoteFile, TiptapDocument } from '../../core/models/models';
+import type { NoteFile, NoteFileKind, TiptapDocument } from '../../core/models/models';
 import { exportNoteAttachment, openNoteAttachment, resolveNoteFileSrc } from '../../core/services/noteFiles';
 import { openExternalUrl } from "../../core/services/externalLinks";
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useMenuOptionFocus } from '../../core/utils/useMenuOptionFocus';
+import { useFloatingPopover } from '../../core/utils/useFloatingPopover';
 import { richTextToTiptapContent } from '../../core/utils/richText';
 import { formatShortcutForDisplay } from '../../core/utils/shortcutFormatting';
 import { useI18n } from '../../i18n/I18nProvider';
 import { emptyTiptapDocument } from '../../store/useNotesStore';
 import { editorSettings } from '../../config/appSettings';
+import { useNoteImageResize } from './useNoteImageResize';
+import { NoteImagePreview } from './NoteImagePreview';
 import {
   createNoteContentExtensions,
   createNoteInlineExtensions,
+  createPermanentNoteFileRemovalExtension,
   NoteFileNode,
   NoteTipNode,
 } from '../../core/editor/noteEditorExtensions';
@@ -66,6 +74,7 @@ import {
 type NoteTiptapEditorProps = {
   autoFocus?: boolean;
   blockId: string;
+  bubbleMenuEnabled?: boolean;
   disabled?: boolean;
   insertTextRequest?: NoteTiptapInsertTextRequest | null;
   onBlur?: () => void;
@@ -73,8 +82,11 @@ type NoteTiptapEditorProps = {
   onDeleteFile: (fileId: string) => Promise<void>;
   onFocus?: () => void;
   onPendingFileInsertChange?: (pending: boolean) => void;
-  onRequestFileUpload: () => Promise<NoteFile | null>;
+  onRequestFileUpload: (kind: NoteFileKind) => Promise<NoteFile | null>;
+  onTouchEditStart?: () => void;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
+  touchEditing?: boolean;
+  touchMode?: boolean;
   value: TiptapDocument | null;
 };
 
@@ -82,7 +94,7 @@ export type NoteTiptapToolbarTarget =
   | {
       blockId: string;
       editor: Editor;
-      insertFile: () => Promise<void>;
+      insertFile: (kind: NoteFileKind) => Promise<void>;
       kind: 'content';
     }
   | {
@@ -144,6 +156,14 @@ type TableAction =
 
 type TextAlignment = 'center' | 'justify' | 'left' | 'right';
 
+type TouchPointer = {
+  id: number;
+  moved: boolean;
+  passive: boolean;
+  x: number;
+  y: number;
+};
+
 const toolbarShortcutBindings = new Map<ToolbarActionId, ShortcutBinding>();
 const toolbarShortcutLabels = new Map<ToolbarActionId, string>();
 const configuredShortcutSignatures = new Set<string>();
@@ -196,6 +216,7 @@ const extensions = createNoteContentExtensions({ fileNode: FileNode, tipNode: Ti
 export function NoteTiptapEditor({
   autoFocus = false,
   blockId,
+  bubbleMenuEnabled = true,
   disabled = false,
   insertTextRequest = null,
   onBlur,
@@ -204,13 +225,22 @@ export function NoteTiptapEditor({
   onFocus,
   onPendingFileInsertChange,
   onRequestFileUpload,
+  onTouchEditStart,
   onToolbarTargetChange,
+  touchEditing = false,
+  touchMode = false,
   value,
 }: NoteTiptapEditorProps) {
   const { t } = useI18n();
   const editorShellRef = useRef<HTMLDivElement>(null);
   const onDeleteFileRef = useRef(onDeleteFile);
   onDeleteFileRef.current = onDeleteFile;
+  const editorExtensions = useMemo(() => [
+    ...extensions,
+    createPermanentNoteFileRemovalExtension((fileIds) => {
+      fileIds.forEach((fileId) => void onDeleteFileRef.current(fileId));
+    }),
+  ], []);
   const [contentKey, setContentKey] = useState(() =>
     JSON.stringify(value ?? emptyTiptapDocument),
   );
@@ -218,8 +248,8 @@ export function NoteTiptapEditor({
   const lastInsertTextNonceRef = useRef<number | null>(null);
   const editor = useEditor(
     {
-      editable: !disabled,
-      extensions,
+      editable: !disabled && (!touchMode || touchEditing),
+      extensions: editorExtensions,
       content: (value ?? emptyTiptapDocument) as JSONContent,
       immediatelyRender: false,
       onUpdate: ({ editor }) => {
@@ -231,17 +261,6 @@ export function NoteTiptapEditor({
       onFocus,
       editorProps: {
         handleClick: (_view, _pos, event) => handleEditorLinkClick(event),
-        handleKeyDown: (view, event) => {
-          if (event.key !== 'Backspace' && event.key !== 'Delete') {
-            return false;
-          }
-          const fileId = selectedNoteFileId(view.state.selection);
-          if (!fileId) {
-            return false;
-          }
-          queueMicrotask(() => void onDeleteFileRef.current(fileId));
-          return false;
-        },
         attributes: {
           class: "note-tiptap-prosemirror",
         },
@@ -249,6 +268,13 @@ export function NoteTiptapEditor({
     },
     [],
   );
+  const touchActivation = useTouchEditorActivation({
+    disabled,
+    editor,
+    onStart: onTouchEditStart,
+    touchEditing,
+    touchMode,
+  });
 
   const handleImageDropCapture = useCallback(
     (event: ReactDragEvent<HTMLDivElement>) => {
@@ -277,11 +303,14 @@ export function NoteTiptapEditor({
     [disabled],
   );
 
-  const insertUploadedFile = useCallback(async () => {
+  const insertUploadedFile = useCallback(async (kind: NoteFileKind) => {
     onPendingFileInsertChange?.(true);
     try {
-      const file = await onRequestFileUpload();
+      const file = await onRequestFileUpload(kind);
       if (!file || !editor) {
+        return;
+      }
+      if (file.kind !== 'image') {
         return;
       }
       editor
@@ -292,7 +321,7 @@ export function NoteTiptapEditor({
           attrs: {
             ...file,
             align: "center",
-            width: file.kind === "image" ? 420 : 0,
+            width: file.kind === "image" ? editorSettings.imageSizing.defaultWidth : 0,
             wrap: "none",
           },
         })
@@ -304,10 +333,6 @@ export function NoteTiptapEditor({
       requestAnimationFrame(() => onPendingFileInsertChange?.(false));
     }
   }, [editor, onChange, onPendingFileInsertChange, onRequestFileUpload]);
-
-  useEffect(() => {
-    editor?.setEditable(!disabled);
-  }, [disabled, editor]);
 
   useEffect(() => {
     if (autoFocus && editor) {
@@ -325,10 +350,14 @@ export function NoteTiptapEditor({
     }
 
     lastInsertTextNonceRef.current = insertTextRequest.nonce;
+    if (touchMode && !touchEditing && !disabled) {
+      editor.setEditable(true);
+      onTouchEditStart?.();
+    }
     requestAnimationFrame(() => {
       editor.chain().focus("end").insertContent(insertTextRequest.text).run();
     });
-  }, [editor, insertTextRequest]);
+  }, [disabled, editor, insertTextRequest, onTouchEditStart, touchEditing, touchMode]);
 
   useEffect(() => {
     if (!editor || editor.isFocused) {
@@ -413,12 +442,17 @@ export function NoteTiptapEditor({
 
   return (
     <div
-      className="note-tiptap-editor"
+      className={`note-tiptap-editor${touchMode && !touchEditing ? ' is-touch-readonly' : ''}`}
       ref={editorShellRef}
       onDragOverCapture={handleImageDragOverCapture}
+      onFocusCapture={touchActivation.onFocusCapture}
+      onPointerCancelCapture={touchActivation.onPointerCancelCapture}
+      onPointerDownCapture={touchActivation.onPointerDownCapture}
+      onPointerMoveCapture={touchActivation.onPointerMoveCapture}
+      onPointerUpCapture={touchActivation.onPointerUpCapture}
       onDropCapture={handleImageDropCapture}
     >
-      {editor ? (
+      {editor && bubbleMenuEnabled ? (
         <BubbleMenu
           className="note-bubble-toolbar"
           editor={editor}
@@ -468,8 +502,11 @@ export function NoteInlineTiptapEditor({
   onBlur,
   onChange,
   onFocus,
+  onTouchEditStart,
   onToolbarTargetChange,
   placeholder,
+  touchEditing = false,
+  touchMode = false,
   value,
 }: {
   autoFocus?: boolean;
@@ -481,8 +518,11 @@ export function NoteInlineTiptapEditor({
   onBlur?: () => void;
   onChange: (value: string, plainText: string) => void;
   onFocus?: () => void;
+  onTouchEditStart?: () => void;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
   placeholder: string;
+  touchEditing?: boolean;
+  touchMode?: boolean;
   value: string;
 }) {
   const [contentKey, setContentKey] = useState(() => value);
@@ -490,7 +530,7 @@ export function NoteInlineTiptapEditor({
   const fieldExtensions = useMemo(() => createNoteInlineExtensions(placeholder), [placeholder]);
   const editor = useEditor(
     {
-      editable: !disabled,
+      editable: !disabled && (!touchMode || touchEditing),
       extensions: fieldExtensions,
       content: richTextToTiptapContent(value),
       immediatelyRender: false,
@@ -511,10 +551,13 @@ export function NoteInlineTiptapEditor({
     },
     [],
   );
-
-  useEffect(() => {
-    editor?.setEditable(!disabled);
-  }, [disabled, editor]);
+  const touchActivation = useTouchEditorActivation({
+    disabled,
+    editor,
+    onStart: onTouchEditStart,
+    touchEditing,
+    touchMode,
+  });
 
   useEffect(() => {
     if (autoFocus && editor) {
@@ -528,20 +571,27 @@ export function NoteInlineTiptapEditor({
     }
 
     lastInsertTextNonceRef.current = insertTextRequest.nonce;
+    if (touchMode && !touchEditing && !disabled) {
+      editor.setEditable(true);
+      onTouchEditStart?.();
+    }
     requestAnimationFrame(() => {
       editor.chain().focus('end').insertContent(insertTextRequest.text).run();
     });
-  }, [editor, insertTextRequest]);
+  }, [disabled, editor, insertTextRequest, onTouchEditStart, touchEditing, touchMode]);
 
   useEffect(() => {
-    if (!editor || editor.isFocused) {
-      return;
-    }
+    if (!editor) return;
 
-    if (value !== contentKey) {
+    const syncStoredValue = () => {
+      if (editor.isFocused || value === contentKey) return;
       editor.commands.setContent(richTextToTiptapContent(value), { emitUpdate: false });
       setContentKey(value);
-    }
+    };
+    syncStoredValue();
+    // A remote value deferred during focus must also refresh when editing ends.
+    editor.on('blur', syncStoredValue);
+    return () => { editor.off('blur', syncStoredValue); };
   }, [contentKey, editor, value]);
 
   useEffect(() => {
@@ -570,23 +620,164 @@ export function NoteInlineTiptapEditor({
   }, [blockId, editor, id, onToolbarTargetChange]);
 
   return (
-    <div className="note-inline-editor">
+    <div
+      className={`note-inline-editor${touchMode && !touchEditing ? ' is-touch-readonly' : ''}`}
+      onFocusCapture={touchActivation.onFocusCapture}
+      onPointerCancelCapture={touchActivation.onPointerCancelCapture}
+      onPointerDownCapture={touchActivation.onPointerDownCapture}
+      onPointerMoveCapture={touchActivation.onPointerMoveCapture}
+      onPointerUpCapture={touchActivation.onPointerUpCapture}
+    >
       <EditorContent editor={editor} />
     </div>
   );
 }
 
+function useTouchEditorActivation({
+  disabled,
+  editor,
+  onStart,
+  touchEditing,
+  touchMode,
+}: {
+  disabled: boolean;
+  editor: Editor | null;
+  onStart?: () => void;
+  touchEditing: boolean;
+  touchMode: boolean;
+}) {
+  const pointerRef = useRef<TouchPointer | null>(null);
+  const touchFocusGuardRef = useRef(false);
+  const touchFocusGuardTimerRef = useRef<number | null>(null);
+  const canEdit = !disabled && (!touchMode || touchEditing);
+
+  const releaseTouchFocusGuard = useCallback(() => {
+    if (touchFocusGuardTimerRef.current !== null) {
+      window.clearTimeout(touchFocusGuardTimerRef.current);
+    }
+    touchFocusGuardTimerRef.current = window.setTimeout(() => {
+      touchFocusGuardRef.current = false;
+      touchFocusGuardTimerRef.current = null;
+    }, 500);
+  }, []);
+
+  useEffect(() => {
+    const releaseAfterPointer = () => {
+      if (touchFocusGuardRef.current) releaseTouchFocusGuard();
+    };
+    window.addEventListener('pointerup', releaseAfterPointer, true);
+    window.addEventListener('pointercancel', releaseAfterPointer, true);
+    return () => {
+      window.removeEventListener('pointerup', releaseAfterPointer, true);
+      window.removeEventListener('pointercancel', releaseAfterPointer, true);
+      if (touchFocusGuardTimerRef.current !== null) {
+        window.clearTimeout(touchFocusGuardTimerRef.current);
+      }
+    };
+  }, [releaseTouchFocusGuard]);
+
+  useLayoutEffect(() => {
+    if (!editor) return;
+    editor.setEditable(canEdit);
+    if (touchMode && !disabled) {
+      editor.view.dom.setAttribute('tabindex', '0');
+      editor.view.dom.setAttribute('aria-readonly', canEdit ? 'false' : 'true');
+    } else {
+      editor.view.dom.removeAttribute('aria-readonly');
+    }
+  }, [canEdit, disabled, editor, touchMode]);
+
+  const activate = useCallback((x?: number, y?: number, focus = true) => {
+    if (!editor || disabled) return;
+    editor.setEditable(true);
+    onStart?.();
+    if (!focus) return;
+
+    if (typeof x === 'number' && typeof y === 'number') {
+      const position = editor.view.posAtCoords({ left: x, top: y });
+      if (position) editor.commands.setTextSelection(position.pos);
+    }
+    editor.view.focus();
+  }, [disabled, editor, onStart]);
+
+  const onFocusCapture = useCallback(() => {
+    if (touchMode && !touchEditing && !disabled && !touchFocusGuardRef.current) activate();
+  }, [activate, disabled, touchEditing, touchMode]);
+
+  const onPointerDownCapture = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!touchMode || touchEditing || disabled || !event.isPrimary) return;
+    if (event.pointerType === 'mouse') {
+      activate(undefined, undefined, false);
+      return;
+    }
+    touchFocusGuardRef.current = true;
+    if (touchFocusGuardTimerRef.current !== null) {
+      window.clearTimeout(touchFocusGuardTimerRef.current);
+      touchFocusGuardTimerRef.current = null;
+    }
+    const target = event.target instanceof Element ? event.target : null;
+    pointerRef.current = {
+      id: event.pointerId,
+      moved: false,
+      passive: Boolean(target?.closest('a, button, input, select, textarea, figure, [contenteditable="false"]')),
+      x: event.clientX,
+      y: event.clientY,
+    };
+  }, [activate, disabled, touchEditing, touchMode]);
+
+  const onPointerMoveCapture = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const pointer = pointerRef.current;
+    if (!pointer || pointer.id !== event.pointerId) return;
+    if (Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > editorSettings.blockTouch.tapMovementTolerance) {
+      pointer.moved = true;
+    }
+  }, []);
+
+  const onPointerUpCapture = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const pointer = pointerRef.current;
+    pointerRef.current = null;
+    releaseTouchFocusGuard();
+    if (!pointer || pointer.id !== event.pointerId || pointer.moved) return;
+    if (!pointer.passive) event.preventDefault();
+    activate(event.clientX, event.clientY, !pointer.passive);
+  }, [activate, releaseTouchFocusGuard]);
+
+  const onPointerCancelCapture = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (pointerRef.current?.id === event.pointerId) {
+      pointerRef.current = null;
+      releaseTouchFocusGuard();
+    }
+  }, [releaseTouchFocusGuard]);
+
+  return {
+    onFocusCapture,
+    onPointerCancelCapture,
+    onPointerDownCapture,
+    onPointerMoveCapture,
+    onPointerUpCapture,
+  };
+}
+
 export function NoteTiptapToolbar({
+  floatingMenus = false,
+  menusEnabled = true,
+  scrollAffordances = false,
   target,
   t,
 }: {
+  floatingMenus?: boolean;
+  menusEnabled?: boolean;
+  scrollAffordances?: boolean;
   target: NoteTiptapToolbarTarget | null;
   t: ReturnType<typeof useI18n>['t'];
 }) {
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
   const [toolbarStateVersion, setToolbarStateVersion] = useState(0);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const toolsRef = useRef<HTMLDivElement>(null);
   const tableToolRef = useRef<HTMLDivElement>(null);
-  const tableMenu = useMenuOptionFocus(tableMenuOpen, () => setTableMenuOpen(false));
+  const tableMenu = useMenuOptionFocus(tableMenuOpen, () => setTableMenuOpen(false), 1, 0, !floatingMenus);
   const tableModeRef = useRef(false);
   const editor = target?.editor ?? null;
   const contentTarget = target?.kind === 'content' ? target : null;
@@ -596,7 +787,12 @@ export function NoteTiptapToolbar({
   const canEditCurrentTable = Boolean(editor?.isActive('table'));
   void toolbarStateVersion;
 
-  useClickOutside(tableToolRef, tableMenuOpen, () => setTableMenuOpen(false));
+  useClickOutside(tableToolRef, tableMenuOpen, () => setTableMenuOpen(false), floatingMenus ? tableMenu.menuRef : undefined);
+  useFloatingPopover(tableMenuOpen && floatingMenus, tableMenu.triggerRef, tableMenu.menuRef, 'top-start', null, 'fixed');
+
+  useEffect(() => {
+    if (!menusEnabled) setTableMenuOpen(false);
+  }, [menusEnabled]);
 
   useEffect(() => {
     if (!editor) {
@@ -623,6 +819,36 @@ export function NoteTiptapToolbar({
   useEffect(() => {
     tableModeRef.current = false;
   }, [editor, target]);
+
+  useLayoutEffect(() => {
+    if (!scrollAffordances) {
+      setCanScrollLeft(false);
+      setCanScrollRight(false);
+      return undefined;
+    }
+
+    const tools = toolsRef.current;
+    if (!tools) return undefined;
+
+    function updateScrollAffordances() {
+      const maxScrollLeft = Math.max(0, tools!.scrollWidth - tools!.clientWidth);
+      setCanScrollLeft(tools!.scrollLeft > 2);
+      setCanScrollRight(tools!.scrollLeft < maxScrollLeft - 2);
+    }
+
+    const observer = new ResizeObserver(updateScrollAffordances);
+    observer.observe(tools);
+    const frame = window.requestAnimationFrame(updateScrollAffordances);
+    tools.addEventListener('scroll', updateScrollAffordances, { passive: true });
+    window.addEventListener('resize', updateScrollAffordances);
+
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(frame);
+      tools.removeEventListener('scroll', updateScrollAffordances);
+      window.removeEventListener('resize', updateScrollAffordances);
+    };
+  }, [scrollAffordances]);
 
   useEffect(() => {
     function handleToolbarShortcut(event: KeyboardEvent) {
@@ -709,7 +935,10 @@ export function NoteTiptapToolbar({
     } else {
       chain.addColumnAfter().run();
     }
-    if (tableMenuOpen) tableMenu.closeAndFocus();
+    if (tableMenuOpen) {
+      if (floatingMenus) setTableMenuOpen(false);
+      else tableMenu.closeAndFocus();
+    }
   }
 
   async function executeToolbarAction(actionId: ToolbarActionId) {
@@ -782,7 +1011,7 @@ export function NoteTiptapToolbar({
       return true;
     }
     if (actionId === 'image' || actionId === 'file') {
-      await contentTarget?.insertFile();
+      await contentTarget?.insertFile(actionId === 'image' ? 'image' : 'attachment');
       return true;
     }
 
@@ -833,13 +1062,29 @@ export function NoteTiptapToolbar({
 
   const activeTextColor = Boolean(editor?.getAttributes('textStyle').color);
   const activeHighlightColor = Boolean(editor?.getAttributes('highlight').color);
+  const tableMenuContent = tableMenuOpen ? (
+    <div
+      className={floatingMenus ? 'markdown-table-menu responsive-popover note-toolbar-popover' : 'markdown-table-menu'}
+      ref={tableMenu.menuRef}
+    >
+      <ToolbarButton disabled={tableDisabled} label={t("editor.insertTable")} onClick={() => applyTableAction("insert-table")}><Table2 /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.addRowAbove")} onClick={() => applyTableAction("row-above")}><ArrowUp /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.addRowBelow")} onClick={() => applyTableAction("row-below")}><ArrowDown /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.addColumnLeft")} onClick={() => applyTableAction("column-left")}><ArrowLeft /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.addColumnRight")} onClick={() => applyTableAction("column-right")}><ArrowRight /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.deleteRow")} onClick={() => applyTableAction("row-delete")}><TableRowsSplit /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.deleteColumn")} onClick={() => applyTableAction("column-delete")}><TableColumnsSplit /></ToolbarButton>
+      <ToolbarButton disabled={tableDisabled || !canEditCurrentTable} label={t("editor.deleteTable")} onClick={() => applyTableAction("table-delete")}><Delete /></ToolbarButton>
+    </div>
+  ) : null;
 
   return (
     <div
-      className="note-edit-toolbar note-tiptap-toolbar"
+      className={`note-edit-toolbar note-tiptap-toolbar${scrollAffordances ? ' note-tiptap-toolbar--scrollable' : ''}`}
       aria-label={t("editor.toolbar")}
     >
       <div
+        ref={toolsRef}
         className={
           unavailable
             ? "note-edit-toolbar__tools note-edit-toolbar__tools--disabled"
@@ -887,6 +1132,8 @@ export function NoteTiptapToolbar({
           activeColor={activeTextColor}
           compact
           disabled={unavailable}
+          floatingMenus={floatingMenus}
+          menusEnabled={menusEnabled}
           onSelect={applyTextStyle}
         />
 
@@ -1037,72 +1284,15 @@ export function NoteTiptapToolbar({
             aria-expanded={tableMenuOpen}
             aria-label={t("editor.tableMenu")}
             onMouseDown={preserveToolbarSelection}
-            onClick={() => setTableMenuOpen((open) => !open)}
+            onClick={() => {
+              if (menusEnabled) setTableMenuOpen((open) => !open);
+            }}
           >
             <Table2 />
             <ChevronDown />
             <ToolbarTooltip label={t("editor.tableMenu")} shortcut={toolbarShortcutLabels.get('table')} />
           </button>
-          {tableMenuOpen ? (
-            <div className="markdown-table-menu" ref={tableMenu.menuRef}>
-              <ToolbarButton
-                disabled={tableDisabled}
-                label={t("editor.insertTable")}
-                onClick={() => applyTableAction("insert-table")}
-              >
-                <Table2 />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.addRowAbove")}
-                onClick={() => applyTableAction("row-above")}
-              >
-                <ArrowUp />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.addRowBelow")}
-                onClick={() => applyTableAction("row-below")}
-              >
-                <ArrowDown />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.addColumnLeft")}
-                onClick={() => applyTableAction("column-left")}
-              >
-                <ArrowLeft />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.addColumnRight")}
-                onClick={() => applyTableAction("column-right")}
-              >
-                <ArrowRight />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.deleteRow")}
-                onClick={() => applyTableAction("row-delete")}
-              >
-                <TableRowsSplit />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.deleteColumn")}
-                onClick={() => applyTableAction("column-delete")}
-              >
-                <TableColumnsSplit />
-              </ToolbarButton>
-              <ToolbarButton
-                disabled={tableDisabled || !canEditCurrentTable}
-                label={t("editor.deleteTable")}
-                onClick={() => applyTableAction("table-delete")}
-              >
-                <Delete />
-              </ToolbarButton>
-            </div>
-          ) : null}
+          {tableMenuContent && floatingMenus ? createPortal(tableMenuContent, document.body) : tableMenuContent}
         </div>
 
         <span className="toolbar-divider" />
@@ -1124,6 +1314,16 @@ export function NoteTiptapToolbar({
           <FileUp />
         </ToolbarButton>
       </div>
+      {scrollAffordances && canScrollLeft ? (
+        <span className="note-tiptap-toolbar__scroll-cue note-tiptap-toolbar__scroll-cue--left" aria-hidden="true">
+          <ChevronLeft />
+        </span>
+      ) : null}
+      {scrollAffordances && canScrollRight ? (
+        <span className="note-tiptap-toolbar__scroll-cue note-tiptap-toolbar__scroll-cue--right" aria-hidden="true">
+          <ChevronRight />
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -1156,16 +1356,52 @@ function TipNodeView({ deleteNode, node }: ReactNodeViewProps) {
   );
 }
 
-function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) {
+function FileNodeView({ node, selected, updateAttributes, editor, getPos }: ReactNodeViewProps) {
   const { t } = useI18n();
   const attrs = node.attrs as FileAttrs;
   const imageNodeRef = useRef<HTMLDivElement>(null);
+  const imagePointerTypeRef = useRef('mouse');
+  const imagePointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const suppressImageTapRef = useRef(false);
   const [src, setSrc] = useState<string | null>(null);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [availableWidth, setAvailableWidth] = useState(0);
   const isImage = attrs.kind === 'image';
-  const imageWidth = quantizeImageWidth(Number(attrs.width ?? 420));
+  const storedWidth = Number(attrs.width ?? editorSettings.imageSizing.defaultWidth);
+  const imageWidth = Number.isFinite(storedWidth) && storedWidth > 0 ? storedWidth : editorSettings.imageSizing.defaultWidth;
+  const maxWidth = Math.max(1, availableWidth || imageWidth);
+  const minWidth = Math.min(editorSettings.imageSizing.minWidth, maxWidth);
   const showImageControls = selected && controlsOpen;
+  const imageResize = useNoteImageResize({
+    rootRef: imageNodeRef,
+    width: imageWidth,
+    minWidth,
+    maxWidth,
+    enabled: isImage && showImageControls && editor.isEditable,
+    onCommit: (width) => updateAttributes({ width }),
+  });
+
+  useLayoutEffect(() => {
+    if (isImage) imageNodeRef.current?.style.setProperty('--nx-note-image-width', `${imageWidth}px`);
+  }, [isImage, imageWidth]);
+
+  useLayoutEffect(() => {
+    // Observe the full node-view container, not the image's current width:
+    // resizing the image must not shrink the handles' available range.
+    const container = imageNodeRef.current?.parentElement;
+    if (!isImage || !container) return;
+    const measure = () => {
+      const style = getComputedStyle(container);
+      const width = container.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      setAvailableWidth(Math.max(1, Math.floor(width)));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [isImage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1194,6 +1430,10 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
   }, [selected]);
 
   useEffect(() => {
+    setPreviewOpen(false);
+  }, [attrs.relativePath]);
+
+  useEffect(() => {
     if (!controlsOpen) {
       return;
     }
@@ -1213,7 +1453,6 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
 
   function applyImageLayout(update: Pick<FileAttrs, 'align' | 'wrap'>) {
     updateAttributes(update);
-    setControlsOpen(false);
   }
 
   if (!isImage) {
@@ -1245,12 +1484,57 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
         attrs.align === "left" && "align-left",
         attrs.align === "right" && "align-right",
         attrs.align === "center" && "align-center",
-        `note-image-size-${imageWidth}`,
       ]
         .filter(Boolean)
         .join(" ")}
       onPointerDownCapture={(event: React.PointerEvent<HTMLDivElement>) => {
         if (event.target instanceof Element && event.target.closest('figure')) {
+          imagePointerTypeRef.current = event.pointerType;
+          if (!event.target.closest('.note-image-resize-handle')) {
+            if (imagePointersRef.current.size === 0) suppressImageTapRef.current = false;
+            imagePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+            if (imagePointersRef.current.size > 1) suppressImageTapRef.current = true;
+          }
+          // Cancel compatibility mouse focus, while retaining native touch pan.
+          if (event.pointerType === 'touch' || event.pointerType === 'pen') event.preventDefault();
+        }
+      }}
+      onPointerMoveCapture={(event: React.PointerEvent<HTMLDivElement>) => {
+        const start = imagePointersRef.current.get(event.pointerId);
+        if (!start) return;
+        suppressImageTapRef.current ||= Math.hypot(event.clientX - start.x, event.clientY - start.y) > editorSettings.imagePreview.tapMovementTolerance;
+      }}
+      onPointerUpCapture={(event: React.PointerEvent<HTMLDivElement>) => {
+        imagePointersRef.current.delete(event.pointerId);
+      }}
+      onPointerCancelCapture={(event: React.PointerEvent<HTMLDivElement>) => {
+        if (imagePointersRef.current.delete(event.pointerId)) suppressImageTapRef.current = true;
+      }}
+      onClick={(event: React.MouseEvent<HTMLDivElement>) => {
+        if (event.target instanceof Element && event.target.closest('.note-image-resize-handle')) return;
+        if (event.target instanceof Element && event.target.closest('figure')) {
+          const touchInput = imagePointerTypeRef.current === 'touch' || imagePointerTypeRef.current === 'pen';
+          const moved = suppressImageTapRef.current;
+          if (imagePointersRef.current.size === 0) suppressImageTapRef.current = false;
+          const adapted = Boolean(imageNodeRef.current?.closest('.note-document-shell--adapted'));
+          if (touchInput && adapted && selected && controlsOpen && src && !imageLoadFailed && !moved) {
+            if (document.activeElement instanceof HTMLElement && document.activeElement.isContentEditable) {
+              document.activeElement.blur();
+            }
+            setPreviewOpen(true);
+            return;
+          }
+          if (moved) return;
+          if (touchInput && document.activeElement instanceof HTMLElement && document.activeElement.isContentEditable) {
+            document.activeElement.blur();
+          }
+          const position = getPos();
+          if (typeof position === 'number') {
+            editor.commands.setNodeSelection(position);
+            // Sync the DOM selection even when this node was already selected.
+            // A native click on a non-editable figure can put the DOM caret after it.
+            if (!touchInput) editor.view.focus();
+          }
           setControlsOpen(true);
         }
       }}
@@ -1259,6 +1543,10 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
         data-drag-handle
         draggable
         onDragStartCapture={(event: ReactDragEvent<HTMLElement>) => {
+          if (event.target instanceof Element && event.target.closest('.note-image-resize-handle')) {
+            event.preventDefault();
+            return;
+          }
           if (attrs.id) {
             event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.setData(noteImageDragType, attrs.id);
@@ -1276,81 +1564,77 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
         ) : (
           <span className="note-image-placeholder">{attrs.originalName}</span>
         )}
+        {showImageControls && src && !imageLoadFailed ? (['top-left', 'bottom-right'] as const).map(corner => (
+          <button
+            key={corner}
+            type="button"
+            role="slider"
+            aria-label={t(corner === 'top-left' ? 'notes.editor.resizeImageTopLeft' : 'notes.editor.resizeImageBottomRight')}
+            aria-valuemin={minWidth}
+            aria-valuemax={maxWidth}
+            aria-valuenow={Math.max(minWidth, Math.min(maxWidth, imageWidth))}
+            aria-orientation="horizontal"
+            className={`note-image-resize-handle note-image-resize-handle--${corner}`}
+            contentEditable={false}
+            draggable={false}
+            disabled={!editor.isEditable}
+            onPointerDown={(event) => imageResize.begin(event, corner)}
+            onMouseDown={preserveToolbarSelection}
+            onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}
+            onKeyDown={imageResize.keyboardResize}
+          />
+        )) : null}
       </figure>
       {showImageControls ? (
         <div
           className="note-image-controls"
           contentEditable={false}
         >
-          <button
-            aria-label={t('notes.editor.alignImageLeft')}
-            aria-pressed={attrs.wrap === 'none' && attrs.align === 'left'}
-            className={attrs.wrap === 'none' && attrs.align === 'left' ? 'is-active' : undefined}
-            title={t('notes.editor.alignImageLeft')}
-            type="button"
-            onMouseDown={preserveToolbarSelection}
-            onClick={() => applyImageLayout({ align: 'left', wrap: 'none' })}
-          >
-            <AlignLeft />
-          </button>
-          <button
-            aria-label={t('notes.editor.alignImageCenter')}
-            aria-pressed={attrs.wrap === 'none' && attrs.align === 'center'}
-            className={attrs.wrap === 'none' && attrs.align === 'center' ? 'is-active' : undefined}
-            title={t('notes.editor.alignImageCenter')}
-            type="button"
-            onMouseDown={preserveToolbarSelection}
-            onClick={() => applyImageLayout({ align: 'center', wrap: 'none' })}
-          >
-            <AlignCenter />
-          </button>
-          <button
-            aria-label={t('notes.editor.alignImageRight')}
-            aria-pressed={attrs.wrap === 'none' && attrs.align === 'right'}
-            className={attrs.wrap === 'none' && attrs.align === 'right' ? 'is-active' : undefined}
-            title={t('notes.editor.alignImageRight')}
-            type="button"
-            onMouseDown={preserveToolbarSelection}
-            onClick={() => applyImageLayout({ align: 'right', wrap: 'none' })}
-          >
-            <AlignRight />
-          </button>
-          <span className="note-image-controls__divider" aria-hidden="true" />
-          <button
-            aria-pressed={attrs.wrap === 'left'}
-            className={attrs.wrap === 'left' ? 'is-active' : undefined}
-            title={t('notes.editor.wrapLeft')}
-            type="button"
-            onMouseDown={preserveToolbarSelection}
-            onClick={() => applyImageLayout({ wrap: 'left', align: 'left' })}
-          >
-            {t("notes.editor.wrapLeft")}
-          </button>
-          <button
-            aria-pressed={attrs.wrap === 'right'}
-            className={attrs.wrap === 'right' ? 'is-active' : undefined}
-            title={t('notes.editor.wrapRight')}
-            type="button"
-            onMouseDown={preserveToolbarSelection}
-            onClick={() => applyImageLayout({ wrap: 'right', align: 'right' })}
-          >
-            {t("notes.editor.wrapRight")}
-          </button>
-          <span className="note-image-controls__divider" aria-hidden="true" />
-          <input
-            aria-label={t('notes.editor.imageWidth')}
-            title={t('notes.editor.imageWidth')}
-            type="range"
-            min={160}
-            max={760}
-            step={40}
-            value={imageWidth}
-            onChange={(event) =>
-              updateAttributes({ width: Number(event.currentTarget.value) })
-            }
-            onPointerUp={() => setControlsOpen(false)}
-          />
+          <div className="note-image-controls__alignment">
+            <button
+              aria-label={t('notes.editor.alignImageLeft')}
+              aria-pressed={attrs.wrap === 'none' && attrs.align === 'left'}
+              className={attrs.wrap === 'none' && attrs.align === 'left' ? 'is-active' : undefined}
+              title={t('notes.editor.alignImageLeft')}
+              type="button"
+              onMouseDown={preserveToolbarSelection}
+              onClick={() => applyImageLayout({ align: 'left', wrap: 'none' })}
+            >
+              <AlignLeft />
+            </button>
+            <button
+              aria-label={t('notes.editor.alignImageCenter')}
+              aria-pressed={attrs.wrap === 'none' && attrs.align === 'center'}
+              className={attrs.wrap === 'none' && attrs.align === 'center' ? 'is-active' : undefined}
+              title={t('notes.editor.alignImageCenter')}
+              type="button"
+              onMouseDown={preserveToolbarSelection}
+              onClick={() => applyImageLayout({ align: 'center', wrap: 'none' })}
+            >
+              <AlignCenter />
+            </button>
+            <button
+              aria-label={t('notes.editor.alignImageRight')}
+              aria-pressed={attrs.wrap === 'none' && attrs.align === 'right'}
+              className={attrs.wrap === 'none' && attrs.align === 'right' ? 'is-active' : undefined}
+              title={t('notes.editor.alignImageRight')}
+              type="button"
+              onMouseDown={preserveToolbarSelection}
+              onClick={() => applyImageLayout({ align: 'right', wrap: 'none' })}
+            >
+              <AlignRight />
+            </button>
+          </div>
         </div>
+      ) : null}
+      {src && !imageLoadFailed ? (
+        <NoteImagePreview
+          alt={attrs.originalName}
+          onClose={() => setPreviewOpen(false)}
+          open={previewOpen}
+          restoreFocus={imagePointerTypeRef.current !== 'touch' && imagePointerTypeRef.current !== 'pen'}
+          src={src}
+        />
       ) : null}
     </NodeViewWrapper>
   );
@@ -1359,10 +1643,10 @@ function FileNodeView({ node, selected, updateAttributes }: ReactNodeViewProps) 
 function imageLayoutForDrop(clientX: number, bounds: DOMRect): Pick<FileAttrs, 'align' | 'wrap'> {
   const horizontalPosition = bounds.width > 0 ? (clientX - bounds.left) / bounds.width : 0.5;
   if (horizontalPosition < 0.38) {
-    return { align: 'left', wrap: 'left' };
+    return { align: 'left', wrap: 'none' };
   }
   if (horizontalPosition > 0.62) {
-    return { align: 'right', wrap: 'right' };
+    return { align: 'right', wrap: 'none' };
   }
   return { align: 'center', wrap: 'none' };
 }
@@ -1607,15 +1891,6 @@ function isNoteFileSelection(selection: unknown) {
   return selectedNode?.type?.name === 'noteFile';
 }
 
-function selectedNoteFileId(selection: unknown) {
-  const selectedNode = (selection as {
-    node?: { attrs?: { id?: unknown }; type?: { name?: string } };
-  }).node;
-  return selectedNode?.type?.name === 'noteFile' && typeof selectedNode.attrs?.id === 'string'
-    ? selectedNode.attrs.id
-    : null;
-}
-
 function handleEditorLinkClick(event: globalThis.MouseEvent) {
   const target = event.target;
   if (!(target instanceof Element)) {
@@ -1678,9 +1953,4 @@ function formatFileSize(value: number) {
     return `${Math.round(value / 1024)} KB`;
   }
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function quantizeImageWidth(width: number) {
-  const clamped = Math.max(160, Math.min(760, Number.isFinite(width) ? width : 420));
-  return Math.round(clamped / 40) * 40;
 }

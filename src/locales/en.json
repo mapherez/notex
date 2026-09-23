@@ -41,6 +41,10 @@
     "newNote": "New note",
     "expand": "Open menu"
   },
+  "orientation": {
+    "phoneLandscapeTitle": "Rotate your device",
+    "phoneLandscapeDescription": "NoteX on phones works in portrait mode. Rotate your device to continue."
+  },
   "topbar": {
     "searchPlaceholder": "Search notes, titles, tags...",
     "keyboardHint": "⌘ F",
@@ -164,6 +168,8 @@
     "addContentBlock": "Add content block",
     "addTitleBlock": "Add title block",
     "reorderBlock": "Reorder block",
+    "moveBlockUp": "Move block up",
+    "moveBlockDown": "Move block down",
     "blockDeleted": "Block deleted",
     "deleteBlockTitle": "Delete block?",
     "deleteBlockDescription": "Delete “{{title}}”? This cannot be undone.",
@@ -172,7 +178,9 @@
     "files": "Files",
     "noFiles": "No files attached yet.",
     "fileAdded": "File added",
+    "fileAddFailed": "The file could not be added",
     "fileDeleted": "File deleted",
+    "fileDeleteFailed": "The file could not be deleted",
     "exportNote": "Export note",
     "noteExported": "Note exported",
     "noteExportFailed": "Note export failed",
@@ -190,12 +198,15 @@
     "editor": {
       "addImage": "Add image",
       "addFile": "Attach file",
-      "alignImageLeft": "Align image left without text wrapping",
-      "alignImageCenter": "Center image without text wrapping",
-      "alignImageRight": "Align image right without text wrapping",
+      "alignImageLeft": "Align image left",
+      "alignImageCenter": "Center image",
+      "alignImageRight": "Align image right",
       "wrapLeft": "Image left, wrap text",
       "wrapRight": "Image right, wrap text",
-      "imageWidth": "Image width"
+      "imageWidth": "Image width",
+      "resizeImageTopLeft": "Resize image from the top left corner",
+      "resizeImageBottomRight": "Resize image from the bottom right corner",
+      "imagePreview": "Image preview"
     }
   },
   "tags": {
@@ -256,6 +267,8 @@
     "noteCountSingular": "{{count}} note"
   },
   "noteDetail": {
+    "panels": "Note details",
+    "openPanels": "Open note panels",
     "collectionLabel": "Collection",
     "noteCreated": "Note created",
     "noteSaved": "Note saved",
@@ -264,6 +277,8 @@
     "editingDraft": "Editing draft",
     "localDraft": "Local draft",
     "savedLocal": "Saved locally",
+    "includeInBackup": "Include in backup",
+    "excludeFromBackup": "Exclude from backup",
     "thumbnail": "Thumbnail",
     "changeThumbnail": "Change thumbnail",
     "thumbnailUpdated": "Thumbnail updated",

@@ -6,6 +6,7 @@ import { richTextToPlainText } from '../../core/utils/richText';
 import { sortTagsByName } from '../../core/utils/tagSorting';
 import { useClickOutside } from '../../core/utils/useClickOutside';
 import { useMenuOptionFocus } from '../../core/utils/useMenuOptionFocus';
+import { useFloatingPopover } from '../../core/utils/useFloatingPopover';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useAppStore } from '../../store/useAppStore';
 import { useNotesStore } from '../../store/useNotesStore';
@@ -20,6 +21,9 @@ export function NoteRow({
   note,
   onPermanentDelete,
   onPinnedDragPointerDown,
+  onPinnedDragPointerUp,
+  onPinnedDragPointerCancel,
+  onPinnedKeyboardReorder,
   onSelectionChange,
   pinnedDragActive = false,
   pinnedDragEnabled = false,
@@ -35,6 +39,9 @@ export function NoteRow({
   note: Note;
   onPermanentDelete?: (noteId: string) => void;
   onPinnedDragPointerDown?: PointerEventHandler<HTMLButtonElement>;
+  onPinnedDragPointerUp?: PointerEventHandler<HTMLButtonElement>;
+  onPinnedDragPointerCancel?: PointerEventHandler<HTMLButtonElement>;
+  onPinnedKeyboardReorder?: (direction: -1 | 1) => void;
   onSelectionChange?: (noteId: string, selected: boolean) => void;
   pinnedDragActive?: boolean;
   pinnedDragEnabled?: boolean;
@@ -49,6 +56,7 @@ export function NoteRow({
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menu = useMenuOptionFocus(menuOpen, () => setMenuOpen(false));
+  useFloatingPopover(menuOpen, menu.triggerRef, menu.menuRef, 'bottom-end');
   const toggleFavorite = useNotesStore((state) => state.toggleFavorite);
   const togglePinned = useNotesStore((state) => state.togglePinned);
   const setPinnedNoteState = useAppStore((state) => state.setPinnedNoteState);
@@ -120,6 +128,15 @@ export function NoteRow({
           disabled={!pinnedDragEnabled}
           title={t('notes.reorderPinned')}
           onPointerDown={pinnedDragEnabled ? onPinnedDragPointerDown : undefined}
+          onPointerUp={pinnedDragEnabled ? onPinnedDragPointerUp : undefined}
+          onPointerCancel={pinnedDragEnabled ? onPinnedDragPointerCancel : undefined}
+          onClick={(event) => event.currentTarget.focus({ preventScroll: true })}
+          onKeyDown={(event) => {
+            if (!onPinnedKeyboardReorder || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+            event.preventDefault();
+            event.stopPropagation();
+            onPinnedKeyboardReorder(event.key === 'ArrowUp' ? -1 : 1);
+          }}
         >
           <GripVertical />
         </button>
@@ -177,34 +194,37 @@ export function NoteRow({
           )
         ) : null}
       </div>
-      <div className="note-row__badges">
-        {collection ? (
-          <Link className={`collection-chip ${collection.color ?? 'neutral'}`} to={`/notes?collection=${collection.id}`}>
-            <Folder strokeWidth={1.9} />
-            <span>{collection.name}</span>
-          </Link>
-        ) : (
-          <Link className="collection-chip neutral collection-chip--empty" to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${title}`}>
-            <Folder strokeWidth={1.9} />
-            <span>{t('noteDetail.noCollection')}</span>
-          </Link>
-        )}
-        {noteTags.length ? (
-          <span className="note-row__tag-chain">
-            {noteTags.map((tag) => (
-              <span className="note-row__tag-chain-item" key={tag.id}>
-                <TagChip tag={tag} color={tag.color} href={`/notes?tag=${tag.id}`} />
-              </span>
-            ))}
-          </span>
-        ) : null}
+      <div className="note-row__metadata">
+        <div className="note-row__badges">
+          {collection ? (
+            <Link className={`collection-chip ${collection.color ?? 'neutral'}`} to={`/notes?collection=${collection.id}`}>
+              <Folder strokeWidth={1.9} />
+              <span>{collection.name}</span>
+            </Link>
+          ) : (
+            <Link className="collection-chip neutral collection-chip--empty" to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${title}`}>
+              <Folder strokeWidth={1.9} />
+              <span>{t('noteDetail.noCollection')}</span>
+            </Link>
+          )}
+          {noteTags.length ? (
+            <span className="note-row__tag-chain">
+              {noteTags.map((tag) => (
+                <span className="note-row__tag-chain-item" key={tag.id}>
+                  <TagChip tag={tag} color={tag.color} href={`/notes?tag=${tag.id}`} />
+                </span>
+              ))}
+            </span>
+          ) : null}
+        </div>
+        <span className="note-row__time">{formatDisplayTime(timeValue ?? note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
       </div>
-      <span className="note-row__time">{formatDisplayTime(timeValue ?? note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
       <div className="note-row-actions" ref={menuRef} onKeyDown={menu.onKeyDown}>
         <button
           className="icon-button"
           type="button"
           aria-label={t('notes.openMenu')}
+          aria-expanded={menuOpen}
           ref={menu.triggerRef}
           onClick={(event) => {
             event.preventDefault();
@@ -214,7 +234,7 @@ export function NoteRow({
           <MoreVertical />
         </button>
         {menuOpen ? (
-          <div className="floating-menu note-row-menu" ref={menu.menuRef} onClick={menu.closeAndFocus}>
+          <div className="floating-menu note-row-menu responsive-popover" ref={menu.menuRef} onClick={menu.closeAndFocus}>
             <Link to={`/notes/${note.id}`}>{t('common.open')}</Link>
             <button type="button" onClick={() => void handleDuplicate()}>
               <Copy />

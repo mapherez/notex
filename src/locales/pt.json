@@ -41,6 +41,10 @@
     "newNote": "Nova nota",
     "expand": "Abrir menu"
   },
+  "orientation": {
+    "phoneLandscapeTitle": "Vira o dispositivo",
+    "phoneLandscapeDescription": "O NoteX em telemóvel funciona em modo vertical. Roda o dispositivo para continuar."
+  },
   "topbar": {
     "searchPlaceholder": "Pesquisar notas, títulos, etiquetas...",
     "keyboardHint": "⌘ F",
@@ -164,6 +168,8 @@
     "addContentBlock": "Adicionar bloco de conteúdo",
     "addTitleBlock": "Adicionar bloco de título",
     "reorderBlock": "Reordenar bloco",
+    "moveBlockUp": "Mover bloco para cima",
+    "moveBlockDown": "Mover bloco para baixo",
     "blockDeleted": "Bloco apagado",
     "deleteBlockTitle": "Apagar bloco?",
     "deleteBlockDescription": "Apagar “{{title}}”? Esta ação não pode ser desfeita.",
@@ -172,7 +178,9 @@
     "files": "Ficheiros",
     "noFiles": "Ainda não há ficheiros anexados.",
     "fileAdded": "Ficheiro adicionado",
+    "fileAddFailed": "Não foi possível adicionar o ficheiro",
     "fileDeleted": "Ficheiro apagado",
+    "fileDeleteFailed": "Não foi possível apagar o ficheiro",
     "exportNote": "Exportar nota",
     "noteExported": "Nota exportada",
     "noteExportFailed": "Falha ao exportar a nota",
@@ -190,12 +198,15 @@
     "editor": {
       "addImage": "Adicionar imagem",
       "addFile": "Anexar ficheiro",
-      "alignImageLeft": "Alinhar imagem à esquerda sem envolver texto",
-      "alignImageCenter": "Centrar imagem sem envolver texto",
-      "alignImageRight": "Alinhar imagem à direita sem envolver texto",
+      "alignImageLeft": "Alinhar imagem à esquerda",
+      "alignImageCenter": "Centrar imagem",
+      "alignImageRight": "Alinhar imagem à direita",
       "wrapLeft": "Imagem à esquerda, envolver texto",
       "wrapRight": "Imagem à direita, envolver texto",
-      "imageWidth": "Largura da imagem"
+      "imageWidth": "Largura da imagem",
+      "resizeImageTopLeft": "Redimensionar imagem pelo canto superior esquerdo",
+      "resizeImageBottomRight": "Redimensionar imagem pelo canto inferior direito",
+      "imagePreview": "Pré-visualização da imagem"
     }
   },
   "tags": {
@@ -256,6 +267,8 @@
     "noteCountSingular": "{{count}} nota"
   },
   "noteDetail": {
+    "panels": "Detalhes da nota",
+    "openPanels": "Abrir painéis da nota",
     "collectionLabel": "Coleção",
     "noteCreated": "Nota criada",
     "noteSaved": "Nota guardada",
@@ -264,6 +277,8 @@
     "editingDraft": "Rascunho em edição",
     "localDraft": "Rascunho local",
     "savedLocal": "Guardado localmente",
+    "includeInBackup": "Incluir no backup",
+    "excludeFromBackup": "Excluir do backup",
     "thumbnail": "Miniatura",
     "changeThumbnail": "Alterar miniatura",
     "thumbnailUpdated": "Miniatura atualizada",

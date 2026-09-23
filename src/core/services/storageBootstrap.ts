@@ -2,6 +2,7 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
 import { desktopInvoke, selectDesktopLibrary } from '../storage/desktopInvoke';
 import type { GoogleAccount } from './googleConfig';
 import { openBrowserLibrary } from '../storage/storageRuntime';
+import { isDevAuthBypassEnabled } from './developmentAuth';
 
 export type StorageBackend = 'sqlite' | 'indexeddb';
 
@@ -23,6 +24,10 @@ export function initializeStorage() {
 async function bootstrapStorage(): Promise<StorageBootstrapResult> {
   if (!isTauri()) {
     try {
+      if (isDevAuthBypassEnabled()) {
+        await openBrowserLibrary('notex-dev-layouts');
+        return { backend: 'indexeddb', account: null, shouldSeedDemo: true };
+      }
       const account = readRememberedWebAccount();
       if (!account) return { backend: 'indexeddb', requiresLogin: true };
       await openBrowserLibrary(account.id);
