@@ -71,7 +71,7 @@ function document(page, article, index) {
   <a class="skip-link" href="#main-content">Skip to content</a>
   <header class="site-nav"><div class="nav-inner">
     <a class="brand" href="../index.html" aria-label="NoteX home"><img src="../assets/notex-logo.webp" alt="" width="32" height="32"><span>NoteX</span><span class="docs-brand-label">/ Docs</span></a>
-    <nav aria-label="Primary navigation"><a href="../index.html">Overview</a><a href="./index.html" aria-current="true">Documentation</a><a href="https://github.com/mapherez/notex">GitHub</a><a class="docs-download" href="https://github.com/mapherez/notex/releases/latest">Download <span aria-hidden="true">↗</span></a></nav>
+    <nav aria-label="Primary navigation"><a href="../index.html">Overview</a><a href="./index.html" aria-current="true">Documentation</a><a href="https://github.com/mapherez/notex">GitHub</a><a class="docs-download" href="https://notex.mapherez.com/download">Download <span aria-hidden="true">↗</span></a></nav>
   </div></header>
   <div class="docs-shell">
     <aside class="docs-sidebar" aria-label="Documentation topics">
@@ -90,11 +90,11 @@ function document(page, article, index) {
       <article class="docs-article">${article.html}</article>
       <div class="docs-article-footer"><span>For the Windows desktop release</span><a href="https://github.com/mapherez/notex/edit/main/landing/docs/content/${page.slug}.md">Improve this guide <span aria-hidden="true">↗</span></a></div>
       <nav class="docs-pagination" aria-label="Previous and next articles">
-        ${previous ? `<a href="${href(previous)}"><span>← Previous</span><strong>${escape(previous.title)}</strong></a>` : '<span></span>'}
-        ${next ? `<a href="${href(next)}"><span>Next →</span><strong>${escape(next.title)}</strong></a>` : '<span></span>'}
+        ${previous ? `<a href="${href(previous)}"><span>← Previous</span><strong>${escape(previous.title)}</strong></a>` : "<span></span>"}
+        ${next ? `<a href="${href(next)}"><span>Next →</span><strong>${escape(next.title)}</strong></a>` : "<span></span>"}
       </nav>
     </main>
-    <aside class="docs-on-this-page"><nav aria-label="On this page"><p>On this page</p><ul>${article.headings.map(heading => `<li><a href="#${heading.id}">${escape(heading.text)}</a></li>`).join('')}</ul></nav><div class="docs-local-card"><span class="docs-local-dot"></span><strong>Your notes. Your computer.</strong><p>No account needed.<br>Works offline.</p></div></aside>
+    <aside class="docs-on-this-page"><nav aria-label="On this page"><p>On this page</p><ul>${article.headings.map((heading) => `<li><a href="#${heading.id}">${escape(heading.text)}</a></li>`).join("")}</ul></nav><div class="docs-local-card"><span class="docs-local-dot"></span><strong>Your notes. Your computer.</strong><p>No account needed.<br>Works offline.</p></div></aside>
   </div>
   <footer class="site-footer docs-footer"><span>NoteX · A place for knowledge you return to.</span><nav aria-label="Legal links"><a href="../privacy.html">Privacy</a><a href="../terms.html">Terms</a></nav></footer>
 </body>

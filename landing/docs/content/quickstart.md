@@ -6,7 +6,7 @@ Start with one piece of information you want to keep. This guide takes you from 
 
 For Windows desktop:
 
-1. Open the [latest release on GitHub](https://github.com/mapherez/notex/releases/latest).
+1. Open the [latest release on GitHub](https://notex.mapherez.com/download).
 2. Download the Windows installer and run it.
 3. Open NoteX. The desktop app does not require a login.
 

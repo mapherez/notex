@@ -10,7 +10,7 @@ Version 2.4.0 adds responsive layouts for desktop, tablet, and phone, along with
 
 NoteX includes an updater and a manual update check in **Profile**. When an update is available, follow the app's update prompt.
 
-You can also download the Windows installer from the [latest GitHub release](https://github.com/mapherez/notex/releases/latest).
+You can also download the Windows installer from the [latest GitHub release](https://notex.mapherez.com/download).
 
 Before a major workflow change or a full-workspace import, keeping a fresh [exported backup](import-export.md) is useful regardless of whether you are updating.
 
