@@ -9,7 +9,7 @@ does not require an account. You can also connect your Google account for
 automatic backups to your own Google Drive and access your library in the browser.
 
 [Website](https://notex.mapherez.com/) ·
-[Download for Windows](https://github.com/mapherez/notex/releases/latest) ·
+[Download for Windows](https://notex.mapherez.com/download) ·
 [User guides](Documentation/README.md)
 
 ## Write notes with structure
@@ -69,7 +69,7 @@ keyboard shortcuts for writing and navigating your library.
 
 ## Get started
 
-1. [Download the Windows app](https://github.com/mapherez/notex/releases/latest)
+1. [Download the Windows app](https://notex.mapherez.com/download)
    and create your first note. No account is needed for desktop use.
 2. Add a collection or a few tags so you can find it again.
 3. Optionally connect Google in **Profile** to enable Drive backups.
