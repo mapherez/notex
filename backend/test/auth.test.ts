@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { protectWithBetterAuth } from '@nox/mcp/better-auth';
 
 import {
   REGISTRATION_COOKIE,
@@ -7,6 +10,7 @@ import {
   ensureDesktopOAuthClient,
   migrateAuth,
   revokeAiAccess,
+  isAccessTokenActive,
 } from '../src/auth.js';
 import { loadConfig } from '../src/config.js';
 import { BackendDatabase } from '../src/database.js';
@@ -144,6 +148,34 @@ afterEach(() => {
 });
 
 describe('Better Auth configuration', () => {
+  it('checks a real signed token before and after revocation, including later consent', async () => {
+    const { auth, config, database } = await createHarness();
+    const userId = await createBetterAuthUser(auth, 'revocation');
+    const desktopClientId = await ensureDesktopOAuthClient(auth, database);
+    await createPublicOAuthClient(auth, 'ai-revocation');
+    await createOAuthGrant(auth, userId, 'ai-revocation');
+    const server = createServer(async (_request, response) => {
+      const jwks = await auth.api.getJwks(); response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify(jwks));
+    });
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    try {
+      const gate = protectWithBetterAuth(auth, async () => new Response(null, { status: 204 }), { resource: config.mcpUrl, requiredScopes: ['notex:read'], jwksUrl: `http://127.0.0.1:${(server.address() as AddressInfo).port}/jwks`, isActive: (request, claims) => isAccessTokenActive(auth, database, request, claims) });
+      const sign = async (override: Record<string, unknown> = {}) => (await auth.api.signJWT({ body: { payload: { iss: (await auth.$context).baseURL, sub: userId, client_id: 'ai-revocation', aud: config.mcpUrl, scope: 'notex:read', iat: Math.floor(Date.now() / 1000) - 2, exp: Math.floor(Date.now() / 1000) + 60, ...override } } })).token;
+      const call = async (token: string) => (await gate(new Request(config.mcpUrl, { headers: { authorization: `Bearer ${token}` } }))).status;
+      const token = await sign();
+      const first = await gate(new Request(config.mcpUrl, { headers: { authorization: `Bearer ${token}` } }));
+      expect(first.status, await first.text()).toBe(204);
+      expect(await call(await sign({ aud: 'https://wrong.example/mcp' }))).toBe(401);
+      expect(await call(await sign({ exp: Math.floor(Date.now() / 1000) - 60 }))).toBe(401);
+      expect(await call(await sign({ scope: 'notex:edit' }))).toBe(403);
+      await revokeAiAccess(auth, userId, desktopClientId, database);
+      expect(await call(token)).toBe(401);
+      const { adapter } = await auth.$context;
+      await adapter.create({ model: 'oauthConsent', data: { userId, clientId: 'ai-revocation', resources: [config.mcpUrl], scopes: ['notex:read'], createdAt: new Date(), updatedAt: new Date() } });
+      expect(await call(token)).toBe(401);
+      expect(await call(await sign({ iat: (database.aiRevokedAt(userId) ?? 0) + 1 }))).toBe(204);
+    } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
+  });
   it('migrates only backend identity/authorization models and seeds the MCP resource', async () => {
     const { auth, config, database } = await createHarness();
     await ensureDesktopOAuthClient(auth, database);
@@ -239,7 +271,7 @@ describe('Better Auth configuration', () => {
     await createOAuthGrant(auth, userId, desktopClientId);
     await createOAuthGrant(auth, userId, 'ai-client');
 
-    await revokeAiAccess(auth, userId, desktopClientId);
+    await revokeAiAccess(auth, userId, desktopClientId, database);
 
     const { adapter } = await auth.$context;
     for (const model of ['oauthAccessToken', 'oauthRefreshToken', 'oauthConsent']) {

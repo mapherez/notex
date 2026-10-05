@@ -6,12 +6,16 @@ WORKDIR /app
 ENV npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false
 
 COPY package.json package-lock.json ./
+COPY packages/nox-mcp/typescript/package.json packages/nox-mcp/typescript/package-lock.json ./packages/nox-mcp/typescript/
 COPY packages/notex-mcp-contract/package.json packages/notex-mcp-contract/package-lock.json ./packages/notex-mcp-contract/
 RUN npm ci --prefix packages/notex-mcp-contract && npm ci
 
 COPY packages/notex-mcp-contract/tsconfig.json ./packages/notex-mcp-contract/
 COPY packages/notex-mcp-contract/scripts ./packages/notex-mcp-contract/scripts
 COPY packages/notex-mcp-contract/src ./packages/notex-mcp-contract/src
+COPY packages/nox-mcp/typescript/tsconfig.json ./packages/nox-mcp/typescript/
+COPY packages/nox-mcp/typescript/src ./packages/nox-mcp/typescript/src
+RUN npm ci --prefix packages/nox-mcp/typescript
 COPY tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts vitest.config.ts index.html ./
 COPY src ./src
 COPY public ./public

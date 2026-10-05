@@ -15,6 +15,13 @@
 !scripts
 !scripts/build-web-worker.mjs
 !packages
+!packages/nox-mcp
+!packages/nox-mcp/typescript
+!packages/nox-mcp/typescript/package.json
+!packages/nox-mcp/typescript/package-lock.json
+!packages/nox-mcp/typescript/tsconfig.json
+!packages/nox-mcp/typescript/src
+!packages/nox-mcp/typescript/src/**
 !packages/notex-mcp-contract
 !packages/notex-mcp-contract/package.json
 !packages/notex-mcp-contract/package-lock.json

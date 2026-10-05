@@ -1,0 +1,36 @@
+name: Publish NoX MCP
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  conformity:
+    uses: ./.github/workflows/ci.yml
+  npm:
+    needs: conformity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+        working-directory: typescript
+      - run: npm run build && npm test
+        working-directory: typescript
+      - run: node scripts/generate.mjs --check
+      - run: npm publish --access public
+        working-directory: typescript
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  crate:
+    needs: conformity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --locked && cargo publish --locked
+        working-directory: rust
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

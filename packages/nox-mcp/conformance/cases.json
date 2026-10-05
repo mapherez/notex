@@ -1,0 +1,14 @@
+[
+  {"name":"request", "schema":"request", "valid":true, "value":{"type":"request","requestId":"b30d5e74-430d-497e-a456-1a12d9732b38","command":"echo","input":{"message":"hello"},"deadlineAt":"2030-01-01T00:00:00Z"}},
+  {"name":"missing-deadline", "schema":"request", "valid":false, "value":{"type":"request","requestId":"b30d5e74-430d-497e-a456-1a12d9732b38","command":"echo","input":{}}},
+  {"name":"invalid-request-id", "schema":"request", "valid":false, "value":{"type":"request","requestId":"bad","command":"echo","input":{},"deadlineAt":"2030-01-01T00:00:00Z"}},
+  {"name":"success", "schema":"response", "valid":true, "value":{"type":"response","requestId":"b30d5e74-430d-497e-a456-1a12d9732b38","ok":true,"result":{"message":"hello"}}},
+  {"name":"domain-error", "schema":"response", "valid":true, "value":{"type":"response","requestId":"b30d5e74-430d-497e-a456-1a12d9732b38","ok":false,"error":{"code":"CONFLICT","message":"Refresh first","retryable":false,"details":{"currentVersion":2}}}},
+  {"name":"missing-error", "schema":"response", "valid":false, "value":{"type":"response","requestId":"b30d5e74-430d-497e-a456-1a12d9732b38","ok":false}},
+  {"name":"cancel", "schema":"server", "valid":true, "value":{"type":"cancel","requestId":"b30d5e74-430d-497e-a456-1a12d9732b38"}},
+  {"name":"cancel-no-id", "schema":"server", "valid":false, "value":{"type":"cancel"}},
+  {"name":"ready-v1", "schema":"desktop", "valid":true, "value":{"type":"ready","protocolVersion":"1.0","appVersion":"0.1.0"}},
+  {"name":"ready-v2", "schema":"desktop", "valid":true, "value":{"type":"ready","protocolVersion":"2.0","appVersion":"0.1.0"}},
+  {"name":"ready-unknown", "schema":"desktop", "valid":false, "value":{"type":"ready","protocolVersion":"3.0","appVersion":"0.1.0"}},
+  {"name":"unsafe-retry", "schema":"error", "valid":false, "value":{"code":"TIMEOUT","message":"Unknown result","retryable":"true"}}
+]

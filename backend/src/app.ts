@@ -136,7 +136,7 @@ export function createApplication(input: {
     }
   });
 
-  const mcpHandler = createProtectedMcpHandler(auth, config, registry, logger);
+  const mcpHandler = createProtectedMcpHandler(auth, config, registry, logger, database);
   const mcpNodeHandler = toMcpNodeHandler({ fetch: mcpHandler.protectedFetch }, { onerror: (error) => logger.error({ event: 'mcp_adapter_error', errorType: error.name }) });
   app.post('/mcp', toolLimiter, (request, response) => void mcpNodeHandler(request, response, request.body));
   app.all('/mcp', (_request, response) => response.status(405).set('allow', 'POST').end());

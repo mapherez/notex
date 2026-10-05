@@ -1,18 +1,14 @@
 import { z } from 'zod';
+import { BRIDGE_PROTOCOL_VERSION as NOX_BRIDGE_VERSION, LEGACY_BRIDGE_PROTOCOL_VERSION, defaults, createResponseSchema, bridgeTicketSchema as noxTicketSchema, parseFrame } from '@nox/mcp/contract';
 
-export const BRIDGE_PROTOCOL_VERSION = '1.0' as const;
-export const BRIDGE_REQUEST_TIMEOUT_MS = 20_000;
-export const BRIDGE_HEARTBEAT_INTERVAL_MS = 15_000;
-export const BRIDGE_OFFLINE_AFTER_MS = 45_000;
-export const BRIDGE_TICKET_TTL_SECONDS = 30;
-export const MAX_BRIDGE_FRAME_BYTES = 2 * 1024 * 1024;
+export const BRIDGE_PROTOCOL_VERSION = NOX_BRIDGE_VERSION;
+export const BRIDGE_REQUEST_TIMEOUT_MS = defaults.requestTimeoutMs;
+export const BRIDGE_HEARTBEAT_INTERVAL_MS = defaults.heartbeatIntervalMs;
+export const BRIDGE_OFFLINE_AFTER_MS = defaults.offlineAfterMs;
+export const BRIDGE_TICKET_TTL_SECONDS = defaults.ticketTtlSeconds;
+export const MAX_BRIDGE_FRAME_BYTES = defaults.maxPayloadBytes;
 
-export const bridgeDeliveryPolicy = {
-  queue: 'none',
-  replay: 'never',
-  disconnect: 'fail-in-flight',
-  ticketUse: 'single-use',
-} as const;
+export { bridgeDeliveryPolicy } from '@nox/mcp/contract';
 
 export const mcpScopes = ['notex:read', 'notex:create', 'notex:edit', 'notex:delete'] as const;
 export type McpScope = (typeof mcpScopes)[number];
@@ -660,6 +656,7 @@ export type ToolManifestEntry = ToolMetadata & {
   name: CommandName;
   scope: McpScope;
   inputSchema: Record<string, unknown>;
+  outputSchema: Record<string, unknown>;
 };
 
 export type ToolManifest = {
@@ -681,6 +678,7 @@ export function createToolManifest(): ToolManifest {
         io: 'input',
         reused: 'inline',
       }) as Record<string, unknown>,
+      outputSchema: z.toJSONSchema(commandOutputSchemas[command], { target: 'draft-07', io: 'output', reused: 'inline' }) as Record<string, unknown>,
     })),
   };
 }
@@ -693,7 +691,7 @@ export function parseCommandOutput<T extends CommandName>(name: T, output: unkno
   return commandOutputSchemas[name].parse(output) as CommandOutput<T>;
 }
 
-export const bridgeTicketSchema = z.string().min(32).max(512).regex(/^[A-Za-z0-9_-]+$/);
+export const bridgeTicketSchema = noxTicketSchema;
 
 export const bridgeAuthenticateSchema = z.object({
   type: z.literal('authenticate'),
@@ -702,7 +700,7 @@ export const bridgeAuthenticateSchema = z.object({
 
 export const bridgeReadySchema = z.object({
   type: z.literal('ready'),
-  protocolVersion: z.literal(BRIDGE_PROTOCOL_VERSION),
+  protocolVersion: z.enum([BRIDGE_PROTOCOL_VERSION, LEGACY_BRIDGE_PROTOCOL_VERSION]),
   appVersion: z.string().min(1).max(64),
 });
 export type BridgeReady = z.infer<typeof bridgeReadySchema>;
@@ -716,20 +714,7 @@ export const bridgeRequestSchema = z.object({
 });
 export type BridgeRequest = z.infer<typeof bridgeRequestSchema>;
 
-export const bridgeResponseSchema = z.discriminatedUnion('ok', [
-  z.object({
-    type: z.literal('response'),
-    requestId: z.string().uuid(),
-    ok: z.literal(true),
-    result: z.unknown(),
-  }),
-  z.object({
-    type: z.literal('response'),
-    requestId: z.string().uuid(),
-    ok: z.literal(false),
-    error: bridgeErrorSchema,
-  }),
-]);
+export const bridgeResponseSchema = createResponseSchema(bridgeErrorSchema);
 export type BridgeResponse = z.infer<typeof bridgeResponseSchema>;
 
 export const desktopBridgeMessageSchema = z.discriminatedUnion('type', [
@@ -741,6 +726,7 @@ export const desktopBridgeMessageSchema = z.discriminatedUnion('type', [
 export const serverBridgeMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('authenticated') }),
   bridgeRequestSchema,
+  z.object({ type: z.literal('cancel'), requestId: z.string().uuid() }),
   z.object({ type: z.literal('session_revoked'), reason: z.string().max(200) }),
 ]);
 
@@ -749,29 +735,10 @@ export type ServerBridgeMessage = z.infer<typeof serverBridgeMessageSchema>;
 
 export type BridgeFrame = string | Uint8Array | ArrayBuffer;
 
-function decodeBridgeFrame(frame: BridgeFrame): string {
-  if (typeof frame === 'string') {
-    if (new TextEncoder().encode(frame).byteLength > MAX_BRIDGE_FRAME_BYTES) {
-      throw new RangeError(`Bridge frame exceeds ${MAX_BRIDGE_FRAME_BYTES} bytes.`);
-    }
-    return frame;
-  }
-
-  const bytes = frame instanceof Uint8Array ? frame : new Uint8Array(frame);
-  if (bytes.byteLength > MAX_BRIDGE_FRAME_BYTES) {
-    throw new RangeError(`Bridge frame exceeds ${MAX_BRIDGE_FRAME_BYTES} bytes.`);
-  }
-  return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-}
-
-function parseBridgeJson(frame: BridgeFrame): unknown {
-  return JSON.parse(decodeBridgeFrame(frame)) as unknown;
-}
-
 export function parseDesktopBridgeFrame(frame: BridgeFrame): DesktopBridgeMessage {
-  return desktopBridgeMessageSchema.parse(parseBridgeJson(frame));
+  return parseFrame(desktopBridgeMessageSchema, frame);
 }
 
 export function parseServerBridgeFrame(frame: BridgeFrame): ServerBridgeMessage {
-  return serverBridgeMessageSchema.parse(parseBridgeJson(frame));
+  return parseFrame(serverBridgeMessageSchema, frame);
 }

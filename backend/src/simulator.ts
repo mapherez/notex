@@ -73,6 +73,7 @@ socket.on('message', (data) => {
     socket.close();
     return;
   }
+  if (message.type === 'cancel') return;
   const result = fixtures[message.command];
   const parsed = commandOutputSchemas[message.command].safeParse(result);
   socket.send(

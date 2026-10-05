@@ -4,7 +4,7 @@
   "version": "2.4.0",
   "type": "module",
   "scripts": {
-    "build:mcp-contract": "npm --prefix packages/notex-mcp-contract run build",
+    "build:mcp-contract": "npm --prefix packages/nox-mcp/typescript run build && npm --prefix packages/notex-mcp-contract run build",
     "tauri:dev": "node scripts/tauri-with-env.mjs dev",
     "tauri:build": "node scripts/tauri-with-env.mjs build",
     "tauri:build:no-bundle": "node scripts/tauri-with-env.mjs build --no-bundle",
@@ -24,6 +24,7 @@
     "check:styles": "npm run lint:styles && npm run lint:no-inline-styles"
   },
   "dependencies": {
+    "@nox/mcp": "file:packages/nox-mcp/typescript",
     "@chenglou/pretext": "^0.0.7",
     "@floating-ui/dom": "^1.7.6",
     "@notex/mcp-contract": "file:packages/notex-mcp-contract",

@@ -123,6 +123,10 @@ async function sendMcp(
   body: unknown,
   protocolVersion = LEGACY_PROTOCOL_VERSION,
 ): Promise<Record<string, unknown>> {
+  if (protocolVersion === MODERN_PROTOCOL_VERSION && typeof body === 'object' && body !== null && 'params' in body) {
+    const params = body.params as Record<string, unknown>;
+    params._meta = { 'io.modelcontextprotocol/protocolVersion': MODERN_PROTOCOL_VERSION, 'io.modelcontextprotocol/clientInfo': { name: 'NoteX test client', version: '1.0.0' }, 'io.modelcontextprotocol/clientCapabilities': {}, ...(params._meta as object ?? {}) };
+  }
   const method =
     typeof body === 'object' && body !== null && 'method' in body && typeof body.method === 'string'
       ? body.method
@@ -133,6 +137,10 @@ async function sendMcp(
     'mcp-protocol-version': protocolVersion,
   };
   if (protocolVersion === MODERN_PROTOCOL_VERSION && method) headers['mcp-method'] = method;
+  if (protocolVersion === MODERN_PROTOCOL_VERSION && typeof body === 'object' && body !== null && 'params' in body) {
+    const name = (body.params as { name?: string }).name;
+    if (name) headers['mcp-name'] = name;
+  }
   const response = await harness.handler.fetch(
     new Request('http://127.0.0.1:8080/mcp', {
       method: 'POST',
@@ -165,6 +173,15 @@ afterEach(async () => {
 });
 
 describe('authenticated MCP protocol handler', () => {
+  it('performs complete tool calls in both protocol generations', async () => {
+    for (const protocolVersion of [LEGACY_PROTOCOL_VERSION, MODERN_PROTOCOL_VERSION]) {
+      const harness = createHarness();
+      const listed = await sendMcp(harness, { jsonrpc: '2.0', id: 10, method: 'tools/list', params: {} }, protocolVersion);
+      expect((listed.result as { tools: unknown[] }).tools).toHaveLength(34);
+      const called = await sendMcp(harness, { jsonrpc: '2.0', id: 11, method: 'tools/call', params: { name: 'search_notes', arguments: { query: 'disposable' } } }, protocolVersion);
+      expect(called.result).toMatchObject({ structuredContent: { results: [] } });
+    }
+  });
   it('advertises the modern 2026 protocol through server/discover', async () => {
     const harness = createHarness();
     const discovered = await sendMcp(

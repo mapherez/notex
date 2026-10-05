@@ -35,6 +35,7 @@ pub fn run() {
             mcp_bridge::notex_mcp_revoke_ai_access,
             mcp_bridge::notex_mcp_delete_account,
             mcp_bridge::notex_mcp_respond,
+            mcp_bridge::notex_mcp_request_pending,
             mcp_request_broker::notex_local_mcp_request_pending,
             mcp_local_server::notex_local_mcp_get_state,
             mcp_local_server::notex_local_mcp_set_renderer_ready,

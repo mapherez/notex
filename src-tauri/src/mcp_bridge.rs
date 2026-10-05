@@ -18,13 +18,13 @@ use tokio_tungstenite::{
 use crate::{
     external_links,
     mcp_request_broker::{
-        DesktopResponse, McpRequestBroker, McpRequestEvent as BridgeRequestEvent,
+        DesktopResponse, McpRequestBroker,
         REQUEST_EVENT,
     },
 };
 
-const BRIDGE_PROTOCOL_VERSION: &str = "1.0";
-const MAX_BRIDGE_FRAME_BYTES: usize = 2 * 1024 * 1024;
+const BRIDGE_PROTOCOL_VERSION: &str = nox_mcp::BRIDGE_PROTOCOL_VERSION;
+const MAX_BRIDGE_FRAME_BYTES: usize = nox_mcp::MAX_PAYLOAD_BYTES;
 const STATE_EVENT: &str = "notex://mcp-state";
 const CREDENTIAL_SERVICE: &str = "com.mapherez.notex.mcp";
 const CREDENTIAL_ACCOUNT: &str = "desktop-refresh-token";
@@ -271,11 +271,7 @@ struct StoredCredential {
     session_id: String,
 }
 
-trait CredentialStore: Send + Sync {
-    fn load(&self) -> McpResult<Option<StoredCredential>>;
-    fn save(&self, credential: &StoredCredential) -> McpResult<()>;
-    fn delete(&self) -> McpResult<()>;
-}
+type CredentialStore = dyn nox_mcp::CredentialStore<StoredCredential, Error = McpError>;
 
 #[cfg(target_os = "windows")]
 struct SystemCredentialStore;
@@ -293,7 +289,8 @@ impl SystemCredentialStore {
 }
 
 #[cfg(target_os = "windows")]
-impl CredentialStore for SystemCredentialStore {
+impl nox_mcp::CredentialStore<StoredCredential> for SystemCredentialStore {
+    type Error = McpError;
     fn load(&self) -> McpResult<Option<StoredCredential>> {
         let serialized = match self.entry()?.get_password() {
             Ok(value) => value,
@@ -343,7 +340,8 @@ impl CredentialStore for SystemCredentialStore {
 struct SystemCredentialStore;
 
 #[cfg(not(target_os = "windows"))]
-impl CredentialStore for SystemCredentialStore {
+impl nox_mcp::CredentialStore<StoredCredential> for SystemCredentialStore {
+    type Error = McpError;
     fn load(&self) -> McpResult<Option<StoredCredential>> {
         Err(McpError::new(
             "SECURE_STORAGE",
@@ -390,9 +388,11 @@ struct RuntimeState {
 }
 
 struct ManagerInner {
+    requests: Mutex<nox_mcp::ExecutionRegistry>,
+    connection_counter: std::sync::atomic::AtomicU64,
     backend: McpResult<BackendConfig>,
     client: reqwest::Client,
-    credentials: Arc<dyn CredentialStore>,
+    credentials: Arc<CredentialStore>,
     runtime: Mutex<RuntimeState>,
 }
 
@@ -416,6 +416,8 @@ impl McpManager {
             .expect("valid NoteX MCP HTTP client");
         Self {
             inner: Arc::new(ManagerInner {
+                requests: Mutex::new(nox_mcp::ExecutionRegistry::default()),
+                connection_counter: std::sync::atomic::AtomicU64::new(1),
                 backend,
                 client,
                 credentials: Arc::new(SystemCredentialStore),
@@ -461,6 +463,7 @@ impl McpManager {
 
     async fn begin_generation(&self) -> u64 {
         let mut runtime = self.inner.runtime.lock().await;
+        self.inner.requests.lock().await.clear();
         runtime.generation = runtime.generation.wrapping_add(1);
         if let Some(sender) = runtime.bridge_sender.take() {
             let _ = sender.send(BridgeControl::Close);
@@ -1083,12 +1086,14 @@ impl McpManager {
             return BridgeExit::Disconnected;
         }
 
+        let connection_id = format!("{}-{}", generation, self.inner.connection_counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed));
         let (sender, mut receiver) = mpsc::unbounded_channel();
         let (renderer_ready, app_version, email) = {
             let mut runtime = self.inner.runtime.lock().await;
             if runtime.generation != generation {
                 return BridgeExit::Cancelled;
             }
+            self.inner.requests.lock().await.open(connection_id.clone());
             runtime.bridge_sender = Some(sender);
             (
                 runtime.renderer_ready,
@@ -1145,7 +1150,14 @@ impl McpManager {
                         Some(Ok(message)) => {
                             match decode_server_frame(message) {
                                 Ok(frame @ ServerFrame::Request { .. }) => {
-                                    let request = BridgeRequestEvent::from(frame);
+                                    let Some(mut request) = frame.into_request() else { break; };
+                                    let deadline = request.deadline_at.parse::<u64>().ok().or_else(|| {
+                                        // Wire deadlines are RFC3339; parse using the shared protocol helper.
+                                        nox_mcp::parse_deadline(&request.deadline_at)
+                                    });
+                                    let Some(deadline) = deadline else { break; };
+                                    let registered = self.inner.requests.lock().await.register_for(&connection_id, &request.request_id, deadline);
+                                    match registered { Ok(value) => request.generation = Some(value), Err(_) => { break; } }
                                     if app.emit(REQUEST_EVENT, &request).is_err() {
                                         let frame = renderer_error_response(&request.request_id);
                                         if socket.send(Message::Text(frame.into())).await.is_err() {
@@ -1153,6 +1165,7 @@ impl McpManager {
                                         }
                                     }
                                 }
+                                Ok(ServerFrame::Cancel { request_id }) => { self.inner.requests.lock().await.cancel(&request_id); }
                                 Ok(ServerFrame::SessionRevoked { .. }) => {
                                     self.clear_bridge_sender(generation).await;
                                     return BridgeExit::SessionRevoked;
@@ -1175,6 +1188,7 @@ impl McpManager {
     async fn clear_bridge_sender(&self, generation: u64) {
         let mut runtime = self.inner.runtime.lock().await;
         if runtime.generation == generation {
+            self.inner.requests.lock().await.clear();
             runtime.bridge_sender = None;
         }
     }
@@ -1290,7 +1304,8 @@ impl McpManager {
         .map(|_| ())
     }
 
-    async fn send_bridge_response(&self, response: DesktopResponse) -> McpResult<()> {
+    async fn send_bridge_response(&self, mut response: DesktopResponse) -> McpResult<()> {
+        let generation = response.generation.take().unwrap_or_default();
         if !is_wire_uuid(&response.request_id) {
             return Err(McpError::new(
                 "INVALID_INPUT",
@@ -1332,14 +1347,13 @@ impl McpManager {
                 "The bridge response is too large.",
             ));
         }
-        let sender = self
-            .inner
-            .runtime
-            .lock()
-            .await
-            .bridge_sender
-            .clone()
-            .ok_or_else(|| McpError::new("NOTEX_OFFLINE", "NoteX is offline."))?;
+        let runtime = self.inner.runtime.lock().await;
+        let mut requests = self.inner.requests.lock().await;
+        if !requests.is_pending(&wire.response.request_id, &generation) {
+            return Err(McpError::new("NOTEX_OFFLINE", "The request is no longer active."));
+        }
+        let sender = runtime.bridge_sender.clone().ok_or_else(|| McpError::new("NOTEX_OFFLINE", "NoteX is offline."))?;
+        requests.cancel(&wire.response.request_id);
         sender
             .send(BridgeControl::Frame(frame))
             .map_err(|_| McpError::new("NOTEX_OFFLINE", "NoteX is offline."))
@@ -1385,6 +1399,12 @@ impl McpManager {
             "The NoteX MCP backend rejected the request.",
         ))
     }
+}
+
+#[tauri::command]
+pub async fn notex_mcp_request_pending(manager: State<'_, McpManager>, broker: State<'_, McpRequestBroker>, request_id: String, generation: Option<String>) -> Result<bool, String> {
+    if McpRequestBroker::owns_request_id(&request_id) { return Ok(broker.is_pending(&request_id).await); }
+    Ok(manager.inner.requests.lock().await.is_pending(&request_id, generation.as_deref().unwrap_or_default()))
 }
 
 impl Default for McpManager {
@@ -1483,59 +1503,7 @@ struct PublicHttpError {
     code: String,
 }
 
-#[derive(Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-enum ServerFrame {
-    Authenticated,
-    Request {
-        #[serde(rename = "requestId")]
-        request_id: String,
-        command: String,
-        input: Value,
-        #[serde(rename = "deadlineAt")]
-        deadline_at: String,
-    },
-    SessionRevoked {
-        #[allow(dead_code)]
-        reason: String,
-    },
-}
-
-impl ServerFrame {
-    fn into_validated(self) -> McpResult<Self> {
-        if let Self::Request {
-            request_id,
-            command,
-            deadline_at,
-            ..
-        } = &self
-        {
-            if !is_wire_uuid(request_id) || command.len() > 64 || deadline_at.len() > 64 {
-                return Err(McpError::new("BRIDGE", "The bridge request is invalid."));
-            }
-        }
-        Ok(self)
-    }
-}
-
-impl From<ServerFrame> for BridgeRequestEvent {
-    fn from(frame: ServerFrame) -> Self {
-        match frame {
-            ServerFrame::Request {
-                request_id,
-                command,
-                input,
-                deadline_at,
-            } => Self {
-                request_id,
-                command,
-                input,
-                deadline_at,
-            },
-            _ => unreachable!("only request frames become renderer events"),
-        }
-    }
-}
+use nox_mcp::ServerFrame;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -1561,9 +1529,8 @@ fn decode_server_frame(message: Message) -> McpResult<ServerFrame> {
     if bytes.len() > MAX_BRIDGE_FRAME_BYTES {
         return Err(McpError::new("BRIDGE", "The bridge frame is too large."));
     }
-    serde_json::from_slice::<ServerFrame>(&bytes)
-        .map_err(|_| McpError::new("BRIDGE", "The bridge frame is invalid."))?
-        .into_validated()
+    nox_mcp::parse_server_frame(&bytes, MAX_BRIDGE_FRAME_BYTES)
+        .map_err(|_| McpError::new("BRIDGE", "The bridge frame is invalid."))
 }
 
 async fn send_ready<S>(socket: &mut S, app_version: &str) -> Result<(), tungstenite::Error>
@@ -1793,6 +1760,7 @@ mod tests {
     #[test]
     fn serializes_bridge_responses_without_transport_metadata() {
         let response = DesktopResponse {
+            generation: None,
             request_id: "11d29c3b-14f1-4878-aab9-65f901d62aba".to_string(),
             ok: true,
             result: Some(serde_json::json!({ "state": "online" })),

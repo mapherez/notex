@@ -28,6 +28,8 @@ jobs:
         with:
           workspaces: src-tauri -> target
       - run: npm ci
+      - run: npm --prefix packages/nox-mcp/typescript ci
+      - run: npm --prefix packages/nox-mcp/typescript run build
       - run: npm --prefix packages/notex-mcp-contract ci
       - run: npm --prefix packages/notex-mcp-contract test
       - run: npm test
