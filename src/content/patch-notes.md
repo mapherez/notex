@@ -1,3 +1,11 @@
+# 2.4.1
+
+## What's New in NoteX
+
+This release focuses on removing the MCP server base coonfiguration and adding it to its own repository. More info can be found at <https://github.com/mapherez/nox-mcp>
+
+---
+
 # 2.4.0
 
 ## What's New in NoteX
