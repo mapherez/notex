@@ -32,6 +32,7 @@ describe('BackendDatabase', () => {
 
     expect(tables).toEqual([
       'notex_accounts',
+      'notex_ai_revocations',
       'notex_backend_migrations',
       'notex_backend_settings',
       'notex_desktop_activations',

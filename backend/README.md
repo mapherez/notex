@@ -5,6 +5,7 @@ Hosted authentication and routing bridge between remote MCP clients and one live
 ## Requirements
 
 - Node.js 24 LTS
+- Git, to install NoX MCP directly from GitHub
 - A Google OAuth web application
 - HTTPS at the public reverse proxy outside loopback development
 
@@ -24,6 +25,11 @@ npm ci
 cd ../../backend
 npm ci
 ```
+
+NoX MCP is installed from `https://github.com/mapherez/nox-mcp` and builds
+automatically during installation. To install or update it, run
+`npm install "git+https://github.com/mapherez/nox-mcp.git"` in both
+`packages/notex-mcp-contract` and `backend`. The shared NoteX contract stays local.
 
 Load the variables from `backend/.env` in the shell, then run:
 

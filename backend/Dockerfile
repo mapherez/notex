@@ -9,7 +9,7 @@ ENV npm_config_audit=false \
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 make g++ \
+    && apt-get install -y --no-install-recommends git ca-certificates python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 
 COPY packages/notex-mcp-contract/package.json packages/notex-mcp-contract/package-lock.json ./packages/notex-mcp-contract/

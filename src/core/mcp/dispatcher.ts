@@ -28,6 +28,8 @@ export type McpBridgeRequest = {
   command: string;
   input: unknown;
   deadlineAt: string;
+  generation?: string;
+  isActive?: () => Promise<boolean>;
 };
 
 export type McpBridgeError = BridgeError;
@@ -356,7 +358,7 @@ async function createTagCommand(
   request: McpBridgeRequest,
   input: CommandInput<'create_tag'>,
 ): Promise<CommandOutput<'create_tag'>> {
-  ensureDeadline(request.deadlineAt);
+  await ensureRequestActive(request);
   const tag = await useKnowledgeStore.getState().createTag(input.name, input.color);
   if (!tag) {
     throw new CommandFailure('INVALID_INPUT');
@@ -368,7 +370,7 @@ async function updateTagCommand(
   request: McpBridgeRequest,
   input: CommandInput<'update_tag'>,
 ): Promise<CommandOutput<'update_tag'>> {
-  ensureDeadline(request.deadlineAt);
+  await ensureRequestActive(request);
   const current = findTag(input.tagId);
   if (!current) {
     throw new CommandFailure('NOT_FOUND');
@@ -388,7 +390,7 @@ async function deleteTagCommand(
   request: McpBridgeRequest,
   input: CommandInput<'delete_tag'>,
 ): Promise<CommandOutput<'delete_tag'>> {
-  ensureDeadline(request.deadlineAt);
+  await ensureRequestActive(request);
   if (!findTag(input.tagId)) {
     throw new CommandFailure('NOT_FOUND');
   }
@@ -410,7 +412,7 @@ async function createCollectionCommand(
   request: McpBridgeRequest,
   input: CommandInput<'create_collection'>,
 ): Promise<CommandOutput<'create_collection'>> {
-  ensureDeadline(request.deadlineAt);
+  await ensureRequestActive(request);
   const collection = await useKnowledgeStore.getState().createCollection(input.name, input.color);
   if (!collection) {
     throw new CommandFailure('INVALID_INPUT');
@@ -422,7 +424,7 @@ async function updateCollectionCommand(
   request: McpBridgeRequest,
   input: CommandInput<'update_collection'>,
 ): Promise<CommandOutput<'update_collection'>> {
-  ensureDeadline(request.deadlineAt);
+  await ensureRequestActive(request);
   const current = findCollection(input.collectionId);
   if (!current) {
     throw new CommandFailure('NOT_FOUND');
@@ -442,7 +444,7 @@ async function deleteCollectionCommand(
   request: McpBridgeRequest,
   input: CommandInput<'delete_collection'>,
 ): Promise<CommandOutput<'delete_collection'>> {
-  ensureDeadline(request.deadlineAt);
+  await ensureRequestActive(request);
   if (!findCollection(input.collectionId)) {
     throw new CommandFailure('NOT_FOUND');
   }
@@ -468,7 +470,7 @@ async function createNoteCommand(
   request: McpBridgeRequest,
   input: CommandInput<'create_note'>,
 ): Promise<CommandOutput<'create_note'>> {
-  ensureDeadline(request.deadlineAt);
+  await ensureRequestActive(request);
   const collectionId = resolveCreateCollectionId(input.collectionId);
   const tagIds = validateTagIds(input.tagIds);
   const title = input.title ? parseMcpInlineRichText(input.title) : '';
@@ -481,7 +483,7 @@ async function createNoteCommand(
     };
   });
 
-  ensureDeadline(request.deadlineAt);
+  await ensureRequestActive(request);
   const note = await useNotesStore.getState().createNoteWithBlocks({
     title,
     subtitle,
@@ -798,7 +800,7 @@ async function clearTrashCommand(
   request: McpBridgeRequest,
   input: CommandInput<'clear_trash'>,
 ): Promise<CommandOutput<'clear_trash'>> {
-  ensureDeadline(request.deadlineAt);
+  await ensureRequestActive(request);
   const initialSnapshot = await createTrashSnapshot();
   if (initialSnapshot.stateToken !== input.expectedStateToken) {
     throw new CommandFailure('CONFLICT', true);
@@ -818,11 +820,12 @@ async function clearTrashCommand(
       leases.push(lease);
     }
 
-    ensureDeadline(request.deadlineAt);
+    await ensureRequestActive(request);
     const currentSnapshot = await createTrashSnapshot();
     if (currentSnapshot.stateToken !== input.expectedStateToken) {
       throw new CommandFailure('CONFLICT', true);
     }
+    await ensureRequestActive(request);
     await useNotesStore.getState().deleteNotesPermanently(initialSnapshot.noteIds);
     return {
       deletedCount: initialSnapshot.noteIds.length,
@@ -839,7 +842,7 @@ async function withNoteMutationLeases<T>(
   noteIds: string[],
   mutation: () => Promise<T>,
 ): Promise<T> {
-  ensureDeadline(request.deadlineAt);
+  await ensureRequestActive(request);
   const leases: Array<{ release: () => void }> = [];
   try {
     for (const noteId of [...new Set(noteIds)].sort()) {
@@ -853,7 +856,7 @@ async function withNoteMutationLeases<T>(
       }
       leases.push(lease);
     }
-    ensureDeadline(request.deadlineAt);
+    await ensureRequestActive(request);
     return await mutation();
   } finally {
     for (const lease of leases) {
@@ -869,7 +872,7 @@ async function mutateExistingNote<T>(
   requiredLocation: 'active' | 'trash',
   mutation: (note: Note) => Promise<T>,
 ): Promise<T> {
-  ensureDeadline(request.deadlineAt);
+  await ensureRequestActive(request);
   assertNoteForMutation(noteId, expectedVersion, requiredLocation);
 
   const lease = tryBeginMcpMutation(noteId);
@@ -882,7 +885,7 @@ async function mutateExistingNote<T>(
   }
 
   try {
-    ensureDeadline(request.deadlineAt);
+    await ensureRequestActive(request);
     const note = assertNoteForMutation(noteId, expectedVersion, requiredLocation);
     return await mutation(note);
   } finally {
@@ -969,9 +972,11 @@ function validateTagIds(tagIds: string[]) {
   return uniqueTagIds;
 }
 
-function ensureDeadline(deadlineAt: string) {
+async function ensureRequestActive(request: McpBridgeRequest) {
+  if (request.isActive && !(await request.isActive())) throw new CommandFailure('TIMEOUT', false);
+  const deadlineAt = request.deadlineAt;
   if (deadlineExpired(deadlineAt)) {
-    throw new CommandFailure('TIMEOUT', true);
+    throw new CommandFailure('TIMEOUT', false);
   }
 }
 

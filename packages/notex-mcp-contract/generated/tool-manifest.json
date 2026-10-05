@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": "1.0",
+  "protocolVersion": "2.0",
   "tools": [
     {
       "name": "notex_status",
@@ -17,6 +17,31 @@
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
         "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "online",
+              "offline",
+              "logged_out"
+            ]
+          },
+          "appVersion": {
+            "type": "string"
+          },
+          "protocolVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "protocolVersion"
+        ],
         "additionalProperties": false
       }
     },
@@ -57,6 +82,81 @@
             "maximum": 50
           }
         }
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "title": {
+                  "type": "string"
+                },
+                "subtitle": {
+                  "type": "string"
+                },
+                "snippet": {
+                  "type": "string"
+                },
+                "collectionId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "tagIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "isTrashed": {
+                  "type": "boolean"
+                },
+                "updatedAt": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "subtitle",
+                "snippet",
+                "collectionId",
+                "tagIds",
+                "isTrashed",
+                "updatedAt",
+                "version"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -83,6 +183,228 @@
         "required": [
           "noteId"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "title": {
+            "type": "object",
+            "properties": {
+              "html": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "html",
+              "text"
+            ],
+            "additionalProperties": false
+          },
+          "subtitle": {
+            "type": "object",
+            "properties": {
+              "html": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "html",
+              "text"
+            ],
+            "additionalProperties": false
+          },
+          "collectionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tagIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "linkedNoteIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "additionalExamples": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "relatedLinks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "title": {
+                  "type": "string"
+                },
+                "href": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "href"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "isFavorite": {
+            "type": "boolean"
+          },
+          "isPinned": {
+            "type": "boolean"
+          },
+          "thumbnail": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "variant": {
+                    "type": "string",
+                    "enum": [
+                      "purple",
+                      "paper",
+                      "terminal",
+                      "landscape",
+                      "book",
+                      "text",
+                      "correct",
+                      "wrong"
+                    ]
+                  }
+                },
+                "required": [
+                  "variant"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isTrashed": {
+            "type": "boolean"
+          },
+          "readOnly": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "sortOrder": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "title": {
+                  "type": "object",
+                  "properties": {
+                    "html": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "html",
+                    "text"
+                  ],
+                  "additionalProperties": false
+                },
+                "contentPreview": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "sortOrder",
+                "title",
+                "contentPreview",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "subtitle",
+          "collectionId",
+          "tagIds",
+          "linkedNoteIds",
+          "additionalExamples",
+          "relatedLinks",
+          "isFavorite",
+          "isPinned",
+          "thumbnail",
+          "isTrashed",
+          "readOnly",
+          "createdAt",
+          "updatedAt",
+          "version",
+          "blocks"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -115,6 +437,81 @@
           "noteId",
           "blockId"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "object",
+            "properties": {
+              "html": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "html",
+              "text"
+            ],
+            "additionalProperties": false
+          },
+          "content": {
+            "type": "object",
+            "properties": {
+              "html": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "html",
+              "text"
+            ],
+            "additionalProperties": false
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "noteVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "readOnly": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "noteId",
+          "sortOrder",
+          "title",
+          "content",
+          "updatedAt",
+          "noteVersion",
+          "readOnly"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -132,6 +529,29 @@
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
         "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "stateToken": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64,
+            "pattern": "^[a-f0-9]+$",
+            "description": "Trash state token returned by get_trash_status."
+          }
+        },
+        "required": [
+          "noteCount",
+          "stateToken"
+        ],
         "additionalProperties": false
       }
     },
@@ -162,6 +582,63 @@
             "maximum": 100
           }
         }
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "name": {
+                  "type": "string"
+                },
+                "color": {
+                  "type": "string",
+                  "enum": [
+                    "amber",
+                    "blue",
+                    "brown",
+                    "cyan",
+                    "fuchsia",
+                    "green",
+                    "indigo",
+                    "lime",
+                    "mint",
+                    "neutral",
+                    "orange",
+                    "pink",
+                    "purple",
+                    "red",
+                    "rose",
+                    "sky",
+                    "slate",
+                    "teal",
+                    "violet",
+                    "yellow"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "color"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "tags"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -191,6 +668,63 @@
             "maximum": 100
           }
         }
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "collections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "name": {
+                  "type": "string"
+                },
+                "color": {
+                  "type": "string",
+                  "enum": [
+                    "amber",
+                    "blue",
+                    "brown",
+                    "cyan",
+                    "fuchsia",
+                    "green",
+                    "indigo",
+                    "lime",
+                    "mint",
+                    "neutral",
+                    "orange",
+                    "pink",
+                    "purple",
+                    "red",
+                    "rose",
+                    "sky",
+                    "slate",
+                    "teal",
+                    "violet",
+                    "yellow"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "color"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "collections"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -242,6 +776,60 @@
         "required": [
           "name"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "name": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string",
+                "enum": [
+                  "amber",
+                  "blue",
+                  "brown",
+                  "cyan",
+                  "fuchsia",
+                  "green",
+                  "indigo",
+                  "lime",
+                  "mint",
+                  "neutral",
+                  "orange",
+                  "pink",
+                  "purple",
+                  "red",
+                  "rose",
+                  "sky",
+                  "slate",
+                  "teal",
+                  "violet",
+                  "yellow"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "color"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "tag"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -298,6 +886,60 @@
         "required": [
           "tagId"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "name": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string",
+                "enum": [
+                  "amber",
+                  "blue",
+                  "brown",
+                  "cyan",
+                  "fuchsia",
+                  "green",
+                  "indigo",
+                  "lime",
+                  "mint",
+                  "neutral",
+                  "orange",
+                  "pink",
+                  "purple",
+                  "red",
+                  "rose",
+                  "sky",
+                  "slate",
+                  "teal",
+                  "violet",
+                  "yellow"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "color"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "tag"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -324,6 +966,32 @@
         "required": [
           "tagId"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "tagId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true
+          },
+          "affectedNoteCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "tagId",
+          "deleted",
+          "affectedNoteCount"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -375,6 +1043,60 @@
         "required": [
           "name"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "name": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string",
+                "enum": [
+                  "amber",
+                  "blue",
+                  "brown",
+                  "cyan",
+                  "fuchsia",
+                  "green",
+                  "indigo",
+                  "lime",
+                  "mint",
+                  "neutral",
+                  "orange",
+                  "pink",
+                  "purple",
+                  "red",
+                  "rose",
+                  "sky",
+                  "slate",
+                  "teal",
+                  "violet",
+                  "yellow"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "color"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "collection"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -431,6 +1153,60 @@
         "required": [
           "collectionId"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "name": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string",
+                "enum": [
+                  "amber",
+                  "blue",
+                  "brown",
+                  "cyan",
+                  "fuchsia",
+                  "green",
+                  "indigo",
+                  "lime",
+                  "mint",
+                  "neutral",
+                  "orange",
+                  "pink",
+                  "purple",
+                  "red",
+                  "rose",
+                  "sky",
+                  "slate",
+                  "teal",
+                  "violet",
+                  "yellow"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "color"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "collection"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -457,6 +1233,32 @@
         "required": [
           "collectionId"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "collectionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true
+          },
+          "affectedNoteCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "collectionId",
+          "deleted",
+          "affectedNoteCount"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -602,6 +1404,36 @@
             "description": "Ordered blocks to create in the new note. Omit to create the note without blocks."
           }
         }
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "blockIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        },
+        "required": [
+          "noteId",
+          "version",
+          "blockIds"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -695,6 +1527,27 @@
           "noteId",
           "expectedVersion"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "noteId",
+          "version"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -775,6 +1628,33 @@
           "noteId",
           "expectedVersion"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "blockId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "noteId",
+          "version",
+          "blockId"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -862,6 +1742,33 @@
           "blockId",
           "expectedVersion"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "blockId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "noteId",
+          "version",
+          "blockId"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -907,6 +1814,27 @@
           "expectedVersion",
           "tagIds"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "noteId",
+          "version"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -946,6 +1874,27 @@
           "expectedVersion",
           "isFavorite"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "noteId",
+          "version"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -985,6 +1934,27 @@
           "expectedVersion",
           "isPinned"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "noteId",
+          "version"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1034,6 +2004,27 @@
           "expectedVersion",
           "variant"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "noteId",
+          "version"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1075,6 +2066,33 @@
           "expectedVersion",
           "linkedNoteId"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "linkedNoteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "noteId",
+          "version",
+          "linkedNoteId"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1116,6 +2134,33 @@
           "expectedVersion",
           "linkedNoteId"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "linkedNoteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "noteId",
+          "version",
+          "linkedNoteId"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1156,6 +2201,33 @@
           "expectedVersion",
           "example"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "exampleIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "noteId",
+          "version",
+          "exampleIndex"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1202,6 +2274,33 @@
           "example",
           "exampleIndex"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "exampleIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "noteId",
+          "version",
+          "exampleIndex"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1242,6 +2341,38 @@
           "expectedVersion",
           "exampleIndex"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "exampleIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "noteId",
+          "version",
+          "exampleIndex",
+          "deleted"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1289,6 +2420,50 @@
           "title",
           "href"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "link": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "title": {
+                "type": "string"
+              },
+              "href": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "href"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "noteId",
+          "version",
+          "link"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1329,6 +2504,38 @@
           "expectedVersion",
           "linkId"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "linkId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "noteId",
+          "version",
+          "linkId",
+          "deleted"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1369,6 +2576,38 @@
           "expectedVersion",
           "blockId"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "blockId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "noteId",
+          "version",
+          "blockId",
+          "deleted"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1414,6 +2653,36 @@
           "expectedVersion",
           "blockIds"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "blockIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        },
+        "required": [
+          "noteId",
+          "version",
+          "blockIds"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1448,6 +2717,27 @@
           "noteId",
           "expectedVersion"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "noteId",
+          "version"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1482,6 +2772,27 @@
           "noteId",
           "expectedVersion"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "noteId",
+          "version"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1516,6 +2827,26 @@
           "noteId",
           "expectedVersion"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "noteId",
+          "deleted"
+        ],
+        "additionalProperties": false
       }
     },
     {
@@ -1544,6 +2875,21 @@
         "required": [
           "expectedStateToken"
         ]
+      },
+      "outputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "deletedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "deletedCount"
+        ],
+        "additionalProperties": false
       }
     }
   ]

@@ -1,7 +1,7 @@
-import { requireMcpAuth } from '@better-auth/mcp';
+import { protectWithBetterAuth } from '@nox/mcp/better-auth';
 import { z } from 'zod';
 
-import { deleteRemoteAccount, DESKTOP_SCOPE, revokeAiAccess, type NoteXAuth } from './auth.js';
+import { deleteRemoteAccount, DESKTOP_SCOPE, isAccessTokenActive, revokeAiAccess, type NoteXAuth } from './auth.js';
 import type { BridgeRegistry } from './bridge/registry.js';
 import type { BackendConfig } from './config.js';
 import type { BackendDatabase } from './database.js';
@@ -47,7 +47,7 @@ export function createDesktopApi(
   registry: BridgeRegistry,
   desktopClientId: string,
 ): (request: Request) => Promise<Response> {
-  return requireMcpAuth(
+  return protectWithBetterAuth(
     auth,
     async (request, claims) => {
       try {
@@ -99,7 +99,7 @@ export function createDesktopApi(
         }
 
         if (request.method === 'POST' && pathname === '/v1/desktop/revoke-ai-access') {
-          await revokeAiAccess(auth, userId, desktopClientId);
+          await revokeAiAccess(auth, userId, desktopClientId, database);
           return json({ success: true });
         }
 
@@ -117,6 +117,7 @@ export function createDesktopApi(
     },
     {
       resource: config.mcpUrl,
+      isActive: (request, claims) => isAccessTokenActive(auth, database, request, claims),
       requiredScopes: [DESKTOP_SCOPE],
       challengeScopes: [DESKTOP_SCOPE],
     },

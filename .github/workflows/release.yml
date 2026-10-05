@@ -58,6 +58,8 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm ci
+      - name: Install NoteX MCP contract dependencies
+        run: npm ci --prefix packages/notex-mcp-contract
 
       - name: Verify Tauri updater signing secret
         shell: pwsh

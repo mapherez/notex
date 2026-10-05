@@ -1,19 +1,6 @@
-import type { BridgeError, BridgeErrorCode } from '@notex/mcp-contract';
+import { bridgeErrorMessages, type BridgeError, type BridgeErrorCode } from '@notex/mcp-contract';
 import { z } from 'zod';
-
-const publicMessages: Record<BridgeErrorCode, string> = {
-  USER_NOT_LOGGED_IN: 'User not logged in',
-  NOTEX_OFFLINE: 'NoteX is offline',
-  FORBIDDEN: 'The requested operation is not allowed',
-  NOT_FOUND: 'The requested item was not found',
-  READ_ONLY_TRASH: 'Notes in trash are read-only',
-  CONFLICT: 'The note has changed; refresh it before trying again',
-  LOCAL_EDITS_PENDING: 'The note has unsaved local edits',
-  INVALID_INPUT: 'Invalid input',
-  UNSUPPORTED_CONTENT: 'The content contains unsupported elements',
-  TIMEOUT: 'NoteX did not respond in time',
-  INTERNAL: 'An internal error occurred',
-};
+import { McpError } from '@nox/mcp/contract';
 
 export class PublicBridgeError extends Error {
   readonly code: BridgeErrorCode;
@@ -21,7 +8,7 @@ export class PublicBridgeError extends Error {
   readonly currentVersion?: number;
 
   constructor(code: BridgeErrorCode, options: { retryable?: boolean; currentVersion?: number; message?: string } = {}) {
-    super(options.message ?? publicMessages[code]);
+    super(options.message ?? bridgeErrorMessages[code]);
     this.name = 'PublicBridgeError';
     this.code = code;
     this.retryable = options.retryable ?? false;
@@ -40,6 +27,10 @@ export class PublicBridgeError extends Error {
 
 export function asPublicBridgeError(error: unknown): PublicBridgeError {
   if (error instanceof PublicBridgeError) return error;
+  if (error instanceof McpError) {
+    const code = error.code === 'CANCELLED' || error.code === 'APP_OFFLINE' ? 'NOTEX_OFFLINE' : error.code;
+    return new PublicBridgeError(code in bridgeErrorMessages ? code as BridgeErrorCode : 'INTERNAL', { retryable: error.retryable });
+  }
   if (error instanceof z.ZodError) return new PublicBridgeError('INVALID_INPUT');
   return new PublicBridgeError('INTERNAL');
 }

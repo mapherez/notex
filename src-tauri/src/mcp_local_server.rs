@@ -1,6 +1,4 @@
 use std::{
-    collections::HashSet,
-    future::Future,
     net::{Ipv4Addr, SocketAddr},
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -17,19 +15,13 @@ use axum::{
     Router,
 };
 use rmcp::{
-    model::{
-        CallToolRequestParams, CallToolResponse, CallToolResult, ContentBlock, Implementation,
-        ListToolsResult, PaginatedRequestParams, ServerCapabilities, ServerInfo, Tool,
-        ToolAnnotations,
-    },
-    service::{RequestContext, RoleServer},
+    model::{CallToolResult, ContentBlock, Tool},
     transport::streamable_http_server::{
         session::never::NeverSessionManager, StreamableHttpServerConfig, StreamableHttpService,
     },
-    ErrorData, ServerHandler,
 };
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Map, Value};
+use serde::Serialize;
+use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Runtime, State};
 use tokio::{net::TcpListener, sync::Mutex, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
@@ -41,10 +33,7 @@ use crate::mcp_request_broker::{
 const LOCAL_STATE_EVENT: &str = "notex://mcp-local-state";
 const TOOL_MANIFEST_JSON: &str =
     include_str!("../../packages/notex-mcp-contract/generated/tool-manifest.json");
-const TOOL_MANIFEST_SCHEMA_VERSION: u8 = 1;
-const BRIDGE_PROTOCOL_VERSION: &str = "1.0";
-const EXPECTED_TOOL_COUNT: usize = 34;
-const MAX_REQUEST_BODY_BYTES: usize = 2 * 1024 * 1024;
+const MAX_REQUEST_BODY_BYTES: usize = nox_mcp::MAX_PAYLOAD_BYTES;
 const MIN_PORT: u16 = 1024;
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
@@ -260,7 +249,11 @@ impl LocalMcpManager {
             cancellation: cancellation.clone(),
         };
         let service = StreamableHttpService::new(
-            move || Ok::<_, std::io::Error>(handler.clone()),
+            move || {
+                let mut server = nox_mcp::McpServer::new("NoteX".into(), env!("CARGO_PKG_VERSION").into(), handler.tools.clone(), handler.clone(), nox_mcp::ServerOptions { app_id: "notex".into(), ..Default::default() }).map_err(std::io::Error::other)?;
+                server.instructions = "Read and update notes in the open NoteX desktop application.".into();
+                Ok::<_, std::io::Error>(server)
+            },
             NeverSessionManager::default().into(),
             StreamableHttpServerConfig::default()
                 .with_legacy_session_mode(false)
@@ -418,52 +411,17 @@ impl<R: Runtime> Clone for NoteXMcpHandler<R> {
     }
 }
 
-impl<R: Runtime> ServerHandler for NoteXMcpHandler<R> {
-    fn get_info(&self) -> ServerInfo {
-        ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
-            .with_server_info(Implementation::new("NoteX", env!("CARGO_PKG_VERSION")))
-            .with_instructions("Read and update notes in the open NoteX desktop application.")
-    }
-
-    fn list_tools(
-        &self,
-        _request: Option<PaginatedRequestParams>,
-        _context: RequestContext<RoleServer>,
-    ) -> impl Future<Output = Result<ListToolsResult, ErrorData>> + Send + '_ {
-        std::future::ready(Ok(ListToolsResult::with_all_items(
-            self.tools.as_ref().clone(),
-        )))
-    }
-
-    fn get_tool(&self, name: &str) -> Option<Tool> {
-        self.tools.iter().find(|tool| tool.name == name).cloned()
-    }
-
-    async fn call_tool(
-        &self,
-        request: CallToolRequestParams,
-        _context: RequestContext<RoleServer>,
-    ) -> Result<CallToolResponse, ErrorData> {
-        if self.cancellation.is_cancelled() || !self.renderer_ready.load(Ordering::Acquire) {
-            return Ok(tool_error(
-                "NOTEX_OFFLINE",
-                "NoteX is not ready to handle MCP requests.",
-            )
-            .into());
+impl<R: Runtime> nox_mcp::Executor for NoteXMcpHandler<R> {
+    async fn execute(&self, name: String, input: Value, context: nox_mcp::ExecutionContext) -> CallToolResult {
+        let cancellation = context.cancellation;
+        if self.cancellation.is_cancelled() || cancellation.is_cancelled() || !self.renderer_ready.load(Ordering::Acquire) {
+            return tool_error("NOTEX_OFFLINE", "NoteX is not ready to handle MCP requests.");
         }
-        if self.get_tool(request.name.as_ref()).is_none() {
-            return Err(ErrorData::invalid_params("Unknown NoteX tool.", None));
+        let future = self.broker.dispatch(&self.app, name, input);
+        tokio::select! {
+            response = future => renderer_response(response),
+            _ = cancellation.cancelled() => tool_error("NOTEX_OFFLINE", "The MCP request was cancelled."),
         }
-
-        let response = self
-            .broker
-            .dispatch(
-                &self.app,
-                request.name.into_owned(),
-                Value::Object(request.arguments.unwrap_or_default()),
-            )
-            .await;
-        Ok(renderer_response(response).into())
     }
 }
 
@@ -487,7 +445,7 @@ fn renderer_response(
                     "retryable": error.retryable,
                     "currentVersion": error.current_version,
                 }));
-                result.content = vec![ContentBlock::text(error.message)];
+                result.content = vec![ContentBlock::text(result.structured_content.as_ref().unwrap().to_string())];
                 result
             },
             None => tool_error("INTERNAL", "An internal error occurred."),
@@ -516,70 +474,12 @@ fn tool_error(code: &str, message: &str) -> CallToolResult {
         "code": code,
         "message": message,
     }));
-    result.content = vec![ContentBlock::text(message.to_string())];
+    result.content = vec![ContentBlock::text(result.structured_content.as_ref().unwrap().to_string())];
     result
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ToolManifest {
-    schema_version: u8,
-    protocol_version: String,
-    tools: Vec<ToolManifestEntry>,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ToolManifestEntry {
-    name: String,
-    title: String,
-    description: String,
-    input_schema: Map<String, Value>,
-    annotations: ToolManifestAnnotations,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ToolManifestAnnotations {
-    read_only_hint: bool,
-    destructive_hint: bool,
-    idempotent_hint: bool,
-    open_world_hint: bool,
-}
-
 fn load_tools() -> Result<Vec<Tool>, LocalMcpError> {
-    let manifest: ToolManifest =
-        serde_json::from_str(TOOL_MANIFEST_JSON).map_err(|_| LocalMcpError::invalid_manifest())?;
-    if manifest.schema_version != TOOL_MANIFEST_SCHEMA_VERSION
-        || manifest.protocol_version != BRIDGE_PROTOCOL_VERSION
-        || manifest.tools.len() != EXPECTED_TOOL_COUNT
-    {
-        return Err(LocalMcpError::invalid_manifest());
-    }
-
-    let mut names = HashSet::with_capacity(manifest.tools.len());
-    manifest
-        .tools
-        .into_iter()
-        .map(|entry| {
-            if entry.name.is_empty()
-                || entry.name.len() > 64
-                || !names.insert(entry.name.clone())
-                || entry.input_schema.get("type") != Some(&Value::String("object".to_string()))
-            {
-                return Err(LocalMcpError::invalid_manifest());
-            }
-
-            let annotations = ToolAnnotations::new()
-                .read_only(entry.annotations.read_only_hint)
-                .destructive(entry.annotations.destructive_hint)
-                .idempotent(entry.annotations.idempotent_hint)
-                .open_world(entry.annotations.open_world_hint);
-            Ok(Tool::new(entry.name, entry.description, entry.input_schema)
-                .with_title(entry.title)
-                .with_annotations(annotations))
-        })
-        .collect()
+    nox_mcp::load_tools(TOOL_MANIFEST_JSON).map_err(|_| LocalMcpError::invalid_manifest())
 }
 
 async fn reject_browser_origin(request: Request<Body>, next: Next) -> Response {
@@ -639,7 +539,7 @@ mod tests {
     #[test]
     fn conflict_preserves_recovery_metadata() {
         let result = renderer_response(Ok(DesktopResponse {
-            request_id: "local-mcp-test".into(), ok: false, result: None,
+            request_id: "local-mcp-test".into(), ok: false, result: None, generation: None,
             error: Some(crate::mcp_request_broker::DesktopBridgeError {
                 code: "CONFLICT".into(), message: "Conflict".into(),
                 retryable: true, current_version: Some(7),

@@ -33,12 +33,11 @@ async function respondToMcpRequest(request: McpBridgeRequest, appVersion: string
   let response: McpBridgeResponse;
   try {
     // A renderer event may arrive after stop or timeout; never execute stale local work.
-    if (request.requestId.startsWith('local-mcp-') && !(await invoke<boolean>(
-      'notex_local_mcp_request_pending', { requestId: request.requestId },
-    ))) {
+    const isActive = () => invoke<boolean>('notex_mcp_request_pending', { requestId: request.requestId, generation: request.generation ?? null });
+    if (!(await isActive())) {
       return;
     }
-    response = await dispatchMcpCommand(request, appVersion);
+    response = await dispatchMcpCommand({ ...request, isActive }, appVersion);
   } catch {
     response = {
       requestId: request.requestId,
@@ -52,7 +51,7 @@ async function respondToMcpRequest(request: McpBridgeRequest, appVersion: string
   }
 
   try {
-    await invoke<void>('notex_mcp_respond', { response });
+    await invoke<void>('notex_mcp_respond', { response: { ...response, generation: request.generation } });
   } catch {
     // The transport owns failure and cancellation; renderer responses are never replayed.
   }

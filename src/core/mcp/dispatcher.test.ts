@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CommandName, CommandOutput } from '@notex/mcp-contract';
+import { BRIDGE_PROTOCOL_VERSION, type CommandName, type CommandOutput } from '@notex/mcp-contract';
 import type { Note, NoteBlock } from '../models/models';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
 import { useNotesStore } from '../../store/useNotesStore';
@@ -57,6 +57,11 @@ const trashNote = createNote({
 });
 
 describe('dispatchMcpCommand', () => {
+  it('rejects invalidated remote work before a mutation', async () => {
+    const response = await dispatchMcpCommand({ ...request('create_note', { collectionId: null }), generation: 'old-connection', isActive: async () => false }, 'test');
+    expect(response).toMatchObject({ ok: false, error: { code: 'TIMEOUT', retryable: false } });
+    expect(invokeMock).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     invokeMock.mockReset();
     useNotesStore.setState({ isReady: true, notes: [activeNote, trashNote] });
@@ -111,7 +116,7 @@ describe('dispatchMcpCommand', () => {
     const status = successResult<'notex_status'>(
       await dispatchMcpCommand(request('notex_status', {}), '2.1.0'),
     );
-    expect(status).toEqual({ state: 'online', appVersion: '2.1.0', protocolVersion: '1.0' });
+    expect(status).toEqual({ state: 'online', appVersion: '2.1.0', protocolVersion: BRIDGE_PROTOCOL_VERSION });
 
     const expired = await dispatchMcpCommand(
       { ...request('search_notes', {}), deadlineAt: '2020-01-01T00:00:00.000Z' },

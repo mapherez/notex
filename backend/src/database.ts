@@ -86,16 +86,31 @@ export class BackendDatabase {
         updated_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS notex_ai_revocations (
+        user_id TEXT PRIMARY KEY,
+        revoked_at INTEGER NOT NULL
+      );
+
       INSERT OR IGNORE INTO notex_backend_migrations(version, applied_at)
       VALUES (1, CURRENT_TIMESTAMP);
 
       INSERT OR IGNORE INTO notex_backend_migrations(version, applied_at)
       VALUES (2, CURRENT_TIMESTAMP);
+      INSERT OR IGNORE INTO notex_backend_migrations(version, applied_at)
+      VALUES (3, CURRENT_TIMESTAMP);
     `);
   }
 
   close(): void {
     this.raw.close();
+  }
+
+  revokeIssuedAiTokens(userId: string): void {
+    this.raw.prepare('INSERT INTO notex_ai_revocations(user_id, revoked_at) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET revoked_at = excluded.revoked_at').run(userId, Math.floor(Date.now() / 1000));
+  }
+
+  aiRevokedAt(userId: string): number | undefined {
+    return (this.raw.prepare('SELECT revoked_at FROM notex_ai_revocations WHERE user_id = ?').get(userId) as { revoked_at: number } | undefined)?.revoked_at;
   }
 
   createRegistrationIntent(userCode: string, ttlSeconds = 600): { token: string; expiresAt: number } {
@@ -300,6 +315,7 @@ export class BackendDatabase {
 
   deleteAccountMetadata(userId: string): void {
     this.raw.transaction(() => {
+      this.raw.prepare('DELETE FROM notex_ai_revocations WHERE user_id = ?').run(userId);
       this.raw.prepare('DELETE FROM notex_desktop_sessions WHERE user_id = ?').run(userId);
       this.raw.prepare('DELETE FROM notex_desktop_activations WHERE user_id = ?').run(userId);
       this.raw.prepare('DELETE FROM notex_pending_registrations WHERE user_id = ?').run(userId);

@@ -5,6 +5,10 @@ FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS build
 WORKDIR /app
 ENV npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY package.json package-lock.json ./
 COPY packages/notex-mcp-contract/package.json packages/notex-mcp-contract/package-lock.json ./packages/notex-mcp-contract/
 RUN npm ci --prefix packages/notex-mcp-contract && npm ci

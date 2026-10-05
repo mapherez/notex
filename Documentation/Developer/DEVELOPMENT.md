@@ -5,7 +5,7 @@ the main README. For an overview of the app, see the [project README](../../READ
 
 ## Requirements
 
-- Node.js 24 and npm.
+- Node.js 24, npm, and Git (for the NoX MCP dependency).
 - Rust 1.88+ and the Tauri prerequisites for your platform when working on desktop.
 
 ## Local development
@@ -14,6 +14,25 @@ Install dependencies:
 
 ```bash
 npm install
+npm --prefix packages/notex-mcp-contract ci
+```
+
+NoX MCP is installed from `https://github.com/mapherez/nox-mcp`; its TypeScript
+build runs automatically during installation. The NoteX MCP contract remains
+in `packages/notex-mcp-contract` and is built by the NoteX build scripts.
+The desktop crate uses the same GitHub repository through Cargo.
+
+To install or update the TypeScript dependency, run this command in the repository
+root, `packages/notex-mcp-contract`, and `backend`:
+
+```bash
+npm install "git+https://github.com/mapherez/nox-mcp.git"
+```
+
+To update the Rust dependency, run from the repository root:
+
+```bash
+cargo update -p nox-mcp --manifest-path src-tauri/Cargo.toml
 ```
 
 Run the browser frontend:

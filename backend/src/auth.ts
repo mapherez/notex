@@ -220,7 +220,8 @@ export async function ensureDesktopOAuthClient(auth: NoteXAuth, database: Backen
   return clientId;
 }
 
-export async function revokeAiAccess(auth: NoteXAuth, userId: string, desktopClientId: string): Promise<void> {
+export async function revokeAiAccess(auth: NoteXAuth, userId: string, desktopClientId: string, database: BackendDatabase): Promise<void> {
+  database.revokeIssuedAiTokens(userId);
   const { adapter } = await auth.$context;
   const where = [
     { field: 'userId', value: userId },
@@ -229,6 +230,29 @@ export async function revokeAiAccess(auth: NoteXAuth, userId: string, desktopCli
   await adapter.deleteMany({ model: 'oauthAccessToken', where });
   await adapter.deleteMany({ model: 'oauthRefreshToken', where });
   await adapter.deleteMany({ model: 'oauthConsent', where });
+}
+
+/** JWT signatures do not reflect revocation. Require a live grant and reject tokens issued before revocation even after a later consent. */
+export async function isAccessTokenActive(auth: NoteXAuth, database: BackendDatabase, request: Request, claims: Record<string, unknown>): Promise<boolean> {
+  const userId = typeof claims.notex_user_id === 'string' ? claims.notex_user_id : claims.sub;
+  const clientId = typeof claims.client_id === 'string' ? claims.client_id : claims.azp;
+  if (typeof userId !== 'string' || typeof clientId !== 'string' || !request.headers.get('authorization')?.startsWith('Bearer ')) return false;
+  const { adapter } = await auth.$context;
+  const user = await adapter.findOne({ model: 'user', where: [{ field: 'id', value: userId }] });
+  const client = await adapter.findOne<{ disabled: boolean }>({ model: 'oauthClient', where: [{ field: 'clientId', value: clientId }] });
+  if (!user || !client || client.disabled) return false;
+  const scopes = typeof claims.scope === 'string' ? claims.scope.split(/\s+/) : [];
+  const where = [{ field: 'userId', value: userId }, { field: 'clientId', value: clientId }];
+  if (scopes.includes(DESKTOP_SCOPE)) {
+    if (clientId !== database.getSetting('desktop_oauth_client_id')) return false;
+    const grants = await adapter.findMany<{ expiresAt: Date }>({ model: 'oauthRefreshToken', where });
+    return grants.some(grant => new Date(grant.expiresAt).getTime() > Date.now());
+  }
+  const revokedAt = database.aiRevokedAt(userId);
+  if (revokedAt !== undefined && (typeof claims.iat !== 'number' || claims.iat <= revokedAt)) return false;
+  const grant = await adapter.findOne<{ scopes: string[]; resources: string[] }>({ model: 'oauthConsent', where });
+  const resource = new URL('/mcp', (await auth.$context).baseURL).toString();
+  return Boolean(grant && grant.resources?.includes(resource) && scopes.every(scope => grant.scopes.includes(scope)));
 }
 
 export async function deleteRemoteAccount(auth: NoteXAuth, database: BackendDatabase, userId: string): Promise<void> {

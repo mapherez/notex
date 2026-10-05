@@ -120,7 +120,7 @@ describe('NoteX MCP contract', () => {
     expect(
       bridgeReadySchema.safeParse({
         type: 'ready',
-        protocolVersion: '2.0',
+        protocolVersion: '3.0',
         appVersion: '2.1.0',
       }).success,
     ).toBe(false);
