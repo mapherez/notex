@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "build:contract": "npm --prefix ../packages/nox-mcp/typescript run build && npm --prefix ../packages/notex-mcp-contract run build",
+    "build:contract": "npm --prefix ../packages/notex-mcp-contract run build",
     "prebuild": "npm run build:contract",
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/main.ts",
@@ -18,7 +18,6 @@
     "simulate:desktop": "tsx src/simulator.ts"
   },
   "dependencies": {
-    "@nox/mcp": "file:../packages/nox-mcp/typescript",
     "@better-auth/cimd": "^1.7.2",
     "@better-auth/mcp": "^1.7.2",
     "@better-auth/oauth-provider": "^1.7.2",
@@ -26,6 +25,7 @@
     "@modelcontextprotocol/node": "^2.0.0",
     "@modelcontextprotocol/server": "^2.0.0",
     "@notex/mcp-contract": "file:../packages/notex-mcp-contract",
+    "@nox/mcp": "git+https://github.com/mapherez/nox-mcp.git",
     "better-auth": "^1.7.2",
     "better-sqlite3": "^12.6.2",
     "express": "^5.2.1",

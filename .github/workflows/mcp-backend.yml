@@ -6,7 +6,6 @@ on:
     paths:
       - "backend/**"
       - "packages/notex-mcp-contract/**"
-      - "packages/nox-mcp/**"
       - ".dockerignore"
       - "docker-compose.mcp.yml"
       - ".github/workflows/mcp-backend.yml"
@@ -16,7 +15,6 @@ on:
     paths:
       - "backend/**"
       - "packages/notex-mcp-contract/**"
-      - "packages/nox-mcp/**"
       - ".dockerignore"
       - "docker-compose.mcp.yml"
       - ".github/workflows/mcp-backend.yml"
@@ -44,8 +42,6 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: packages/notex-mcp-contract/package-lock.json
-      - name: Build NoX base
-        run: npm ci --prefix ../nox-mcp/typescript && npm run build --prefix ../nox-mcp/typescript
       - name: Install dependencies
         run: npm ci
       - name: Typecheck
@@ -69,8 +65,6 @@ jobs:
           cache-dependency-path: |
             backend/package-lock.json
             packages/notex-mcp-contract/package-lock.json
-      - name: Build NoX base
-        run: npm ci --prefix packages/nox-mcp/typescript && npm run build --prefix packages/nox-mcp/typescript
       - name: Install contract dependencies
         working-directory: packages/notex-mcp-contract
         run: npm ci

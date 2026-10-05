@@ -9,11 +9,8 @@ ENV npm_config_audit=false \
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 make g++ \
+    && apt-get install -y --no-install-recommends git ca-certificates python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
-
-COPY packages/nox-mcp/typescript ./packages/nox-mcp/typescript/
-RUN npm ci --prefix packages/nox-mcp/typescript && npm run build --prefix packages/nox-mcp/typescript
 
 COPY packages/notex-mcp-contract/package.json packages/notex-mcp-contract/package-lock.json ./packages/notex-mcp-contract/
 RUN npm ci --prefix packages/notex-mcp-contract
@@ -30,8 +27,7 @@ COPY backend/tsconfig.json ./backend/tsconfig.json
 COPY backend/src ./backend/src
 RUN npm run build --prefix backend \
     && npm prune --omit=dev --prefix backend \
-    && npm prune --omit=dev --prefix packages/notex-mcp-contract \
-    && npm prune --omit=dev --prefix packages/nox-mcp/typescript
+    && npm prune --omit=dev --prefix packages/notex-mcp-contract
 
 FROM node:24-bookworm-slim AS runtime
 
@@ -54,9 +50,6 @@ COPY --from=build --chown=notex:notex /app/backend/node_modules ./node_modules
 COPY --from=build --chown=notex:notex /app/packages/notex-mcp-contract/package.json /app/packages/notex-mcp-contract/package.json
 COPY --from=build --chown=notex:notex /app/packages/notex-mcp-contract/dist /app/packages/notex-mcp-contract/dist
 COPY --from=build --chown=notex:notex /app/packages/notex-mcp-contract/node_modules /app/packages/notex-mcp-contract/node_modules
-COPY --from=build --chown=notex:notex /app/packages/nox-mcp/typescript/package.json /app/packages/nox-mcp/typescript/package.json
-COPY --from=build --chown=notex:notex /app/packages/nox-mcp/typescript/dist /app/packages/nox-mcp/typescript/dist
-COPY --from=build --chown=notex:notex /app/packages/nox-mcp/typescript/node_modules /app/packages/nox-mcp/typescript/node_modules
 
 USER notex
 

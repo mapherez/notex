@@ -23,7 +23,7 @@
     "test": "vitest run src"
   },
   "dependencies": {
-    "@nox/mcp": "file:../nox-mcp/typescript",
+    "@nox/mcp": "git+https://github.com/mapherez/nox-mcp.git",
     "zod": "^4.6.0"
   },
   "devDependencies": {
