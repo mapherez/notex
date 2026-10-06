@@ -576,7 +576,45 @@ export type ToolAnnotations = {
 export type ToolMetadata = {
   title: string;
   description: string;
+  _meta: { cli: string };
   annotations: ToolAnnotations;
+};
+
+const toolCliAliases: Record<CommandName, string> = {
+  notex_status: 'status',
+  search_notes: 'search',
+  get_note: 'note get',
+  get_note_block: 'block get',
+  get_trash_status: 'trash status',
+  list_tags: 'tag list',
+  list_collections: 'collection list',
+  create_tag: 'tag create',
+  update_tag: 'tag update',
+  delete_tag: 'tag delete',
+  create_collection: 'collection create',
+  update_collection: 'collection update',
+  delete_collection: 'collection delete',
+  create_note: 'note create',
+  update_note_header: 'note update',
+  add_note_block: 'block add',
+  update_note_block: 'block update',
+  delete_note_block: 'block delete',
+  reorder_note_blocks: 'block reorder',
+  set_note_tags: 'note tags',
+  set_note_favorite: 'note favorite',
+  set_note_pinned: 'note pin',
+  set_note_thumbnail: 'note thumbnail',
+  add_linked_note: 'link-note add',
+  remove_linked_note: 'link-note remove',
+  add_note_example: 'example add',
+  update_note_example: 'example update',
+  delete_note_example: 'example delete',
+  add_note_link: 'link add',
+  delete_note_link: 'link delete',
+  move_note_to_trash: 'note trash',
+  restore_note: 'note restore',
+  delete_note_permanently: 'note purge',
+  clear_trash: 'trash clear',
 };
 
 const toolDescriptions: Record<CommandName, string> = {
@@ -642,6 +680,7 @@ export const toolMetadata = Object.fromEntries(
     {
       title: command.replaceAll('_', ' '),
       description: toolDescriptions[command],
+      _meta: { cli: toolCliAliases[command] },
       annotations: {
         readOnlyHint: commandScope[command] === 'notex:read',
         destructiveHint: destructiveCommands.has(command),

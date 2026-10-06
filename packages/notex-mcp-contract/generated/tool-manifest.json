@@ -7,6 +7,9 @@
       "scope": "notex:read",
       "title": "notex status",
       "description": "Check whether NoteX is ready to handle MCP requests.",
+      "_meta": {
+        "cli": "status"
+      },
       "annotations": {
         "readOnlyHint": true,
         "destructiveHint": false,
@@ -50,6 +53,9 @@
       "scope": "notex:read",
       "title": "search notes",
       "description": "Search NoteX notes by independent terms across note headers, blocks, tags, and collections, ranked by relevance.",
+      "_meta": {
+        "cli": "search"
+      },
       "annotations": {
         "readOnlyHint": true,
         "destructiveHint": false,
@@ -164,6 +170,9 @@
       "scope": "notex:read",
       "title": "get note",
       "description": "Read one NoteX note header and its ordered block summaries.",
+      "_meta": {
+        "cli": "note get"
+      },
       "annotations": {
         "readOnlyHint": true,
         "destructiveHint": false,
@@ -412,6 +421,9 @@
       "scope": "notex:read",
       "title": "get note block",
       "description": "Read the exact supported rich-text content of one NoteX note block.",
+      "_meta": {
+        "cli": "block get"
+      },
       "annotations": {
         "readOnlyHint": true,
         "destructiveHint": false,
@@ -519,6 +531,9 @@
       "scope": "notex:read",
       "title": "get trash status",
       "description": "Read the current trash count and state token required by clear_trash.",
+      "_meta": {
+        "cli": "trash status"
+      },
       "annotations": {
         "readOnlyHint": true,
         "destructiveHint": false,
@@ -560,6 +575,9 @@
       "scope": "notex:read",
       "title": "list tags",
       "description": "List existing NoteX tags. Use returned IDs in write tools.",
+      "_meta": {
+        "cli": "tag list"
+      },
       "annotations": {
         "readOnlyHint": true,
         "destructiveHint": false,
@@ -646,6 +664,9 @@
       "scope": "notex:read",
       "title": "list collections",
       "description": "List existing NoteX collections. Use returned IDs in write tools.",
+      "_meta": {
+        "cli": "collection list"
+      },
       "annotations": {
         "readOnlyHint": true,
         "destructiveHint": false,
@@ -732,6 +753,9 @@
       "scope": "notex:create",
       "title": "create tag",
       "description": "Create a NoteX tag with a name and optional palette color.",
+      "_meta": {
+        "cli": "tag create"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -837,6 +861,9 @@
       "scope": "notex:edit",
       "title": "update tag",
       "description": "Update selected fields of an existing NoteX tag.",
+      "_meta": {
+        "cli": "tag update"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -947,6 +974,9 @@
       "scope": "notex:delete",
       "title": "delete tag",
       "description": "Delete a NoteX tag and remove it from every note that uses it.",
+      "_meta": {
+        "cli": "tag delete"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
@@ -999,6 +1029,9 @@
       "scope": "notex:create",
       "title": "create collection",
       "description": "Create a NoteX collection with a name and optional palette color.",
+      "_meta": {
+        "cli": "collection create"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1104,6 +1137,9 @@
       "scope": "notex:edit",
       "title": "update collection",
       "description": "Update selected fields of an existing NoteX collection.",
+      "_meta": {
+        "cli": "collection update"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1214,6 +1250,9 @@
       "scope": "notex:delete",
       "title": "delete collection",
       "description": "Delete a NoteX collection and unassign every note that uses it.",
+      "_meta": {
+        "cli": "collection delete"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
@@ -1266,6 +1305,9 @@
       "scope": "notex:create",
       "title": "create note",
       "description": "Create a NoteX note, optionally with rich-text blocks and existing tags.",
+      "_meta": {
+        "cli": "note create"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1441,6 +1483,9 @@
       "scope": "notex:edit",
       "title": "update note header",
       "description": "Update selected inline-rich-text header fields using optimistic versioning.",
+      "_meta": {
+        "cli": "note update"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1555,6 +1600,9 @@
       "scope": "notex:edit",
       "title": "add note block",
       "description": "Append a rich-text block to a NoteX note using optimistic versioning.",
+      "_meta": {
+        "cli": "block add"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1662,6 +1710,9 @@
       "scope": "notex:edit",
       "title": "update note block",
       "description": "Replace selected block fields using optimistic versioning. Content is the complete new body.",
+      "_meta": {
+        "cli": "block update"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1776,6 +1827,9 @@
       "scope": "notex:edit",
       "title": "set note tags",
       "description": "Replace a NoteX note tag set with existing tag IDs using optimistic versioning.",
+      "_meta": {
+        "cli": "note tags"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1842,6 +1896,9 @@
       "scope": "notex:edit",
       "title": "set note favorite",
       "description": "Set the exact favorite state of a NoteX note using optimistic versioning.",
+      "_meta": {
+        "cli": "note favorite"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1902,6 +1959,9 @@
       "scope": "notex:edit",
       "title": "set note pinned",
       "description": "Set the exact pinned state of a NoteX note using optimistic versioning.",
+      "_meta": {
+        "cli": "note pin"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -1962,6 +2022,9 @@
       "scope": "notex:edit",
       "title": "set note thumbnail",
       "description": "Set the thumbnail variant of a NoteX note using optimistic versioning.",
+      "_meta": {
+        "cli": "note thumbnail"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -2032,6 +2095,9 @@
       "scope": "notex:edit",
       "title": "add linked note",
       "description": "Add one existing note to a NoteX note linked-note set using optimistic versioning.",
+      "_meta": {
+        "cli": "link-note add"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -2100,6 +2166,9 @@
       "scope": "notex:delete",
       "title": "remove linked note",
       "description": "Remove one note from a NoteX note linked-note set using optimistic versioning.",
+      "_meta": {
+        "cli": "link-note remove"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
@@ -2168,6 +2237,9 @@
       "scope": "notex:edit",
       "title": "add note example",
       "description": "Append one additional example to a NoteX note using optimistic versioning.",
+      "_meta": {
+        "cli": "example add"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -2235,6 +2307,9 @@
       "scope": "notex:edit",
       "title": "update note example",
       "description": "Replace one additional example by its current index using optimistic versioning.",
+      "_meta": {
+        "cli": "example update"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -2308,6 +2383,9 @@
       "scope": "notex:delete",
       "title": "delete note example",
       "description": "Delete one additional example by its current index using optimistic versioning.",
+      "_meta": {
+        "cli": "example delete"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
@@ -2380,6 +2458,9 @@
       "scope": "notex:edit",
       "title": "add note link",
       "description": "Add one HTTP or HTTPS related link to a NoteX note using optimistic versioning.",
+      "_meta": {
+        "cli": "link add"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -2471,6 +2552,9 @@
       "scope": "notex:delete",
       "title": "delete note link",
       "description": "Delete one related link by its stable ID using optimistic versioning.",
+      "_meta": {
+        "cli": "link delete"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
@@ -2543,6 +2627,9 @@
       "scope": "notex:delete",
       "title": "delete note block",
       "description": "Permanently delete one block from an active NoteX note using optimistic versioning.",
+      "_meta": {
+        "cli": "block delete"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
@@ -2615,6 +2702,9 @@
       "scope": "notex:edit",
       "title": "reorder note blocks",
       "description": "Apply a complete ordered list of block IDs to a NoteX note using optimistic versioning.",
+      "_meta": {
+        "cli": "block reorder"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -2690,6 +2780,9 @@
       "scope": "notex:edit",
       "title": "move note to trash",
       "description": "Move an active NoteX note to trash using optimistic versioning.",
+      "_meta": {
+        "cli": "note trash"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
@@ -2745,6 +2838,9 @@
       "scope": "notex:edit",
       "title": "restore note",
       "description": "Restore a NoteX note from trash using optimistic versioning.",
+      "_meta": {
+        "cli": "note restore"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,
@@ -2800,6 +2896,9 @@
       "scope": "notex:delete",
       "title": "delete note permanently",
       "description": "Permanently delete one NoteX note that is already in trash.",
+      "_meta": {
+        "cli": "note purge"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
@@ -2854,6 +2953,9 @@
       "scope": "notex:delete",
       "title": "clear trash",
       "description": "Permanently delete the complete NoteX trash if its state has not changed.",
+      "_meta": {
+        "cli": "trash clear"
+      },
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
