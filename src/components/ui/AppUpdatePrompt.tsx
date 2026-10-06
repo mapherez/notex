@@ -1,4 +1,5 @@
 import { RefreshCw } from 'lucide-react';
+import { getIdentifier } from '@tauri-apps/api/app';
 import { useEffect, useRef } from 'react';
 import { updaterSettings } from '../../config/appSettings';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -22,11 +23,25 @@ export function AppUpdatePrompt({ enabled }: { enabled: boolean }) {
       return;
     }
 
-    checkStartedRef.current = true;
-    void check()
+    let cancelled = false;
+    void getIdentifier()
+      .then((identifier) => {
+        if (cancelled || checkStartedRef.current) {
+          return;
+        }
+        checkStartedRef.current = true;
+        if (identifier === 'com.mapherez.notex.validation') {
+          return;
+        }
+        return check();
+      })
       .catch((error) => {
-        pushToast(error instanceof Error ? error.message : t('updater.checkFailed'), 'warning');
+        if (!cancelled) {
+          pushToast(error instanceof Error ? error.message : t('updater.checkFailed'), 'warning');
+        }
       });
+
+    return () => { cancelled = true; };
   }, [check, enabled, pushToast, t]);
 
   if (!updateInfo) {
