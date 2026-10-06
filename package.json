@@ -27,7 +27,7 @@
     "@chenglou/pretext": "^0.0.7",
     "@floating-ui/dom": "^1.7.6",
     "@notex/mcp-contract": "file:packages/notex-mcp-contract",
-    "@nox/mcp": "git+https://github.com/mapherez/nox-mcp.git",
+    "@nox/mcp": "https://github.com/mapherez/nox-mcp/releases/download/v0.4.1/nox-mcp.tgz",
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-process": "^2.3.1",
