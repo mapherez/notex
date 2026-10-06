@@ -23,7 +23,7 @@
     "test": "vitest run src"
   },
   "dependencies": {
-    "@nox/mcp": "git+https://github.com/mapherez/nox-mcp.git",
+    "@nox/mcp": "https://github.com/mapherez/nox-mcp/releases/download/v0.4.1/nox-mcp.tgz",
     "zod": "^4.6.0"
   },
   "devDependencies": {

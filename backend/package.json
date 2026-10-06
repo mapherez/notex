@@ -25,7 +25,7 @@
     "@modelcontextprotocol/node": "^2.0.0",
     "@modelcontextprotocol/server": "^2.0.0",
     "@notex/mcp-contract": "file:../packages/notex-mcp-contract",
-    "@nox/mcp": "git+https://github.com/mapherez/nox-mcp.git",
+    "@nox/mcp": "https://github.com/mapherez/nox-mcp/releases/download/v0.4.1/nox-mcp.tgz",
     "better-auth": "^1.7.2",
     "better-sqlite3": "^12.6.2",
     "express": "^5.2.1",
