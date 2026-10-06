@@ -1,3 +1,4 @@
+mod credential_store;
 mod external_links;
 mod google_auth;
 mod library_context;

@@ -99,6 +99,11 @@ npm run tauri:build
 Installers and updater bundles are generated under
 `src-tauri/target/release/bundle/`.
 
+Apple Silicon validation uses a separate macOS CI workflow and an explicit
+`aarch64-apple-darwin` target. It produces an ad hoc signed app and DMG, without
+publishing a release. See [macOS validation](MACOS_VALIDATION.md) for the local
+build command, isolated validation identifier and required functional smoke test.
+
 ## Architecture overview
 
 - React 18, TypeScript, Vite, React Router, and Zustand.

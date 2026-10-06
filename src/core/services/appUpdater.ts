@@ -1,6 +1,6 @@
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke, isTauri } from '@tauri-apps/api/core';
-import { exit } from '@tauri-apps/plugin-process';
+import { exit, relaunch } from '@tauri-apps/plugin-process';
 import { check, type DownloadEvent, type Update } from '@tauri-apps/plugin-updater';
 
 export type AppUpdateInfo = {
@@ -62,7 +62,7 @@ export async function installAppUpdate(
     });
   });
 
-  await relaunchWithLocalDataReset();
+  await relaunchAfterUpdate();
 }
 
 export async function closeAppUpdate(update: Update) {
@@ -77,7 +77,13 @@ async function getCurrentAppVersion() {
   }
 }
 
-async function relaunchWithLocalDataReset() {
-  await invoke('notex_prepare_update_relaunch_with_local_data_reset');
-  await exit(0);
+async function relaunchAfterUpdate() {
+  const strategy = await invoke<'exit' | 'relaunch'>('notex_prepare_update_relaunch_with_local_data_reset');
+  if (strategy === 'exit') {
+    await exit(0);
+  } else if (strategy === 'relaunch') {
+    await relaunch();
+  } else {
+    throw new Error('Unknown update relaunch strategy');
+  }
 }

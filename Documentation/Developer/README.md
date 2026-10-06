@@ -6,6 +6,7 @@ They are not end-user guides.
 ## Application
 
 - [Development setup and commands](DEVELOPMENT.md)
+- [macOS Apple Silicon validation and release gate](MACOS_VALIDATION.md)
 - [Architecture constraints](ARCHITECTURE_CONSTRAINTS.md)
 - [Data model](DATA_MODEL.md)
 - [Layout](LAYOUT.md)

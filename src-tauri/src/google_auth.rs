@@ -1,5 +1,6 @@
 //! Google authorization is independent of the hosted MCP service. Refresh
 //! tokens never cross IPC; only short-lived access tokens reach the renderer.
+use crate::credential_store::{CredentialError, NativeSecretStore, SecretStore};
 use crate::library_context::{self, Account};
 use axum::{
     extract::{Query, State},
@@ -217,33 +218,32 @@ async fn profile(access_token: &str) -> Result<Account, String> {
     })
 }
 
-#[cfg(target_os = "windows")]
-fn credential(account: &str) -> Result<keyring::Entry, String> {
-    keyring::Entry::new("com.mapherez.notex.google", account)
-        .map_err(|_| "GOOGLE_CREDENTIAL_STORAGE_ERROR".into())
-}
-#[cfg(target_os = "windows")]
 fn save_refresh(account: &str, token: &str) -> Result<(), String> {
-    credential(account)?
-        .set_password(token)
-        .map_err(|_| "GOOGLE_CREDENTIAL_STORAGE_ERROR".into())
+    save_refresh_with(&NativeSecretStore, account, token)
 }
-#[cfg(target_os = "windows")]
 fn read_refresh(account: &str) -> Result<String, String> {
-    credential(account)?
-        .get_password()
-        .map_err(|error| match error {
-            keyring::Error::NoEntry => "GOOGLE_REAUTHORIZE".into(),
-            _ => "GOOGLE_CREDENTIAL_STORAGE_ERROR".into(),
-        })
+    read_refresh_with(&NativeSecretStore, account)
 }
-#[cfg(not(target_os = "windows"))]
-fn save_refresh(_: &str, _: &str) -> Result<(), String> {
-    Err("GOOGLE_SECURE_STORAGE_UNAVAILABLE".into())
+
+fn save_refresh_with(store: &dyn SecretStore, account: &str, token: &str) -> Result<(), String> {
+    store
+        .save("com.mapherez.notex.google", account, token)
+        .map_err(credential_error)
 }
-#[cfg(not(target_os = "windows"))]
-fn read_refresh(_: &str) -> Result<String, String> {
-    Err("GOOGLE_SECURE_STORAGE_UNAVAILABLE".into())
+
+fn read_refresh_with(store: &dyn SecretStore, account: &str) -> Result<String, String> {
+    store
+        .load("com.mapherez.notex.google", account)
+        .map_err(credential_error)?
+        .ok_or_else(|| "GOOGLE_REAUTHORIZE".into())
+}
+
+fn credential_error(error: CredentialError) -> String {
+    match error {
+        CredentialError::Unavailable => "GOOGLE_SECURE_STORAGE_UNAVAILABLE",
+        CredentialError::Storage => "GOOGLE_CREDENTIAL_STORAGE_ERROR",
+    }
+    .into()
 }
 
 fn cache(auth: &GoogleAuth, id: &str, token: &TokenResponse) -> Result<(), String> {
@@ -470,6 +470,40 @@ pub async fn notex_google_access_token(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::credential_store::tests::FakeSecretStore;
+
+    #[test]
+    fn refresh_credentials_round_trip_and_isolate_accounts_and_services() {
+        let store = FakeSecretStore::default();
+        assert_eq!(
+            read_refresh_with(&store, "first").unwrap_err(),
+            "GOOGLE_REAUTHORIZE"
+        );
+        save_refresh_with(&store, "first", "first-token").unwrap();
+        save_refresh_with(&store, "second", "second-token").unwrap();
+        assert_eq!(read_refresh_with(&store, "first").unwrap(), "first-token");
+        assert_eq!(read_refresh_with(&store, "second").unwrap(), "second-token");
+        assert_eq!(store.load("com.mapherez.notex.mcp", "first").unwrap(), None);
+    }
+
+    #[test]
+    fn refresh_storage_failures_keep_existing_error_codes() {
+        for (failure, expected) in [
+            (CredentialError::Storage, "GOOGLE_CREDENTIAL_STORAGE_ERROR"),
+            (
+                CredentialError::Unavailable,
+                "GOOGLE_SECURE_STORAGE_UNAVAILABLE",
+            ),
+        ] {
+            let store = FakeSecretStore::failing(failure);
+            assert_eq!(
+                save_refresh_with(&store, "account", "secret").unwrap_err(),
+                expected
+            );
+            assert_eq!(read_refresh_with(&store, "account").unwrap_err(), expected);
+        }
+    }
+
     #[test]
     fn token_errors_identify_configuration_failures_without_returning_raw_responses() {
         assert_eq!(

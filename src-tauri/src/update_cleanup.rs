@@ -1,17 +1,46 @@
+#[cfg(any(target_os = "windows", test))]
 use std::path::PathBuf;
+#[cfg(target_os = "windows")]
 use std::process::Command;
 
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
+#[cfg(target_os = "windows")]
+use tauri::Manager;
 
-#[tauri::command]
-pub fn notex_prepare_update_relaunch_with_local_data_reset(app: AppHandle) -> Result<(), String> {
-    let local_data_dir = app.path().app_local_data_dir().map_err(to_string)?;
-    let roaming_data_dir = app.path().app_data_dir().map_err(to_string)?;
-    ensure_distinct_data_dirs(&local_data_dir, &roaming_data_dir)?;
-
-    schedule_clean_relaunch(local_data_dir)
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum UpdateRelaunchStrategy {
+    Exit,
+    Relaunch,
 }
 
+fn relaunch_strategy_for_os(os: &str) -> UpdateRelaunchStrategy {
+    match os {
+        "windows" => UpdateRelaunchStrategy::Exit,
+        _ => UpdateRelaunchStrategy::Relaunch,
+    }
+}
+
+#[tauri::command]
+pub fn notex_prepare_update_relaunch_with_local_data_reset(
+    app: AppHandle,
+) -> Result<UpdateRelaunchStrategy, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let local_data_dir = app.path().app_local_data_dir().map_err(to_string)?;
+        let roaming_data_dir = app.path().app_data_dir().map_err(to_string)?;
+        ensure_distinct_data_dirs(&local_data_dir, &roaming_data_dir)?;
+        schedule_clean_relaunch(local_data_dir)?;
+    }
+    // On macOS the local and persistent data directories coincide. Never
+    // clear either; let plugin-process restart the application normally.
+    #[cfg(not(target_os = "windows"))]
+    let _ = app;
+
+    Ok(relaunch_strategy_for_os(std::env::consts::OS))
+}
+
+#[cfg(any(target_os = "windows", test))]
 fn ensure_distinct_data_dirs(
     local_data_dir: &PathBuf,
     roaming_data_dir: &PathBuf,
@@ -52,19 +81,6 @@ fn schedule_clean_relaunch(local_data_dir: PathBuf) -> Result<(), String> {
     Ok(())
 }
 
-#[cfg(not(target_os = "windows"))]
-fn schedule_clean_relaunch(local_data_dir: PathBuf) -> Result<(), String> {
-    let current_exe = std::env::current_exe().map_err(to_string)?;
-
-    if local_data_dir.exists() {
-        std::fs::remove_dir_all(&local_data_dir).map_err(to_string)?;
-    }
-    std::fs::create_dir_all(&local_data_dir).map_err(to_string)?;
-    Command::new(current_exe).spawn().map_err(to_string)?;
-
-    Ok(())
-}
-
 #[cfg(target_os = "windows")]
 fn build_windows_cleanup_script(
     process_id: u32,
@@ -95,10 +111,53 @@ fn powershell_quote(value: &str) -> String {
     format!("'{}'", value.replace('\'', "''"))
 }
 
+#[cfg(any(target_os = "windows", test))]
 fn normalize_path_text(path: &PathBuf) -> String {
     path.to_string_lossy().replace('\\', "/").to_lowercase()
 }
 
+#[cfg(target_os = "windows")]
 fn to_string(error: impl ToString) -> String {
     error.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn macos_relaunches_without_scheduling_data_cleanup() {
+        assert_eq!(
+            relaunch_strategy_for_os("macos"),
+            UpdateRelaunchStrategy::Relaunch
+        );
+        assert_eq!(
+            relaunch_strategy_for_os("windows"),
+            UpdateRelaunchStrategy::Exit
+        );
+        assert_eq!(
+            relaunch_strategy_for_os(std::env::consts::OS),
+            if cfg!(target_os = "windows") {
+                UpdateRelaunchStrategy::Exit
+            } else {
+                UpdateRelaunchStrategy::Relaunch
+            }
+        );
+    }
+
+    #[test]
+    fn windows_cleanup_refuses_persistent_data_and_accepts_distinct_directories() {
+        let persistent = PathBuf::from("C:/Users/Test/AppData/Roaming/NoteX");
+        assert!(ensure_distinct_data_dirs(&persistent, &persistent).is_err());
+        assert!(ensure_distinct_data_dirs(
+            &PathBuf::from("c:\\users\\test\\appdata\\roaming\\notex"),
+            &persistent,
+        )
+        .is_err());
+        assert!(ensure_distinct_data_dirs(
+            &PathBuf::from("C:/Users/Test/AppData/Local/NoteX"),
+            &persistent,
+        )
+        .is_ok());
+    }
 }

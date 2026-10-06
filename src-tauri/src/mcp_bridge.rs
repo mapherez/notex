@@ -17,10 +17,7 @@ use tokio_tungstenite::{
 
 use crate::{
     external_links,
-    mcp_request_broker::{
-        DesktopResponse, McpRequestBroker,
-        REQUEST_EVENT,
-    },
+    mcp_request_broker::{DesktopResponse, McpRequestBroker, REQUEST_EVENT},
 };
 
 const BRIDGE_PROTOCOL_VERSION: &str = nox_mcp::BRIDGE_PROTOCOL_VERSION;
@@ -273,41 +270,39 @@ struct StoredCredential {
 
 type CredentialStore = dyn nox_mcp::CredentialStore<StoredCredential, Error = McpError>;
 
-#[cfg(target_os = "windows")]
-struct SystemCredentialStore;
-
-#[cfg(target_os = "windows")]
-impl SystemCredentialStore {
-    fn entry(&self) -> McpResult<keyring::Entry> {
-        keyring::Entry::new(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT).map_err(|_| {
-            McpError::new(
-                "SECURE_STORAGE",
-                "Windows Credential Manager is unavailable.",
-            )
-        })
-    }
+struct SystemCredentialStore<S = crate::credential_store::NativeSecretStore> {
+    secrets: S,
 }
 
-#[cfg(target_os = "windows")]
-impl nox_mcp::CredentialStore<StoredCredential> for SystemCredentialStore {
+impl<S: crate::credential_store::SecretStore> nox_mcp::CredentialStore<StoredCredential>
+    for SystemCredentialStore<S>
+{
     type Error = McpError;
+
     fn load(&self) -> McpResult<Option<StoredCredential>> {
-        let serialized = match self.entry()?.get_password() {
-            Ok(value) => value,
-            Err(keyring::Error::NoEntry) => return Ok(None),
-            Err(_) => {
-                return Err(McpError::new(
+        let serialized = self
+            .secrets
+            .load(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT)
+            .map_err(|error| match error {
+                crate::credential_store::CredentialError::Unavailable => McpError::new(
+                    "SECURE_STORAGE",
+                    "Secure MCP credential storage is not available on this platform.",
+                ),
+                crate::credential_store::CredentialError::Storage => McpError::new(
                     "SECURE_STORAGE",
                     "The NoteX MCP credential could not be read.",
-                ))
-            }
-        };
-        serde_json::from_str(&serialized).map(Some).map_err(|_| {
-            McpError::new(
-                "SECURE_STORAGE",
-                "The stored NoteX MCP credential is invalid.",
-            )
-        })
+                ),
+            })?;
+        serialized
+            .map(|value| {
+                serde_json::from_str(&value).map_err(|_| {
+                    McpError::new(
+                        "SECURE_STORAGE",
+                        "The stored NoteX MCP credential is invalid.",
+                    )
+                })
+            })
+            .transpose()
     }
 
     fn save(&self, credential: &StoredCredential) -> McpResult<()> {
@@ -317,44 +312,25 @@ impl nox_mcp::CredentialStore<StoredCredential> for SystemCredentialStore {
                 "The NoteX MCP credential could not be encoded.",
             )
         })?;
-        self.entry()?.set_password(&serialized).map_err(|_| {
-            McpError::new(
-                "SECURE_STORAGE",
-                "The NoteX MCP credential could not be saved.",
-            )
-        })
+        self.secrets
+            .save(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT, &serialized)
+            .map_err(|_| {
+                McpError::new(
+                    "SECURE_STORAGE",
+                    "The NoteX MCP credential could not be saved.",
+                )
+            })
     }
 
     fn delete(&self) -> McpResult<()> {
-        match self.entry()?.delete_credential() {
-            Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-            Err(_) => Err(McpError::new(
-                "SECURE_STORAGE",
-                "The NoteX MCP credential could not be removed.",
-            )),
-        }
-    }
-}
-
-#[cfg(not(target_os = "windows"))]
-struct SystemCredentialStore;
-
-#[cfg(not(target_os = "windows"))]
-impl nox_mcp::CredentialStore<StoredCredential> for SystemCredentialStore {
-    type Error = McpError;
-    fn load(&self) -> McpResult<Option<StoredCredential>> {
-        Err(McpError::new(
-            "SECURE_STORAGE",
-            "Secure MCP credential storage is not available on this platform.",
-        ))
-    }
-
-    fn save(&self, _credential: &StoredCredential) -> McpResult<()> {
-        self.load().map(|_| ())
-    }
-
-    fn delete(&self) -> McpResult<()> {
-        Ok(())
+        self.secrets
+            .delete(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT)
+            .map_err(|_| {
+                McpError::new(
+                    "SECURE_STORAGE",
+                    "The NoteX MCP credential could not be removed.",
+                )
+            })
     }
 }
 
@@ -420,7 +396,9 @@ impl McpManager {
                 connection_counter: std::sync::atomic::AtomicU64::new(1),
                 backend,
                 client,
-                credentials: Arc::new(SystemCredentialStore),
+                credentials: Arc::new(SystemCredentialStore {
+                    secrets: crate::credential_store::NativeSecretStore,
+                }),
                 runtime: Mutex::new(RuntimeState {
                     public,
                     generation: 0,
@@ -1086,7 +1064,13 @@ impl McpManager {
             return BridgeExit::Disconnected;
         }
 
-        let connection_id = format!("{}-{}", generation, self.inner.connection_counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed));
+        let connection_id = format!(
+            "{}-{}",
+            generation,
+            self.inner
+                .connection_counter
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        );
         let (sender, mut receiver) = mpsc::unbounded_channel();
         let (renderer_ready, app_version, email) = {
             let mut runtime = self.inner.runtime.lock().await;
@@ -1350,9 +1334,15 @@ impl McpManager {
         let runtime = self.inner.runtime.lock().await;
         let mut requests = self.inner.requests.lock().await;
         if !requests.is_pending(&wire.response.request_id, &generation) {
-            return Err(McpError::new("NOTEX_OFFLINE", "The request is no longer active."));
+            return Err(McpError::new(
+                "NOTEX_OFFLINE",
+                "The request is no longer active.",
+            ));
         }
-        let sender = runtime.bridge_sender.clone().ok_or_else(|| McpError::new("NOTEX_OFFLINE", "NoteX is offline."))?;
+        let sender = runtime
+            .bridge_sender
+            .clone()
+            .ok_or_else(|| McpError::new("NOTEX_OFFLINE", "NoteX is offline."))?;
         requests.cancel(&wire.response.request_id);
         sender
             .send(BridgeControl::Frame(frame))
@@ -1402,9 +1392,21 @@ impl McpManager {
 }
 
 #[tauri::command]
-pub async fn notex_mcp_request_pending(manager: State<'_, McpManager>, broker: State<'_, McpRequestBroker>, request_id: String, generation: Option<String>) -> Result<bool, String> {
-    if McpRequestBroker::owns_request_id(&request_id) { return Ok(broker.is_pending(&request_id).await); }
-    Ok(manager.inner.requests.lock().await.is_pending(&request_id, generation.as_deref().unwrap_or_default()))
+pub async fn notex_mcp_request_pending(
+    manager: State<'_, McpManager>,
+    broker: State<'_, McpRequestBroker>,
+    request_id: String,
+    generation: Option<String>,
+) -> Result<bool, String> {
+    if McpRequestBroker::owns_request_id(&request_id) {
+        return Ok(broker.is_pending(&request_id).await);
+    }
+    Ok(manager
+        .inner
+        .requests
+        .lock()
+        .await
+        .is_pending(&request_id, generation.as_deref().unwrap_or_default()))
 }
 
 impl Default for McpManager {
@@ -1686,6 +1688,80 @@ pub async fn notex_mcp_respond(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::credential_store::{tests::FakeSecretStore, CredentialError, SecretStore};
+
+    #[test]
+    fn remote_credentials_round_trip_and_delete_without_native_storage() {
+        let store = SystemCredentialStore {
+            secrets: FakeSecretStore::default(),
+        };
+        assert!(nox_mcp::CredentialStore::load(&store).unwrap().is_none());
+        let credential = StoredCredential {
+            refresh_token: "fake-refresh".into(),
+            client_id: "client".into(),
+            token_endpoint: "https://example.test/token".into(),
+            resource: "resource".into(),
+            session_id: "session".into(),
+        };
+        nox_mcp::CredentialStore::save(&store, &credential).unwrap();
+        let loaded = nox_mcp::CredentialStore::load(&store).unwrap().unwrap();
+        assert_eq!(
+            serde_json::to_value(loaded).unwrap(),
+            serde_json::to_value(credential).unwrap()
+        );
+        assert!(store
+            .secrets
+            .load("com.mapherez.notex.google", CREDENTIAL_ACCOUNT)
+            .unwrap()
+            .is_none());
+        nox_mcp::CredentialStore::delete(&store).unwrap();
+        nox_mcp::CredentialStore::delete(&store).unwrap();
+        assert!(nox_mcp::CredentialStore::load(&store).unwrap().is_none());
+    }
+
+    #[test]
+    fn remote_credentials_reject_corrupt_storage_and_propagate_backend_errors() {
+        let store = SystemCredentialStore {
+            secrets: FakeSecretStore::default(),
+        };
+        store
+            .secrets
+            .save(
+                CREDENTIAL_SERVICE,
+                CREDENTIAL_ACCOUNT,
+                "invalid secret JSON",
+            )
+            .unwrap();
+        let error = nox_mcp::CredentialStore::load(&store).unwrap_err();
+        assert_eq!(error.code, "SECURE_STORAGE");
+        assert!(!error.message.contains("invalid secret JSON"));
+        let credential = StoredCredential {
+            refresh_token: "fake-refresh".into(),
+            client_id: "client".into(),
+            token_endpoint: "https://example.test/token".into(),
+            resource: "resource".into(),
+            session_id: "session".into(),
+        };
+        for failure in [CredentialError::Storage, CredentialError::Unavailable] {
+            let store = SystemCredentialStore {
+                secrets: FakeSecretStore::failing(failure),
+            };
+            assert_eq!(
+                nox_mcp::CredentialStore::load(&store).unwrap_err().code,
+                "SECURE_STORAGE"
+            );
+            assert_eq!(
+                nox_mcp::CredentialStore::save(&store, &credential)
+                    .unwrap_err()
+                    .code,
+                "SECURE_STORAGE"
+            );
+            assert_eq!(
+                nox_mcp::CredentialStore::delete(&store).unwrap_err().code,
+                "SECURE_STORAGE"
+            );
+        }
+    }
 
     #[test]
     fn accepts_https_and_loopback_development_origins_only() {

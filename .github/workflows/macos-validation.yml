@@ -1,0 +1,128 @@
+name: Validate macOS Apple Silicon
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, add_mcp]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    name: Build and test macOS ARM64 (ad hoc)
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      CI: true
+      NOTEX_MACOS_TARGET: aarch64-apple-darwin
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Verify Apple Silicon host and Rust target
+        shell: bash
+        run: |
+          set -euo pipefail
+          machine_arch="$(uname -m)"
+          echo "macOS machine architecture: $machine_arch"
+          test "$machine_arch" = arm64
+          rustc -vV
+          rust_host="$(rustc -vV | sed -n 's/^host: //p')"
+          echo "Rust host: $rust_host"
+          echo "Rust build target: $NOTEX_MACOS_TARGET"
+          test "$rust_host" = "$NOTEX_MACOS_TARGET"
+          rustup target list --installed
+          rustup target list --installed | grep -Fx "$NOTEX_MACOS_TARGET"
+          rustc --print cfg --target "$NOTEX_MACOS_TARGET"
+          rustc --print cfg --target "$NOTEX_MACOS_TARGET" | grep -Fx 'target_arch="aarch64"'
+          rustc --print cfg --target "$NOTEX_MACOS_TARGET" | grep -Fx 'target_os="macos"'
+          xcodebuild -version
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: macos-15-aarch64-apple-darwin-validation
+
+      - name: Install repository dependencies
+        run: npm ci
+
+      - name: Test repository scripts
+        run: node --test scripts/update-nox-mcp.test.mjs
+
+      - name: Test MCP contract
+        run: npm test --workspace @notex/mcp-contract
+
+      - name: Test frontend
+        run: npm test
+
+      - name: Verify generated MCP manifest
+        run: git diff --exit-code -- packages/notex-mcp-contract/generated/tool-manifest.json
+
+      - name: Check styles
+        run: npm run check:styles
+
+      - name: Test Rust without accessing native credential storage
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --target "$NOTEX_MACOS_TARGET"
+
+      - name: Build validation app and DMG without Apple credentials
+        shell: bash
+        env:
+          VITE_GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          VITE_GOOGLE_DESKTOP_CLIENT_ID: ${{ secrets.GOOGLE_DESKTOP_CLIENT_ID }}
+          GOOGLE_DESKTOP_CLIENT_SECRET: ${{ secrets.GOOGLE_DESKTOP_CLIENT_SECRET }}
+          VITE_GOOGLE_WEB_ORIGIN: ${{ secrets.GOOGLE_WEB_ORIGIN }}
+        run: |
+          set -euo pipefail
+          echo "Build target: $NOTEX_MACOS_TARGET"
+          echo "npm run tauri:build -- --target $NOTEX_MACOS_TARGET --bundles app,dmg --config src-tauri/tauri.macos-ci.conf.json --ci -- --locked"
+          npm run tauri:build -- --target "$NOTEX_MACOS_TARGET" --bundles app,dmg --config src-tauri/tauri.macos-ci.conf.json --ci -- --locked
+
+      - name: Verify and archive validation bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle_dir="src-tauri/target/$NOTEX_MACOS_TARGET/release/bundle"
+          app_bundle="$bundle_dir/macos/NoteX.app"
+          test -d "$app_bundle"
+          app_executable="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app_bundle/Contents/Info.plist")"
+          binary="$app_bundle/Contents/MacOS/$app_executable"
+          file "$binary"
+          test "$(lipo -archs "$binary")" = arm64
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app_bundle/Contents/Info.plist")" = com.mapherez.notex.validation
+          codesign --verify --deep --strict --verbose=2 "$app_bundle"
+          codesign -dv --verbose=2 "$app_bundle" 2>&1
+          find "$bundle_dir/dmg" -name '*.dmg' -print -quit | grep .
+          test -z "$(find "$bundle_dir" -name '*.sig' -print -quit)"
+          test -z "$(find "$bundle_dir" -name 'latest.json' -print -quit)"
+          mkdir -p output/macos-validation
+          ditto -c -k --sequesterRsrc --keepParent "$app_bundle" output/macos-validation/NoteX-validation-arm64.app.zip
+          cp "$bundle_dir"/dmg/*.dmg output/macos-validation/
+
+      - name: Upload validation artefacts (not a GitHub Release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: NoteX-macos-15-arm64-validation
+          path: output/macos-validation/
+          if-no-files-found: error
+          retention-days: 14
