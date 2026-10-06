@@ -2846,8 +2846,15 @@ fn extract_notex_package(source: &Path, destination: &Path) -> Result<(), String
 }
 
 fn safe_archive_path(name: &str) -> Result<PathBuf, String> {
-    let path = Path::new(name);
-    if path.is_absolute() {
+    // Package paths can originate on either OS. Recognize Windows separators
+    // and drive prefixes before Path applies the current host's path rules.
+    let normalized = name.replace('\\', "/");
+    let has_drive_prefix = normalized.split('/').any(|component| {
+        let bytes = component.as_bytes();
+        bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':'
+    });
+    let path = Path::new(&normalized);
+    if normalized.starts_with('/') || has_drive_prefix || path.is_absolute() {
         return Err("Unsafe absolute path in NoteX package".to_string());
     }
 
@@ -3287,6 +3294,14 @@ mod tests {
             safe_archive_path("files/note-1/file.png").unwrap(),
             PathBuf::from("files/note-1/file.png")
         );
+        assert_eq!(
+            safe_archive_path(r"files\note-1\file.png").unwrap(),
+            PathBuf::from("files/note-1/file.png")
+        );
+        assert_eq!(
+            safe_archive_path("./files/note-1/./file.png").unwrap(),
+            PathBuf::from("files/note-1/file.png")
+        );
     }
 
     fn make_legacy_database(conn: &Connection) {
@@ -3428,10 +3443,30 @@ mod tests {
 
     #[test]
     fn rejects_unsafe_package_paths() {
-        assert!(safe_archive_path("../notex.sqlite").is_err());
-        assert!(safe_archive_path("files/../../secret.txt").is_err());
-        assert!(safe_archive_path("/tmp/notex.sqlite").is_err());
-        assert!(safe_archive_path("C:\\tmp\\notex.sqlite").is_err());
+        for path in [
+            "../notex.sqlite",
+            "files/../../secret.txt",
+            r"..\notex.sqlite",
+            r"files\..\..\secret.txt",
+            r"files/..\..\secret.txt",
+            "/tmp/notex.sqlite",
+            r"\tmp\notex.sqlite",
+            r"C:\tmp\notex.sqlite",
+            "C:/tmp/notex.sqlite",
+            r"c:tmp\notex.sqlite",
+            "./C:/tmp/notex.sqlite",
+            r"\\server\share\notex.sqlite",
+            "//server/share/notex.sqlite",
+            r"\\?\C:\tmp\notex.sqlite",
+            r"\\.\C:\tmp\notex.sqlite",
+            "",
+            ".",
+        ] {
+            assert!(
+                safe_archive_path(path).is_err(),
+                "accepted unsafe package path: {path}"
+            );
+        }
     }
 
     #[test]
