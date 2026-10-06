@@ -26,7 +26,7 @@
     "GOOGLE_DESKTOP_SECRET_REQUIRED": "Google sign-in requires additional desktop app configuration. Your local notes have been preserved.",
     "GOOGLE_CLIENT_INVALID": "Google rejected the desktop OAuth credentials. Check that the client ID and client secret belong to the same Desktop app client.",
     "GOOGLE_PROFILE_ERROR": "NoteX could not verify your Google account. Try signing in again.",
-    "GOOGLE_CREDENTIAL_STORAGE_ERROR": "NoteX could not save your Google sign-in in Windows Credential Manager. Your local notes have been preserved.",
+    "GOOGLE_CREDENTIAL_STORAGE_ERROR": "NoteX could not save your Google sign-in in secure credential storage. Your local notes have been preserved.",
     "GOOGLE_SECURE_STORAGE_UNAVAILABLE": "Secure storage for Google sign-in is not available on this system.",
     "GOOGLE_AUTH_INVALID_CALLBACK": "The Google sign-in response was incomplete. Start sign-in again.",
     "GOOGLE_CALLBACK_UNAVAILABLE": "NoteX could not open the local Google sign-in callback. Restart the app and try again.",
