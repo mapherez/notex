@@ -17,26 +17,23 @@ https://your-mcp-host.example/api/auth/callback/google
 
 ## Local development
 
-Create `backend/.env` from `backend/.env.example`, then install the independent contract and backend lockfiles:
+Create `backend/.env` from `backend/.env.example`, then install all repository workspaces from the root:
 
 ```text
-cd packages/notex-mcp-contract
-npm ci
-cd ../../backend
 npm ci
 ```
 
-NoX MCP is installed from `https://github.com/mapherez/nox-mcp` and builds
-automatically during installation. To install or update it, run
-`npm install "git+https://github.com/mapherez/nox-mcp.git"` in both
-`packages/notex-mcp-contract` and `backend`. The shared NoteX contract stays local.
+NoX MCP is installed from a published GitHub release tarball. To update it, run
+`npm run update:nox-mcp` at the root. This discovers the latest release, updates
+all consumers, and runs one root install. The shared NoteX contract stays local
+through npm workspaces; only the root `package-lock.json` is used.
 
 Load the variables from `backend/.env` in the shell, then run:
 
 ```text
-npm run typecheck
-npm test
-npm run dev
+npm run typecheck --workspace backend
+npm test --workspace backend
+npm run dev --workspace backend
 ```
 
 Development endpoints use `http://127.0.0.1:8080`. Production rejects a non-HTTPS public URL unless it is loopback.
@@ -97,7 +94,7 @@ After obtaining a one-use bridge ticket from the authenticated desktop session e
 ```text
 NOTEX_SIMULATOR_BRIDGE_URL=wss://your-mcp-host.example/v1/bridge
 NOTEX_SIMULATOR_TICKET=one-use-ticket
-npm run simulate:desktop
+npm run simulate:desktop --workspace backend
 ```
 
 The simulator validates the shared protocol and returns deterministic empty fixtures. It is a development tool and does not access a NoteX database.

@@ -3,8 +3,14 @@
   "private": true,
   "version": "2.4.1",
   "type": "module",
+  "workspaces": [
+    "backend",
+    "packages/notex-mcp-contract",
+    "landing"
+  ],
   "scripts": {
-    "build:mcp-contract": "npm --prefix packages/notex-mcp-contract run build",
+    "build:mcp-contract": "npm run build --workspace @notex/mcp-contract",
+    "update:nox-mcp": "node scripts/update-nox-mcp.mjs",
     "tauri:dev": "node scripts/tauri-with-env.mjs dev",
     "tauri:build": "node scripts/tauri-with-env.mjs build",
     "tauri:build:no-bundle": "node scripts/tauri-with-env.mjs build --no-bundle",
@@ -26,7 +32,7 @@
   "dependencies": {
     "@chenglou/pretext": "^0.0.7",
     "@floating-ui/dom": "^1.7.6",
-    "@notex/mcp-contract": "file:packages/notex-mcp-contract",
+    "@notex/mcp-contract": "0.1.0",
     "@nox/mcp": "https://github.com/mapherez/nox-mcp/releases/download/v0.4.1/nox-mcp.tgz",
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",

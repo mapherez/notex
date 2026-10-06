@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "build:contract": "npm --prefix ../packages/notex-mcp-contract run build",
+    "build:contract": "npm run build --workspace @notex/mcp-contract",
     "prebuild": "npm run build:contract",
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/main.ts",
@@ -24,7 +24,7 @@
     "@modelcontextprotocol/express": "^2.0.0",
     "@modelcontextprotocol/node": "^2.0.0",
     "@modelcontextprotocol/server": "^2.0.0",
-    "@notex/mcp-contract": "file:../packages/notex-mcp-contract",
+    "@notex/mcp-contract": "0.1.0",
     "@nox/mcp": "https://github.com/mapherez/nox-mcp/releases/download/v0.4.1/nox-mcp.tgz",
     "better-auth": "^1.7.2",
     "better-sqlite3": "^12.6.2",

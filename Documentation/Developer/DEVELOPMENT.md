@@ -14,20 +14,27 @@ Install dependencies:
 
 ```bash
 npm install
-npm --prefix packages/notex-mcp-contract ci
 ```
 
-NoX MCP is installed from `https://github.com/mapherez/nox-mcp`; its TypeScript
-build runs automatically during installation. The NoteX MCP contract remains
+Run this once from the repository root to install the frontend, backend, shared
+contract, and landing workspaces. `package-lock.json` at the root is the only
+lockfile; use `npm ci` from the root for a clean, reproducible install.
+
+NoX MCP is installed from the published `nox-mcp.tgz` GitHub release asset.
+The NoteX MCP contract is linked locally by npm workspaces, remains
 in `packages/notex-mcp-contract` and is built by the NoteX build scripts.
 The desktop crate uses the same GitHub repository through Cargo.
 
-To install or update the TypeScript dependency, run this command in the repository
-root, `packages/notex-mcp-contract`, and `backend`:
+To update the TypeScript dependency, run this command in the repository root:
 
 ```bash
-npm install "git+https://github.com/mapherez/nox-mcp.git"
+npm run update:nox-mcp
 ```
+
+The updater discovers the latest GitHub release, updates only packages that
+declare `@nox/mcp`, and runs one `npm install` at the root to update the canonical
+lockfile. It never installs individual workspaces. `GITHUB_TOKEN` is optional
+for authenticated GitHub API requests.
 
 To update the Rust dependency, run from the repository root:
 
@@ -144,6 +151,7 @@ signed GitHub release artifacts. Browser deployment is documented separately in
 | `npm run tauri:icon` | Regenerate Tauri icons from `public/assets/notex_logo_small.webp`. |
 | `npm run release:tauri` | Run the Tauri release helper. |
 | `npm run version:set` | Update the version in release manifests. |
+| `npm run update:nox-mcp` | Update NoX MCP to the latest release across its consumers and install once at the root. |
 | `npm run build` | Typecheck and build the frontend and web worker. |
 | `npm run preview` | Preview the frontend build with Vite. |
 | `npm run typecheck` | Run TypeScript checks. |

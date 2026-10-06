@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - "landing/**"
+      - "package.json"
+      - "package-lock.json"
 
 permissions:
   contents: read
@@ -32,15 +34,14 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
-          cache-dependency-path: landing/package-lock.json
 
       - name: Build website and Markdown documentation
         run: |
-          npm ci --prefix landing
-          npm run build --prefix landing
-          npm run check --prefix landing
+          npm ci
+          npm run build --workspace landing
+          npm run check --workspace landing
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

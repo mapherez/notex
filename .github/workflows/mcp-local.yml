@@ -28,8 +28,8 @@ jobs:
         with:
           workspaces: src-tauri -> target
       - run: npm ci
-      - run: npm --prefix packages/notex-mcp-contract ci
-      - run: npm --prefix packages/notex-mcp-contract test
+      - run: node --test scripts/update-nox-mcp.test.mjs
+      - run: npm test --workspace @notex/mcp-contract
       - run: npm test
       - run: git diff --exit-code -- packages/notex-mcp-contract/generated/tool-manifest.json
       - run: npm run check:styles

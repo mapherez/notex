@@ -6,13 +6,13 @@ The separate landing package contains only the Markdown build dependency.
 
 ## Build and preview
 
-Use Node 22 (Node 20 or newer is supported):
+Use Node 24 and run these commands from the repository root:
 
 ```powershell
-npm --prefix landing ci
-npm --prefix landing run build
-npm --prefix landing run check
-npm --prefix landing run preview
+npm ci
+npm run build --workspace landing
+npm run check --workspace landing
+npm run preview --workspace landing
 ```
 
 Preview at **<http://127.0.0.1:4174>**. Generated files live in `landing/dist/`,
@@ -60,7 +60,7 @@ checkpoints stay in `Documentation/Developer/`, outside the published site.
 
 The **Deploy Landing Page** workflow builds the site and uploads `landing/dist`
 to GitHub Pages. It runs on `main` changes under `landing/` and can be triggered
-manually. It uses the separate landing lockfile with `npm ci`.
+manually. It uses the canonical root lockfile with one root `npm ci`.
 
 The `CNAME` stays `notex.mapherez.com` and is copied into the build. With other
 hosting, publish the contents of `landing/dist`, not the source folder.

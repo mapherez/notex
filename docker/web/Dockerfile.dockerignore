@@ -2,6 +2,10 @@
 **
 !package.json
 !package-lock.json
+!backend
+!backend/package.json
+!landing
+!landing/package.json
 !tsconfig.json
 !tsconfig.app.json
 !tsconfig.node.json
@@ -17,7 +21,6 @@
 !packages
 !packages/notex-mcp-contract
 !packages/notex-mcp-contract/package.json
-!packages/notex-mcp-contract/package-lock.json
 !packages/notex-mcp-contract/tsconfig.json
 !packages/notex-mcp-contract/scripts
 !packages/notex-mcp-contract/scripts/**

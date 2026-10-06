@@ -12,22 +12,20 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 
-COPY packages/notex-mcp-contract/package.json packages/notex-mcp-contract/package-lock.json ./packages/notex-mcp-contract/
-RUN npm ci --prefix packages/notex-mcp-contract
+COPY package.json package-lock.json ./
+COPY backend/package.json ./backend/
+COPY packages/notex-mcp-contract/package.json ./packages/notex-mcp-contract/
+COPY landing/package.json ./landing/
+RUN npm ci
 
 COPY packages/notex-mcp-contract/tsconfig.json ./packages/notex-mcp-contract/tsconfig.json
 COPY packages/notex-mcp-contract/scripts ./packages/notex-mcp-contract/scripts
 COPY packages/notex-mcp-contract/src ./packages/notex-mcp-contract/src
-RUN npm run build --prefix packages/notex-mcp-contract
-
-COPY backend/package.json backend/package-lock.json ./backend/
-RUN npm ci --prefix backend
-
 COPY backend/tsconfig.json ./backend/tsconfig.json
 COPY backend/src ./backend/src
-RUN npm run build --prefix backend \
-    && npm prune --omit=dev --prefix backend \
-    && npm prune --omit=dev --prefix packages/notex-mcp-contract
+RUN npm run build --workspace backend \
+    && npm prune --omit=dev \
+    && mkdir -p backend/node_modules packages/notex-mcp-contract/node_modules
 
 FROM node:24-bookworm-slim AS runtime
 
@@ -44,7 +42,10 @@ RUN groupadd --gid 10001 notex \
 
 WORKDIR /app/backend
 
-COPY --from=build --chown=notex:notex /app/backend/package.json /app/backend/package-lock.json ./
+COPY --from=build --chown=notex:notex /app/package.json /app/package-lock.json /app/
+COPY --from=build --chown=notex:notex /app/node_modules /app/node_modules
+COPY --from=build --chown=notex:notex /app/landing/package.json /app/landing/package.json
+COPY --from=build --chown=notex:notex /app/backend/package.json ./
 COPY --from=build --chown=notex:notex /app/backend/dist ./dist
 COPY --from=build --chown=notex:notex /app/backend/node_modules ./node_modules
 COPY --from=build --chown=notex:notex /app/packages/notex-mcp-contract/package.json /app/packages/notex-mcp-contract/package.json

@@ -6,6 +6,8 @@ on:
     paths:
       - "backend/**"
       - "packages/notex-mcp-contract/**"
+      - "package.json"
+      - "package-lock.json"
       - ".dockerignore"
       - "docker-compose.mcp.yml"
       - ".github/workflows/mcp-backend.yml"
@@ -15,6 +17,8 @@ on:
     paths:
       - "backend/**"
       - "packages/notex-mcp-contract/**"
+      - "package.json"
+      - "package-lock.json"
       - ".dockerignore"
       - "docker-compose.mcp.yml"
       - ".github/workflows/mcp-backend.yml"
@@ -30,9 +34,6 @@ jobs:
   contract:
     name: Shared contract
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: packages/notex-mcp-contract
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -41,15 +42,14 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: packages/notex-mcp-contract/package-lock.json
       - name: Install dependencies
         run: npm ci
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run typecheck --workspace @notex/mcp-contract
       - name: Test
-        run: npm test
+        run: npm test --workspace @notex/mcp-contract
       - name: Build
-        run: npm run build
+        run: npm run build --workspace @notex/mcp-contract
 
   backend:
     name: Backend
@@ -62,24 +62,14 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: |
-            backend/package-lock.json
-            packages/notex-mcp-contract/package-lock.json
-      - name: Install contract dependencies
-        working-directory: packages/notex-mcp-contract
-        run: npm ci
-      - name: Install backend dependencies
-        working-directory: backend
+      - name: Install repository dependencies
         run: npm ci
       - name: Typecheck
-        working-directory: backend
-        run: npm run typecheck
+        run: npm run typecheck --workspace backend
       - name: Test
-        working-directory: backend
-        run: npm test
+        run: npm test --workspace backend
       - name: Build
-        working-directory: backend
-        run: npm run build
+        run: npm run build --workspace backend
 
   docker:
     name: Docker build
