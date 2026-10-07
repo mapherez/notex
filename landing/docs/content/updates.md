@@ -10,7 +10,7 @@ Version 2.4.0 adds responsive layouts for desktop, tablet, and phone, along with
 
 NoteX includes an updater and a manual update check in **Profile**. When an update is available, follow the app's update prompt.
 
-You can also download the [Windows installer](https://notex.mapherez.com/download) or [macOS Apple Silicon DMG](https://github.com/mapherez/notex/releases/latest/download/NoteX-macos-arm64.dmg). The public DMG is available from the first combined Windows/macOS release. macOS installation may require **Open Anyway** in **System Settings → Privacy & Security**, because the app is signed ad hoc and is not notarized by Apple.
+Use [Download](https://notex.mapherez.com/download) to get the latest desktop app.
 
 Before a major workflow change or a full-workspace import, keeping a fresh [exported backup](import-export.md) is useful regardless of whether you are updating.
 

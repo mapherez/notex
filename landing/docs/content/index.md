@@ -1,6 +1,6 @@
 # A workspace for knowledge you return to
 
-NoteX is an app for keeping useful information together on Windows, macOS Apple Silicon and in the browser: project decisions, recipes, references, study material, and anything you want to find again. Notes can contain several titled blocks, rich text, images, and attached files.
+NoteX is an app for keeping useful information together on desktop and in the browser: project decisions, recipes, references, study material, and anything you want to find again. Notes can contain several titled blocks, rich text, images, and attached files.
 
 Edits are saved locally on the device you use. The desktop app works without an account or an internet connection. Browser mode uses a Google account, with optional offline editing after the app and notes have been downloaded.
 

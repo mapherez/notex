@@ -88,7 +88,7 @@ function document(page, article, index) {
       <div class="docs-breadcrumb"><a href="./index.html">Documentation</a><span aria-hidden="true">/</span><span>${escape(page.group)}</span></div>
       <p class="docs-description">${escape(page.description)}</p>
       <article class="docs-article">${article.html}</article>
-      <div class="docs-article-footer"><span>For Windows and macOS Apple Silicon</span><a href="https://github.com/mapherez/notex/edit/main/landing/docs/content/${page.slug}.md">Improve this guide <span aria-hidden="true">↗</span></a></div>
+      <div class="docs-article-footer"><span>For the desktop app</span><a href="https://github.com/mapherez/notex/edit/main/landing/docs/content/${page.slug}.md">Improve this guide <span aria-hidden="true">↗</span></a></div>
       <nav class="docs-pagination" aria-label="Previous and next articles">
         ${previous ? `<a href="${href(previous)}"><span>← Previous</span><strong>${escape(previous.title)}</strong></a>` : "<span></span>"}
         ${next ? `<a href="${href(next)}"><span>Next →</span><strong>${escape(next.title)}</strong></a>` : "<span></span>"}

@@ -1,6 +1,6 @@
 # Tablet & phone use
 
-NoteX 2.4.0 adapts the browser app to tablets, phones, and smaller desktop windows. Desktop installers support Windows and macOS Apple Silicon; on a tablet or phone, open the [web app](https://notex.mapherez.com/app/) in your browser and sign in with Google. Browser mode requires an account and internet access for the first visit and for notes that have not yet downloaded.
+NoteX 2.4.0 adapts the browser app to tablets, phones, and smaller desktop windows. The installer is for desktop; on a tablet or phone, open the [web app](https://notex.mapherez.com/app/) in your browser and sign in with Google. Browser mode requires an account and internet access for the first visit and for notes that have not yet downloaded.
 
 ## Navigate on a smaller screen
 

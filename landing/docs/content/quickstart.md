@@ -4,19 +4,11 @@ Start with one piece of information you want to keep. This guide takes you from 
 
 ## Choose desktop or browser
 
-For Windows desktop:
+For desktop:
 
-1. Open the [latest release on GitHub](https://notex.mapherez.com/download).
-2. Download the Windows installer and run it.
+1. Select [Download](https://notex.mapherez.com/download).
+2. Install the downloaded app.
 3. Open NoteX. The desktop app does not require a login.
-
-For macOS Apple Silicon (M1 and newer):
-
-1. Download the [macOS DMG](https://github.com/mapherez/notex/releases/latest/download/NoteX-macos-arm64.dmg).
-2. Open the DMG, drag **NoteX** to **Applications**, then eject the disk image.
-3. Open NoteX from Applications. If macOS cannot verify the app, open **System Settings → Privacy & Security**, select **Open Anyway** for NoteX and confirm. See [Apple's instructions](https://support.apple.com/en-us/102445).
-
-The macOS app uses ad hoc signing without Apple notarization. Intel Macs are not supported. The public DMG becomes available with the first combined Windows/macOS release; workflow validation downloads are separate test builds.
 
 On a desktop, tablet, or phone, you can instead open the [web app](https://notex.mapherez.com/app/) and sign in with Google. Phones use portrait orientation. Read the [tablet and phone guide](mobile-tablet.md) for touch controls.
 
@@ -24,7 +16,7 @@ The desktop app works offline after installation. In browser mode, downloaded no
 
 ## Create and write
 
-1. Select **New note**, or press **Ctrl + N** on Windows / **⌘ + N** on macOS.
+1. Select **New note**, or press **Ctrl / ⌘ + N**.
 2. Give the note a title. Add a subtitle if a short description would help you recognize it in a list.
 3. Add a content block and write in it. A block can have its own title.
 4. Use the editor toolbar to add formatting, lists, tables, or files as needed.
@@ -41,7 +33,7 @@ You can adjust this organization later; it does not need to be perfect before yo
 
 ## Find it again
 
-Open **Notes** to browse your library. Use the collection or tag filters to narrow the list, or press **Ctrl + F** on Windows / **⌘ + F** on macOS to focus global search and search for a word from your note.
+Open **Notes** to browse your library. Use the collection or tag filters to narrow the list, or press **Ctrl / ⌘ + F** to focus global search and search for a word from your note.
 
 The recent-notes list follows actual note updates. Simply opening a note does not move it to the top of that list.
 

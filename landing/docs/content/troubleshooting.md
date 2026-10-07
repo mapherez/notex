@@ -2,9 +2,9 @@
 
 Start by checking the current app state and the message shown. If a problem involves your library, preserve the database and files before attempting recovery.
 
-## macOS cannot verify the app
+## The system cannot verify the app
 
-NoteX for Apple Silicon uses ad hoc signing without Apple notarization. After the blocked launch, open **System Settings → Privacy & Security**, select **Open Anyway** for NoteX and confirm. See [Apple's instructions](https://support.apple.com/en-us/102445). Open the installed app from **Applications**, rather than from inside the DMG.
+If your system blocks the first launch, review the app-specific approval options in its security settings. Open the installed app rather than running it from the installation image.
 
 ## MCP cannot connect
 
@@ -46,6 +46,6 @@ NoteX on phones works in portrait orientation. Rotate your phone back to portrai
 
 ## Report a reproducible problem
 
-Include your NoteX version, the steps that led to the issue, and what you expected to happen. For desktop issues, include your Windows or macOS version and architecture; for browser issues, include the device and browser. An exact error message and a screenshot with private content removed are useful.
+Include your NoteX version, the steps that led to the issue, and what you expected to happen. For desktop issues, include your operating system and version; for browser issues, include the device and browser. An exact error message and a screenshot with private content removed are useful.
 
 If the issue involves data loss, avoid further edits until you have preserved a copy of the affected files.

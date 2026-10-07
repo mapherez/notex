@@ -107,7 +107,5 @@ Requests are not queued for later use or replayed after reconnection. A lost
 response during a write does not establish whether the local commit happened.
 Read the note after reconnecting before retrying, especially for note creation.
 
-Desktop builds target Windows x86_64 and macOS Apple Silicon. macOS uses ad hoc
-signing; see the [installation guide](../landing/docs/content/quickstart.md).
-Linux is not a release target. Local client compatibility requires Streamable
-HTTP; STDIO is not provided by this version.
+Local client compatibility requires Streamable HTTP; STDIO is not
+provided by this version.
