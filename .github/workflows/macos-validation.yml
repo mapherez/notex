@@ -24,12 +24,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -120,7 +120,7 @@ jobs:
           cp "$bundle_dir"/dmg/*.dmg output/macos-validation/
 
       - name: Upload validation artefacts (not a GitHub Release)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: NoteX-macos-15-arm64-validation
           path: output/macos-validation/
