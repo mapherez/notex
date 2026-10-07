@@ -1,8 +1,9 @@
 # macOS Apple Silicon validation
 
-NoteX's macOS support is initially a validation build, not a public release.
-Intel Macs are not included. The Windows release workflow and publisher remain
-unchanged until the macOS build and functional smoke test below have passed.
+NoteX targets macOS Apple Silicon; Intel Macs are not included. The isolated
+validation build remains available independently of the combined release
+pipeline. Its build and user-reported functional smoke evidence are recorded
+below. See [desktop releases](DESKTOP_RELEASE.md) for the public ad hoc build.
 
 ## Isolated CI
 
@@ -78,7 +79,7 @@ Google and MCP keep their existing credential service/account identifiers.
 The validation app's files are isolated, but its Keychain entries can be shared
 with development or production builds. Use a dedicated Google test account.
 
-## Functional smoke test — required before public-release integration
+## Functional smoke test evidence
 
 Status: **CI passed; user-reported functional checks passed on a real Mac;
 targeted remaining checks and native-title-bar retest pending**.
@@ -145,25 +146,29 @@ covered by automatic tests. An actual automatic update must be tested later
 with two updater-signed macOS versions; this validation build does not generate
 updater artefacts or publish a manifest.
 
-## Gate for phase 3 — public release
+## Phase 3 — ad hoc public-release implementation
 
-Do not change `.github/workflows/release.yml` or invoke the current publisher
-for macOS until the build and functional smoke test above pass. Keep unsigned
-validation available for PRs independently of release secrets.
+On 2026-10-07 the repository owner authorized phase 3 implementation after the
+reported smoke test, then chose ad hoc signing without a paid Apple Developer
+account. Developer ID signing and Apple notarization are therefore outside the
+release requirements. The existing Tauri updater key is still required.
 
-After that gate, the remaining public-release work is:
+The combined workflow now builds Windows and macOS separately and requires
+both jobs to succeed before its sole publishing job can run. Platform/target
+metadata, hashes and required assets are checked before any GitHub API calls.
+One `latest.json` contains `windows-x86_64` and `darwin-aarch64`; the DMG is an
+installer and the signed `.app.tar.gz` is the macOS updater payload. Public
+downloads and installation instructions are prepared in the website sources.
 
-1. Configure Developer ID Application signing and App Store Connect API
-   notarization credentials separately from the Tauri updater key.
-2. Build Windows and macOS separately and aggregate their artefacts in one final
-   publishing job, only after both builds pass.
-3. Make platform/architecture identification explicit in the publisher, include
-   the DMG, and generate one `latest.json` containing `windows-x86_64` and
-   `darwin-aarch64`, keeping the current updater public key.
-4. Publish the DMG for installation and `.app.tar.gz` plus `.sig` for updates.
-5. Validate a real update between two versions and verify all notes, accounts
-   and attachments survive.
-6. Add the public Apple Silicon download and macOS support to the landing page,
-   README and user documentation only when the public build is ready.
+These changes have not been run on GitHub or published as part of this local
+implementation. A green combined macOS build, the targeted checks above, and
+the real two-version update test in [desktop releases](DESKTOP_RELEASE.md)
+remain to be recorded before treating the public release as validated. The
+earlier green validation runs are evidence for their recorded commits only.
+
+The unsigned validation workflow remains read-only, with no publishing token,
+release API calls or updater checks, independently of release secrets. Deploy
+the website download changes after the first combined public release supplies
+the advertised DMG.
 
 No note-format migration is required.

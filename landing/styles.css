@@ -713,6 +713,19 @@ h3 {
   flex: 0 0 auto;
 }
 
+.download-band .download-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  max-width: 24rem;
+}
+
+.download-actions p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
 .site-footer {
   display: flex;
   align-items: center;

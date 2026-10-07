@@ -2,7 +2,7 @@
 
 NoteX supports keyboard workflows across writing, search, selection, and block organization. Shortcuts apply to the relevant page or focused control.
 
-This reference follows **Profile → Shortcut Help**. The shortcuts below use **Ctrl** for Windows; the app labels the primary modifier as **Ctrl / ⌘**. A shortcut's context matters: for example, saving Quick capture is different from the note editor's automatic local saving.
+This reference follows **Profile → Shortcut Help**. The shortcuts below use **Ctrl** for Windows; use **⌘** for the primary modifier on macOS. The app labels it as **Ctrl / ⌘**. A shortcut's context matters: for example, saving Quick capture is different from the note editor's automatic local saving.
 
 ## Everyday shortcuts
 

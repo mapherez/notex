@@ -142,6 +142,13 @@ Update `src/content/patch-notes.md` before publishing. The signed Tauri release
 workflow is defined in `.github/workflows/release.yml`, with helper logic in
 `.github/scripts/tauri-release.mjs`.
 
+Windows x86_64 and macOS Apple Silicon build separately; one final publishing
+job requires both to succeed. macOS is signed ad hoc without an Apple account
+or notarization; updater signatures retain the existing Tauri key. See
+[desktop releases](DESKTOP_RELEASE.md) for artefacts, secrets and the required
+two-version update test. The credential-free macOS validation workflow remains
+independent.
+
 The in-app updater is configured through `src-tauri/tauri.conf.json` and checks
 signed GitHub release artifacts. Browser deployment is documented separately in
 [web deployment and release preparation](GOOGLE_DRIVE_WEB_DEPLOYMENT.md).
@@ -155,6 +162,7 @@ signed GitHub release artifacts. Browser deployment is documented separately in
 | `npm run tauri:build` | Build the desktop app. |
 | `npm run tauri:icon` | Regenerate Tauri icons from `public/assets/notex_logo_small.webp`. |
 | `npm run release:tauri` | Run the Tauri release helper. |
+| `npm run test:release` | Test collection and publishing with fixtures and mocked GitHub calls. |
 | `npm run version:set` | Update the version in release manifests. |
 | `npm run update:nox-mcp` | Update NoX MCP to the latest release across its consumers and install once at the root. |
 | `npm run build` | Typecheck and build the frontend and web worker. |

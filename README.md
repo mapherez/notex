@@ -10,6 +10,7 @@ automatic backups to your own Google Drive and access your library in the browse
 
 [Website](https://notex.mapherez.com/) ·
 [Download for Windows](https://notex.mapherez.com/download) ·
+[Download for macOS Apple Silicon](https://github.com/mapherez/notex/releases/latest/download/NoteX-macos-arm64.dmg) ·
 [User guides](Documentation/README.md)
 
 ## Write notes with structure
@@ -69,10 +70,17 @@ keyboard shortcuts for writing and navigating your library.
 
 ## Get started
 
-1. [Download the Windows app](https://notex.mapherez.com/download)
+1. Download for [Windows](https://notex.mapherez.com/download) or
+   [macOS Apple Silicon](https://github.com/mapherez/notex/releases/latest/download/NoteX-macos-arm64.dmg)
    and create your first note. No account is needed for desktop use.
 2. Add a collection or a few tags so you can find it again.
 3. Optionally connect Google in **Profile** to enable Drive backups.
+
+macOS builds support Apple Silicon (M1 and newer), not Intel Macs. They use ad hoc
+signing without Apple notarization. On first launch, macOS may require **Open Anyway**
+in **System Settings → Privacy & Security**. Updates use the existing Tauri signing
+key separately. The public DMG link becomes available with the first combined
+Windows/macOS release; validation builds remain separate workflow artefacts.
 
 The [first-note guide](landing/docs/content/quickstart.md) walks through the
 basics. Explore the [user documentation](Documentation/README.md) for more,

@@ -8,6 +8,8 @@ This release finally brings NoteX to macOS, with official support for Apple Sili
 
 - Added native macOS support for Apple Silicon.
 - Added macOS app and DMG builds.
+- Added native macOS window controls.
+- macOS downloads support Apple Silicon (M1 and newer). On first launch, macOS may require **Open Anyway** in **System Settings → Privacy & Security**, as the app is signed ad hoc without Apple notarization.
 - Added secure credential storage using macOS Keychain.
 - Updated desktop update and relaunch handling for macOS.
 - Added dedicated macOS validation and build workflows.
