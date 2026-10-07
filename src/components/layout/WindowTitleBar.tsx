@@ -5,6 +5,32 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { appSettings } from '../../config/appSettings';
 import { useI18n } from '../../i18n/I18nProvider';
 
+export function useCustomWindowTitleBar() {
+  const [customTitleBar, setCustomTitleBar] = useState(false);
+
+  useEffect(() => {
+    if (!isTauri()) {
+      return;
+    }
+
+    let cancelled = false;
+    void getCurrentWindow().isDecorated()
+      .then((decorated) => {
+        if (!cancelled) setCustomTitleBar(!decorated);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Window decoration check failed', error);
+          setCustomTitleBar(true);
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  return customTitleBar;
+}
+
 export function WindowTitleBar() {
   const { t } = useI18n();
   const tauriAvailable = isTauri();

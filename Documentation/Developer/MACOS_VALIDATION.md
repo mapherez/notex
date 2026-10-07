@@ -1,8 +1,9 @@
 # macOS Apple Silicon validation
 
-NoteX's macOS support is initially a validation build, not a public release.
-Intel Macs are not included. The Windows release workflow and publisher remain
-unchanged until the macOS build and functional smoke test below have passed.
+NoteX targets macOS Apple Silicon; Intel Macs are not included. The isolated
+validation build remains available independently of the combined release
+pipeline. Its build and user-reported functional smoke evidence are recorded
+below. See [desktop releases](DESKTOP_RELEASE.md) for the public ad hoc build.
 
 ## Isolated CI
 
@@ -22,6 +23,12 @@ There is no route from this workflow to publishing or modifying a GitHub Release
 updater artefact generation and selects ad hoc signing (`-`), so no Apple
 certificate, notarization credentials or Tauri updater signing key are needed.
 The normal configuration keeps its existing updater settings.
+
+`src-tauri/tauri.macos.conf.json` enables the native macOS title bar and traffic
+light controls for development, validation and eventual public macOS builds.
+The frontend checks the window's decorated state and uses the custom title bar
+only for undecorated windows, retaining the Windows controls and layout. Native
+macOS close requests still pass through the existing pending-backup guard.
 
 The validation identifier is `com.mapherez.notex.validation`, which isolates
 notes, account selection and attachments from an eventual production install.
@@ -72,25 +79,63 @@ Google and MCP keep their existing credential service/account identifiers.
 The validation app's files are isolated, but its Keychain entries can be shared
 with development or production builds. Use a dedicated Google test account.
 
-## Functional smoke test — required before public-release integration
+## Functional smoke test evidence
 
-Status: **pending an Apple Silicon CI run and real Mac smoke test**.
-Record the commit, Actions run URL, macOS version, Mac model, tester and results.
+Status: **CI passed; user-reported functional checks passed on a real Mac;
+targeted remaining checks and native-title-bar retest pending**.
+
+CI evidence last verified on `main`, commit
+`94f48bf5340cb878466ed25bf3b98870ccbf6577`:
+
+- [macOS ARM64 validation](https://github.com/mapherez/notex/actions/runs/37562603363)
+  passed Rust tests, bundle architecture/signature checks and artefact upload.
+- [Windows desktop CI](https://github.com/mapherez/notex/actions/runs/37562535549)
+  passed tests and the desktop release build.
+
+User-reported smoke test on **2026-10-07**, performed by the repository owner on
+a **MacBook Air M3**:
+
+- NoteX launched after granting the app-specific Gatekeeper exception.
+- NoteX **2.4.1** was installed from the DMG inside the validation workflow ZIP.
+- macOS was reported as the latest version; its exact version/build was not
+  supplied.
+- Google sign-in succeeded, and notes were restored from the Drive backup.
+- Notes were edited and backed up; the changes appeared on other devices and
+  in the web app.
+- Local MCP connected to Codex and successfully edited notes.
+- After closing and reopening, notes persisted and Google stayed signed in.
+- Attachments, imports/exports, the interface and local MCP were reported as
+  working normally.
+- Reinstallation of the same version worked. Reinstallation of a newer version
+  has not yet been tested.
+- The remaining reported UI issue was the Windows-style custom title bar. The
+  next build enables the native macOS controls and needs a Mac retest.
+
+The tested artefact's Actions run/commit and exact macOS version/build have not
+yet been recorded. Record those details and results for the remaining checks.
 Use a dedicated test account and disposable notes; do not import over an
 existing library. Opening an ad hoc test build may require macOS's explicit
 Open Anyway action. Do not disable Gatekeeper globally.
 
-- [ ] CI is green, including Rust tests and bundle architecture/signature checks.
-- [ ] Install from the DMG, launch, and confirm the installed app's version.
+- [x] CI is green, including Rust tests and bundle architecture/signature checks.
+- [x] Launch the validation app after the app-specific Gatekeeper exception.
+- [x] Confirm installation from the DMG and record the installed app's version.
 - [ ] Create, edit, search and reopen notes offline; restart and verify content.
-- [ ] Google login finishes. Permit Keychain access when requested, quit and
-      reopen, and verify authenticated access/refresh and Drive backup.
-- [ ] Back up a note and attachment, then recover them using the test account.
-- [ ] Attach images and files; verify previews, external opening and save dialogs.
-- [ ] Export/import a `.notex-note` package and a disposable `.notex` library.
-- [ ] Start local MCP, connect a compatible client, read/write a test note, stop.
-- [ ] Check editing/formatting, `⌘` shortcuts, drag, minimize, maximize and close.
+- [x] Google login finishes and existing notes can be restored from Drive.
+- [x] Edit notes and back them up; verify the changes on other devices and web.
+- [x] Quit and reopen; verify notes persist and Google remains signed in.
+- [ ] Verify authenticated token refresh and Drive backup after reopening.
+- [ ] Back up an attachment and recover it alongside its note.
+- [x] Attachments work in the installed macOS app (user report).
+- [ ] Verify attachment previews, external opening and save dialogs.
+- [x] Import/export works in the installed macOS app (user report).
+- [x] Connect Codex through local MCP and edit notes.
+- [x] Local MCP functionality works normally (user report).
+- [x] The interface works as on Windows (user report).
+- [ ] Retest the native macOS title bar: drag, minimize, full screen and close,
+      including cancelling a close request when backups are pending.
 - [ ] Confirm the pending-backup close guard and cancellation behavior.
+- [x] Reinstall the same validation version successfully.
 - [ ] Reinstall a newer validation build and confirm local notes/accounts/files
       survive. This is a persistence check, not an automatic-update test.
 
@@ -101,25 +146,29 @@ covered by automatic tests. An actual automatic update must be tested later
 with two updater-signed macOS versions; this validation build does not generate
 updater artefacts or publish a manifest.
 
-## Gate for phase 3 — public release
+## Phase 3 — ad hoc public-release implementation
 
-Do not change `.github/workflows/release.yml` or invoke the current publisher
-for macOS until the build and functional smoke test above pass. Keep unsigned
-validation available for PRs independently of release secrets.
+On 2026-10-07 the repository owner authorized phase 3 implementation after the
+reported smoke test, then chose ad hoc signing without a paid Apple Developer
+account. Developer ID signing and Apple notarization are therefore outside the
+release requirements. The existing Tauri updater key is still required.
 
-After that gate, the remaining public-release work is:
+The combined workflow now builds Windows and macOS separately and requires
+both jobs to succeed before its sole publishing job can run. Platform/target
+metadata, hashes and required assets are checked before any GitHub API calls.
+One `latest.json` contains `windows-x86_64` and `darwin-aarch64`; the DMG is an
+installer and the signed `.app.tar.gz` is the macOS updater payload. Public
+downloads and installation instructions are prepared in the website sources.
 
-1. Configure Developer ID Application signing and App Store Connect API
-   notarization credentials separately from the Tauri updater key.
-2. Build Windows and macOS separately and aggregate their artefacts in one final
-   publishing job, only after both builds pass.
-3. Make platform/architecture identification explicit in the publisher, include
-   the DMG, and generate one `latest.json` containing `windows-x86_64` and
-   `darwin-aarch64`, keeping the current updater public key.
-4. Publish the DMG for installation and `.app.tar.gz` plus `.sig` for updates.
-5. Validate a real update between two versions and verify all notes, accounts
-   and attachments survive.
-6. Add the public Apple Silicon download and macOS support to the landing page,
-   README and user documentation only when the public build is ready.
+These changes have not been run on GitHub or published as part of this local
+implementation. A green combined macOS build, the targeted checks above, and
+the real two-version update test in [desktop releases](DESKTOP_RELEASE.md)
+remain to be recorded before treating the public release as validated. The
+earlier green validation runs are evidence for their recorded commits only.
+
+The unsigned validation workflow remains read-only, with no publishing token,
+release API calls or updater checks, independently of release secrets. Deploy
+the website download changes after the first combined public release supplies
+the advertised DMG.
 
 No note-format migration is required.

@@ -7,6 +7,7 @@ They are not end-user guides.
 
 - [Development setup and commands](DEVELOPMENT.md)
 - [macOS Apple Silicon validation and release gate](MACOS_VALIDATION.md)
+- [Windows and macOS releases, signing and updater test](DESKTOP_RELEASE.md)
 - [Architecture constraints](ARCHITECTURE_CONSTRAINTS.md)
 - [Data model](DATA_MODEL.md)
 - [Layout](LAYOUT.md)

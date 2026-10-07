@@ -12,18 +12,18 @@ on:
         required: false
         default: ""
       draft:
-        description: Create the GitHub release as a draft.
+        description: Keep the completed release as a draft.
         required: false
         type: boolean
         default: false
       prerelease:
-        description: Mark the GitHub release as a prerelease.
+        description: Mark the release as a prerelease without changing latest.
         required: false
         type: boolean
         default: false
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: tauri-release
@@ -31,44 +31,50 @@ concurrency:
 
 jobs:
   windows:
-    name: Build and publish Windows app
+    name: Build Windows x86_64
     runs-on: windows-latest
     timeout-minutes: 60
-
     env:
       CI: true
-
+      NOTEX_RELEASE_TARGET: x86_64-pc-windows-msvc
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7.0.1
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Rust build
-        uses: swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Verify Rust host and build target
+        shell: pwsh
+        run: |
+          rustc -vV
+          $rustHost = (rustc -vV | Select-String '^host: ').Line.Substring(6)
+          if ($rustHost -ne $env:NOTEX_RELEASE_TARGET) { throw "Unexpected Rust host: $rustHost" }
+          rustup target list --installed
+          if (-not ((rustup target list --installed) -contains $env:NOTEX_RELEASE_TARGET)) { throw 'Rust target is missing' }
+          Write-Output "Build target: $env:NOTEX_RELEASE_TARGET"
+      - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
-
-      - name: Install repository dependencies
-        run: npm ci
-
-      - name: Verify Tauri updater signing secret
+          key: windows-x86_64-pc-windows-msvc-release
+      - run: npm ci
+      - run: npm run test:release
+      - run: npm test --workspace @notex/mcp-contract
+      - run: npm test
+      - run: git diff --exit-code -- packages/notex-mcp-contract/generated/tool-manifest.json
+      - run: npm run check:styles
+      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml --target $env:NOTEX_RELEASE_TARGET
+      - name: Verify updater signing secret
         shell: pwsh
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         run: |
-          if (-not $env:TAURI_SIGNING_PRIVATE_KEY) {
-            throw "Missing TAURI_SIGNING_PRIVATE_KEY secret. Generate it with 'npx tauri signer generate' and add the private key to repository secrets."
-          }
-
-      - name: Build Tauri app
+          if (-not $env:TAURI_SIGNING_PRIVATE_KEY) { throw 'Missing TAURI_SIGNING_PRIVATE_KEY' }
+      - name: Build signed Windows installers
         env:
           VITE_GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
           VITE_GOOGLE_DESKTOP_CLIENT_ID: ${{ secrets.GOOGLE_DESKTOP_CLIENT_ID }}
@@ -76,13 +82,127 @@ jobs:
           VITE_GOOGLE_WEB_ORIGIN: ${{ secrets.GOOGLE_WEB_ORIGIN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run tauri:build
+        run: npm run tauri:build -- --target $env:NOTEX_RELEASE_TARGET --bundles nsis,msi --ci -- --locked
+      - name: Collect Windows release assets
+        run: node .github/scripts/collect-release-artifacts.mjs windows-x86_64 $env:NOTEX_RELEASE_TARGET "src-tauri/target/$env:NOTEX_RELEASE_TARGET/release/bundle" output/release/windows-x86_64
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-windows-x86_64
+          path: output/release/windows-x86_64/
+          if-no-files-found: error
+          retention-days: 14
 
-      - name: Publish Tauri release
+  macos:
+    name: Build macOS Apple Silicon (ad hoc)
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      CI: true
+      NOTEX_RELEASE_TARGET: aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+      - name: Verify Apple Silicon host and Rust target
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Machine architecture: $(uname -m)"
+          test "$(uname -m)" = arm64
+          rustc -vV
+          rust_host="$(rustc -vV | sed -n 's/^host: //p')"
+          test "$rust_host" = "$NOTEX_RELEASE_TARGET"
+          rustup target list --installed
+          rustup target list --installed | grep -Fx "$NOTEX_RELEASE_TARGET"
+          rustc --print cfg --target "$NOTEX_RELEASE_TARGET"
+          rustc --print cfg --target "$NOTEX_RELEASE_TARGET" | grep -Fx 'target_arch="aarch64"'
+          rustc --print cfg --target "$NOTEX_RELEASE_TARGET" | grep -Fx 'target_os="macos"'
+          echo "Build target: $NOTEX_RELEASE_TARGET"
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: macos-15-aarch64-apple-darwin-release
+      - run: npm ci
+      - run: npm run test:release
+      - run: npm test --workspace @notex/mcp-contract
+      - run: npm test
+      - run: git diff --exit-code -- packages/notex-mcp-contract/generated/tool-manifest.json
+      - run: npm run check:styles
+      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml --target "$NOTEX_RELEASE_TARGET"
+      - name: Verify updater signing secret
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: test -n "$TAURI_SIGNING_PRIVATE_KEY"
+      - name: Build ad hoc app and DMG with signed updater archive
+        shell: bash
+        env:
+          VITE_GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+          VITE_GOOGLE_DESKTOP_CLIENT_ID: ${{ secrets.GOOGLE_DESKTOP_CLIENT_ID }}
+          GOOGLE_DESKTOP_CLIENT_SECRET: ${{ secrets.GOOGLE_DESKTOP_CLIENT_SECRET }}
+          VITE_GOOGLE_WEB_ORIGIN: ${{ secrets.GOOGLE_WEB_ORIGIN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "npm run tauri:build -- --target $NOTEX_RELEASE_TARGET --bundles app,dmg --config src-tauri/tauri.macos-release.conf.json --ci -- --locked"
+          npm run tauri:build -- --target "$NOTEX_RELEASE_TARGET" --bundles app,dmg --config src-tauri/tauri.macos-release.conf.json --ci -- --locked
+      - name: Verify ad hoc app and updater payload
+        run: bash .github/scripts/verify-macos-release.sh
+      - name: Collect macOS release assets including DMG
+        run: node .github/scripts/collect-release-artifacts.mjs darwin-aarch64 "$NOTEX_RELEASE_TARGET" "src-tauri/target/$NOTEX_RELEASE_TARGET/release/bundle" output/release/darwin-aarch64
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-darwin-aarch64
+          path: output/release/darwin-aarch64/
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish one Windows and macOS release
+    needs: [windows, macos]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      TAURI_RELEASE_NOTES: ${{ inputs.release_notes }}
+      RELEASE_DRAFT: ${{ inputs.draft }}
+      RELEASE_PRERELEASE: ${{ inputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-windows-x86_64
+          path: output/release/windows-x86_64
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-darwin-aarch64
+          path: output/release/darwin-aarch64
+      - name: Validate combined release without API calls
+        run: |
+          export TAURI_RELEASE_PUB_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "TAURI_RELEASE_PUB_DATE=$TAURI_RELEASE_PUB_DATE" >> "$GITHUB_ENV"
+          node .github/scripts/tauri-release.mjs --dry-run
+      - name: Save combined updater manifest for inspection
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-updater-manifest
+          path: output/release-metadata/latest.json
+          if-no-files-found: error
+      - name: Publish complete release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ inputs.release_tag }}
-          TAURI_RELEASE_NOTES: ${{ inputs.release_notes }}
-          RELEASE_DRAFT: ${{ inputs.draft }}
-          RELEASE_PRERELEASE: ${{ inputs.prerelease }}
-        run: npm run release:tauri
+        run: node .github/scripts/tauri-release.mjs

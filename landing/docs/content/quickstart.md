@@ -10,13 +10,21 @@ For Windows desktop:
 2. Download the Windows installer and run it.
 3. Open NoteX. The desktop app does not require a login.
 
+For macOS Apple Silicon (M1 and newer):
+
+1. Download the [macOS DMG](https://github.com/mapherez/notex/releases/latest/download/NoteX-macos-arm64.dmg).
+2. Open the DMG, drag **NoteX** to **Applications**, then eject the disk image.
+3. Open NoteX from Applications. If macOS cannot verify the app, open **System Settings → Privacy & Security**, select **Open Anyway** for NoteX and confirm. See [Apple's instructions](https://support.apple.com/en-us/102445).
+
+The macOS app uses ad hoc signing without Apple notarization. Intel Macs are not supported. The public DMG becomes available with the first combined Windows/macOS release; workflow validation downloads are separate test builds.
+
 On a desktop, tablet, or phone, you can instead open the [web app](https://notex.mapherez.com/app/) and sign in with Google. Phones use portrait orientation. Read the [tablet and phone guide](mobile-tablet.md) for touch controls.
 
-The Windows app works offline after installation. In browser mode, downloaded notes can be edited offline after the app and required notes have been cached; the first visit needs internet access. Downloading desktop updates and connecting an online AI service also require a connection.
+The desktop app works offline after installation. In browser mode, downloaded notes can be edited offline after the app and required notes have been cached; the first visit needs internet access. Downloading desktop updates and connecting an online AI service also require a connection.
 
 ## Create and write
 
-1. Select **New note**, or press **Ctrl + N**.
+1. Select **New note**, or press **Ctrl + N** on Windows / **⌘ + N** on macOS.
 2. Give the note a title. Add a subtitle if a short description would help you recognize it in a list.
 3. Add a content block and write in it. A block can have its own title.
 4. Use the editor toolbar to add formatting, lists, tables, or files as needed.
@@ -33,12 +41,12 @@ You can adjust this organization later; it does not need to be perfect before yo
 
 ## Find it again
 
-Open **Notes** to browse your library. Use the collection or tag filters to narrow the list, or press **Ctrl + F** to focus global search and search for a word from your note.
+Open **Notes** to browse your library. Use the collection or tag filters to narrow the list, or press **Ctrl + F** on Windows / **⌘ + F** on macOS to focus global search and search for a word from your note.
 
 The recent-notes list follows actual note updates. Simply opening a note does not move it to the top of that list.
 
 ## Keep a backup
 
-On Windows desktop, once you have content worth keeping, export your workspace from the data-management section of **Profile**. Save the resulting `.notex` package somewhere independent of your working library. Browser mode backs up account notes to Google Drive when connected.
+On desktop, once you have content worth keeping, export your workspace from the data-management section of **Profile**. Save the resulting `.notex` package somewhere independent of your working library. Browser mode backs up account notes to Google Drive when connected.
 
 See [backups and imports](import-export.md) before restoring a full workspace: that operation replaces the current library.

@@ -85,6 +85,28 @@ function expectDestroyed() {
 }
 
 describe('desktop titlebar close with the backup guard', () => {
+  it('handles native macOS close requests without pending backups', async () => {
+    mocks.account = { id: 'account-1' };
+    await act(async () => {
+      await mocks.listeners.get('tauri://close-requested')!({ event: 'tauri://close-requested', id: 1, payload: null });
+    });
+    expect(mocks.pending).toHaveBeenCalled();
+    expectDestroyed();
+  });
+
+  it('allows cancelling a native macOS close request with pending backups', async () => {
+    mocks.account = { id: 'account-1' };
+    mocks.pending.mockResolvedValue([{ entityId: 'note-1' }]);
+    await act(async () => {
+      await mocks.listeners.get('tauri://close-requested')!({ event: 'tauri://close-requested', id: 1, payload: null });
+    });
+    expect(mocks.destroyed).not.toHaveBeenCalled();
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+    await click('.choice-modal .secondary-button:last-child');
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(mocks.destroyed).not.toHaveBeenCalled();
+  });
+
   it('closes without a signed-in account using the SDK destroy permission', async () => {
     await click('.window-titlebar__control--close');
     expectDestroyed();

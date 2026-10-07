@@ -16,6 +16,7 @@
     "tauri:build:no-bundle": "node scripts/tauri-with-env.mjs build --no-bundle",
     "tauri:icon": "tauri icon ./public/assets/notex_logo_small.webp",
     "release:tauri": "node .github/scripts/tauri-release.mjs",
+    "test:release": "node --test .github/scripts/release-artifacts.test.mjs",
     "version:set": "node scripts/set-version.mjs",
     "dev": "vite --host 0.0.0.0",
     "prebuild": "npm run build:mcp-contract",
