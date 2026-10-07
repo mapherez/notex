@@ -1,5 +1,4 @@
 import { Plus, X } from 'lucide-react';
-import { isTauri } from '@tauri-apps/api/core';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Note } from '../../core/models/models';
@@ -13,11 +12,11 @@ import { LegalModal, type LegalModalKind } from '../ui/LegalModal';
 import { PhoneLandscapeGuard } from './PhoneLandscapeGuard';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
-import { WindowTitleBar } from './WindowTitleBar';
+import { useCustomWindowTitleBar, WindowTitleBar } from './WindowTitleBar';
 
 export function AppShell() {
   const { t } = useI18n();
-  const hasWindowTitleBar = isTauri();
+  const hasWindowTitleBar = useCustomWindowTitleBar();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const appShellRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -106,7 +105,7 @@ export function AppShell() {
 
   return (
     <div className={hasWindowTitleBar ? 'app-frame app-frame--custom-titlebar' : 'app-frame'}>
-      <WindowTitleBar />
+      {hasWindowTitleBar && <WindowTitleBar />}
       <div className="app-shell" ref={appShellRef}>
         <Sidebar
           open={sidebarOpen}

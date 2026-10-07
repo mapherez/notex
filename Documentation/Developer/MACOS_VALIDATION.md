@@ -23,6 +23,12 @@ updater artefact generation and selects ad hoc signing (`-`), so no Apple
 certificate, notarization credentials or Tauri updater signing key are needed.
 The normal configuration keeps its existing updater settings.
 
+`src-tauri/tauri.macos.conf.json` enables the native macOS title bar and traffic
+light controls for development, validation and eventual public macOS builds.
+The frontend checks the window's decorated state and uses the custom title bar
+only for undecorated windows, retaining the Windows controls and layout. Native
+macOS close requests still pass through the existing pending-backup guard.
+
 The validation identifier is `com.mapherez.notex.validation`, which isolates
 notes, account selection and attachments from an eventual production install.
 The `.app` is archived with `ditto` to preserve bundle metadata; the artefact
@@ -74,23 +80,61 @@ with development or production builds. Use a dedicated Google test account.
 
 ## Functional smoke test — required before public-release integration
 
-Status: **pending an Apple Silicon CI run and real Mac smoke test**.
-Record the commit, Actions run URL, macOS version, Mac model, tester and results.
+Status: **CI passed; user-reported functional checks passed on a real Mac;
+targeted remaining checks and native-title-bar retest pending**.
+
+CI evidence last verified on `main`, commit
+`94f48bf5340cb878466ed25bf3b98870ccbf6577`:
+
+- [macOS ARM64 validation](https://github.com/mapherez/notex/actions/runs/37562603363)
+  passed Rust tests, bundle architecture/signature checks and artefact upload.
+- [Windows desktop CI](https://github.com/mapherez/notex/actions/runs/37562535549)
+  passed tests and the desktop release build.
+
+User-reported smoke test on **2026-10-07**, performed by the repository owner on
+a **MacBook Air M3**:
+
+- NoteX launched after granting the app-specific Gatekeeper exception.
+- NoteX **2.4.1** was installed from the DMG inside the validation workflow ZIP.
+- macOS was reported as the latest version; its exact version/build was not
+  supplied.
+- Google sign-in succeeded, and notes were restored from the Drive backup.
+- Notes were edited and backed up; the changes appeared on other devices and
+  in the web app.
+- Local MCP connected to Codex and successfully edited notes.
+- After closing and reopening, notes persisted and Google stayed signed in.
+- Attachments, imports/exports, the interface and local MCP were reported as
+  working normally.
+- Reinstallation of the same version worked. Reinstallation of a newer version
+  has not yet been tested.
+- The remaining reported UI issue was the Windows-style custom title bar. The
+  next build enables the native macOS controls and needs a Mac retest.
+
+The tested artefact's Actions run/commit and exact macOS version/build have not
+yet been recorded. Record those details and results for the remaining checks.
 Use a dedicated test account and disposable notes; do not import over an
 existing library. Opening an ad hoc test build may require macOS's explicit
 Open Anyway action. Do not disable Gatekeeper globally.
 
-- [ ] CI is green, including Rust tests and bundle architecture/signature checks.
-- [ ] Install from the DMG, launch, and confirm the installed app's version.
+- [x] CI is green, including Rust tests and bundle architecture/signature checks.
+- [x] Launch the validation app after the app-specific Gatekeeper exception.
+- [x] Confirm installation from the DMG and record the installed app's version.
 - [ ] Create, edit, search and reopen notes offline; restart and verify content.
-- [ ] Google login finishes. Permit Keychain access when requested, quit and
-      reopen, and verify authenticated access/refresh and Drive backup.
-- [ ] Back up a note and attachment, then recover them using the test account.
-- [ ] Attach images and files; verify previews, external opening and save dialogs.
-- [ ] Export/import a `.notex-note` package and a disposable `.notex` library.
-- [ ] Start local MCP, connect a compatible client, read/write a test note, stop.
-- [ ] Check editing/formatting, `⌘` shortcuts, drag, minimize, maximize and close.
+- [x] Google login finishes and existing notes can be restored from Drive.
+- [x] Edit notes and back them up; verify the changes on other devices and web.
+- [x] Quit and reopen; verify notes persist and Google remains signed in.
+- [ ] Verify authenticated token refresh and Drive backup after reopening.
+- [ ] Back up an attachment and recover it alongside its note.
+- [x] Attachments work in the installed macOS app (user report).
+- [ ] Verify attachment previews, external opening and save dialogs.
+- [x] Import/export works in the installed macOS app (user report).
+- [x] Connect Codex through local MCP and edit notes.
+- [x] Local MCP functionality works normally (user report).
+- [x] The interface works as on Windows (user report).
+- [ ] Retest the native macOS title bar: drag, minimize, full screen and close,
+      including cancelling a close request when backups are pending.
 - [ ] Confirm the pending-backup close guard and cancellation behavior.
+- [x] Reinstall the same validation version successfully.
 - [ ] Reinstall a newer validation build and confirm local notes/accounts/files
       survive. This is a persistence check, not an automatic-update test.
 
