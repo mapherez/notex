@@ -1,3 +1,20 @@
+# 2.5.0
+
+## What's New in NoteX
+
+This release finally brings NoteX to macOS, with official support for Apple Silicon Macs.
+
+### Highlights
+
+- Added native macOS support for Apple Silicon.
+- Added macOS app and DMG builds.
+- Added secure credential storage using macOS Keychain.
+- Updated desktop update and relaunch handling for macOS.
+- Added dedicated macOS validation and build workflows.
+- Improved cross-platform compatibility across the desktop app.
+
+---
+
 # 2.4.1
 
 ## What's New in NoteX
