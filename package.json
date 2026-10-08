@@ -1,7 +1,7 @@
 {
   "name": "notex",
   "private": true,
-  "version": "2.5.0",
+  "version": "2.5.1",
   "type": "module",
   "workspaces": [
     "backend",
@@ -34,7 +34,7 @@
     "@chenglou/pretext": "^0.0.7",
     "@floating-ui/dom": "^1.7.6",
     "@notex/mcp-contract": "0.1.0",
-    "@nox/mcp": "https://github.com/mapherez/nox-mcp/releases/download/v0.4.1/nox-mcp.tgz",
+    "@nox/mcp": "https://github.com/mapherez/nox-mcp/releases/download/v0.4.3/nox-mcp.tgz",
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-process": "^2.3.1",
