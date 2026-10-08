@@ -133,9 +133,11 @@ test('collection rejects missing/empty signatures and ambiguous installers', asy
   await assert.rejects(() => collectReleaseArtifacts({ ...options, platform: 'windows-x86_64', target: platformTargets['windows-x86_64'], bundleDir: path.join(f.raw, 'windows') }), /exactly one Windows NSIS installer/);
 });
 
-function githubMock({ existing = null, failUpload = false, assets = [] } = {}) {
+function githubMock({ existing = null, failUpload = false, assets = [], tagObject = null,
+  listedDraft = false, initialTag, completedTag, completedDraft, repairedTag } = {}) {
   const calls = [];
-  const release = { id: 123, draft: true, upload_url: 'https://uploads.github.com/repos/mapherez/notex/releases/123/assets{?name,label}' };
+  const release = { id: 123, tag_name: 'v-test', draft: true,
+    upload_url: 'https://uploads.github.com/repos/mapherez/notex/releases/123/assets{?name,label}' };
   const fetchImpl = async (input, options) => {
     const url = new URL(input);
     const body = typeof options.body === 'string' ? JSON.parse(options.body) : null;
@@ -144,9 +146,21 @@ function githubMock({ existing = null, failUpload = false, assets = [] } = {}) {
       for await (const ignored of options.body) void ignored;
       return new Response('{}', { status: failUpload ? 500 : 201 });
     }
-    if (options.method === 'GET' && url.pathname.includes('/tags/')) return existing ? Response.json(existing) : new Response(null, { status: 404 });
+    if (options.method === 'GET' && url.pathname.includes('/releases/tags/')) return existing && !listedDraft ? Response.json(existing) : new Response(null, { status: 404 });
+    if (options.method === 'GET' && url.pathname.endsWith('/releases')) return Response.json(listedDraft ? [existing] : []);
+    if (options.method === 'GET' && url.pathname.includes('/git/ref/tags/')) return tagObject ? Response.json({ object: tagObject }) : new Response(null, { status: 404 });
+    if (options.method === 'POST' && url.pathname.endsWith('/git/refs')) return Response.json({ ref: body.ref, object: { type: 'commit', sha: body.sha } });
+    if (options.method === 'GET' && url.pathname.includes('/git/tags/')) return Response.json({ object: { type: 'commit', sha: metadata.commit } });
     if (options.method === 'GET' && url.pathname.endsWith('/assets')) return Response.json(assets);
     if (options.method === 'DELETE') return new Response(null, { status: 204 });
+    if (options.method === 'POST') Object.assign(release, body, initialTag === undefined ? {} : { tag_name: initialTag });
+    if (options.method === 'PATCH') {
+      Object.assign(release, body);
+      if ('make_latest' in body) {
+        if (completedTag !== undefined) release.tag_name = completedTag;
+        if (completedDraft !== undefined) release.draft = completedDraft;
+      } else if (repairedTag !== undefined) release.tag_name = repairedTag;
+    }
     return Response.json(release);
   };
   return { calls, fetchImpl };
@@ -164,7 +178,12 @@ test('creates a draft, uploads latest.json last and publishes only after all upl
   const options = await publishingFixture(t);
   const mock = githubMock();
   await publishRelease({ ...options, fetchImpl: mock.fetchImpl });
+  const createTag = mock.calls.find(call => call.method === 'POST' && call.url.endsWith('/git/refs'));
   const create = mock.calls.find(call => call.method === 'POST' && call.url.endsWith('/releases'));
+  assert.equal(createTag.body.ref, 'refs/tags/v-test');
+  assert.equal(createTag.body.sha, metadata.commit);
+  assert.ok(mock.calls.indexOf(createTag) < mock.calls.indexOf(create));
+  assert.equal(create.body.tag_name, 'v-test');
   assert.equal(create.body.draft, true);
   assert.equal(create.body.target_commitish, metadata.commit);
   const uploads = mock.calls.filter(call => call.url.startsWith('https://uploads.github.com/'));
@@ -173,6 +192,8 @@ test('creates a draft, uploads latest.json last and publishes only after all upl
   assert.equal(mock.calls.at(-1).method, 'PATCH');
   assert.equal(mock.calls.at(-1).body.draft, false);
   assert.equal(mock.calls.at(-1).body.make_latest, 'true');
+  assert.equal(mock.calls.at(-1).body.tag_name, 'v-test');
+  assert.equal(mock.calls.at(-1).body.target_commitish, metadata.commit);
 });
 
 test('an upload failure leaves the release unpublished', async t => {
@@ -192,7 +213,7 @@ test('refuses to modify a published release', async t => {
 
 test('a retry replaces expected draft assets before publishing the complete set', async t => {
   const options = await publishingFixture(t);
-  const existing = { id: 123, draft: true, upload_url: 'https://uploads.github.com/repos/mapherez/notex/releases/123/assets{?name,label}' };
+  const existing = { id: 123, tag_name: 'v-test', draft: true, upload_url: 'https://uploads.github.com/repos/mapherez/notex/releases/123/assets{?name,label}' };
   const mock = githubMock({ existing, assets: [{ id: 456, name: 'latest.json' }] });
   await publishRelease({ ...options, fetchImpl: mock.fetchImpl });
   assert.ok(!mock.calls.some(call => call.method === 'POST' && call.url.endsWith('/releases')));
@@ -214,8 +235,76 @@ test('draft and prerelease runs do not mark the release latest', async t => {
   const options = await publishingFixture(t);
   for (const flags of [{ draft: true }, { prerelease: true }]) {
     const mock = githubMock();
-    await publishRelease({ ...options, ...flags, fetchImpl: mock.fetchImpl });
+    const release = await publishRelease({ ...options, ...flags, fetchImpl: mock.fetchImpl });
     assert.equal(mock.calls.at(-1).body.make_latest, 'false');
+    assert.equal(mock.calls.at(-1).body.tag_name, 'v-test');
+    assert.equal(release.tag_name, 'v-test');
+    assert.equal(release.draft, flags.draft ?? false);
+  }
+});
+
+test('reuses lightweight and annotated tags that point to the build commit', async t => {
+  const options = await publishingFixture(t);
+  for (const tagObject of [{ type: 'commit', sha: metadata.commit }, { type: 'tag', sha: 'annotated-tag' }]) {
+    const mock = githubMock({ tagObject });
+    await publishRelease({ ...options, fetchImpl: mock.fetchImpl });
+    assert.ok(!mock.calls.some(call => call.method === 'POST' && call.url.endsWith('/git/refs')));
+  }
+});
+
+test('refuses a tag pointing to a different commit without moving it or uploading', async t => {
+  const options = await publishingFixture(t);
+  const mock = githubMock({ tagObject: { type: 'commit', sha: 'another-commit' } });
+  await assert.rejects(() => publishRelease({ ...options, fetchImpl: mock.fetchImpl }), /does not point to release commit/);
+  assert.ok(mock.calls.every(call => call.method === 'GET'));
+});
+
+test('finds a retry draft through the release list when tag lookup returns 404', async t => {
+  const options = await publishingFixture(t);
+  const mock = githubMock({ listedDraft: true, existing: {
+    id: 123, tag_name: 'v-test', draft: true,
+    upload_url: 'https://uploads.github.com/repos/mapherez/notex/releases/123/assets{?name,label}',
+  } });
+  await publishRelease({ ...options, fetchImpl: mock.fetchImpl });
+  assert.ok(!mock.calls.some(call => call.method === 'POST' && call.url.endsWith('/releases')));
+});
+
+test('binds a placeholder to the real tag while still a draft before uploading', async t => {
+  const options = await publishingFixture(t);
+  const mock = githubMock({ initialTag: 'untagged-placeholder' });
+  const release = await publishRelease({ ...options, fetchImpl: mock.fetchImpl });
+  const repair = mock.calls.findIndex(call => call.method === 'PATCH');
+  const upload = mock.calls.findIndex(call => call.url.startsWith('https://uploads.github.com/'));
+  assert.ok(repair < upload);
+  assert.equal(mock.calls[repair].body.tag_name, 'v-test');
+  assert.equal(mock.calls[repair].body.draft, true);
+  assert.equal(release.tag_name, 'v-test');
+  assert.equal(release.draft, false);
+});
+
+test('fails before uploads if GitHub does not retain the draft tag', async t => {
+  const options = await publishingFixture(t);
+  const mock = githubMock({ initialTag: 'untagged-placeholder', repairedTag: 'untagged-placeholder' });
+  await assert.rejects(() => publishRelease({ ...options, fetchImpl: mock.fetchImpl }), /did not retain draft tag/);
+  assert.ok(!mock.calls.some(call => call.url.startsWith('https://uploads.github.com/')));
+});
+
+test('fails instead of reporting success when GitHub returns the wrong final tag or draft state', async t => {
+  const options = await publishingFixture(t);
+  for (const draft of [false, true]) {
+    for (const response of [{ completedTag: 'untagged-placeholder' }, { completedDraft: !draft }]) {
+      const mock = githubMock(response);
+      await assert.rejects(() => publishRelease({ ...options, draft, fetchImpl: mock.fetchImpl }), /did not retain release tag\/state/);
+    }
+  }
+});
+
+test('rejects a missing build commit or placeholder tag before API calls', async t => {
+  const options = await publishingFixture(t);
+  for (const invalid of [{ targetCommit: undefined }, { tagName: 'untagged-placeholder' }]) {
+    const mock = githubMock();
+    await assert.rejects(() => publishRelease({ ...options, ...invalid, fetchImpl: mock.fetchImpl }), /Missing release commit|Invalid release tag/);
+    assert.equal(mock.calls.length, 0);
   }
 });
 

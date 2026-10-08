@@ -10,6 +10,8 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..',
 // Upload a complete release to a draft before making it visible to the updater.
 export async function publishRelease({ repository, tagName, version, token, uploadAssets,
   releaseNotes = '', draft = false, prerelease = false, targetCommit, fetchImpl = fetch, log = console.log }) {
+  if (typeof targetCommit !== 'string' || !targetCommit.trim()) throw new Error('Missing release commit.');
+  if (typeof tagName !== 'string' || !tagName.trim() || tagName.startsWith('untagged-')) throw new Error('Invalid release tag.');
   async function request(method, suffix, body, allowNotFound = false) {
     const response = await fetchImpl(`https://api.github.com/repos/${repository}${suffix}`, {
       method, headers: {
@@ -23,18 +25,45 @@ export async function publishRelease({ repository, tagName, version, token, uplo
   }
   let release = await request('GET', `/releases/tags/${encodeURIComponent(tagName)}`, undefined, true);
   if (release && !release.draft) throw new Error(`Release ${tagName} is already published. Use a new version/tag; published releases are not modified.`);
+  // The tag lookup does not return drafts. Find a previous draft when retrying.
+  if (!release) {
+    for (let page = 1; ; page += 1) {
+      const releases = await request('GET', `/releases?per_page=100&page=${page}`);
+      release = releases.find(candidate => candidate.draft && candidate.tag_name === tagName);
+      if (release || releases.length < 100) break;
+    }
+  }
+  const existingAssets = [];
+  if (release) {
+    for (let page = 1; ; page += 1) {
+      const assets = await request('GET', `/releases/${release.id}/assets?per_page=100&page=${page}`);
+      existingAssets.push(...assets);
+      if (assets.length < 100) break;
+    }
+  }
+  const expectedNames = new Set(uploadAssets.map(file => path.basename(file)));
+  if (existingAssets.some(asset => !expectedNames.has(asset.name))) throw new Error(`Draft ${tagName} contains unexpected assets; remove them or use a new tag.`);
+
+  // Create the real Git tag before the draft, rather than relying on publication
+  // to replace GitHub's temporary untagged-* identifier.
+  let tag = await request('GET', `/git/ref/tags/${encodeURIComponent(tagName)}`, undefined, true);
+  if (!tag) tag = await request('POST', '/git/refs', { ref: `refs/tags/${tagName}`, sha: targetCommit });
+  let tagObject = tag.object;
+  for (let depth = 0; tagObject?.type === 'tag' && depth < 10; depth += 1) {
+    tagObject = (await request('GET', `/git/tags/${tagObject.sha}`)).object;
+  }
+  if (tagObject?.type !== 'commit' || tagObject.sha !== targetCommit) {
+    throw new Error(`Tag ${tagName} does not point to release commit ${targetCommit}; existing tags are not moved.`);
+  }
   if (!release) release = await request('POST', '/releases', {
     tag_name: tagName, name: `NoteX ${version}`, body: releaseNotes,
     target_commitish: targetCommit, draft: true, prerelease, make_latest: 'false',
   });
-  const existingAssets = [];
-  for (let page = 1; ; page += 1) {
-    const assets = await request('GET', `/releases/${release.id}/assets?per_page=100&page=${page}`);
-    existingAssets.push(...assets);
-    if (assets.length < 100) break;
-  }
-  const expectedNames = new Set(uploadAssets.map(file => path.basename(file)));
-  if (existingAssets.some(asset => !expectedNames.has(asset.name))) throw new Error(`Draft ${tagName} contains unexpected assets; remove them or use a new tag.`);
+  // Bind the tag while still a draft if the API returned a placeholder.
+  if (release.tag_name !== tagName) release = await request('PATCH', `/releases/${release.id}`, {
+    tag_name: tagName, target_commitish: targetCommit, draft: true,
+  });
+  if (release.tag_name !== tagName || release.draft !== true) throw new Error(`GitHub did not retain draft tag ${tagName}.`);
   for (const assetPath of uploadAssets) {
     const assetName = path.basename(assetPath);
     const existing = existingAssets.find(asset => asset.name === assetName);
@@ -55,10 +84,13 @@ export async function publishRelease({ repository, tagName, version, token, uplo
     if (!response.ok) throw new Error(`GitHub upload failed for ${assetName}: ${response.status} ${await response.text()}`);
     log(`Uploaded ${assetName}`);
   }
-  return request('PATCH', `/releases/${release.id}`, {
+  const completed = await request('PATCH', `/releases/${release.id}`, {
+    tag_name: tagName, target_commitish: targetCommit,
     name: `NoteX ${version}`, body: releaseNotes, draft, prerelease,
     make_latest: !draft && !prerelease ? 'true' : 'false',
   });
+  if (completed.tag_name !== tagName || completed.draft !== draft) throw new Error(`GitHub did not retain release tag/state for ${tagName}.`);
+  return completed;
 }
 
 async function main() {
@@ -94,11 +126,11 @@ async function main() {
   }
   const token = envValue('GITHUB_TOKEN') ?? envValue('GH_TOKEN');
   if (!token) throw new Error('Missing GITHUB_TOKEN or GH_TOKEN.');
-  await publishRelease({
+  const release = await publishRelease({
     repository, tagName, version, token, targetCommit: result.commit, uploadAssets, releaseNotes,
     draft: isTruthy(process.env.RELEASE_DRAFT), prerelease: isTruthy(process.env.RELEASE_PRERELEASE),
   });
-  console.log(`Release ready: https://github.com/${repository}/releases/tag/${encodeURIComponent(tagName)}`);
+  console.log(`${release.draft ? 'Draft' : 'Release'} ready (tag ${release.tag_name}): ${release.html_url}`);
 }
 function parseArgs(argv) {
   const parsed = {};
