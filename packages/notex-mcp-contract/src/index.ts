@@ -716,6 +716,14 @@ export function createToolManifest(): ToolManifest {
         target: 'draft-07',
         io: 'input',
         reused: 'inline',
+        override: ({ zodSchema, jsonSchema }) => {
+          if (zodSchema === httpUrlSchema) {
+            // NoX's portable schema profile does not support format: uri.
+            // Describe the allowed schemes here; Zod still validates full URLs.
+            delete jsonSchema.format;
+            jsonSchema.pattern = '^[hH][tT][tT][pP][sS]?://';
+          }
+        },
       }) as Record<string, unknown>,
       outputSchema: z.toJSONSchema(commandOutputSchemas[command], { target: 'draft-07', io: 'output', reused: 'inline' }) as Record<string, unknown>,
     })),

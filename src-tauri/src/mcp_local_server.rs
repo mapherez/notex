@@ -551,6 +551,20 @@ mod tests {
     }
 
     #[test]
+    fn manifest_schemas_compile_with_the_native_mcp_validator() {
+        let manifest: Value = serde_json::from_str(TOOL_MANIFEST_JSON).unwrap();
+        for tool in manifest["tools"].as_array().unwrap() {
+            for schema in ["inputSchema", "outputSchema"] {
+                assert!(
+                    nox_mcp::compile_tool_schema(&tool[schema]).is_ok(),
+                    "{} {schema} is incompatible with the native MCP schema profile",
+                    tool["name"],
+                );
+            }
+        }
+    }
+
+    #[test]
     fn manifest_exposes_seven_reads_and_twenty_seven_writes() {
         let tools = load_tools().unwrap();
         assert_eq!(tools.len(), 34);

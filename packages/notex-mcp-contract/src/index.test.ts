@@ -51,6 +51,26 @@ describe('NoteX MCP contract', () => {
     })).toEqual({ noteId: 'note-1', expectedVersion: 2, isFavorite: true });
   });
 
+  it('exports portable HTTP link schemas while keeping runtime URL validation', () => {
+    const tool = createToolManifest().tools.find((entry) => entry.name === 'add_note_link')!;
+    const properties = tool.inputSchema.properties as Record<string, Record<string, unknown>>;
+    const hrefSchema = properties.href;
+    expect(hrefSchema).not.toHaveProperty('format');
+    expect(hrefSchema).toMatchObject({ type: 'string', minLength: 1, maxLength: 2048 });
+    const protocol = new RegExp(hrefSchema.pattern as string);
+    for (const href of ['https://example.com/path?q=1#section', 'HTTP://localhost:8080/']) {
+      expect(protocol.test(href)).toBe(true);
+      expect(parseCommandInput('add_note_link', { noteId: 'note-1', expectedVersion: 1, title: 'Link', href }).href).toBe(href);
+    }
+    for (const href of ['file:///private.txt', 'javascript:alert(1)', 'ftp://example.com']) {
+      expect(protocol.test(href)).toBe(false);
+      expect(() => parseCommandInput('add_note_link', { noteId: 'note-1', expectedVersion: 1, title: 'Link', href })).toThrow();
+    }
+    for (const href of ['https://', 'https://[invalid']) {
+      expect(() => parseCommandInput('add_note_link', { noteId: 'note-1', expectedVersion: 1, title: 'Link', href })).toThrow();
+    }
+  });
+
   it('publishes all feature-parity tools with the intended scopes and annotations', () => {
     expect(commandNames).toHaveLength(34);
     expect(commandScope.create_collection).toBe('notex:create');
