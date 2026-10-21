@@ -104,6 +104,39 @@ Apple Silicon validation uses a separate macOS CI workflow and an explicit
 publishing a release. See [macOS validation](MACOS_VALIDATION.md) for the local
 build command, isolated validation identifier and required functional smoke test.
 
+## GitHub Actions triggers
+
+Automatic workflows use explicit path filters for their build inputs. Updating
+`Documentation/**`, the root README, `AGENTS.md`, or operational instructions
+does not start application CI. Each automatic workflow still runs when its own
+workflow file changes, and all seven workflows support manual execution.
+
+| Workflow | Automatic triggers | Scope |
+| --- | --- | --- |
+| Local MCP and Desktop CI | PRs; pushes to `main` and `add_mcp` | App sources/assets, desktop Rust/config/icons, MCP contract, build/test configuration and scripts, npm workspace manifests and root lockfile. |
+| Validate macOS Apple Silicon | PRs; pushes to `main` and `add_mcp` | Same desktop/app inputs, with its own workflow file. |
+| MCP Backend CI | PRs; pushes to `main` | Backend sources/tests/config/Dockerfile, MCP contract, npm manifests/lockfile, MCP Docker context and Compose. |
+| Publish NoteX Landing Image | Pushes to `main` | Landing sources and published documentation, landing Docker files/check script, root manifest/lockfile and its workflow. `landing/README.md` is excluded. |
+| Publish NoteX Web Image | None; manual | Independent webapp image publication. |
+| Publish MCP Backend Image | None; manual | Independent backend image publication. |
+| Release Tauri App | None; manual | Desktop installers and updater release. |
+
+`landing/docs/content/*.md` is published site content, so editing those guides
+does publish a new landing image. `src/content/patch-notes.md` is bundled into
+the app, so editing it runs desktop/macOS CI. Neither is treated as repository-only
+documentation. Compose-only changes for the landing or webapp do not rebuild
+images; apply them on the host.
+
+The root `package-lock.json` is shared, so changes to it can legitimately run
+multiple workflows. Desktop and backend checks run root `npm ci`; changes to
+`backend/package.json` or `landing/package.json` must therefore also validate
+that workspace installation. Landing HTML/CSS changes do not run those checks.
+
+Keep equivalent `push.paths` and `pull_request.paths` filters in sync when adding
+new build inputs. If a path-filtered workflow is configured as a required PR
+check, review branch protection: GitHub leaves skipped workflows pending. See
+the [GitHub path filter reference](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushpull_requestpull_request_targetpathspaths-ignore).
+
 ## Architecture overview
 
 - React 18, TypeScript, Vite, React Router, and Zustand.
