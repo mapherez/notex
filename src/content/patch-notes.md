@@ -1,8 +1,24 @@
+# 2.5.3
+
+## What's New in NoteX
+
+This is a minor release, that upgrades the @nox/mcp package to 0.6.1.
+
+---
+
+# 2.5.2
+
+## What's New in NoteX
+
+This is a minor release, that upgrades the @nox/mcp package to 0.6.0.
+
+---
+
 # 2.5.1
 
 ## What's New in NoteX
 
-This release is a minor release, that upgrades the @nox/mcp package to 0.4.3.
+This is a minor release, that upgrades the @nox/mcp package to 0.4.3.
 
 ---
 

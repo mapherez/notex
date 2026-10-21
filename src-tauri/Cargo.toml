@@ -1,6 +1,6 @@
 [package]
 name = "NoteX"
-version = "2.5.2"
+version = "2.5.3"
 description = "A privacy-first, local-first note-taking application"
 authors = ["Mapherez"]
 license = ""
@@ -18,7 +18,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.6.2", features = [] }
 
 [dependencies]
-nox-mcp = { git = "https://github.com/mapherez/nox-mcp.git", tag = "v0.6.0" }
+nox-mcp = { git = "https://github.com/mapherez/nox-mcp.git", tag = "v0.6.1" }
 axum = "0.8"
 base64 = "0.22"
 rand = "0.8"
