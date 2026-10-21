@@ -1,0 +1,13 @@
+# Dedicated landing context; do not include app sources or local configuration.
+**
+!package.json
+!package-lock.json
+!landing
+!landing/**
+landing/dist
+landing/node_modules
+!docker
+!docker/landing
+!docker/landing/Dockerfile
+!docker/landing/Dockerfile.dockerignore
+!docker/landing/nginx.conf

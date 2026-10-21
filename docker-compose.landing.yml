@@ -1,0 +1,13 @@
+name: notex-landing
+
+services:
+  notex-landing:
+    image: ghcr.io/mapherez/notex-landing:${NOTEX_LANDING_TAG:-latest}
+    container_name: notex-landing
+    restart: unless-stopped
+    ports:
+      - "${NOTEX_LANDING_PORT:-8094}:8080"
+
+# Independent of docker-compose.web.yml: serves only the landing and docs.
+# No env file, volumes or OAuth configuration required.
+# Preserve the existing Cloudflare worker handling /download and /app/ routing.

@@ -22,7 +22,8 @@ separados: `docker/web/Dockerfile`, `docker/web/nginx.conf`,
 
 Os endereços mantêm os deployments separados:
 
-- Landing: `https://notex.mapherez.com/`, publicada pelo workflow de Pages.
+- Landing: `https://notex.mapherez.com/`, imagem Docker independente
+  `notex-landing`, com `docker-compose.landing.yml`.
 - Documentação: `https://notex.mapherez.com/docs/`, no mesmo build da landing.
 - Webapp: `https://notex.mapherez.com/app/`, imagem Docker independente.
 
@@ -33,8 +34,10 @@ A imagem compila a app com `NOTEX_WEB_BASE_PATH=/app/`, adapta o router e os
 assets e regista o service worker apenas nesse âmbito. Desktop e `npm run dev`
 mantêm o caminho base `/`. A cache offline da app não interceta a landing/docs.
 
-A landing não entra no contexto, build ou imagem Docker. Atualizações de
-landing/docs continuam pelo workflow existente, sem reconstruir a webapp.
+A landing não entra no contexto, build ou imagem Docker da webapp. Atualizações de
+landing/docs usam o workflow **Publish NoteX Landing Image**, sem reconstruir
+a webapp. A configuração e operação estão no [README da landing](../../landing/README.md#deployment).
+O worker Cloudflare existente continua a tratar os downloads; os links não mudam.
 
 O encaminhamento público é por caminho. Apenas `/app` e
 `/app/…` devem chegar ao container; o resto mantém o deployment da landing.

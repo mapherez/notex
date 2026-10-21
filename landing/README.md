@@ -58,9 +58,70 @@ checkpoints stay in `Documentation/Developer/`, outside the published site.
 
 ## Deployment
 
-The **Deploy Landing Page** workflow builds the site and uploads `landing/dist`
-to GitHub Pages. It runs on `main` changes under `landing/` and can be triggered
-manually. It uses the canonical root lockfile with one root `npm ci`.
+The **Publish NoteX Landing Image** workflow (`.github/workflows/deploy-landing.yml`)
+builds and checks a dedicated Docker image, then publishes it to
+`ghcr.io/mapherez/notex-landing` for AMD64 and ARM64. It runs on relevant changes
+on `main`, or manually on `main`. It replaces the former GitHub Pages workflow.
+Tags are `latest` and `sha-<full commit SHA>`, independent of app release versions.
 
-The `CNAME` stays `notex.mapherez.com` and is copied into the build. With other
-hosting, publish the contents of `landing/dist`, not the source folder.
+The image, build cache, workflow and `docker-compose.landing.yml` are independent
+of the webapp. Only landing HTML, CSS, assets and generated docs are served. The
+build installs only the landing workspace using the root lockfile; it does not
+compile the app, desktop, backend or MCP. The runtime contains Nginx and static
+files, with no Node process, volumes, credentials or OAuth configuration.
+
+The public domain stays `notex.mapherez.com`. Keep the existing Cloudflare worker
+handling downloads and the separate `/app/` routing. This container does not
+implement `/download` or serve `/app/`; a direct request to those paths returns
+404. All download and webapp links stay unchanged. `CNAME` remains in the static
+build for compatibility but does not configure Docker hosting.
+
+### Run on the host
+
+After the first image publication, make the GHCR package public for anonymous
+pulls, or authenticate the host to GHCR if keeping it private. The workflow uses
+the built-in `GITHUB_TOKEN`; no additional Actions secret is required.
+
+Copy `docker-compose.landing.yml` to a separate host directory, for example
+`~/homelab/notex-landing/docker-compose.yml`. Then run:
+
+```sh
+cd ~/homelab/notex-landing
+docker compose pull
+docker compose up -d
+docker compose ps
+```
+
+Default endpoint: `http://HOST_IP:8094/`; health check: `/healthz`. Direct the
+existing landing/docs origin to this port, preserving the worker and webapp
+routes. HTTPS remains at the existing public proxy. This Compose file requires
+no checkout or build on the host and does not start or update the webapp.
+
+Optional `.env` next to the host Compose file:
+
+```dotenv
+NOTEX_LANDING_PORT=8094
+NOTEX_LANDING_TAG=latest
+```
+
+For updates, repeat `docker compose pull` and `docker compose up -d` after the
+workflow publishes. Pin `NOTEX_LANDING_TAG=sha-<full commit SHA>` to deploy or
+roll back to a specific build. A style change reuses the dependency layer unless
+the package manifests or lockfile changed. Static files use `Cache-Control:
+no-cache` so browsers revalidate after updates; explicit Cloudflare cache rules
+can override origin caching and may require a purge.
+
+### Build and check locally
+
+From the repository root, with Docker running:
+
+```sh
+docker build -f docker/landing/Dockerfile -t notex-landing:check .
+node scripts/check-landing-image.mjs notex-landing:check
+```
+
+The dedicated Docker ignore file excludes app sources, local data, credentials,
+dependencies and previous build output. The image check validates Nginx,
+homepage, all documentation articles, search, legal pages, assets, caching,
+directory redirects and 404s outside this deployment. Existing local build and
+preview commands remain available above.
