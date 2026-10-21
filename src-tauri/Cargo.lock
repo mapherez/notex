@@ -2385,7 +2385,7 @@ dependencies = [
  "png 0.18.1",
  "serde",
  "thiserror 2.0.18",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2420,8 +2420,8 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
 name = "nox-mcp"
-version = "0.1.0"
-source = "git+https://github.com/mapherez/nox-mcp.git#fd1b688d700b37caf96961c15f6d7022a09ab7a4"
+version = "0.5.0"
+source = "git+https://github.com/mapherez/nox-mcp.git?tag=v0.5.0#b23c2aca52c978c779519e671d486d685f26a779"
 dependencies = [
  "chrono",
  "jsonschema",
@@ -4093,7 +4093,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a766e1110788c36f4fa1c2b71b387a7815aa65f88ce0229841826633d93723e"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5123,7 +5123,7 @@ dependencies = [
  "png 0.18.1",
  "serde",
  "thiserror 2.0.18",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
