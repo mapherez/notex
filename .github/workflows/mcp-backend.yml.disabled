@@ -1,3 +1,5 @@
+# Temporarily disabled while remote MCP is deferred; GitHub Actions ignores .disabled files.
+# Restore the .yml extension when resuming Documentation/Developer/MCP_REMOTE_IMPLEMENTATION_PLAN.md.
 name: MCP Backend CI
 
 on:

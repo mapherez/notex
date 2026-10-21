@@ -2,6 +2,12 @@
 
 > **Estado:** plano remoto preservado para trabalho futuro. O servidor MCP local embutido já está implementado e documentado no [guia de utilização](../MCP_LOCAL_USER_GUIDE.md). O diretório `backend/` e esta arquitetura devem permanecer separados desse fluxo local.
 
+## CI do backend remoto temporariamente desativada
+
+Em 21 de outubro de 2026, o workflow **MCP Backend CI** foi desativado enquanto o MCP remoto permanece como trabalho futuro. A definição foi preservada em [`.github/workflows/mcp-backend.yml.disabled`](../../.github/workflows/mcp-backend.yml.disabled); a extensão `.disabled` impede a sua execução pelo GitHub Actions, incluindo em pushes, pull requests e execução manual. O workflow do MCP local continua ativo em [`.github/workflows/mcp-local.yml`](../../.github/workflows/mcp-local.yml).
+
+Para reativar a CI remota, renomear o ficheiro para `.github/workflows/mcp-backend.yml` e publicar essa alteração. Antes de retomar, adaptar a autenticação do backend à versão instalada de `@nox/mcp`: a versão 0.6.1 removeu o export `@nox/mcp/better-auth`, ainda utilizado pelo backend e pelos testes. Validar typecheck, testes, build e imagem Docker antes de voltar a disponibilizar o serviço remoto.
+
 ## Resumo
 
 - O primeiro artefacto será o **contrato partilhado** entre backend e NoteX. Depois cria-se uma versão mínima do backend com um simulador de NoteX, e só então se liga a aplicação real. Não se deve concluir um dos lados inteiro antes de validar o fluxo ponta a ponta.
