@@ -1,8 +1,8 @@
 # Google Drive & browser mode
 
-NoteX 2.3.0 adds Google Drive backup and browser mode. The desktop app still
-works without an account. Browser mode requires a Google account to access
-your library.
+Signing in with Google automatically backs up your account library to your
+own Drive, on desktop and in the browser. Desktop also works without an
+account; browser mode requires Google sign-in.
 
 ## Connect Google on desktop
 
@@ -17,6 +17,9 @@ become available when you sign back into that account.
 
 ## Automatic backups
 
+Backups start automatically after sign-in. There is no separate switch to
+enable them for the account library.
+
 Edits are saved locally first. Google Drive backups are grouped: normally after
 30 seconds without changes, or after two minutes of pending changes during
 continuous editing. Multiple edits to a note update one pending backup.
@@ -25,6 +28,10 @@ Opening a note without changing it does not trigger a backup.
 The transfer banner appears when there is pending work or an error. Expand it
 to see progress and available actions, or collapse it to keep editing. Use
 **Back up now** in Profile to start a backup without waiting for the timer.
+
+The cloud control on an individual note lets you exclude that note from backups
+or include it again. Pausing library downloads is a separate control: it does
+not turn off automatic backups of your edits.
 
 Wait for backups to finish before closing NoteX or switching devices. NoteX
 does not prevent simultaneous use on multiple devices; avoid editing the same

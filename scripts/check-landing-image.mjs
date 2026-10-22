@@ -60,9 +60,13 @@ try {
   for (const [path, mime] of [
     ['/styles.css', /text\/css/],
     ['/home.css', /text\/css/],
+    ['/shell.css', /text\/css/],
+    ['/site.js', /(?:application|text)\/javascript/],
+    ['/theme.js', /(?:application|text)\/javascript/],
     ['/docs/docs.css', /text\/css/],
     ['/docs/docs.js', /(?:application|text)\/javascript/],
     ['/assets/notex-logo.webp', /image\/webp/],
+    ['/assets/notex-mark.svg', /image\/svg\+xml/],
     ['/sitemap.xml', /(?:application|text)\/xml/],
     ['/robots.txt', /text\/plain/],
   ]) {

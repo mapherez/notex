@@ -2,6 +2,7 @@ import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { Marked, Renderer } from 'marked';
+import { siteHeader, siteFooter } from './site-shell.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = path.join(root, 'dist');
@@ -57,22 +58,23 @@ function document(page, article, index) {
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escape(page.title)} — NoteX documentation</title>
   <meta name="description" content="${escape(page.description)}">
-  <meta name="theme-color" content="#090a0c">
+  <meta name="theme-color" content="#f7f8fc"><meta name="color-scheme" content="light dark">
   <meta property="og:title" content="${escape(page.title)} — NoteX documentation">
   <meta property="og:description" content="${escape(page.description)}">
   <meta property="og:type" content="website"><meta property="og:url" content="${canonical(page)}">
-  <meta property="og:image" content="${site}/assets/notex-logo.webp">
+  <meta property="og:image" content="${site}/assets/notex-mark-512.png">
   <link rel="canonical" href="${canonical(page)}">
-  <link rel="icon" href="../assets/notex-logo.webp" type="image/webp">
+  <link rel="icon" href="../assets/favicon.ico" sizes="any"><link rel="icon" href="../assets/notex-mark.svg" type="image/svg+xml" sizes="any"><link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <script src="../theme.js"></script>
+  <link rel="stylesheet" href="../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../styles.css"><link rel="stylesheet" href="./docs.css">
+  <link rel="stylesheet" href="../shell.css">
+  <script src="../site.js" defer></script>
   <script src="./docs.js" defer></script>
 </head>
 <body class="docs-body">
   <a class="skip-link" href="#main-content">Skip to content</a>
-  <header class="site-nav"><div class="nav-inner">
-    <a class="brand" href="../index.html" aria-label="NoteX home"><img src="../assets/notex-logo.webp" alt="" width="32" height="32"><span>NoteX</span><span class="docs-brand-label">/ Docs</span></a>
-    <nav aria-label="Primary navigation"><a href="../index.html">Overview</a><a href="./index.html" aria-current="true">Documentation</a><a href="https://github.com/mapherez/notex">GitHub</a><a class="docs-download" href="../index.html#download">Download <span aria-hidden="true">↗</span></a></nav>
-  </div></header>
+  ${siteHeader('../', 'docs')}
   <div class="docs-shell">
     <aside class="docs-sidebar" aria-label="Documentation topics">
       <search class="docs-search" hidden>
@@ -82,21 +84,18 @@ function document(page, article, index) {
         <ul id="docs-search-results" class="docs-search-results" hidden></ul>
       </search>
       <details class="docs-topic-menu" open><summary>Browse documentation</summary><nav aria-label="Documentation">${sidebar(page)}</nav></details>
-      <a class="docs-sidebar-help" href="https://github.com/mapherez/notex/issues">Have a question? <span aria-hidden="true">↗</span><span>Send feedback on GitHub</span></a>
     </aside>
     <main id="main-content" class="docs-main" tabindex="-1">
       <div class="docs-breadcrumb"><a href="./index.html">Documentation</a><span aria-hidden="true">/</span><span>${escape(page.group)}</span></div>
-      <p class="docs-description">${escape(page.description)}</p>
       <article class="docs-article">${article.html}</article>
-      <div class="docs-article-footer"><span>For the desktop app</span><a href="https://github.com/mapherez/notex/edit/main/landing/docs/content/${page.slug}.md">Improve this guide <span aria-hidden="true">↗</span></a></div>
       <nav class="docs-pagination" aria-label="Previous and next articles">
         ${previous ? `<a href="${href(previous)}"><span>← Previous</span><strong>${escape(previous.title)}</strong></a>` : "<span></span>"}
         ${next ? `<a href="${href(next)}"><span>Next →</span><strong>${escape(next.title)}</strong></a>` : "<span></span>"}
       </nav>
     </main>
-    <aside class="docs-on-this-page"><nav aria-label="On this page"><p>On this page</p><ul>${article.headings.map((heading) => `<li><a href="#${heading.id}">${escape(heading.text)}</a></li>`).join("")}</ul></nav><div class="docs-local-card"><span class="docs-local-dot"></span><strong>Your notes. Your computer.</strong><p>No account needed.<br>Works offline.</p></div></aside>
+    <aside class="docs-on-this-page"><nav aria-label="On this page"><p>On this page</p><ul>${article.headings.map((heading) => `<li><a href="#${heading.id}">${escape(heading.text)}</a></li>`).join("")}</ul></nav></aside>
   </div>
-  <footer class="site-footer docs-footer"><span>NoteX · A place for knowledge you return to.</span><nav aria-label="Legal links"><a href="../privacy.html">Privacy</a><a href="../terms.html">Terms</a></nav></footer>
+  ${siteFooter('../', 'docs')}
 </body>
 </html>`;
 }
@@ -121,7 +120,13 @@ const articles = await Promise.all(pages.map(async page => {
 if (path.relative(root, output) !== 'dist') throw new Error('Unexpected build output directory');
 await rm(output, { recursive: true, force: true });
 await mkdir(path.join(output, 'docs'), { recursive: true });
-for (const file of ['index.html', 'styles.css', 'home.css', 'privacy.html', 'terms.html', 'CNAME', 'assets']) {
+for (const file of ['index.html', 'privacy.html', 'terms.html']) {
+  const current = file === 'index.html' ? 'home' : file.replace('.html', '');
+  const source = await readFile(path.join(root, file), 'utf8');
+  if (!source.includes('<!-- site-header -->') || !source.includes('<!-- site-footer -->')) throw new Error('Missing shared shell markers: ' + file);
+  await writeFile(path.join(output, file), source.replace('<!-- site-header -->', siteHeader('./', current)).replace('<!-- site-footer -->', siteFooter('./', current)));
+}
+for (const file of ['styles.css', 'home.css', 'shell.css', 'theme.js', 'site.js', 'home.js', 'CNAME', 'assets']) {
   await cp(path.join(root, file), path.join(output, file), { recursive: true });
 }
 for (const file of ['docs.css', 'docs.js']) await cp(path.join(root, `docs/${file}`), path.join(output, `docs/${file}`));

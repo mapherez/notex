@@ -1,303 +1,651 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NoteX - Local-first notes for desktop and the web</title>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#f7f8fc" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="./assets/favicon.ico" sizes="any" />
+    <link
+      rel="icon"
+      href="./assets/notex-mark.svg"
+      type="image/svg+xml"
+      sizes="any"
+    />
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+    <script src="./theme.js"></script>
     <meta
       name="description"
-      content="NoteX keeps structured notes on desktop and in the browser, with responsive layouts, optional Google Drive backup, and local MCP on desktop."
+      content="NoteX — a calm home for the knowledge worth keeping. Capture, organize and find your notes on desktop and the web."
     />
-    <meta name="theme-color" content="#090a0c" />
-    <meta property="og:title" content="NoteX - Local-first notes for desktop and the web" />
+    <title>NoteX — Your knowledge, in focus</title>
+    <link rel="stylesheet" href="./assets/fonts/fonts.css" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./home.css" />
+    <script src="./home.js" defer></script>
+    <link rel="canonical" href="https://notex.mapherez.com/" />
+    <meta property="og:title" content="NoteX — Your knowledge, in focus" />
     <meta
       property="og:description"
-      content="Write and organize notes on desktop or in the browser, with touch-friendly layouts and optional Google Drive backup."
+      content="A calm home for the knowledge worth keeping. Notes, collections and optional AI, on your terms."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://notex.mapherez.com/" />
-    <meta property="og:image" content="https://notex.mapherez.com/assets/notex-logo.webp" />
+    <meta
+      property="og:image"
+      content="https://notex.mapherez.com/assets/notex-mark-512.png"
+    />
     <meta name="twitter:card" content="summary" />
-    <link rel="canonical" href="https://notex.mapherez.com/" />
-    <link rel="icon" href="./assets/notex-logo.webp" type="image/webp" />
-    <link rel="stylesheet" href="./styles.css" />
-    <link rel="stylesheet" href="./home.css" />
+    <link rel="stylesheet" href="./shell.css" />
+    <script src="./site.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
-
-    <header class="site-nav">
-      <div class="nav-inner">
-        <a class="brand" href="#top" aria-label="NoteX home">
-          <img src="./assets/notex-logo.webp" alt="" width="38" height="38" />
-          <span>NoteX</span>
-        </a>
-        <nav aria-label="Primary navigation">
-          <a href="#features">Features</a>
-          <a href="./docs/">Documentation</a>
-          <a href="https://notex.mapherez.com/app/">Open web app</a>
-          <a href="#mcp">Local MCP</a>
-          <a href="#download">Download</a>
-          <a href="https://github.com/mapherez/notex">GitHub</a>
-        </nav>
-      </div>
-    </header>
-
+    <svg
+      width="0"
+      height="0"
+      xmlns="http://www.w3.org/2000/svg"
+      style="position: absolute"
+      aria-hidden="true"
+    >
+      <defs>
+        <symbol id="i-arrow" viewBox="0 0 24 24">
+          <path d="M5 12h14m-7-7 7 7-7 7" />
+        </symbol>
+        <symbol id="i-down" viewBox="0 0 24 24">
+          <path d="M12 4v16M5 13l7 7 7-7" />
+        </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-4-4" />
+        </symbol>
+        <symbol id="i-home" viewBox="0 0 24 24">
+          <path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7" />
+        </symbol>
+        <symbol id="i-file" viewBox="0 0 24 24">
+          <path d="M5 3h10l4 4v14H5zM15 3v5h4M9 12h6M9 16h6" />
+        </symbol>
+        <symbol id="i-star" viewBox="0 0 24 24">
+          <path
+            d="m12 2 3 7 7 .6-5.4 4.8L18 22l-6-3.8L6 22l1.4-7.6L2 9.6 9 9z"
+          />
+        </symbol>
+        <symbol id="i-folder" viewBox="0 0 24 24">
+          <path d="M3 6h7l2 3h9v11H3z" />
+        </symbol>
+        <symbol id="i-tag" viewBox="0 0 24 24">
+          <path d="M3 12V4h8l10 10-8 8z" />
+          <circle cx="8" cy="8" r="1" />
+        </symbol>
+        <symbol id="i-shield" viewBox="0 0 24 24">
+          <path d="M12 2 20 6v6c0 5-3 8-8 10-5-2-8-5-8-10V6z" />
+          <path d="m9 12 2 2 4-4" />
+        </symbol>
+        <symbol id="i-spark" viewBox="0 0 24 24">
+          <path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24">
+          <path d="m5 12 4 4L19 6" />
+        </symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24">
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </symbol>
+      </defs>
+    </svg>
+    <!-- site-header -->
     <main id="main-content">
-      <section id="top" class="hero" aria-labelledby="hero-title">
-        <div class="hero-inner">
-          <div class="hero-content">
-            <p class="eyebrow">Desktop · Web</p>
-            <h1 id="hero-title">Your knowledge.<br>Within reach.</h1>
-            <p class="hero-copy">
-              Turn scattered information into a library you can return to. Structured notes,
-              rich content, and fast search across desktop and browser.
-            </p>
-            <div class="hero-actions">
-              <a class="button button-primary" href="https://notex.mapherez.com/download">
-                Download
-              </a>
-              <a class="button button-secondary" href="https://notex.mapherez.com/app/">Open web app <span aria-hidden="true">↗</span></a>
-              <a class="button button-secondary" href="./docs/quickstart.html">Get started <span aria-hidden="true">↗</span></a>
-            </div>
-            <p class="hero-reassurance">Desktop works without an account. Browser mode uses your Google account.</p>
-            <dl class="hero-facts">
-              <div>
-                <dt>Local</dt>
-                <dd>Edits saved on your device</dd>
-              </div>
-              <div>
-                <dt>Connected</dt>
-                <dd>Optional Drive backup and desktop MCP</dd>
-              </div>
-              <div>
-                <dt>Portable</dt>
-                <dd>Desktop workspace and note exports</dd>
-              </div>
-            </dl>
+      <section class="hero" id="top">
+        <div class="wrap">
+          <div class="eyebrow">
+            <i class="dot"></i> Your personal knowledge workspace
           </div>
-
-          <div class="product-stage" aria-hidden="true">
-            <div class="window-titlebar">
-              <div class="window-brand">
-                <img src="./assets/notex-logo.webp" alt="" width="24" height="24" />
-                <span>NoteX</span>
-              </div>
-              <div class="window-controls"><i></i><i></i><i></i></div>
+          <h1>
+            All your knowledge.<br /><span class="soft"
+              >Finally, in focus.</span
+            >
+          </h1>
+          <p class="lead">
+            A beautiful place to capture ideas, connect what you know, and find
+            it when it matters. Your notes. Your space. Your way.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="https://notex.mapherez.com/download"
+              >Download NoteX
+              <svg aria-hidden="true" class="icon">
+                <use href="#i-arrow" /></svg></a
+            ><a class="button secondary" href="https://notex.mapherez.com/app/"
+              >Try in your browser
+              <svg aria-hidden="true" class="icon" style="width: 15px">
+                <use href="#i-arrow" /></svg
+            ></a>
+          </div>
+          <p class="reassurance">
+            Desktop works offline · Sign in for automatic Drive backups
+          </p>
+          <div class="hero-stage">
+            <div class="stage-tabs" role="tablist" aria-label="Product preview">
+              <button
+                type="button"
+                role="tab"
+                id="tab-editor"
+                aria-controls="preview-editor"
+                aria-selected="true"
+                class="active"
+                data-screen="editor"
+              >
+                The editor</button
+              ><button
+                type="button"
+                role="tab"
+                id="tab-library"
+                aria-controls="preview-library"
+                aria-selected="false"
+                data-screen="library"
+              >
+                Your workspace
+              </button>
             </div>
-            <div class="app-shell-preview">
-              <aside class="app-sidebar-preview">
-                <strong>NoteX</strong>
-                <span class="active">Dashboard</span>
-                <span>Notes</span>
-                <span>Favorites</span>
-                <span>Collections</span>
-                <span>Tags</span>
-                <small><i></i> MCP Online</small>
-              </aside>
-              <div class="app-main-preview">
-                <div class="preview-topbar"><span>Search your notes</span><b>EN</b></div>
-                <div class="preview-heading">
-                  <div><small>GOOD MORNING</small><strong>Your knowledge, in one place.</strong></div>
-                  <button type="button" tabindex="-1">New note</button>
+            <div class="stage-chrome">
+              <div class="window-head">
+                <div class="littlebrand">
+                  <svg
+                    class="brand-mark"
+                    viewBox="0 0 64 64"
+                    width="36"
+                    height="36"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <rect class="mark-tile" width="64" height="64" rx="17" />
+                    <path
+                      class="mark-letter"
+                      d="M18 46V22h6.5l15 20V22H46v24h-6.5l-15-20v20Z"
+                    />
+                    <circle fill="#8f9bf2" cx="47" cy="15" r="3.5" />
+                  </svg>
+                  NoteX
                 </div>
-                <div class="preview-stats"><span></span><span></span><span></span><span></span></div>
-                <div class="preview-notes">
-                  <article>
-                    <small>REFERENCE</small>
-                    <strong>Doubt about terminology</strong>
-                    <p>Examples, context, links, and related notes.</p>
-                    <div><i></i><i></i><i></i></div>
+                <div class="window-buttons" aria-hidden="true">
+                  <i></i><i></i><i></i>
+                </div>
+              </div>
+
+              <div
+                id="preview-editor"
+                class="showcase active"
+                tabindex="0"
+                role="tabpanel"
+                aria-labelledby="tab-editor"
+              >
+                <aside class="app-sidebar" aria-hidden="true">
+                  <div class="app-sidebar-title">NoteX</div>
+                  <div class="sidebar-create">＋ &nbsp; New note</div>
+                  <div class="side-link">
+                    <svg aria-hidden="true" class="icon">
+                      <use href="#i-home" />
+                    </svg>
+                    Home
+                  </div>
+                  <div class="side-link active">
+                    <svg aria-hidden="true" class="icon">
+                      <use href="#i-file" />
+                    </svg>
+                    Notes
+                  </div>
+                  <div class="side-link">
+                    <svg aria-hidden="true" class="icon">
+                      <use href="#i-star" />
+                    </svg>
+                    Favorites
+                  </div>
+                  <div class="side-label">Your library</div>
+                  <div class="side-link">
+                    <svg aria-hidden="true" class="icon">
+                      <use href="#i-folder" />
+                    </svg>
+                    Collections
+                  </div>
+                  <div class="side-link">
+                    <svg aria-hidden="true" class="icon">
+                      <use href="#i-tag" />
+                    </svg>
+                    Tags
+                  </div>
+                  <div class="side-foot"><i></i> Saved locally</div>
+                </aside>
+                <div class="app-main">
+                  <div class="app-top">
+                    <div class="app-search">
+                      <svg aria-hidden="true" class="icon">
+                        <use href="#i-search" />
+                      </svg>
+                      Search your notes...
+                    </div>
+                    <div class="app-top-right">
+                      <span>Ctrl / ⌘ F</span><span class="tiny-circle">P</span>
+                    </div>
+                  </div>
+                  <div class="app-crumb">
+                    Notes&nbsp; / &nbsp;Projects&nbsp; / &nbsp;Design principles
+                  </div>
+                  <header class="app-note-head">
+                    <h3>Design principles</h3>
+                    <p>
+                      The ideas, details and references behind our next big
+                      project.
+                    </p>
+                    <div class="tags">
+                      <span class="tag">Product</span
+                      ><span class="tag green">Ideas</span
+                      ><span class="tag pink">Reference</span>
+                    </div>
+                  </header>
+                  <article class="note-section">
+                    <h4>01 &nbsp; A place for clarity</h4>
+                    <p>
+                      Great ideas deserve room to grow. Capture the initial
+                      thought, then expand it with structured blocks, references
+                      and useful context.
+                    </p>
+                    <ul>
+                      <li>Keep related information close together</li>
+                      <li>Make details easy to find later</li>
+                    </ul>
+                    <div class="note-small">
+                      ✦ &nbsp; Good ideas become useful when you can find them
+                      again.
+                    </div>
                   </article>
-                  <article>
-                    <small>PROJECT</small>
-                    <strong>Release notes</strong>
-                    <p>Tasks, decisions, and implementation details.</p>
-                    <div><i></i><i></i></div>
+                  <article class="note-section note-second">
+                    <h4>02 &nbsp; The details that matter</h4>
+                    <p>
+                      Keep decisions, links, notes and attachments together —
+                      one organized workspace, not a dozen disconnected tabs.
+                    </p>
                   </article>
+                </div>
+                <aside class="app-rail" aria-hidden="true">
+                  <div class="rail-heading">Note details</div>
+                  <div class="rail-label">Collection</div>
+                  <div class="rail-item">◫ &nbsp; Projects</div>
+                  <div class="rail-label">Tags</div>
+                  <div class="rail-chip"># research</div>
+                  <div class="rail-chip"># design</div>
+                  <div class="rail-label">Related notes</div>
+                  <div class="rail-item">↗ &nbsp; Inspiration library</div>
+                  <div class="rail-item">↗ &nbsp; Design systems</div>
+                </aside>
+              </div>
+              <div
+                id="preview-library"
+                class="showcase"
+                tabindex="0"
+                role="tabpanel"
+                aria-labelledby="tab-library"
+                hidden
+              >
+                <aside class="app-sidebar" aria-hidden="true">
+                  <div class="app-sidebar-title">NoteX</div>
+                  <div class="sidebar-create">＋ &nbsp; New note</div>
+                  <div class="side-link active">
+                    <svg aria-hidden="true" class="icon">
+                      <use href="#i-home" />
+                    </svg>
+                    Home
+                  </div>
+                  <div class="side-link">
+                    <svg aria-hidden="true" class="icon">
+                      <use href="#i-file" />
+                    </svg>
+                    Notes
+                  </div>
+                  <div class="side-link">
+                    <svg aria-hidden="true" class="icon">
+                      <use href="#i-star" />
+                    </svg>
+                    Favorites
+                  </div>
+                  <div class="side-label">Your library</div>
+                  <div class="side-link">
+                    <svg aria-hidden="true" class="icon">
+                      <use href="#i-folder" />
+                    </svg>
+                    Collections
+                  </div>
+                  <div class="side-link">
+                    <svg aria-hidden="true" class="icon">
+                      <use href="#i-tag" />
+                    </svg>
+                    Tags
+                  </div>
+                  <div class="side-foot"><i></i> Saved locally</div>
+                </aside>
+                <div class="app-main">
+                  <div class="app-top">
+                    <div class="app-search">
+                      <svg aria-hidden="true" class="icon">
+                        <use href="#i-search" />
+                      </svg>
+                      Search your notes...
+                    </div>
+                    <div class="app-top-right">
+                      <span>Ctrl / ⌘ F</span><span class="tiny-circle">P</span>
+                    </div>
+                  </div>
+                  <div class="app-dash-head">
+                    <div>
+                      <p>YOUR PERSONAL WORKSPACE</p>
+                      <h3>Welcome back.</h3>
+                    </div>
+                    <span class="new-btn">＋ New note</span>
+                  </div>
+                  <div class="stats">
+                    <div class="stat"><i></i><b>128</b><span>Notes</span></div>
+                    <div class="stat">
+                      <i></i><b>24</b><span>Favorites</span>
+                    </div>
+                    <div class="stat">
+                      <i></i><b>12</b><span>Collections</span>
+                    </div>
+                    <div class="stat"><i></i><b>38</b><span>Tags</span></div>
+                    <div class="stat"><i></i><b>0</b><span>Trash</span></div>
+                  </div>
+                  <div class="dash-bottom">
+                    <div class="dash-card">
+                      <div class="dash-title">Quick pins</div>
+                      <div class="pins">
+                        <div class="pin"><b>📎 Research</b>Key references</div>
+                        <div class="pin"><b>✦ Ideas</b>Things to explore</div>
+                        <div class="pin"><b>▧ Roadmap</b>Next milestones</div>
+                      </div>
+                      <div
+                        class="dash-title"
+                        style="margin-top: 19px; margin-bottom: 4px"
+                      >
+                        Recent notes
+                      </div>
+                      <div class="recent"><b>Design principles</b> Today</div>
+                      <div class="recent"><b>Reading notes</b> Yesterday</div>
+                      <div class="recent"><b>Project roadmap</b> Tuesday</div>
+                    </div>
+                    <div class="dash-card">
+                      <div class="dash-title">Quick capture</div>
+                      <div class="capture">
+                        A thought worth keeping...
+                        <div class="capture-add">Capture note →</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section id="features" class="section" aria-labelledby="features-title">
-        <div class="section-heading">
-          <p class="eyebrow">The workspace</p>
-          <h2 id="features-title">Made for knowledge you return to.</h2>
-          <p>
-            NoteX combines flexible writing with enough structure to keep growing collections
-            useful over time.
+          <p class="stage-caption">
+            Illustrative preview of the NoteX editor and workspace.
           </p>
         </div>
-        <div class="feature-grid">
-          <article class="feature-card feature-blue">
-            <span class="feature-number">01</span>
-            <h3>Block-based notes</h3>
-            <p>Build each note from ordered content blocks with individual titles and rich text.</p>
-          </article>
-          <article class="feature-card feature-pink">
-            <span class="feature-number">02</span>
-            <h3>Rich content</h3>
-            <p>Use headings, lists, tables, links, colors, highlights, images, and attachments.</p>
-          </article>
-          <article class="feature-card feature-green">
-            <span class="feature-number">03</span>
-            <h3>Search across context</h3>
-            <p>Find matches across note headers, blocks, tags, and collections, ranked by relevance.</p>
-          </article>
-          <article class="feature-card feature-amber">
-            <span class="feature-number">04</span>
-            <h3>Organize naturally</h3>
-            <p>Combine tags, collections, favorites, pins, recently edited notes, and trash.</p>
-          </article>
-          <article class="feature-card feature-mint">
-            <span class="feature-number">05</span>
-            <h3>Work across screen sizes</h3>
-            <p>Use the browser on a desktop, tablet, or phone with layouts and controls adapted for touch.</p>
-          </article>
-          <article class="feature-card feature-neutral">
-            <span class="feature-number">06</span>
-            <h3>Optional Drive backup</h3>
-            <p>Connect Google to back up your account library and continue working in the browser.</p>
-          </article>
-          <article class="feature-card feature-blue">
-            <span class="feature-number">07</span>
-            <h3>Local on desktop</h3>
-            <p>Use the desktop app without an account. Its SQLite database and attachments stay on your computer; Google Drive backup is optional.</p>
-          </article>
-          <article class="feature-card feature-pink">
-            <span class="feature-number">08</span>
-            <h3>Portable backups</h3>
-            <p>On desktop, export your workspace as a .notex package or share one note and its files with .notex-note.</p>
-          </article>
-        </div>
       </section>
-
-      <section id="mcp" class="mcp-band" aria-labelledby="mcp-title">
-        <div class="mcp-inner">
-          <div class="mcp-copy">
-            <p class="eyebrow">Local MCP</p>
-            <h2 id="mcp-title">Let compatible AI clients work with your notes.</h2>
+      <section class="section wrap" id="features">
+        <div class="section-intro">
+          <div class="eyebrow"><i class="dot"></i> Everything, together</div>
+          <h2>Less searching.<br />More thinking.</h2>
+          <p>
+            From the first spark of an idea to a library you rely on every day.
+            NoteX makes keeping knowledge feel effortless.
+          </p>
+        </div>
+        <div class="bento">
+          <article class="bento-card dark higher">
+            <p class="bento-label">01 / Capture</p>
+            <h3>Thoughts deserve room to grow.</h3>
             <p>
-              Start the embedded MCP server from Profile, copy the generic connection details,
-              and use supported AI clients to search, read, create, and edit notes.
+              Start with a thought. Build it into rich, structured notes with
+              content blocks, images, tables and attachments.
             </p>
-            <ul class="check-list">
-              <li>No account or Google Drive backup required for desktop MCP</li>
-              <li>Available only while NoteX and MCP are running</li>
-              <li>Local Streamable HTTP connection on your computer</li>
-            </ul>
-            <a class="text-link" href="./docs/mcp-setup.html">Read the connection guide <span aria-hidden="true">→</span></a>
-          </div>
-          <div class="connection-panel" aria-label="Example local MCP configuration">
-            <div class="connection-header">
-              <span>Connection</span>
-              <small><i></i> Online</small>
+            <div class="micro-note" aria-hidden="true">
+              <div class="small-title">A new idea ✦</div>
+              <span class="micro-chip">Personal notes</span>
+              <div class="micro-line"></div>
+              <div class="micro-line w75"></div>
+              <div class="micro-line w60"></div>
             </div>
-            <dl>
-              <div><dt>Name</dt><dd>NoteX</dd></div>
-              <div><dt>Transport</dt><dd>Streamable HTTP</dd></div>
-              <div><dt>URL</dt><dd>http://127.0.0.1:47321/mcp</dd></div>
-              <div><dt>Authentication</dt><dd>None</dd></div>
-            </dl>
-            <p>Always copy the current configuration from NoteX.</p>
-          </div>
+          </article>
+          <article class="bento-card higher">
+            <p class="bento-label">02 / Find</p>
+            <h3>Find the right thing, at the right time.</h3>
+            <p>
+              Organize with collections and tags, keep favorites close, and
+              search through your library in seconds.
+            </p>
+            <div class="tile-search" aria-hidden="true">
+              ⌕ &nbsp; Search design...
+            </div>
+            <div class="tile-results" aria-hidden="true">
+              <div class="tile-result">
+                ▧ &nbsp; Design principles <span>Notes</span>
+              </div>
+              <div class="tile-result">
+                ◫ &nbsp; Brand references <span>Collection</span>
+              </div>
+            </div>
+          </article>
+          <article class="bento-card">
+            <p class="bento-label">03 / Ownership</p>
+            <h3>Your knowledge stays yours.</h3>
+            <p>
+              Write offline on desktop without an account. Sign in with Google
+              on any device to automatically back up your library to your own
+              Drive.
+            </p>
+            <div class="blueprint" aria-hidden="true"></div>
+          </article>
+          <article class="bento-card ai-card" id="mcp">
+            <p class="bento-label">04 / Connect</p>
+            <h3>Your notes. Your AI assistant.</h3>
+            <p>
+              Connect compatible AI clients to NoteX through the optional local
+              MCP integration on desktop.
+            </p>
+            <a class="feature-link" href="./docs/mcp-setup.html"
+              >Explore local MCP <span aria-hidden="true">↗</span></a
+            >
+            <div class="ai-connection" aria-hidden="true">
+              <div class="line">
+                <strong>NoteX · Local MCP</strong
+                ><span class="online"><i></i> Online</span>
+              </div>
+              <div class="line"><span>Connection</span><b>Local</b></div>
+              <div class="line">
+                <span>AI client access</span><b>On your terms</b>
+              </div>
+            </div>
+          </article>
         </div>
       </section>
-
-      <section class="section local-section" aria-labelledby="local-title">
-        <div class="section-heading">
-          <p class="eyebrow">Your data</p>
-          <h2 id="local-title">Local editing wherever you work.</h2>
-        </div>
-        <div class="local-grid">
-          <div>
-            <strong>SQLite is the source of truth</strong>
-            <p>The desktop app saves to SQLite. Browser mode saves downloaded notes on your device and backs up account libraries to your Google Drive.</p>
-          </div>
-          <div>
-            <strong>You control AI access</strong>
-            <p>Desktop MCP starts only when you enable it and stops when you choose or close NoteX.</p>
-          </div>
-          <div>
-            <strong>Bring the whole workspace</strong>
-            <p>Desktop exports keep the database and attached files together for portable backups.</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="learn" class="section learn-section" aria-labelledby="learn-title">
+      <section
+        id="learn"
+        class="section wrap learn-section"
+        aria-labelledby="learn-title"
+      >
         <div class="learn-heading">
           <div class="section-heading">
             <p class="eyebrow">Learn NoteX</p>
-            <h2 id="learn-title">A little guidance.<br>A faster workflow.</h2>
-            <p>From your first note to a library that works with you. Practical guides for the details that make a difference.</p>
+            <h2 id="learn-title">A little guidance.<br />A faster workflow.</h2>
+            <p>
+              From your first note to a library that works with you. Practical
+              guides for the details that make a difference.
+            </p>
           </div>
-          <a class="text-link" href="./docs/">Browse documentation <span aria-hidden="true">→</span></a>
+          <a class="text-link" href="./docs/"
+            >Browse documentation <span aria-hidden="true">→</span></a
+          >
         </div>
         <div class="guide-grid">
           <a class="guide-card" href="./docs/quickstart.html">
-            <span class="guide-category">Getting started <span aria-hidden="true">↗</span></span>
-            <svg class="guide-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 3h9l3 3v15H6zM15 3v4h4M9 11h6M9 15h6" /></svg>
+            <span class="guide-category"
+              >Getting started <span aria-hidden="true">↗</span></span
+            >
+            <svg
+              class="guide-icon"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
+              <path d="M6 3h9l3 3v15H6zM15 3v4h4M9 11h6M9 15h6" />
+            </svg>
             <h3>Create your first note</h3>
-            <p>Write, structure, and find your first piece of knowledge. No setup ceremony.</p>
-            <span class="guide-bottom">Start here <span aria-hidden="true">→</span></span>
+            <p>
+              Write, structure, and find your first piece of knowledge. No setup
+              ceremony.
+            </p>
+            <span class="guide-bottom"
+              >Start here <span aria-hidden="true">→</span></span
+            >
           </a>
           <a class="guide-card" href="./docs/collections-tags.html">
-            <span class="guide-category">Organizing <span aria-hidden="true">↗</span></span>
-            <svg class="guide-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 7V5h7l2 2h9v13H3zM7 12h10M7 16h6" /></svg>
+            <span class="guide-category"
+              >Organizing <span aria-hidden="true">↗</span></span
+            >
+            <svg
+              class="guide-icon"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
+              <path d="M3 7V5h7l2 2h9v13H3zM7 12h10M7 16h6" />
+            </svg>
             <h3>Give your library structure</h3>
-            <p>Use collections and tags to connect ideas without losing track of where they belong.</p>
-            <span class="guide-bottom">Explore organization <span aria-hidden="true">→</span></span>
+            <p>
+              Use collections and tags to connect ideas without losing track of
+              where they belong.
+            </p>
+            <span class="guide-bottom"
+              >Explore organization <span aria-hidden="true">→</span></span
+            >
           </a>
           <a class="guide-card" href="./docs/mcp-setup.html">
-            <span class="guide-category">Local MCP <span aria-hidden="true">↗</span></span>
-            <svg class="guide-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m9 8-4 4 4 4m6-8 4 4-4 4M13 5l-2 14" /></svg>
+            <span class="guide-category"
+              >Local MCP <span aria-hidden="true">↗</span></span
+            >
+            <svg
+              class="guide-icon"
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
+              <path d="m9 8-4 4 4 4m6-8 4 4-4 4M13 5l-2 14" />
+            </svg>
             <h3>Connect your AI workflow</h3>
-            <p>Let a compatible AI client read and work with your notes through the local MCP server.</p>
-            <span class="guide-bottom">Follow the setup guide <span aria-hidden="true">→</span></span>
+            <p>
+              Let a compatible AI client read and work with your notes through
+              the local MCP server.
+            </p>
+            <span class="guide-bottom"
+              >Follow the setup guide <span aria-hidden="true">→</span></span
+            >
           </a>
         </div>
-        <div class="learn-shortcuts"><span>Already comfortable with the basics?</span><a href="./docs/mobile-tablet.html">Tablet & phone guide <span aria-hidden="true">→</span></a><a href="./docs/keyboard.html">Keyboard workflows <span aria-hidden="true">→</span></a><a href="./docs/import-export.html">Backups & portability <span aria-hidden="true">→</span></a></div>
+        <div class="learn-shortcuts">
+          <a href="./docs/mobile-tablet.html"
+            >Tablet & phone guide <span aria-hidden="true">→</span></a
+          ><a href="./docs/keyboard.html"
+            >Keyboard workflows <span aria-hidden="true">→</span></a
+          ><a href="./docs/import-export.html"
+            >Backups & portability <span aria-hidden="true">→</span></a
+          >
+        </div>
       </section>
 
-      <section class="section faq-section" aria-labelledby="faq-title">
-        <div class="section-heading"><p class="eyebrow">Good to know</p><h2 id="faq-title">Before you get started.</h2></div>
+      <section class="section wrap faq-section" aria-labelledby="faq-title">
+        <div class="section-heading">
+          <p class="eyebrow">Good to know</p>
+          <h2 id="faq-title">Before you get started.</h2>
+        </div>
         <div class="faq-list">
-          <details><summary>Do I need an account or internet connection?</summary><p>The desktop app works without an account, including offline writing, searching, and exports. Browser mode requires a Google account; downloaded notes can be edited offline after the app and notes have been cached. Backups resume when you reconnect.</p></details>
-          <details><summary>How do I install NoteX?</summary><p>Select Download to get the installer for your computer, install the app and open NoteX. <a href="./docs/quickstart.html">Read the installation guide →</a></p></details>
-          <details><summary>Can I use NoteX on a tablet or phone?</summary><p>Yes. Open the web app in your browser and sign in with Google. The interface adapts to touch screens; on phones, use portrait orientation. <a href="./docs/mobile-tablet.html">Read the tablet and phone guide →</a></p></details>
-          <details><summary>Can I move or back up my notes?</summary><p>Yes. On desktop, export a complete workspace with its attached files as a .notex package, or a single note as .notex-note. A full-workspace import replaces the current library. You can also back up an account library to Google Drive. <a href="./docs/import-export.html">Read the import and backup guide →</a></p></details>
-          <details><summary>Is AI required to use NoteX?</summary><p>No. Local MCP is optional and starts only when you enable it. It connects compatible clients to your library while NoteX is open. Content read by an AI client is subject to that client's own privacy settings.</p></details>
+          <details>
+            <summary>Do I need an account or internet connection?</summary>
+            <p>
+              The desktop app works without an account, including offline
+              writing, searching, and exports. Browser mode requires a Google
+              account; downloaded notes can be edited offline after the app and
+              notes have been cached. Backups resume when you reconnect.
+            </p>
+          </details>
+          <details>
+            <summary>How do I install NoteX?</summary>
+            <p>
+              Select Download to get the installer for your computer, install
+              the app and open NoteX.
+              <a href="./docs/quickstart.html">Read the installation guide →</a>
+            </p>
+          </details>
+          <details>
+            <summary>Can I use NoteX on a tablet or phone?</summary>
+            <p>
+              Yes. Open the web app in your browser and sign in with Google. The
+              interface adapts to touch screens; on phones, use portrait
+              orientation.
+              <a href="./docs/mobile-tablet.html"
+                >Read the tablet and phone guide →</a
+              >
+            </p>
+          </details>
+          <details>
+            <summary>Can I move or back up my notes?</summary>
+            <p>
+              Yes. On desktop, export a complete workspace with its attached
+              files as a .notex package, or a single note as .notex-note. A
+              full-workspace import replaces the current library. Signing in
+              with Google automatically backs up your account library to Drive.
+              <a href="./docs/import-export.html"
+                >Read the import and backup guide →</a
+              >
+            </p>
+          </details>
+          <details>
+            <summary>Is AI required to use NoteX?</summary>
+            <p>
+              No. Local MCP is optional and starts only when you enable it. It
+              connects compatible clients to your library while NoteX is open.
+              Content read by an AI client is subject to that client's own
+              privacy settings.
+            </p>
+          </details>
         </div>
       </section>
 
-      <section id="download" class="download-band" aria-labelledby="download-title">
-        <div>
-          <p class="eyebrow">Desktop</p>
-          <h2 id="download-title">Keep your knowledge close.</h2>
-          <p>Download the latest release from GitHub. Future releases can be installed through the built-in updater.</p>
-        </div>
-        <div class="download-actions">
-          <a class="button button-primary" href="https://notex.mapherez.com/download">Download</a>
+      <section class="wrap cta-section">
+        <div class="bottom-cta" id="download">
+          <h2>Everything worth knowing.<br />One place to keep it.</h2>
+          <p>
+            Get the desktop app or open NoteX in your browser. Your next great
+            idea deserves a home.
+          </p>
+          <a class="button purple" href="https://notex.mapherez.com/download"
+            >Get NoteX
+            <svg aria-hidden="true" class="icon"><use href="#i-arrow" /></svg
+          ></a>
+          <div class="bottom-link">
+            <a href="https://notex.mapherez.com/app/">Or open the web app ↗</a>
+          </div>
         </div>
       </section>
     </main>
-
-    <footer class="site-footer">
-      <a class="brand footer-brand" href="#top" aria-label="NoteX home">
-        <img src="./assets/notex-logo.webp" alt="" width="30" height="30" />
-        <span>NoteX</span>
-      </a>
-      <nav aria-label="Project links">
-        <a href="./docs/">Documentation</a>
-        <a href="https://github.com/mapherez/notex">GitHub</a>
-        <a href="https://github.com/mapherez/notex/issues">Issues</a>
-        <a href="./privacy.html">Privacy</a>
-        <a href="./terms.html">Terms</a>
-      </nav>
-    </footer>
+    <!-- site-footer -->
   </body>
 </html>

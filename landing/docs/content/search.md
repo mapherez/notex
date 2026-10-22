@@ -4,7 +4,7 @@ Use global search when you remember part of a note's content. Use filters when y
 
 ## Global search
 
-Press **Ctrl + F** to focus the search field. Search can match note titles, subtitles, block titles, block content, tags, and collections.
+Press **Ctrl / ⌘ + F** to focus the search field. Search can match note titles, subtitles, block titles, block content, tags, and collections.
 
 Words are treated as independent search terms. A note can appear when it matches any term, with notes matching more distinct terms ranked first. Where the match appears and the note's update time also help determine the order.
 

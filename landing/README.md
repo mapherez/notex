@@ -24,6 +24,7 @@ Reading and navigation work without JavaScript; local search is an enhancement.
 - Articles: `landing/docs/content/*.md`.
 - Groups, titles, descriptions, and order: `landing/docs/navigation.json`.
 - Shared layout and metadata: `landing/scripts/build.mjs`.
+- Shared header/footer for every page: `landing/scripts/site-shell.mjs`.
 - Docs styling: `landing/docs/docs.css`.
 - Search and responsive topic disclosure: `landing/docs/docs.js`.
 
@@ -53,8 +54,25 @@ checkpoints stay in `Documentation/Developer/`, outside the published site.
 ## Homepage and legal pages
 
 - `index.html`: overview, features, MCP, guides, FAQ, and download.
-- `styles.css`: shared theme; `home.css`: homepage refinements.
-- `privacy.html` and `terms.html`: bilingual legal pages.
+- `styles.css`: shared light/dark palette and base components; `home.css`: landing layout.
+- `theme.js`: system preference by default, with shared, persisted light/dark overrides.
+- `shell.css` and `site.js`: shared responsive navigation and footer.
+- `home.js`: accessible product-preview tabs.
+- `assets/fonts/`: self-hosted DM Sans and Manrope variable fonts with their OFL licenses.
+- `brand.md`: logo geometry, light/dark variants, and native icon exports.
+- `privacy.html` and `terms.html`: English legal pages.
+
+The homepage and legal source files use `<!-- site-header -->` and
+`<!-- site-footer -->` markers. The build renders the same shared components
+into those markers and into every documentation page. Preview the generated
+site through the local server rather than opening the source HTML directly.
+
+Keep public copy in English and describe product behavior without release
+numbers or release announcements. Patch notes inside the app hold that history.
+Google sign-in starts automatic Drive backups on desktop and in the browser;
+it is sign-in, rather than an account-wide backup switch, that is optional on
+desktop. The site check rejects release numbers, stale copy, and header/footer
+navigation that differs between pages.
 
 ## Deployment
 

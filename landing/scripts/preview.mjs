@@ -5,7 +5,7 @@ import path from 'node:path';
 
 const root = path.resolve(fileURLToPath(new URL('../dist/', import.meta.url)));
 try { await stat(path.join(root, 'index.html')); } catch { throw new Error('Build the website first: npm --prefix landing run build'); }
-const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.png': 'image/png', '.xml': 'application/xml', '.txt': 'text/plain' };
+const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.xml': 'application/xml', '.txt': 'text/plain' };
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, 'http://localhost');

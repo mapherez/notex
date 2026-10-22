@@ -107,7 +107,7 @@ export function Sidebar({ open, onClose, onCreateNote, backgroundRef, triggerRef
             <X />
           </button>
           <Link className="brand" to="/" onClick={onClose}>
-            <img className="logo-image" src={`${import.meta.env.BASE_URL}assets/notex_logo_small.webp`} alt="" />
+            <img className="logo-image" src={`${import.meta.env.BASE_URL}assets/notex-mark-dark.svg`} alt="" />
             <span>{appSettings.productName}</span>
           </Link>
         </div>

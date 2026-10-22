@@ -4,27 +4,23 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Terms of Service - NoteX</title>
-    <meta name="description" content="Terms for using the NoteX local-first desktop application." />
-    <meta name="theme-color" content="#090a0c" />
+    <meta
+      name="description"
+      content="Terms for using NoteX on desktop and in the browser."
+    />
+    <meta name="theme-color" content="#f7f8fc" />
+    <meta name="color-scheme" content="light dark" />
     <link rel="canonical" href="https://notex.mapherez.com/terms.html" />
-    <link rel="icon" href="./assets/notex-logo.webp" type="image/webp" />
+    <link rel="icon" href="./assets/notex-mark.svg" type="image/svg+xml" />
+    <script src="./theme.js"></script>
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./assets/fonts/fonts.css" />
+    <link rel="stylesheet" href="./shell.css" />
+    <script src="./site.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
-    <header class="site-nav">
-      <div class="nav-inner">
-        <a class="brand" href="./index.html" aria-label="NoteX home">
-          <img src="./assets/notex-logo.webp" alt="" width="38" height="38" />
-          <span>NoteX</span>
-        </a>
-        <nav aria-label="Legal navigation">
-          <a href="./index.html">Home</a>
-          <a href="./privacy.html">Privacy</a>
-          <a href="https://github.com/mapherez/notex">GitHub</a>
-        </nav>
-      </div>
-    </header>
+    <!-- site-header -->
 
     <main id="main-content" class="legal-main">
       <header>
@@ -34,37 +30,40 @@
       </header>
 
       <section class="legal-copy" aria-labelledby="terms-en">
-        <h2 id="terms-en">English</h2>
-        <p>NoteX is provided as desktop software and a browser app for personal knowledge management, with Google Drive backup.</p>
-        <p>Wait for backups to complete before closing the app or switching devices. Concurrent use is not blocked. Browser storage may be cleared by you or the browser, and Google access may expire or be revoked.</p>
-        <p>You are responsible for your notes, backups, exported packages, and any data you choose to import or replace.</p>
-        <p>Importing a `.notex` package replaces the current local database and files folder. Review your backups before importing.</p>
-        <p>You should keep your own backups if your notes are important. NoteX cannot recover data that is deleted, overwritten, or lost outside the app.</p>
-        <p>The app is provided as-is, without a guarantee that it will be error-free or suitable for every workflow.</p>
-        <p>By using NoteX, you agree to use it responsibly and to maintain your own backup routine.</p>
-      </section>
-
-      <section class="legal-copy" lang="pt" aria-labelledby="terms-pt">
-        <h2 id="terms-pt">Português</h2>
-        <p>O NoteX é disponibilizado como software desktop e aplicação web para gestão de conhecimento pessoal, com backup na Google Drive.</p>
-        <p>Aguarde a conclusão dos backups antes de fechar a app ou mudar de dispositivo. A utilização simultânea não é bloqueada. O armazenamento do browser pode ser limpo por si ou pelo browser, e o acesso Google pode expirar ou ser revogado.</p>
-        <p>É responsável pelas suas notas, cópias de segurança, pacotes exportados e por quaisquer dados que decida importar ou substituir.</p>
-        <p>A importação de um pacote `.notex` substitui a base de dados local e a pasta de ficheiros atuais. Confirme as suas cópias de segurança antes de importar.</p>
-        <p>Deve manter as suas próprias cópias de segurança se as suas notas forem importantes. O NoteX não consegue recuperar dados eliminados, substituídos ou perdidos fora da aplicação.</p>
-        <p>A aplicação é fornecida tal como está, sem garantia de que estará livre de erros ou será adequada a todos os fluxos de trabalho.</p>
-        <p>Ao utilizar o NoteX, concorda em fazê-lo de forma responsável e em manter a sua própria rotina de cópias de segurança.</p>
+        <h2 id="terms-en">Using NoteX</h2>
+        <p>
+          NoteX is provided as desktop software and a browser app for personal
+          knowledge management, with Google Drive backup.
+        </p>
+        <p>
+          Wait for backups to complete before closing the app or switching
+          devices. Concurrent use is not blocked. Browser storage may be cleared
+          by you or the browser, and Google access may expire or be revoked.
+        </p>
+        <p>
+          You are responsible for your notes, backups, exported packages, and
+          any data you choose to import or replace.
+        </p>
+        <p>
+          Importing a <code>.notex</code> package replaces the current local
+          database and files folder. Review your backups before importing.
+        </p>
+        <p>
+          You should keep your own backups if your notes are important. NoteX
+          cannot recover data that is deleted, overwritten, or lost outside the
+          app.
+        </p>
+        <p>
+          The app is provided as-is, without a guarantee that it will be
+          error-free or suitable for every workflow.
+        </p>
+        <p>
+          By using NoteX, you agree to use it responsibly and to maintain your
+          own backup routine.
+        </p>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <a class="brand footer-brand" href="./index.html">
-        <img src="./assets/notex-logo.webp" alt="" width="30" height="30" />
-        <span>NoteX</span>
-      </a>
-      <nav aria-label="Footer links">
-        <a href="./index.html">Home</a>
-        <a href="./privacy.html">Privacy</a>
-      </nav>
-    </footer>
+    <!-- site-footer -->
   </body>
 </html>

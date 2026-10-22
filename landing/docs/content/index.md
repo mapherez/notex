@@ -2,7 +2,7 @@
 
 NoteX is an app for keeping useful information together on desktop and in the browser: project decisions, recipes, references, study material, and anything you want to find again. Notes can contain several titled blocks, rich text, images, and attached files.
 
-Edits are saved locally on the device you use. The desktop app works without an account or an internet connection. Browser mode uses a Google account, with optional offline editing after the app and notes have been downloaded.
+Edits are saved locally on the device you use. The desktop app works without an account or an internet connection. Browser mode requires Google sign-in; downloaded notes can be edited offline after the app has been cached.
 
 ## Start with a note
 
@@ -22,7 +22,7 @@ Read about [notes and blocks](blocks.md) or [collections and tags](collections-t
 
 ## Keep your data portable
 
-NoteX saves edits locally as you work. You can also export a complete workspace, including attached files, or export one note to share or keep separately.
+On desktop, you can export a complete workspace, including attached files, or export one note to share or keep separately. Signing in with Google enables automatic Drive backups on desktop and in the browser.
 
 Local autosave and backups serve different purposes. A backup kept elsewhere helps if your computer or disk fails. See [import, export, and backups](import-export.md) for the two package formats and the import behavior.
 
@@ -34,11 +34,11 @@ Start with [connecting an AI client](mcp-setup.md), then explore [tools and work
 
 ## Use NoteX on desktop, tablet, and phone
 
-NoteX 2.4.0 adds responsive layouts and touch controls for smaller screens. In the browser, you can open navigation and note details as side panels, edit with the on-screen keyboard, move blocks by touch, and preview images with zoom. On phones, NoteX works in portrait orientation. See [the tablet and phone guide](mobile-tablet.md) for the controls and current limits.
+NoteX adapts to smaller screens with touch controls. In the browser, you can open navigation and note details as side panels, edit with the on-screen keyboard, move blocks by touch, and preview images with zoom. On phones, NoteX works in portrait orientation. See [the tablet and phone guide](mobile-tablet.md) for the controls and offline requirements.
 
 ## Back up to Google Drive and use the browser
 
-In NoteX 2.3.0, connect your Google account for backups to your own Drive.
+Sign in with Google to automatically back up your library to your own Drive.
 Desktop login is optional; browser mode requires login and stores downloaded
 notes locally in your browser. See [Google Drive and browser mode](google-drive-web.md)
 for automatic backups, accounts, downloads, and offline work.

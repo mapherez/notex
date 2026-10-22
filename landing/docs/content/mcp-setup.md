@@ -23,7 +23,7 @@ Authentication: None
 
 Always copy the current URL from the app if you changed the port. The exact client configuration field names depend on that client's MCP support.
 
-This release does not provide a STDIO server. A hosted AI website cannot use the loopback URL to reach your computer directly.
+The local server uses Streamable HTTP, not STDIO. A hosted AI website cannot use the loopback URL to reach your computer directly.
 
 ## Check the connection
 
@@ -35,7 +35,7 @@ If it cannot connect, confirm NoteX is open, MCP is online, and the client's URL
 
 No NoteX account or cloud synchronization is needed. Notes remain in the existing local SQLite library.
 
-There is no authentication token in this release. Other local processes able to connect to the port can use the tools while MCP is running. Enable write approvals in your AI client when available, especially for deletion, and stop MCP when finished.
+The server does not use an authentication token. Other local processes able to connect to the port can use the tools while MCP is running. Enable write approvals in your AI client when available, especially for deletion, and stop MCP when finished.
 
 Content read by an AI client is subject to that client's own processing and privacy settings. See [local storage and privacy](local-storage.md).
 

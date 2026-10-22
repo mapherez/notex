@@ -93,7 +93,7 @@ document.addEventListener('keydown', event => {
 
 // On narrow screens the native disclosure replaces the desktop sidebar.
 const topics = document.querySelector('.docs-topic-menu');
-const narrowScreen = matchMedia('(max-width: 760px)');
+const narrowScreen = matchMedia('(max-width: 900px)');
 function updateTopics() { topics.open = !narrowScreen.matches; }
 updateTopics();
 narrowScreen.addEventListener('change', updateTopics);

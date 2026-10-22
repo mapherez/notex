@@ -24,13 +24,14 @@ If you see a compatibility error, keep the database and files intact. Do not del
 
 Local MCP is stopped when NoteX starts. Enabling it lets compatible local clients access the supported tools while NoteX and MCP are running.
 
-The server listens on your computer's loopback address. It is not a public internet endpoint. However, there is no authentication token in this release, so other local processes able to connect can use it while it is enabled.
+The server listens on your computer's loopback address. It is not a public internet endpoint. It does not use an authentication token, so other local processes able to connect can use it while it is enabled.
 
 An AI client may send the information it reads to its own online service. Local NoteX storage does not determine that client's data handling. Review the client and provider's settings before using sensitive notes.
 
-## Public website
+## Google Drive and the website
 
-Google Drive backup is optional on desktop. When connected, NoteX uploads note
+Google sign-in is optional on desktop and required in the browser. Signing in
+starts automatic backups. NoteX uploads note
 JSON and attachments directly to the application's area of your personal
 Google Drive. Account libraries remain separate. Browser notes are stored
 locally and backed up to that same Drive area; the NoteX host does not store

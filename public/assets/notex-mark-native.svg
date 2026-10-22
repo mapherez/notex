@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>NoteX</title>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="16.5" fill="#151b2c" stroke="#aeb8d8" stroke-opacity=".5"/>
+  <path d="M18 46V22h6.5l15 20V22H46v24h-6.5l-15-20v20Z" fill="#f4f5ff"/>
+  <circle cx="47" cy="15" r="3.5" fill="#8f9bf2"/>
+</svg>

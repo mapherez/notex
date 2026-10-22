@@ -39,6 +39,8 @@ The recent-notes list follows actual note updates. Simply opening a note does no
 
 ## Keep a backup
 
-On desktop, once you have content worth keeping, export your workspace from the data-management section of **Profile**. Save the resulting `.notex` package somewhere independent of your working library. Browser mode backs up account notes to Google Drive when connected.
+Signing in with Google starts automatic backups to your own Drive, on desktop and in the browser. Let pending backups finish before closing NoteX or switching devices.
+
+For a separate portable copy on desktop, export your workspace from the data-management section of **Profile**. Save the resulting `.notex` package somewhere independent of your working library.
 
 See [backups and imports](import-export.md) before restoring a full workspace: that operation replaces the current library.

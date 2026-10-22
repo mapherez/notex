@@ -1,24 +1,24 @@
 # Updates & feedback
 
-NoteX evolves through new features and fixes. Keep the desktop app current, and use release notes to see what changed.
+Use the desktop updater, read the patch notes, or send feedback about a workflow that needs attention.
 
-## What's new in 2.4.0
+## Update the desktop app
 
-Version 2.4.0 adds responsive layouts for desktop, tablet, and phone, along with touch-friendly navigation, block reordering, image preview and resizing, and improvements to menus, panels, and the editor. See the [tablet and phone guide](mobile-tablet.md) for the new controls. The full patch notes are available inside NoteX.
-
-## Update the app
-
-NoteX includes an updater and a manual update check in **Profile**. When an update is available, follow the app's update prompt.
+Open **Profile** to check for updates manually, or follow the app's update prompt when one is available. Let pending Google Drive backups finish before installing an update or closing NoteX.
 
 Use [Download](https://notex.mapherez.com/download) to get the latest desktop app.
 
-Before a major workflow change or a full-workspace import, keeping a fresh [exported backup](import-export.md) is useful regardless of whether you are updating.
+You can also keep an [exported workspace backup](import-export.md) as a separate portable copy of your library.
+
+## Use the browser app
+
+The [web app](https://notex.mapherez.com/app/) runs in your browser on a computer, tablet, or phone. It does not use the desktop installer. An internet connection is needed to load an updated web app; downloaded notes remain available offline once the app has been cached.
 
 ## Read what changed
 
-Patch notes are available inside the app. The [GitHub releases page](https://github.com/mapherez/notex/releases) also lets you browse published versions.
+Open the patch notes from the version label in the app's sidebar. The [GitHub releases page](https://github.com/mapherez/notex/releases) also lists published changes and desktop downloads.
 
-These documentation pages describe released desktop behavior. Features being developed on another branch may not yet be available in your installed version.
+The guides here explain how NoteX works. The patch notes keep the history of individual releases in one place.
 
 ## Suggest a feature
 
@@ -26,8 +26,8 @@ Open a [GitHub issue](https://github.com/mapherez/notex/issues) and describe the
 
 Check existing issues first so you can add context to an existing discussion if someone already reported it.
 
-## Improve a guide
+## Report a problem
 
-Each documentation article has an **Improve this guide** link to its Markdown source. You can propose a correction through GitHub, or report unclear instructions as an issue.
+Describe the steps to reproduce it, what you expected, and what happened instead. Include the device, operating system, browser if relevant, and the exact error message. A screenshot can help if you remove private content first.
 
-If something described here does not match your installation, include the app version when reporting it.
+Include the installed app version when reporting a desktop issue so the problem can be reproduced. If a guide is unclear, link to the page and the section in your report.
