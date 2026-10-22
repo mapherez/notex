@@ -1,3 +1,22 @@
+# 2.6.0
+
+## What's New in NoteX
+
+This release refreshes the NoteX look and adds quicker access to the collections and tags you use most.
+
+### Highlights
+
+- Updated the NoteX logo and app icons.
+- Refined the desktop and web interface with lighter styling and lilac accents.
+- Added bundled Source Sans 3 fonts for comfortable, consistent reading across devices.
+- Refreshed the note thumbnail collection with 12 matching designs.
+- Added Pin/Unpin for collections and tags, alongside Edit and Delete in a three-dot menu.
+- Added a collapsible Quick access section in the sidebar for pinned collections and tags, with scrolling that keeps the footer accessible.
+- Moved Collections above Tags in the sidebar, with a folder icon.
+- Refreshed the website and documentation with consistent navigation and light, dark, and system themes.
+
+---
+
 # 2.5.3
 
 ## What's New in NoteX
