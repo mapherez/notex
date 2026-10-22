@@ -3,6 +3,34 @@
   top: calc(100% + var(--nx-space-2));
 }
 
+.knowledge-actions {
+  position: relative;
+  flex: none;
+  z-index: 2;
+}
+
+.knowledge-actions-menu {
+  top: var(--nx-popover-top, calc(100% + var(--nx-space-2)));
+  left: var(--nx-popover-left, auto);
+  right: 0;
+}
+
+.floating-menu .knowledge-actions-delete {
+  color: var(--nx-color-danger);
+}
+
+.floating-menu button:focus-visible {
+  outline: 2px solid var(--nx-color-accent-strong);
+  outline-offset: -2px;
+  background: var(--nx-color-hover);
+  color: var(--nx-color-text);
+}
+
+.tag-card:has(.knowledge-actions-trigger[aria-expanded="true"]),
+.collection-card:has(.knowledge-actions-trigger[aria-expanded="true"]) {
+  z-index: 85;
+}
+
 .inline-picker,
 .inline-form {
   display: grid;

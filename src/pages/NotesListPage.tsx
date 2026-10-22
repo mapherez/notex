@@ -1,10 +1,11 @@
-import { Check, Edit3, Folder, Plus, Trash2, X } from 'lucide-react';
+import { Check, Folder, Plus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ColorPicker } from '../components/ui/ColorPicker';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
 import { IconBadge } from '../components/ui/IconBadge';
+import { KnowledgeActionsMenu } from '../components/ui/KnowledgeActionsMenu';
 import { defaultNewCollectionColor } from '../config/appSettings';
 import type { Collection, TagColor } from '../core/models/models';
 import {
@@ -42,6 +43,7 @@ export function CollectionsPage() {
   const createCollection = useKnowledgeStore((state) => state.createCollection);
   const updateCollection = useKnowledgeStore((state) => state.updateCollection);
   const deleteCollection = useKnowledgeStore((state) => state.deleteCollection);
+  const setCollectionPinned = useKnowledgeStore((state) => state.setCollectionPinned);
   const settings = useAppStore((state) => state.settings);
   const setPrimaryCollection = useAppStore((state) => state.setPrimaryCollection);
   const pushToast = useToastStore((state) => state.pushToast);
@@ -176,14 +178,13 @@ export function CollectionsPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="collection-card-actions">
-                        <button className="collection-action-button" type="button" aria-label={t('collections.edit')} onClick={() => beginEdit(collection)}>
-                          <Edit3 />
-                        </button>
-                        <button className="collection-action-button danger" type="button" aria-label={t('collections.delete')} onClick={() => setDeleteCandidate(collection)}>
-                          <Trash2 />
-                        </button>
-                      </div>
+                      <KnowledgeActionsMenu
+                        name={collection.name}
+                        pinned={collection.isPinned === true}
+                        onPin={() => setCollectionPinned(collection.id, !collection.isPinned)}
+                        onEdit={() => beginEdit(collection)}
+                        onDelete={() => setDeleteCandidate(collection)}
+                      />
                     </div>
                   )}
                 </article>

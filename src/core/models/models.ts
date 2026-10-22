@@ -115,6 +115,7 @@ export type Tag = {
   name: string;
   color?: TagColor;
   count?: number;
+  isPinned?: boolean;
 };
 
 export type Collection = {
@@ -122,6 +123,7 @@ export type Collection = {
   name: string;
   icon?: string;
   color?: TagColor;
+  isPinned?: boolean;
 };
 
 export type User = {

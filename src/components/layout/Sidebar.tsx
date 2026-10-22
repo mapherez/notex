@@ -19,7 +19,7 @@ import { navigationSettings } from '../../config/appSettings';
 import { BrandMark, BrandName } from '../ui/Brand';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useNotesStore } from '../../store/useNotesStore';
-import { useKnowledgeStore } from '../../store/useKnowledgeStore';
+import { SidebarQuickAccess } from './SidebarQuickAccess';
 import { useLocalMcpStore } from '../../store/useLocalMcpStore';
 import { latestPatchNoteVersion, PatchNotesModal } from '../ui/PatchNotesModal';
 import { useSidebarDrawer } from '../../core/utils/useSidebarDrawer';
@@ -28,6 +28,7 @@ import { useDrawerSwipe } from '../../core/utils/useDrawerSwipe';
 const navIcons = {
   clock: Clock3,
   fileText: FileText,
+  folder: Folder,
   home: Home,
   star: Star,
   tag: Tag,
@@ -49,9 +50,7 @@ export function Sidebar({ open, onClose, onCreateNote, backgroundRef, triggerRef
   const [patchNotesOpen, setPatchNotesOpen] = useState(false);
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  const collections = useKnowledgeStore((state) => state.collections);
   const hasTrashedNotes = useNotesStore((state) => state.notes.some((note) => note.isTrashed));
-  const activeCollectionId = searchParams.get('collection');
   const mcpOnline = useLocalMcpStore(
     (state) => state.connection.state === 'running' && state.connection.rendererReady,
   );
@@ -103,6 +102,7 @@ export function Sidebar({ open, onClose, onCreateNote, backgroundRef, triggerRef
         aria-modal={compact && open ? true : undefined}
         aria-label={t('navigation.notes')}
       >
+        <div className="sidebar-content">
         <div className="sidebar-header">
           <button className="icon-button sidebar-close" type="button" aria-label={t('common.close')} onClick={dismiss}>
             <X />
@@ -124,7 +124,7 @@ export function Sidebar({ open, onClose, onCreateNote, backgroundRef, triggerRef
           </button>
         </div>
 
-        <nav className="sidebar-section" aria-label={t("navigation.notes")}>
+        <nav className="sidebar-section sidebar-main-nav" aria-label={t("navigation.notes")}>
           {navigationSettings.sidebarItems.map(({ to, labelKey, icon }) => {
             const Icon = to === "/trash" && hasTrashedNotes ? Trash2 : navIcons[icon as keyof typeof navIcons] ?? FileText;
 
@@ -145,39 +145,11 @@ export function Sidebar({ open, onClose, onCreateNote, backgroundRef, triggerRef
           })}
         </nav>
 
-        <div className="sidebar-section">
-          <div className="sidebar-section-title">
-            <NavLink
-              className={({ isActive }) =>
-                clsx("sidebar-section-title-link", isActive && "active")
-              }
-              to="/collections"
-              onClick={onClose}
-            >
-              <span>{t("navigation.collections")}</span>
-              <Plus />
-            </NavLink>
-          </div>
-          {collections.map((collection) => (
-            <Link
-              key={collection.id}
-              to={`/notes?collection=${collection.id}`}
-              className={clsx(
-                "nav-item",
-                `collection-${collection.color ?? "neutral"}`,
-                location.pathname === "/notes" &&
-                  activeCollectionId === collection.id &&
-                  "active",
-              )}
-              onClick={onClose}
-            >
-              <Folder strokeWidth={1.8} />
-              <span>{collection.name}</span>
-            </Link>
-          ))}
+        <hr className="sidebar-quick-access-separator" />
+        <SidebarQuickAccess onNavigate={onClose} />
         </div>
 
-        <div className="sidebar-spacer" />
+        <footer className="sidebar-footer">
         <nav className="sidebar-legal-links" aria-label={t('legal.navigationLabel')}>
           {navigationSettings.legalLinks.map((link) => (
             <Link
@@ -219,6 +191,7 @@ export function Sidebar({ open, onClose, onCreateNote, backgroundRef, triggerRef
             {t(mcpOnline ? 'profile.mcp.online' : 'profile.mcp.offline')}
           </Link>}
         </div>
+        </footer>
       </aside>
       {compact && <div className="sidebar-drawer-spacer" aria-hidden="true" />}
       </div>
