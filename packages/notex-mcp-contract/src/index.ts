@@ -161,6 +161,10 @@ export const noteThumbnailVariantSchema = z.enum([
   'text',
   'correct',
   'wrong',
+  'checklist',
+  'ideas',
+  'research',
+  'calendar',
 ]);
 export type NoteThumbnailVariant = z.infer<typeof noteThumbnailVariantSchema>;
 

@@ -314,7 +314,11 @@
                       "book",
                       "text",
                       "correct",
-                      "wrong"
+                      "wrong",
+                      "checklist",
+                      "ideas",
+                      "research",
+                      "calendar"
                     ]
                   }
                 },
@@ -2057,7 +2061,11 @@
               "book",
               "text",
               "correct",
-              "wrong"
+              "wrong",
+              "checklist",
+              "ideas",
+              "research",
+              "calendar"
             ],
             "description": "Exact NoteX thumbnail variant to apply."
           }

@@ -15,7 +15,8 @@ import {
   X,
 } from 'lucide-react';
 import clsx from 'clsx';
-import { appSettings, navigationSettings } from '../../config/appSettings';
+import { navigationSettings } from '../../config/appSettings';
+import { BrandMark, BrandName } from '../ui/Brand';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useNotesStore } from '../../store/useNotesStore';
 import { useKnowledgeStore } from '../../store/useKnowledgeStore';
@@ -107,8 +108,8 @@ export function Sidebar({ open, onClose, onCreateNote, backgroundRef, triggerRef
             <X />
           </button>
           <Link className="brand" to="/" onClick={onClose}>
-            <img className="logo-image" src={`${import.meta.env.BASE_URL}assets/notex-mark-dark.svg`} alt="" />
-            <span>{appSettings.productName}</span>
+            <BrandMark className="logo-image" />
+            <BrandName />
           </Link>
         </div>
 

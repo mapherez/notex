@@ -3,6 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Copy, Minus, Square, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { appSettings } from '../../config/appSettings';
+import { BrandMark } from '../ui/Brand';
 import { useI18n } from '../../i18n/I18nProvider';
 
 export function useCustomWindowTitleBar() {
@@ -81,7 +82,7 @@ export function WindowTitleBar() {
   return (
     <header className="window-titlebar">
       <div className="window-titlebar__drag-region" data-tauri-drag-region>
-        <img className="window-titlebar__logo" src={`${import.meta.env.BASE_URL}assets/notex-mark-dark.svg`} alt={appSettings.productName} />
+        <BrandMark className="window-titlebar__logo" alt={appSettings.productName} />
       </div>
       <div className="window-titlebar__controls">
         <button

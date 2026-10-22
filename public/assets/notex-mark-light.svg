@@ -1,1 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none"><title>NoteX</title><rect class="tile" width="64" height="64" rx="17" fill="#151b2c"/><path class="letter" d="M18 46V22h6.5l15 20V22H46v24h-6.5l-15-20v20Z" fill="#f4f5ff"/><circle cx="47" cy="15" r="3.5" fill="#8f9bf2"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" role="img" aria-labelledby="title">
+  <title id="title">NoteX — dark tile, three note tabs</title>
+  <rect width="256" height="256" rx="66" fill="#151b26"/>
+  <g transform="translate(-30 -30) scale(1.25)">
+    <g>
+      <rect x="165" y="61" width="34" height="44" rx="14" fill="#bfb2ff"/>
+      <rect x="165" y="107" width="34" height="44" rx="14" fill="#9286ff"/>
+      <rect x="165" y="153" width="34" height="44" rx="14" fill="#6968f5"/>
+    </g>
+    <path d="M54 197V61h32l61 85V61h32v136h-33l-60-83v83Z" fill="#ffffff"/>
+  </g>
+</svg>

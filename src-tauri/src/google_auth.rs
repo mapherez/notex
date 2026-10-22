@@ -84,7 +84,15 @@ fn callback_page(title: &str, description: &str, received: bool) -> Html<String>
         include_str!("google_callback.html")
             .replace(
                 "{{LOGO}}",
-                &STANDARD.encode(include_bytes!("../../public/assets/notex_logo_small.webp")),
+                &STANDARD.encode(include_bytes!("../../public/assets/notex-icon.svg")),
+            )
+            .replace(
+                "{{DM_SANS}}",
+                &STANDARD.encode(include_bytes!("../../public/assets/fonts/dm-sans-latin.woff2")),
+            )
+            .replace(
+                "{{MANROPE}}",
+                &STANDARD.encode(include_bytes!("../../public/assets/fonts/manrope-latin.woff2")),
             )
             .replace("{{ICON}}", icon)
             .replace("{{TITLE}}", title)
@@ -471,6 +479,16 @@ pub async fn notex_google_access_token(
 mod tests {
     use super::*;
     use crate::credential_store::tests::FakeSecretStore;
+
+    #[test]
+    fn callback_embeds_brand_and_fonts_without_unresolved_placeholders() {
+        let Html(page) = callback_page("Sign-in received", "Return to NoteX.", true);
+        assert!(page.contains("data:image/svg+xml;base64,"));
+        assert!(page.contains("data:font/woff2;base64,"));
+        assert!(page.contains("Sign-in received"));
+        assert!(!page.contains("{{"));
+        assert!(!page.contains("data:image/webp"));
+    }
 
     #[test]
     fn refresh_credentials_round_trip_and_isolate_accounts_and_services() {

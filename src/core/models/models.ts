@@ -1,4 +1,5 @@
 import type { ThemePreference } from '../theme/themeRegistry';
+import type { NoteThumbnailVariant } from '@notex/mcp-contract';
 
 export type Locale = 'pt' | 'en';
 
@@ -23,7 +24,7 @@ export type NoteStats = {
 };
 
 export type NoteThumbnail = {
-  variant: 'purple' | 'paper' | 'terminal' | 'landscape' | 'book' | 'text' | 'correct' | 'wrong';
+  variant: NoteThumbnailVariant;
 };
 
 export type TiptapDocument = {

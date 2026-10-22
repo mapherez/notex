@@ -63,7 +63,13 @@ try {
   assert.equal(asset.status, 200, 'App script status');
   assert.match(asset.headers.get('cache-control') ?? '', /immutable/, 'Hashed asset cache');
   await asset.arrayBuffer();
-  for (const path of ['/app/assets/google-g.png', '/app/assets/thumb-text.svg', '/app/assets/notex_logo_small.webp']) {
+  for (const path of [
+    '/app/assets/google-g.png',
+    '/app/assets/thumb-text.svg',
+    '/app/assets/notex-icon.svg',
+    '/app/assets/fonts/dm-sans-latin.woff2',
+    '/app/assets/fonts/manrope-latin.woff2',
+  ]) {
     const asset = await get(path);
     assert.equal(asset.status, 200, `Public app asset: ${path}`);
     await asset.arrayBuffer();

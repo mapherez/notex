@@ -26,9 +26,12 @@ follow the site theme tokens, and the favicon switches with the site preference.
 Asset filenames `notex-mark-light.svg` / `notex-mark-dark.svg` refer to the site
 theme; the approved originals' names refer to the tile color.
 
-The desktop/web app and native icon files remain independent of this website
-revision. Do not copy this study into `public/assets/` or `src-tauri/icons/`
-until the app-brand update is requested and the website mark is approved.
+The desktop/web app uses the same approved geometry in `public/assets/`.
+Its fixed native icon source is `public/assets/notex-icon.svg`: a white tile,
+dark N, and the same three lilac tabs. `npm run tauri:icon` regenerates the
+platform icons from that source. In-app marks follow the chosen app theme;
+the installed desktop icon always keeps the white tile.
 
-The app's existing `npm run tauri:icon` command continues to use its own source
-in `public/assets/notex-mark-native.svg`. This website study does not update it.
+The app bundles DM Sans and Manrope, including their licenses, in
+`public/assets/fonts/`. The Google sign-in confirmation embeds those fonts and
+the approved icon so it can render without external font or image requests.
