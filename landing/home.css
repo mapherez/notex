@@ -161,10 +161,30 @@ button {
   min-height: 52px;
   font-size: 14px;
 }
+.hero-action-or {
+  align-self: center;
+  color: var(--sub);
+  font-size: 13px;
+}
 .reassurance {
   margin: 17px 0 0;
   color: var(--muted);
   font-size: 12px;
+}
+.browser-guidance {
+  margin-top: 17px;
+  color: var(--sub);
+  font-size: 13px;
+}
+.browser-guidance p {
+  margin: 0;
+}
+.browser-guidance .desktop-availability {
+  margin-top: 7px;
+}
+.desktop-availability {
+  font-size: 12px;
+  line-height: 1.6;
 }
 .hero-stage {
   position: relative;
@@ -872,6 +892,9 @@ button {
 }
 .bottom-cta .button {
   position: relative;
+}
+.bottom-cta .desktop-availability {
+  margin: 18px auto 0;
 }
 .bottom-link {
   font-size: 12px;

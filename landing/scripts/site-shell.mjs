@@ -27,13 +27,13 @@ export function siteHeader(base, current) {
       ${link(`${base}index.html#features`, "Features")}
       ${link(`${base}docs/`, "Documentation", current === "docs")}
       <div class="site-mobile-actions">
-        <a class="site-action" href="https://notex.mapherez.com/app/">Open web app <span aria-hidden="true">↗</span></a>
-        <a class="site-action site-action-primary" href="https://notex.mapherez.com/download">Download</a>
+        <a class="site-action site-action-primary" href="https://notex.mapherez.com/app/">Open NoteX Web <span aria-hidden="true">↗</span></a>
       </div>
     </nav>
     <div class="site-header-actions">
-      <a class="site-web-link" href="https://notex.mapherez.com/app/">Open web app <span aria-hidden="true">↗</span></a>
-      <a class="site-action site-action-primary" href="https://notex.mapherez.com/download">Download</a>
+      <a class="site-web-link desktop-only" href="https://notex.mapherez.com/app/">Open web app <span aria-hidden="true">↗</span></a>
+      <a class="site-action site-action-primary desktop-only" href="https://notex.mapherez.com/download">Download</a>
+      <a class="site-action site-action-primary browser-only" href="https://notex.mapherez.com/app/">Open NoteX Web <span aria-hidden="true">↗</span></a>
     </div>
     <button class="site-menu-toggle" data-site-menu type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false" hidden>${icon("menu")}</button>
     <div class="site-theme" data-theme-control hidden>

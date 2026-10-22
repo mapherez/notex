@@ -112,19 +112,28 @@
             it when it matters. Your notes. Your space. Your way.
           </p>
           <div class="hero-actions">
-            <a class="button primary" href="https://notex.mapherez.com/download"
+            <a class="button primary desktop-only" href="https://notex.mapherez.com/download"
               >Download NoteX
               <svg aria-hidden="true" class="icon">
-                <use href="#i-arrow" /></svg></a
-            ><a class="button secondary" href="https://notex.mapherez.com/app/"
-              >Try in your browser
+                <use href="#i-arrow" /></svg></a>
+            <span class="hero-action-or desktop-only">or</span>
+            <a class="button secondary desktop-only" href="https://notex.mapherez.com/app/"
+              >Open NoteX Web
               <svg aria-hidden="true" class="icon" style="width: 15px">
                 <use href="#i-arrow" /></svg
             ></a>
+            <a class="button primary browser-only" href="https://notex.mapherez.com/app/">
+              Open NoteX Web
+              <svg aria-hidden="true" class="icon"><use href="#i-arrow" /></svg>
+            </a>
           </div>
-          <p class="reassurance">
+          <p class="reassurance desktop-only">
             Desktop works offline · Sign in for automatic Drive backups
           </p>
+          <div class="browser-only browser-guidance">
+            <p>Use NoteX in your browser. No installation needed.</p>
+            <p class="desktop-availability">Also available as a desktop app for Windows and macOS.</p>
+          </div>
           <div class="hero-stage">
             <div class="stage-tabs" role="tablist" aria-label="Product preview">
               <button
@@ -623,8 +632,9 @@
           <details>
             <summary>How do I install NoteX?</summary>
             <p>
-              Select Download to get the installer for your computer, install
-              the app and open NoteX.
+              On a Windows PC or Mac, select Download to get the desktop
+              installer. On a tablet or phone, select Open NoteX Web to use
+              NoteX in your browser, with no installation needed.
               <a href="./docs/quickstart.html">Read the installation guide →</a>
             </p>
           </details>
@@ -666,15 +676,21 @@
       <section class="wrap cta-section">
         <div class="bottom-cta" id="download">
           <h2>Everything worth knowing.<br />One place to keep it.</h2>
-          <p>
+          <p class="desktop-only">
             Get the desktop app or open NoteX in your browser. Your next great
             idea deserves a home.
           </p>
-          <a class="button purple" href="https://notex.mapherez.com/download"
-            >Get NoteX
+          <p class="browser-only">Use NoteX in your browser. No installation needed.</p>
+          <a class="button purple desktop-only" href="https://notex.mapherez.com/download"
+            >Download NoteX
             <svg aria-hidden="true" class="icon"><use href="#i-arrow" /></svg
           ></a>
-          <div class="bottom-link">
+          <a class="button purple browser-only" href="https://notex.mapherez.com/app/">
+            Open NoteX Web
+            <svg aria-hidden="true" class="icon"><use href="#i-arrow" /></svg>
+          </a>
+          <p class="browser-only desktop-availability">Also available as a desktop app for Windows and macOS.</p>
+          <div class="bottom-link desktop-only">
             <a href="https://notex.mapherez.com/app/">Or open the web app ↗</a>
           </div>
         </div>

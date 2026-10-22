@@ -14,6 +14,21 @@ body > main,
 body > .docs-shell {
   flex: 1;
 }
+/* Prefer the browser app on small screens and touch-first devices, even when
+   JavaScript is unavailable. Desktop installers remain available on computers. */
+@media (max-width: 1100px), (hover: none), (pointer: coarse) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+@media (min-width: 1101px) and (hover: hover) and (pointer: fine) {
+  :root:not([data-mobile-device]) .browser-only {
+    display: none !important;
+  }
+}
+[data-mobile-device] .desktop-only {
+  display: none !important;
+}
 .site-header {
   position: sticky;
   top: 0;

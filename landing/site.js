@@ -1,3 +1,10 @@
+// iPadOS can report a desktop-sized viewport and a Mac user agent, including
+// when a trackpad is connected. Keep installer links out of mobile browsers.
+const mobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  || navigator.userAgentData?.mobile === true;
+document.documentElement.toggleAttribute("data-mobile-device", mobileDevice);
+
 const header = document.querySelector("[data-site-header]");
 const menu = document.querySelector("[data-site-menu]");
 const nav = document.getElementById("site-navigation");
