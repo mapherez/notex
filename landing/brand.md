@@ -32,6 +32,10 @@ dark N, and the same three lilac tabs. `npm run tauri:icon` regenerates the
 platform icons from that source. In-app marks follow the chosen app theme;
 the installed desktop icon always keeps the white tile.
 
-The app bundles DM Sans and Manrope, including their licenses, in
+The app bundles Source Sans 3 (normal and italic) and Manrope, including their licenses, in
 `public/assets/fonts/`. The Google sign-in confirmation embeds those fonts and
 the approved icon so it can render without external font or image requests.
+
+Source Sans 3 is used for app controls, headings, and note text. Manrope remains
+reserved for the NoteX wordmark. Font files are bundled for offline use; the
+website retains its own DM Sans / Manrope pairing.

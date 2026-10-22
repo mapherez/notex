@@ -87,8 +87,8 @@ fn callback_page(title: &str, description: &str, received: bool) -> Html<String>
                 &STANDARD.encode(include_bytes!("../../public/assets/notex-icon.svg")),
             )
             .replace(
-                "{{DM_SANS}}",
-                &STANDARD.encode(include_bytes!("../../public/assets/fonts/dm-sans-latin.woff2")),
+                "{{SOURCE_SANS_3}}",
+                &STANDARD.encode(include_bytes!("../../public/assets/fonts/source-sans-3.woff2")),
             )
             .replace(
                 "{{MANROPE}}",

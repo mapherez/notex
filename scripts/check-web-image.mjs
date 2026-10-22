@@ -67,7 +67,8 @@ try {
     '/app/assets/google-g.png',
     '/app/assets/thumb-text.svg',
     '/app/assets/notex-icon.svg',
-    '/app/assets/fonts/dm-sans-latin.woff2',
+    '/app/assets/fonts/source-sans-3.woff2',
+    '/app/assets/fonts/source-sans-3-italic.woff2',
     '/app/assets/fonts/manrope-latin.woff2',
   ]) {
     const asset = await get(path);

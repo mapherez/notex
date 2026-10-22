@@ -1,6 +1,7 @@
 $base-tokens: (
-  "font-sans": "\"DM Sans\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
-  "font-display": "Manrope, \"DM Sans\", ui-sans-serif, system-ui, sans-serif",
+  "font-sans": "\"Source Sans 3\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+  "font-display": "var(--nx-font-sans)",
+  "font-brand": "Manrope, \"Source Sans 3\", ui-sans-serif, system-ui, sans-serif",
   "sidebar-width": 14rem,
   "window-titlebar-height": 38px,
   "topbar-height": 5.5rem,

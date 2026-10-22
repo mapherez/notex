@@ -4,7 +4,8 @@
 }
 
 .brand-wordmark {
-  font-family: var(--nx-font-display);
+  font-family: var(--nx-font-brand);
+  font-size-adjust: none;
   font-weight: 800;
   letter-spacing: 2px;
   white-space: nowrap;
@@ -12,4 +13,9 @@
 
 .brand-wordmark__accent {
   color: var(--nx-color-brand-accent);
+}
+
+code,
+pre {
+  font-size-adjust: none;
 }
