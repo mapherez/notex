@@ -1,9 +1,10 @@
-import { Check, Edit3, Hash, Plus, Search, Trash2, X } from 'lucide-react';
+import { Check, Hash, Plus, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ColorPicker } from '../components/ui/ColorPicker';
 import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
 import { IconBadge } from '../components/ui/IconBadge';
+import { KnowledgeActionsMenu } from '../components/ui/KnowledgeActionsMenu';
 import { SortableTagList } from '../components/ui/SortableTagList';
 import { TagChip } from '../components/ui/TagChip';
 import { appLimits, defaultNewTagColor } from '../config/appSettings';
@@ -53,6 +54,7 @@ export function TagsPage() {
   const createTag = useKnowledgeStore((state) => state.createTag);
   const updateTag = useKnowledgeStore((state) => state.updateTag);
   const deleteTag = useKnowledgeStore((state) => state.deleteTag);
+  const setTagPinned = useKnowledgeStore((state) => state.setTagPinned);
   const settings = useAppStore((state) => state.settings);
   const toggleFavoriteTag = useAppStore((state) => state.toggleFavoriteTag);
   const reorderFavoriteTags = useAppStore((state) => state.reorderFavoriteTags);
@@ -282,19 +284,13 @@ export function TagsPage() {
                             <div className="stat-delta">{formatTagCount(tag.count, t)}</div>
                           </div>
                         </div>
-                        <div className="tag-card-actions">
-                          <button className="tag-action-button" type="button" aria-label={t('tagsPage.edit')} onClick={() => beginEdit(tag)}>
-                            <Edit3 />
-                          </button>
-                          <button
-                            className="tag-action-button danger"
-                            type="button"
-                            aria-label={t('tagsPage.delete')}
-                            onClick={() => setDeleteCandidate(tag)}
-                          >
-                            <Trash2 />
-                          </button>
-                        </div>
+                        <KnowledgeActionsMenu
+                          name={tag.name}
+                          pinned={tag.isPinned === true}
+                          onPin={() => setTagPinned(tag.id, !tag.isPinned)}
+                          onEdit={() => beginEdit(tag)}
+                          onDelete={() => setDeleteCandidate(tag)}
+                        />
                       </div>
                     )}
                   </article>

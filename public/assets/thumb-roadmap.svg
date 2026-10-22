@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" fill="none" viewBox="0 0 96 96"><rect width="96" height="96" fill="#0B0622" rx="12"/><circle cx="62" cy="34" r="28" fill="url(#glow)"/><path stroke="#FF78D5" stroke-linecap="round" stroke-width="4" d="M18 70c13-12 22-21 30-26 9-6 18-7 31-6"/><path stroke="#BFA6FF" stroke-linecap="round" stroke-width="3" d="M17 47c8 3 14 2 18-3 3-4 3-9 1-15"/><circle cx="19" cy="70" r="4" fill="#FFC653"/><circle cx="48" cy="44" r="4" fill="#FF7AD9"/><circle cx="79" cy="38" r="4" fill="#7D5DFF"/><defs><radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(62 34) rotate(90) scale(35)" gradientUnits="userSpaceOnUse"><stop stop-color="#FF5AE8"/><stop offset=".55" stop-color="#6D4CFF"/><stop offset="1" stop-color="#130A33" stop-opacity="0"/></radialGradient></defs></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" role="img" aria-labelledby="title"><title id="title">Roadmap note thumbnail</title><rect width="96" height="96" rx="5" fill="#252039"/>
+    <path fill="none" d="M20 72V25M20 72h57" stroke="#46405d" stroke-width="1.5"/>
+    <path fill="none" d="M22 65c15 0 12-25 27-25s14-16 27-16" stroke="#b6a1df" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="22" cy="65" r="5" fill="#d6ba80"/><circle cx="49" cy="40" r="5" fill="#c5a3ce"/><circle cx="76" cy="24" r="5" fill="#9c94dc"/>
+    <path fill="none" d="M49 51v16M76 35v32" stroke="#514761" stroke-width="1.5" stroke-dasharray="3 4"/>
+</svg>

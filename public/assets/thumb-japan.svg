@@ -1,1 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" fill="none" viewBox="0 0 96 96"><rect width="96" height="96" fill="#7AB6E8" rx="12"/><path fill="#EAF4FF" d="M0 57c17-10 32-13 48-7 17 7 31 4 48-6v52H0V57Z"/><path fill="#344231" d="M0 70c14-12 31-16 50-9 18 7 30 4 46-6v41H0V70Z"/><path fill="#172B27" d="M0 80c15-8 31-9 48-4 18 6 33 3 48-8v28H0V80Z"/><circle cx="74" cy="24" r="10" fill="#FFF7C9"/><path stroke="#1C2428" stroke-linecap="round" stroke-width="3" d="M18 65c8-6 17-6 26-1"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" role="img" aria-labelledby="title"><title id="title">Landscape note thumbnail</title><rect width="96" height="96" rx="5" fill="#aac2d3"/>
+    <circle cx="69" cy="27" r="10" fill="#eee1b3"/>
+    <path d="M0 62 27 31l29 32 14-15 26 24v24H0Z" fill="#dce6e6"/>
+    <path d="m16 44 11-13 13 14-12-4Z" fill="#f3f4ed"/>
+    <path d="M0 70c20-16 35-12 52-5 19 8 28-6 44-10v41H0Z" fill="#5f8d7d"/>
+    <path d="M0 85c21-17 44-12 61-6 15 5 24-4 35-8v25H0Z" fill="#345a51"/>
+</svg>

@@ -313,7 +313,7 @@ describe('dispatchMcpCommand', () => {
     expect(invokeMock).not.toHaveBeenCalled();
   });
 
-  it('sets favorite, pinned, and thumbnail state deterministically', async () => {
+  it.each(['terminal', 'checklist', 'ideas', 'research', 'calendar'] as const)('sets favorite, pinned, and thumbnail state deterministically (%s)', async (variant) => {
     const favorite = successResult<'set_note_favorite'>(
       await dispatchMcpCommand(request('set_note_favorite', {
         noteId: activeNote.id, expectedVersion: 4, isFavorite: false,
@@ -330,21 +330,21 @@ describe('dispatchMcpCommand', () => {
 
     const thumbnail = successResult<'set_note_thumbnail'>(
       await dispatchMcpCommand(request('set_note_thumbnail', {
-        noteId: activeNote.id, expectedVersion: 6, variant: 'terminal',
+        noteId: activeNote.id, expectedVersion: 6, variant,
       }), '2.2.1'),
     );
     expect(thumbnail).toEqual({ noteId: activeNote.id, version: 7 });
     expect(useNotesStore.getState().notes.find((note) => note.id === activeNote.id)).toMatchObject({
       isFavorite: false,
       isPinned: true,
-      thumbnail: { variant: 'terminal' },
+      thumbnail: { variant },
       version: 7,
     });
 
     invokeMock.mockClear();
     const unchanged = successResult<'set_note_thumbnail'>(
       await dispatchMcpCommand(request('set_note_thumbnail', {
-        noteId: activeNote.id, expectedVersion: 7, variant: 'terminal',
+        noteId: activeNote.id, expectedVersion: 7, variant,
       }), '2.2.1'),
     );
     expect(unchanged.version).toBe(7);

@@ -44,6 +44,9 @@ export function useSidebarDrawer(
     backgrounds.forEach(({ element }) => { element.inert = true; });
     document.body.style.overflow = 'hidden';
     const focusFrame = window.requestAnimationFrame(() => {
+      // On short screens the navigation body can scroll independently of the
+      // footer. Reveal the close button before focusing a newly opened drawer.
+      sidebar.querySelector('.sidebar-content')?.scrollTo({ top: 0, behavior: 'instant' });
       sidebar.querySelector<HTMLElement>('.sidebar-close')?.focus({ preventScroll: true });
     });
 

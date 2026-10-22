@@ -15,6 +15,7 @@ import { CollectionsPage, NotesListPage } from './pages/NotesListPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { TagsPage } from './pages/TagsPage';
 import { useAppStore } from './store/useAppStore';
+import { BrandName } from './components/ui/Brand';
 
 
 
@@ -33,6 +34,10 @@ export function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
     document.documentElement.lang = settings.language;
+    const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"][type="image/svg+xml"]');
+    if (favicon) favicon.href = `${import.meta.env.BASE_URL}assets/notex-mark-${settings.theme === 'light' ? 'light' : 'dark'}.svg`;
+    const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (themeColor) themeColor.content = settings.theme === 'light' ? '#f7f8fb' : '#0d1017';
   }, [settings.language, settings.theme]);
   useLayoutEffect(() => {
     const element = notificationViewportRef.current;
@@ -123,7 +128,7 @@ function AppLoadingScreen({ failed, waitingForLogin }: { failed: boolean; waitin
       ) : (
         <div className="app-loading-screen__content">
           {!waitingForLogin && <span className="app-loading-screen__spinner" aria-hidden="true" />}
-          <span className="app-loading-screen__label">NoteX</span>
+          <BrandName className="app-loading-screen__label" />
         </div>
       )}
     </div>

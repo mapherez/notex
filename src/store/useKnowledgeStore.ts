@@ -17,9 +17,11 @@ type KnowledgeStore = {
   setUser: (user: User) => Promise<void>;
   createCollection: (name: string, color?: TagColor) => Promise<Collection | null>;
   updateCollection: (collectionId: string, input: { name: string; color?: TagColor }) => Promise<void>;
+  setCollectionPinned: (collectionId: string, pinned: boolean) => Promise<void>;
   deleteCollection: (collectionId: string) => Promise<void>;
   createTag: (name: string, color?: TagColor) => Promise<Tag | null>;
   updateTag: (tagId: string, input: { name: string; color?: TagColor }) => Promise<void>;
+  setTagPinned: (tagId: string, pinned: boolean) => Promise<void>;
   deleteTag: (tagId: string) => Promise<void>;
   resetDemoData: (locale: Locale, settings: UserSettings) => Promise<void>;
 };
@@ -99,6 +101,13 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     await db.collections.put(updated);
     set((state) => ({ collections: sortCollections(state.collections.map((item) => (item.id === collectionId ? updated : item))) }));
   },
+  setCollectionPinned: async (collectionId, pinned) => {
+    const collection = get().collections.find((item) => item.id === collectionId);
+    if (!collection || (collection.isPinned === true) === pinned) return;
+    const updated = { ...collection, isPinned: pinned };
+    await db.collections.put(updated);
+    set((state) => ({ collections: state.collections.map((item) => item.id === collectionId ? updated : item) }));
+  },
   deleteCollection: async (collectionId) => {
     const collection = get().collections.find((item) => item.id === collectionId);
     if (!collection) {
@@ -154,6 +163,13 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
 
     await db.tags.put(updated);
     set((state) => ({ tags: sortTags(state.tags.map((item) => (item.id === tagId ? updated : item))) }));
+  },
+  setTagPinned: async (tagId, pinned) => {
+    const tag = get().tags.find((item) => item.id === tagId);
+    if (!tag || (tag.isPinned === true) === pinned) return;
+    const updated = { ...tag, isPinned: pinned };
+    await db.tags.put(updated);
+    set((state) => ({ tags: state.tags.map((item) => item.id === tagId ? updated : item) }));
   },
   deleteTag: async (tagId) => {
     const affectedNoteIds = useNotesStore

@@ -41,6 +41,13 @@
     "newNote": "New note",
     "expand": "Open menu"
   },
+  "quickAccess": {
+    "title": "Quick access",
+    "emptyCollections": "No pinned collections",
+    "emptyTags": "No pinned tags",
+    "actions": "Actions for {{name}}",
+    "saveFailed": "Could not update the pin. Please try again."
+  },
   "orientation": {
     "phoneLandscapeTitle": "Rotate your device",
     "phoneLandscapeDescription": "NoteX on phones works in portrait mode. Rotate your device to continue."

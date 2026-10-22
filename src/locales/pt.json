@@ -41,6 +41,13 @@
     "newNote": "Nova nota",
     "expand": "Abrir menu"
   },
+  "quickAccess": {
+    "title": "Acesso rápido",
+    "emptyCollections": "Sem coleções fixadas",
+    "emptyTags": "Sem tags fixadas",
+    "actions": "Ações de {{name}}",
+    "saveFailed": "Não foi possível atualizar o pin. Tenta novamente."
+  },
   "orientation": {
     "phoneLandscapeTitle": "Vira o dispositivo",
     "phoneLandscapeDescription": "O NoteX em telemóvel funciona em modo vertical. Roda o dispositivo para continuar."

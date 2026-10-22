@@ -3059,6 +3059,35 @@ mod tests {
     use rusqlite::Connection;
     use std::path::PathBuf;
 
+    #[test]
+    fn knowledge_pins_persist_in_payloads_and_schedule_library_backups() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        ensure_schema(&conn).unwrap();
+        let tx = conn.transaction().unwrap();
+        super::insert_tag(&tx, &serde_json::json!({
+            "id": "tag", "name": "Reading", "isPinned": true
+        })).unwrap();
+        super::insert_collection(&tx, &serde_json::json!({
+            "id": "collection", "name": "Projects", "isPinned": true
+        })).unwrap();
+        tx.commit().unwrap();
+        for table in ["tags", "collections"] {
+            let records = super::read_payloads(&conn, table, None, &[]).unwrap();
+            assert_eq!(records[0]["isPinned"], true);
+        }
+        conn.execute("DELETE FROM cloud_outbox", []).unwrap();
+        let tx = conn.transaction().unwrap();
+        super::insert_tag(&tx, &serde_json::json!({
+            "id": "tag", "name": "Reading", "isPinned": false
+        })).unwrap();
+        tx.commit().unwrap();
+        let kind: String = conn.query_row(
+            "SELECT kind FROM cloud_outbox WHERE entity_id = '@library'", [], |row| row.get(0)
+        ).unwrap();
+        assert_eq!(kind, "library");
+        assert_eq!(super::read_payloads(&conn, "tags", None, &[]).unwrap()[0]["isPinned"], false);
+    }
+
     struct AdoptionFixture {
         root: PathBuf,
         account: PathBuf,

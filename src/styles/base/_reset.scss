@@ -14,6 +14,7 @@ body {
   background: var(--nx-color-canvas);
   color: var(--nx-color-text);
   font-family: var(--nx-font-sans);
+  font-size-adjust: from-font;
   text-rendering: geometricPrecision;
 }
 

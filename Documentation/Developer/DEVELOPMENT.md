@@ -193,7 +193,7 @@ signed GitHub release artifacts. Browser deployment is documented separately in
 | `npm run dev` | Start the Vite dev server. |
 | `npm run tauri:dev` | Start the Tauri desktop app in development mode. |
 | `npm run tauri:build` | Build the desktop app. |
-| `npm run tauri:icon` | Regenerate Tauri icons from `public/assets/notex_logo_small.webp`. |
+| `npm run tauri:icon` | Regenerate Tauri icons from `public/assets/notex-icon.svg`. |
 | `npm run release:tauri` | Run the Tauri release helper. |
 | `npm run test:release` | Test collection and publishing with fixtures and mocked GitHub calls. |
 | `npm run version:set` | Update the version in release manifests. |
