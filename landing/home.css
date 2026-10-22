@@ -1172,8 +1172,8 @@ button {
 .window-head .brand-mark {
   width: 19px;
   height: 19px;
-  --mark-tile: #f4f5ff;
-  --mark-letter: #151b2c;
+  --mark-tile: #ffffff;
+  --mark-letter: #151b26;
 }
 .window-head {
   height: 38px;

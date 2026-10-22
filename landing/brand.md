@@ -1,8 +1,17 @@
 # NoteX mark
 
-The mark is a custom vector N, with a separate lavender dot. It uses a 64 × 64
-grid, a 17-unit corner radius, and a path rather than a font glyph. It stays
-sharp at any scale and does not depend on a font download.
+The website uses the user-approved three-tab SVGs on a 256 × 256 grid. The tile
+has a 66-unit corner radius. The N and tabs retain the approved
+`translate(-30 -30) scale(1.25)` transform. Each tab is 34 × 44 with radius 14,
+placed at y=61, 107, and 153. The N is an outlined path, independent of fonts.
+The wordmark remains Manrope with 2px letter spacing.
+
+The exact approved originals are in `assets/brand/notex-dark.svg` and
+`assets/brand/notex-light.svg`; the approved comparison is alongside them.
+`scripts/brand.mjs` reads those SVGs to render the shared header/footer mark.
+It changes only the accessibility wrapper and theme hooks, preserving geometry
+and scale at every size. Header, footer, and product-window preview sizes are
+32px, 28px, and 19px respectively. The favicon uses the same approved artwork.
 
 - `assets/notex-mark.svg`: follows the embedding color scheme.
 - `assets/notex-mark-light.svg`: dark tile and light N, for light surfaces.
@@ -11,16 +20,15 @@ sharp at any scale and does not depend on a font download.
 - `assets/favicon.ico`: small-size fallback for older browsers.
 - `assets/apple-touch-icon.png`: fixed home-screen icon.
 
-The lavender dot remains `#8f9bf2` in both variants. Keep the same geometry,
-padding and dot position in every export. Inline marks use the site theme
-tokens, so manual theme overrides are reflected immediately. The favicon
-also switches explicitly with the site preference.
+The three tab colors are `#bfb2ff`, `#9286ff`, and `#6968f5`, unchanged between
+themes. Dark ink is `#151b26`; the light tile/letter is white. Inline marks
+follow the site theme tokens, and the favicon switches with the site preference.
+Asset filenames `notex-mark-light.svg` / `notex-mark-dark.svg` refer to the site
+theme; the approved originals' names refer to the tile color.
 
-The desktop/web app's sidebar and titlebar are dark in both app themes, so
-they use the light-tile variant. Native desktop icons use a fixed dark tile
-with a fine light outline: operating systems do not swap application icons
-when the website theme changes.
+The desktop/web app and native icon files remain independent of this website
+revision. Do not copy this study into `public/assets/` or `src-tauri/icons/`
+until the app-brand update is requested and the website mark is approved.
 
-Regenerate the native app icons with `npm run tauri:icon`. The source is
-`public/assets/notex-mark-native.svg`; the matching web SVGs are in
-`public/assets/` and `landing/assets/`.
+The app's existing `npm run tauri:icon` command continues to use its own source
+in `public/assets/notex-mark-native.svg`. This website study does not update it.

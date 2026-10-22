@@ -1,5 +1,6 @@
 // One build-time shell for the landing, every guide, and the legal pages.
 // Links stay usable without JavaScript; only disclosures need enhancement.
+import { brandMark } from "./brand.mjs";
 const icons = {
   system:
     '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/>',
@@ -11,8 +12,7 @@ const icons = {
 };
 const icon = (name, className = "") =>
   `<svg class="site-icon ${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
-const mark =
-  '<svg class="brand-mark" viewBox="0 0 64 64" width="32" height="32" fill="none" aria-hidden="true"><rect class="mark-tile" width="64" height="64" rx="17"/><path class="mark-letter" d="M18 46V22h6.5l15 20V22H46v24h-6.5l-15-20v20Z"/><circle fill="#8f9bf2" cx="47" cy="15" r="3.5"/></svg>';
+const mark = brandMark();
 const brand = (base) =>
   `<a class="site-brand" href="${base}index.html" aria-label="NoteX home">${mark}<span>Note<span class="site-brand-accent">X</span></span></a>`;
 const link = (href, label, active = false) =>

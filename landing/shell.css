@@ -41,7 +41,7 @@ body > .docs-shell {
   flex: none;
   color: var(--ink);
   font: 800 21px/1 var(--font-display);
-  letter-spacing: -0.055em;
+  letter-spacing: 2px;
   white-space: nowrap;
 }
 .site-brand .brand-mark {

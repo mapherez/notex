@@ -16,8 +16,8 @@
   --accent-soft: #edf0ff;
   --primary-hover: #313d60;
   --frame: #ffffff99;
-  --mark-tile: #151b2c;
-  --mark-letter: #f4f5ff;
+  --mark-tile: #151b26;
+  --mark-letter: #ffffff;
   --canvas: var(--paper);
   --surface: var(--white);
   --surface-raised: var(--surface-soft);
@@ -58,8 +58,8 @@
   --accent-soft: #1d2746;
   --primary-hover: #cdd5f1;
   --frame: #18203299;
-  --mark-tile: #f4f5ff;
-  --mark-letter: #151b2c;
+  --mark-tile: #ffffff;
+  --mark-letter: #151b26;
   --border-strong: #414e68;
   --green: #93ceb2;
   --focus: #a5b1ff;
@@ -79,8 +79,8 @@
     --accent-soft: #1d2746;
     --primary-hover: #cdd5f1;
     --frame: #18203299;
-    --mark-tile: #f4f5ff;
-    --mark-letter: #151b2c;
+    --mark-tile: #ffffff;
+    --mark-letter: #151b26;
     --border-strong: #414e68;
     --green: #93ceb2;
     --focus: #a5b1ff;

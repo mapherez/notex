@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="640" viewBox="0 0 1120 640" fill="none" role="img" aria-labelledby="title description">
+  <title id="title">NoteX — three-tab logo base</title>
+  <desc id="description">Dark and light versions of a broad N with three rounded note tabs in lavender, violet and blue.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#26334a" flood-opacity=".12"/></filter>
+  </defs>
+  <rect width="1120" height="640" fill="#f7f8fc"/>
+  <g fill="#7f8798" font-family="Manrope, Segoe UI, sans-serif" font-size="30" font-weight="600" text-anchor="middle">
+    <text x="260" y="66">Dark</text>
+    <text x="860" y="66">Light</text>
+  </g>
+  
+  <g filter="url(#shadow)">
+    <g transform="translate(22 112) scale(1.859375)">
+      <rect width="256" height="256" rx="66" fill="#151b26"/>
+      <g transform="translate(-30 -30) scale(1.25)">
+        <g>
+          <rect x="165" y="61" width="34" height="44" rx="14" fill="#bfb2ff"/>
+          <rect x="165" y="107" width="34" height="44" rx="14" fill="#9286ff"/>
+          <rect x="165" y="153" width="34" height="44" rx="14" fill="#6968f5"/>
+        </g>
+        <path d="M54 197V61h32l61 85V61h32v136h-33l-60-83v83Z" fill="#ffffff"/>
+      </g>
+    </g>
+    
+    <g transform="translate(622 112) scale(1.859375)">
+      <rect width="256" height="256" rx="66" fill="#ffffff"/>
+      <g transform="translate(-30 -30) scale(1.25)">
+        <g>
+          <rect x="165" y="61" width="34" height="44" rx="14" fill="#bfb2ff"/>
+          <rect x="165" y="107" width="34" height="44" rx="14" fill="#9286ff"/>
+          <rect x="165" y="153" width="34" height="44" rx="14" fill="#6968f5"/>
+        </g>
+        <path d="M54 197V61h32l61 85V61h32v136h-33l-60-83v83Z" fill="#151b26"/>
+      </g>
+    </g>
+  </g>
+
+</svg>

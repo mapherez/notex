@@ -1,4 +1,10 @@
-﻿# NoteX
+﻿<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/notex-readme-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset=".github/assets/notex-readme-light.svg">
+    <img src=".github/assets/notex-readme-light.svg" alt="NoteX" width="360" height="352">
+  </picture>
+</p>
 
 NoteX is a place to write, organize, and find the information you want to keep.
 Use it for project references, study notes, useful links, ideas, and everyday

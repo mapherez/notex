@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="352" viewBox="0 0 360 352" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">NoteX</title>
+  <desc id="desc">NoteX logo with three lilac note tabs. Manrope wordmark below, with 2px letter spacing and a lilac X.</desc>
+  <g transform="translate(68 16) scale(.875)">
+<rect width="256" height="256" rx="66" fill="#ffffff"/>
+  <g transform="translate(-30 -30) scale(1.25)">
+    <g>
+      <rect x="165" y="61" width="34" height="44" rx="14" fill="#bfb2ff"/>
+      <rect x="165" y="107" width="34" height="44" rx="14" fill="#9286ff"/>
+      <rect x="165" y="153" width="34" height="44" rx="14" fill="#6968f5"/>
+    </g>
+    <path d="M54 197V61h32l61 85V61h32v136h-33l-60-83v83Z" fill="#151b26"/>
+  </g>
+  </g>
+  <g aria-hidden="true">
+    <path fill="#ffffff" transform="translate(88.92 316) scale(0.028 -0.028)" d="M140 0L140 1440L416 1440L1042 480L1042 1440L1318 1440L1318 0L1042 0L416 960L416 0Z"/>
+    <path fill="#ffffff" transform="translate(131.744 316) scale(0.028 -0.028)" d="M626 -30Q463 -30 340 43Q217 116 148.5 244.5Q80 373 80 540Q80 709 150 837.5Q220 966 343 1038Q466 1110 626 1110Q789 1110 912.5 1037Q1036 964 1105 835.5Q1174 707 1174 540Q1174 372 1104.5 243.5Q1035 115 911.5 42.5Q788 -30 626 -30ZM626 224Q757 224 821.5 312.5Q886 401 886 540Q886 684 820.5 770Q755 856 626 856Q537 856 480 816Q423 776 395.5 705Q368 634 368 540Q368 395 433.5 309.5Q499 224 626 224Z"/>
+    <path fill="#ffffff" transform="translate(168.856 316) scale(0.028 -0.028)" d="M788 0Q676 -21 568.5 -18.5Q461 -16 376.5 19.5Q292 55 248 134Q208 208 206 284.5Q204 361 204 458L204 1380L476 1380L476 474Q476 411 477.5 360.5Q479 310 498 280Q534 223 613 218Q692 213 788 226ZM20 870L20 1080L788 1080L788 870Z"/>
+    <path fill="#ffffff" transform="translate(194.04 316) scale(0.028 -0.028)" d="M642 -30Q476 -30 349.5 41.5Q223 113 151.5 238.5Q80 364 80 526Q80 703 150 834Q220 965 343 1037.5Q466 1110 626 1110Q796 1110 915 1030Q1034 950 1091 805Q1148 660 1131 464L862 464L862 564Q862 729 809.5 801.5Q757 874 638 874Q499 874 433.5 789.5Q368 705 368 540Q368 389 433.5 306.5Q499 224 626 224Q706 224 763 259Q820 294 850 360L1122 282Q1061 134 929.5 52Q798 -30 642 -30ZM284 464L284 666L1000 666L1000 464Z"/>
+    <path fill="#9286ff" transform="translate(230.088 316) scale(0.028 -0.028)" d="M20 0L504 728L34 1440L368 1440L674 960L976 1440L1312 1440L842 728L1324 0L990 0L674 496L356 0Z"/>
+  </g>
+</svg>
