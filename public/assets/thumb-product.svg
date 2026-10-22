@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" fill="none" viewBox="0 0 96 96"><rect width="96" height="96" fill="#F4F5F8" rx="12"/><rect width="22" height="16" x="16" y="17" fill="#FFF" stroke="#C7CEDA" rx="3"/><rect width="22" height="16" x="58" y="20" fill="#FFF" stroke="#C7CEDA" rx="3"/><rect width="24" height="17" x="36" y="57" fill="#FFF" stroke="#C7CEDA" rx="3"/><path stroke="#A4ADBC" stroke-width="2" d="M27 33v11h21v13M69 36v8H48"/><circle cx="27" cy="44" r="3" fill="#FFB13D"/><circle cx="48" cy="44" r="3" fill="#5D8CFF"/><circle cx="48" cy="57" r="3" fill="#FFB13D"/><path stroke="#A4ADBC" stroke-linecap="round" stroke-width="2" d="M18 24h12M62 27h12M41 64h14"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" role="img" aria-labelledby="title"><title id="title">Connections note thumbnail</title><rect width="96" height="96" rx="5" fill="#edf0f6"/>
+    <path fill="none" d="M27 37v12h42V37M48 49v13" stroke="#a1a9bd" stroke-width="2.5" stroke-linejoin="round"/>
+    <rect x="14" y="18" width="27" height="20" rx="3" fill="#fff" stroke="#b7bed0" stroke-width="1.5"/>
+    <rect x="55" y="18" width="27" height="20" rx="3" fill="#fff" stroke="#b7bed0" stroke-width="1.5"/>
+    <rect x="34" y="62" width="28" height="20" rx="3" fill="#e0d8f0" stroke="#b6a6d7" stroke-width="1.5"/>
+    <path fill="none" d="M22 28h11M63 28h11M42 72h12" stroke="#a5a0b8" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="48" cy="49" r="4" fill="#b4a3d8"/>
+</svg>

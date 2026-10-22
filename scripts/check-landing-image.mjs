@@ -65,7 +65,7 @@ try {
     ['/theme.js', /(?:application|text)\/javascript/],
     ['/docs/docs.css', /text\/css/],
     ['/docs/docs.js', /(?:application|text)\/javascript/],
-    ['/assets/notex-logo.webp', /image\/webp/],
+    ['/assets/brand/notex-light.svg', /image\/svg\+xml/],
     ['/assets/notex-mark.svg', /image\/svg\+xml/],
     ['/sitemap.xml', /(?:application|text)\/xml/],
     ['/robots.txt', /text\/plain/],

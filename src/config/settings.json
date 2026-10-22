@@ -112,6 +112,22 @@
       {
         "id": "wrong",
         "asset": "/assets/thumb-wrong.svg"
+      },
+      {
+        "id": "checklist",
+        "asset": "/assets/thumb-checklist.svg"
+      },
+      {
+        "id": "ideas",
+        "asset": "/assets/thumb-ideas.svg"
+      },
+      {
+        "id": "research",
+        "asset": "/assets/thumb-research.svg"
+      },
+      {
+        "id": "calendar",
+        "asset": "/assets/thumb-calendar.svg"
       }
     ],
     "layouts": [
@@ -140,6 +156,11 @@
         "to": "/recent",
         "labelKey": "navigation.recent",
         "icon": "clock"
+      },
+      {
+        "to": "/collections",
+        "labelKey": "navigation.collections",
+        "icon": "folder"
       },
       {
         "to": "/tags",
