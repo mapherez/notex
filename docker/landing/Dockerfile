@@ -12,7 +12,7 @@ COPY landing/package.json ./landing/
 RUN npm ci --workspace landing --include-workspace-root=false --ignore-scripts
 
 COPY landing/ ./landing/
-RUN npm run build --workspace landing && npm run check --workspace landing
+RUN npm run build --workspace landing && npm run check --workspace landing && npm run test --workspace landing
 
 FROM nginx:stable-alpine AS runtime
 

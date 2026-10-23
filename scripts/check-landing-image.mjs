@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { setTimeout } from 'node:timers/promises';
+import { createHash } from 'node:crypto';
 
 const image = process.argv[2] ?? 'notex-landing:check';
 const name = `notex-landing-check-${process.pid}`;
@@ -29,33 +30,70 @@ try {
   }
   assert.ok(ready, 'Nginx did not become ready within 60 seconds');
 
-  for (const path of ['/', '/index.html', '/docs/', '/privacy.html', '/terms.html']) {
-    const response = await get(path);
+  for (const path of ['/', '/docs/', '/docs/quickstart', '/privacy', '/terms']) {
+    const response = await get(path, { redirect: 'manual' });
     assert.equal(response.status, 200, `Page status: ${path}`);
     assert.match(response.headers.get('content-type') ?? '', /text\/html/, `Page MIME: ${path}`);
     assert.match(response.headers.get('cache-control') ?? '', /no-cache/, `Page cache: ${path}`);
     const html = await response.text();
     assert.match(html, /<h1\b/, `Page content: ${path}`);
+    assert.doesNotMatch(html, /href="[^"]*\.html(?:[?#][^"]*)?"/, `Clean page links: ${path}`);
     if (path === '/') {
       assert.ok(html.includes('https://notex.mapherez.com/download'), 'Preserve worker download URL');
       assert.ok(html.includes('https://notex.mapherez.com/app/'), 'Preserve webapp URL');
     }
   }
 
-  const redirect = await get('/docs', { redirect: 'manual' });
-  assert.equal(redirect.status, 301, 'Docs directory redirect');
-  assert.equal(redirect.headers.get('location'), '/docs/', 'Relative docs redirect behind HTTPS proxy');
-  await redirect.arrayBuffer();
+  for (const [oldPath, cleanPath] of [
+    ['/index.html', '/'], ['/index.html?from=old', '/?from=old'],
+    ['/docs', '/docs/'], ['/docs?from=old', '/docs/?from=old'],
+    ['/docs/index.html', '/docs/'], ['/docs/index.html?from=old', '/docs/?from=old'],
+    ['/docs/quickstart.html', '/docs/quickstart'],
+    ['/docs/quickstart.html?from=old', '/docs/quickstart?from=old'],
+    ['/privacy.html', '/privacy'], ['/terms.html', '/terms'],
+  ]) {
+    const redirect = await get(oldPath, { redirect: 'manual' });
+    assert.equal(redirect.status, 308, `Legacy redirect: ${oldPath}`);
+    assert.equal(redirect.headers.get('location'), cleanPath, `Relative canonical redirect: ${oldPath}`);
+    await redirect.arrayBuffer();
+    const destination = await get(cleanPath, { redirect: 'manual' });
+    assert.equal(destination.status, 200, `No redirect loop: ${cleanPath}`);
+    await destination.arrayBuffer();
+  }
 
   const search = await get('/docs/search-index.json');
   assert.equal(search.status, 200, 'Search index status');
   const articles = await search.json();
   assert.ok(articles.length > 0, 'Search index must contain articles');
   for (const article of articles) {
-    const response = await get(new URL(article.href, `${base}/docs/`).pathname);
+    assert.doesNotMatch(article.href, /\.html/, 'Search links must use clean URLs');
+    const articlePath = new URL(article.href, `${base}/docs/`).pathname;
+    const response = await get(articlePath, { redirect: 'manual' });
     assert.equal(response.status, 200, `Article status: ${article.href}`);
     assert.match(await response.text(), /<h1\b/, `Article content: ${article.href}`);
+    const oldPath = articlePath === '/docs/' ? '/docs/index.html' : `${articlePath}.html`;
+    const legacy = await get(oldPath, { redirect: 'manual' });
+    assert.equal(legacy.status, 308, `Legacy article: ${oldPath}`);
+    assert.equal(legacy.headers.get('location'), articlePath);
+    await legacy.arrayBuffer();
   }
+
+  const manifest = await (await get('/asset-manifest.json')).json();
+  for (const fingerprint of Object.values(manifest)) {
+    const response = await get(fingerprint);
+    assert.equal(response.status, 200, `Fingerprint status: ${fingerprint}`);
+    assert.match(response.headers.get('cache-control') ?? '', /public, max-age=31536000, immutable/, `Immutable cache: ${fingerprint}`);
+    assert.doesNotMatch(response.headers.get('content-type') ?? '', /text\/html/, 'An asset must not return HTML');
+    const hash = createHash('sha256').update(Buffer.from(await response.arrayBuffer())).digest('hex').slice(0, 12);
+    assert.ok(fingerprint.includes(`.${hash}.`), `Fingerprint matches content: ${fingerprint}`);
+  }
+  const page = await get('/docs/quickstart');
+  const etag = page.headers.get('etag');
+  await page.arrayBuffer();
+  assert.ok(etag, 'HTML must support efficient conditional revalidation');
+  const revalidated = await get('/docs/quickstart', { headers: { 'If-None-Match': etag } });
+  assert.equal(revalidated.status, 304, 'Unchanged HTML revalidates without downloading it again');
+  assert.match(revalidated.headers.get('cache-control') ?? '', /no-cache/);
 
   for (const [path, mime] of [
     ['/styles.css', /text\/css/],
@@ -78,9 +116,10 @@ try {
   }
 
   // Worker/app paths are deliberately absent at this independent origin.
-  for (const path of ['/app', '/app/', '/app/notes/example', '/download', '/missing', '/docs/missing.html', '/assets/missing.js', '/50x.html']) {
+  for (const path of ['/app', '/app/', '/app/notes/example', '/download', '/missing', '/docs/missing', '/docs/missing.html', '/assets/missing.js', '/assets/missing.0123456789ab.js', '/50x.html']) {
     const response = await get(path);
     assert.equal(response.status, 404, `Missing route must not return landing HTML: ${path}`);
+    assert.doesNotMatch(response.headers.get('cache-control') ?? '', /immutable/, 'Missing files must not get immutable cache');
     await response.arrayBuffer();
   }
   console.log(`Landing image checks passed: ${articles.length} articles, assets, cache, redirects and independent routing.`);

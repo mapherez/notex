@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { Marked, Renderer } from 'marked';
 import { siteHeader, siteFooter } from './site-shell.mjs';
+import { cleanHtmlLinks, pagePath } from './urls.mjs';
+import { fingerprintAssets } from './fingerprint.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = path.join(root, 'dist');
@@ -12,8 +14,8 @@ const pages = navigation.flatMap(group => group.pages.map(page => ({ ...page, gr
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const slugify = text => text.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'section';
 const plainText = text => text.replace(/<[^>]*>/g, '').replace(/!?\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[`*_#>|]/g, '').replace(/\s+/g, ' ').trim();
-const href = page => `./${page.slug === 'index' ? 'index' : page.slug}.html`;
-const canonical = page => `${site}/docs/${page.slug === 'index' ? '' : `${page.slug}.html`}`;
+const href = page => pagePath(`docs/${page.slug}.html`);
+const canonical = page => `${site}${href(page)}`;
 
 // These are repository-authored articles, never user-supplied Markdown.
 // Generate the entire article at build time: reading and navigating need no JS.
@@ -64,7 +66,7 @@ function document(page, article, index) {
   <meta property="og:type" content="website"><meta property="og:url" content="${canonical(page)}">
   <meta property="og:image" content="${site}/assets/notex-mark-512.png">
   <link rel="canonical" href="${canonical(page)}">
-  <link rel="icon" href="../assets/favicon.ico" sizes="any"><link rel="icon" href="../assets/notex-mark.svg" type="image/svg+xml" sizes="any"><link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <link rel="icon" href="../assets/favicon.ico" sizes="any"><link rel="icon" href="../assets/notex-mark.svg" data-icon-light="../assets/notex-mark-light.svg" data-icon-dark="../assets/notex-mark-dark.svg" type="image/svg+xml" sizes="any"><link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
   <script src="../theme.js"></script>
   <link rel="stylesheet" href="../assets/fonts/fonts.css">
   <link rel="stylesheet" href="../styles.css"><link rel="stylesheet" href="./docs.css">
@@ -77,7 +79,7 @@ function document(page, article, index) {
   ${siteHeader('../', 'docs')}
   <div class="docs-shell">
     <aside class="docs-sidebar" aria-label="Documentation topics">
-      <search class="docs-search" hidden>
+      <search class="docs-search" data-index-url="./search-index.json" hidden>
         <label for="docs-search-input">Search documentation</label>
         <div class="docs-search-control"><span aria-hidden="true">⌕</span><input id="docs-search-input" type="search" placeholder="Find a guide…" aria-controls="docs-search-results"><kbd>/</kbd></div>
         <p id="docs-search-status" class="docs-search-status" role="status"></p>
@@ -124,7 +126,7 @@ for (const file of ['index.html', 'privacy.html', 'terms.html']) {
   const current = file === 'index.html' ? 'home' : file.replace('.html', '');
   const source = await readFile(path.join(root, file), 'utf8');
   if (!source.includes('<!-- site-header -->') || !source.includes('<!-- site-footer -->')) throw new Error('Missing shared shell markers: ' + file);
-  await writeFile(path.join(output, file), source.replace('<!-- site-header -->', siteHeader('./', current)).replace('<!-- site-footer -->', siteFooter('./', current)));
+  await writeFile(path.join(output, file), cleanHtmlLinks(source.replace('<!-- site-header -->', siteHeader('./', current)).replace('<!-- site-footer -->', siteFooter('./', current)), `/${file}`));
 }
 for (const file of ['styles.css', 'home.css', 'shell.css', 'theme.js', 'site.js', 'home.js', 'CNAME', 'assets']) {
   await cp(path.join(root, file), path.join(output, file), { recursive: true });
@@ -132,10 +134,11 @@ for (const file of ['styles.css', 'home.css', 'shell.css', 'theme.js', 'site.js'
 for (const file of ['docs.css', 'docs.js']) await cp(path.join(root, `docs/${file}`), path.join(output, `docs/${file}`));
 const searchIndex = [];
 for (const [index, { page, markdown, article }] of articles.entries()) {
-  await writeFile(path.join(output, `docs/${page.slug}.html`), document(page, article, index));
+  await writeFile(path.join(output, `docs/${page.slug}.html`), cleanHtmlLinks(document(page, article, index), `/docs/${page.slug}.html`));
   searchIndex.push({ title: page.title, description: page.description, group: page.group, href: href(page), text: plainText(markdown) });
 }
 await writeFile(path.join(output, 'docs/search-index.json'), JSON.stringify(searchIndex));
 await writeFile(path.join(output, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${site}/sitemap.xml\n`);
-await writeFile(path.join(output, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${[`${site}/`, `${site}/privacy.html`, `${site}/terms.html`, ...pages.map(canonical)].map(url => `<url><loc>${escape(url)}</loc></url>`).join('')}</urlset>`);
+await writeFile(path.join(output, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${[`${site}/`, `${site}/privacy`, `${site}/terms`, ...pages.map(canonical)].map(url => `<url><loc>${escape(url)}</loc></url>`).join('')}</urlset>`);
+await fingerprintAssets(output);
 console.log(`Built NoteX website and ${pages.length} documentation articles → landing/dist`);

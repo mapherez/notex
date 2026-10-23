@@ -10,7 +10,7 @@ let requestId = 0;
 async function loadIndex() {
   if (index) return index;
   if (!pendingIndex) {
-    pendingIndex = fetch('./search-index.json').then(response => {
+    pendingIndex = fetch(search.dataset.indexUrl ?? './search-index.json').then(response => {
       if (!response.ok) throw new Error('Search unavailable');
       return response.json();
     }).then(data => {

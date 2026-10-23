@@ -30,16 +30,8 @@
     const favicon = document.querySelector(
       'link[rel="icon"][type="image/svg+xml"]',
     );
-    if (favicon)
-      favicon.setAttribute(
-        "href",
-        favicon
-          .getAttribute("href")
-          .replace(
-            /notex-mark(?:-light|-dark)?\.svg$/,
-            `notex-mark-${theme}.svg`,
-          ),
-      );
+    const themeIcon = favicon?.getAttribute(`data-icon-${theme}`);
+    if (themeIcon) favicon.setAttribute("href", themeIcon);
     refreshPicker();
   }
   apply();

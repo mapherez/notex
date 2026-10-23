@@ -19,6 +19,18 @@ Preview at **<http://127.0.0.1:4174>**. Generated files live in `landing/dist/`,
 which is ignored by Git. Visitors do not download a framework or Markdown parser.
 Reading and navigation work without JavaScript; local search is an enhancement.
 
+Public pages use clean URLs: `/`, `/#features`, `/docs/`, `/docs/quickstart`,
+`/privacy`, and `/terms`. Both the preview server and Docker redirect old `.html`
+links permanently, preserving query strings and browser fragments. Articles
+remain Markdown; their links, search results, canonical metadata, and sitemap
+are converted during the build. No client router or framework is required.
+
+The build fingerprints CSS, scripts, fonts, images, and the search index using
+their contents. It updates resource URLs automatically, including font URLs in
+CSS and the light/dark favicons. `dist/asset-manifest.json` maps stable names to
+the generated names; do not edit generated files. Run `npm --prefix landing run
+test` to check URL conversion and cache invalidation when dependencies change.
+
 ## Edit documentation
 
 - Articles: `landing/docs/content/*.md`.
@@ -125,9 +137,12 @@ NOTEX_LANDING_TAG=latest
 For updates, repeat `docker compose pull` and `docker compose up -d` after the
 workflow publishes. Pin `NOTEX_LANDING_TAG=sha-<full commit SHA>` to deploy or
 roll back to a specific build. A style change reuses the dependency layer unless
-the package manifests or lockfile changed. Static files use `Cache-Control:
-no-cache` so browsers revalidate after updates; explicit Cloudflare cache rules
-can override origin caching and may require a purge.
+the package manifests or lockfile changed. HTML uses `Cache-Control: no-cache`
+and conditional revalidation. Fingerprinted assets use a one-year immutable
+cache; changed content receives a new URL automatically. Stable asset URLs stay
+available with revalidation for compatibility. The local preview uses the same
+URL and cache policies. Explicit proxy cache overrides can still change these
+policies, but none are required for this setup.
 
 ### Build and check locally
 
