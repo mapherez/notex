@@ -1,3 +1,13 @@
+# 2.6.1
+
+## What's New in NoteX
+
+This was a minor release, focused on increasing the Node version, due to some critical security issues.
+Find more at:
+https://nodejs.org/en/blog/vulnerability/november-2026-security-releases
+
+---
+
 # 2.6.0
 
 ## What's New in NoteX
