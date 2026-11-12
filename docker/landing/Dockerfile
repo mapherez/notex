@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM --platform=$BUILDPLATFORM node:24-alpine AS build
+FROM --platform=$BUILDPLATFORM node:26-alpine AS build
 
 WORKDIR /site
 ENV npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false

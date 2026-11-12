@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS build
+FROM --platform=$BUILDPLATFORM node:26-bookworm-slim AS build
 
 WORKDIR /app
 ENV npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false

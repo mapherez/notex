@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:24-bookworm-slim AS build
+FROM node:26-bookworm-slim AS build
 
 ENV npm_config_audit=false \
     npm_config_fund=false \
@@ -27,7 +27,7 @@ RUN npm run build --workspace backend \
     && npm prune --omit=dev \
     && mkdir -p backend/node_modules packages/notex-mcp-contract/node_modules
 
-FROM node:24-bookworm-slim AS runtime
+FROM node:26-bookworm-slim AS runtime
 
 ENV NODE_ENV=production \
     NOTEX_MCP_HOST=0.0.0.0 \
