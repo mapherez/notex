@@ -210,3 +210,18 @@ void test("push checks the committed bytes even when the working file has alread
   );
   assert.equal(readFileSync(join(directory, "example.css"), "utf8"), fixed);
 });
+
+void test("JSONC keeps LF when Git uses Windows line-ending conversion", (t) => {
+  const directory = fixture(t);
+  const path = "src/content/.markdownlint.jsonc";
+  mkdirSync(join(directory, "src/content"), { recursive: true });
+  const contents = readFileSync(join(root, path), "utf8");
+  copyFileSync(join(root, ".gitattributes"), join(directory, ".gitattributes"));
+  writeFileSync(join(directory, path), contents);
+  command(directory, "git", ["config", "core.autocrlf", "true"]);
+  command(directory, "git", ["add", "--", ".gitattributes", path]);
+  const oid = command(directory, "git", ["rev-parse", `:${path}`]).trim();
+  const checkout = command(directory, "git", ["cat-file", "--filters", `--path=${path}`, oid]);
+  assert.equal(checkout, contents, "Windows checkout must preserve the formatter's LF output");
+  assert.equal(checkout.includes("\r"), false);
+});

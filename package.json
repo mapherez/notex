@@ -36,6 +36,7 @@
     "precommit": "node scripts/git-hooks.mjs commit",
     "check": "node scripts/git-hooks.mjs check",
     "prepush": "node scripts/format-files.mjs --check --revision HEAD && npm run check",
+    "precheck:code": "npm run build:mcp-contract",
     "check:code": "vp check",
     "format:check": "node scripts/format-files.mjs --check",
     "format": "node scripts/format-files.mjs",
