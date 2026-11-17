@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, posix, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -46,6 +46,36 @@ void test("repository root validation accepts the root and rejects nested or unr
     assert.throws(() => release("9.9.9", { root, cwd }), /at the repository root/);
   }
   assert.throws(() => release("9.9.9", { root: nested, cwd: nested }), /at the repository root/);
+  assert.equal(git(root, "tag", "--list"), "");
+});
+
+void test("repository root validation resolves directory aliases and uses Git's relative prefix", (t) => {
+  const temp = mkdtempSync(join(tmpdir(), "release-root-alias-"));
+  t.after(() => rmSync(temp, { recursive: true, force: true }));
+  const root = join(temp, "Repository with spaces");
+  const alias = join(temp, "alias");
+  const nested = join(root, "src");
+  const nestedAlias = join(temp, "nested-alias");
+  mkdirSync(nested, { recursive: true });
+  git(root, "init", "-b", config.branch);
+  writeFileSync(join(root, "pending.txt"), "uncommitted source\n");
+  symlinkSync(root, alias, "junction");
+  symlinkSync(nested, nestedAlias, "junction");
+
+  assert.equal(git(root, "rev-parse", "--show-prefix"), "");
+  assert.equal(git(alias, "rev-parse", "--show-prefix"), "");
+  assert.equal(git(nestedAlias, "rev-parse", "--show-prefix"), "src/");
+  for (const [expectedRoot, cwd] of [
+    [root, alias],
+    [alias, root],
+    [alias, alias],
+  ]) {
+    assert.throws(() => release("9.9.9", { root: expectedRoot, cwd }), /Commit and push/);
+  }
+  assert.throws(
+    () => release("9.9.9", { root: nestedAlias, cwd: nestedAlias }),
+    /at the repository root/,
+  );
   assert.equal(git(root, "tag", "--list"), "");
 });
 

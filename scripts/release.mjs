@@ -13,10 +13,12 @@ export function sameCanonicalPath(left, right, paths = path) {
 
 export function release(input, { root = repositoryRoot, cwd = process.cwd() } = {}) {
   const tag = versionTag(input);
-  const canonicalRoot = realpathSync(root);
+  const canonicalRoot = realpathSync.native(root);
   if (
-    !sameCanonicalPath(realpathSync(cwd), canonicalRoot) ||
-    !sameCanonicalPath(realpathSync(git(root, "rev-parse", "--show-toplevel")), canonicalRoot)
+    !sameCanonicalPath(realpathSync.native(cwd), canonicalRoot) ||
+    // Git and Node can spell the same Windows directory differently (e.g. 8.3 names).
+    // The prefix is empty at the worktree root, without comparing absolute paths.
+    git(root, "rev-parse", "--show-prefix") !== ""
   ) {
     throw new Error("Run npm run release at the repository root.");
   }
