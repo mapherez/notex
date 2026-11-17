@@ -1,7 +1,8 @@
 $base-tokens: (
-  "font-sans": "\"Source Sans 3\", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+  "font-sans":
+    '"Source Sans 3", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   "font-display": "var(--nx-font-sans)",
-  "font-brand": "Manrope, \"Source Sans 3\", ui-sans-serif, system-ui, sans-serif",
+  "font-brand": 'Manrope, "Source Sans 3", ui-sans-serif, system-ui, sans-serif',
   "sidebar-width": 14rem,
   "window-titlebar-height": 38px,
   "topbar-height": 5.5rem,
@@ -21,9 +22,9 @@ $base-tokens: (
   "space-6": 1.5rem,
   "space-8": 2rem,
   "space-10": 2.5rem,
-    "space-11": 3rem,
-    "space-12": 4rem,
-    "space-13": 5rem,
+  "space-11": 3rem,
+  "space-12": 4rem,
+  "space-13": 5rem,
   "color-accent": #7560b5,
   "color-accent-strong": #b6a7ef,
   "color-accent-soft": rgba(164, 143, 218, 0.14),

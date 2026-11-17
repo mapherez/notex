@@ -1,11 +1,11 @@
-import { noteSettings } from '../../config/appSettings';
-import type { Note } from '../models/models';
-import { richTextToPlainText } from './richText';
+import { noteSettings } from "../../config/appSettings";
+import type { Note } from "../models/models";
+import { richTextToPlainText } from "./richText";
 
-export type NotesSortOrder = 'nameAsc' | 'nameDesc' | 'updatedAsc' | 'updatedDesc';
+export type NotesSortOrder = "nameAsc" | "nameDesc" | "updatedAsc" | "updatedDesc";
 
 export type NotesFilter = {
-  mode: 'all' | 'favorites' | 'recent' | 'trash';
+  mode: "all" | "favorites" | "recent" | "trash";
   query?: string | null;
   tagId?: string | null;
   collectionId?: string | null;
@@ -17,7 +17,12 @@ export const defaultNotesSortOrder = noteSettings.defaultSortOrder as NotesSortO
 export const recentNotesSortOrder = noteSettings.recentSortOrder as NotesSortOrder;
 
 export function normalizeNotesSortOrder(value?: string | null): NotesSortOrder {
-  if (value === 'nameAsc' || value === 'nameDesc' || value === 'updatedAsc' || value === 'updatedDesc') {
+  if (
+    value === "nameAsc" ||
+    value === "nameDesc" ||
+    value === "updatedAsc" ||
+    value === "updatedDesc"
+  ) {
     return value;
   }
 
@@ -29,13 +34,13 @@ export function filterNotes(notes: Note[], filter: NotesFilter) {
 
   return notes
     .filter((note) => {
-      if (filter.mode === 'trash') {
+      if (filter.mode === "trash") {
         return note.isTrashed;
       }
       if (note.isTrashed) {
         return false;
       }
-      if (filter.mode === 'favorites' && !note.isFavorite) {
+      if (filter.mode === "favorites" && !note.isFavorite) {
         return false;
       }
       if (filter.tagId && !note.tagIds.includes(filter.tagId)) {
@@ -51,19 +56,24 @@ export function filterNotes(notes: Note[], filter: NotesFilter) {
       return [
         richTextToPlainText(note.title),
         richTextToPlainText(note.subtitle),
-        ...(note.blocks?.flatMap((block) => [richTextToPlainText(block.title), block.contentText]) ?? []),
+        ...(note.blocks?.flatMap((block) => [
+          richTextToPlainText(block.title),
+          block.contentText,
+        ]) ?? []),
       ]
-        .join(' ')
+        .join(" ")
         .toLowerCase()
         .includes(query);
     })
-    .sort((a, b) => compareNotes(a, b, filter.mode, filter.sortOrder ?? null, Boolean(filter.pinnedFirst)));
+    .sort((a, b) =>
+      compareNotes(a, b, filter.mode, filter.sortOrder ?? null, Boolean(filter.pinnedFirst)),
+    );
 }
 
 function compareNotes(
   a: Note,
   b: Note,
-  mode: NotesFilter['mode'],
+  mode: NotesFilter["mode"],
   sortOrder: NotesSortOrder | null,
   pinnedFirst: boolean,
 ) {
@@ -71,23 +81,26 @@ function compareNotes(
     return a.isPinned ? -1 : 1;
   }
 
-  if (!sortOrder && mode === 'recent') {
+  if (!sortOrder && mode === "recent") {
     return b.updatedAt.localeCompare(a.updatedAt) || compareNoteTitles(a, b);
   }
 
   switch (sortOrder ?? defaultNotesSortOrder) {
-    case 'nameAsc':
+    case "nameAsc":
       return compareNoteTitles(a, b);
-    case 'nameDesc':
+    case "nameDesc":
       return compareNoteTitles(b, a);
-    case 'updatedAsc':
+    case "updatedAsc":
       return a.updatedAt.localeCompare(b.updatedAt) || compareNoteTitles(a, b);
-    case 'updatedDesc':
+    case "updatedDesc":
     default:
       return b.updatedAt.localeCompare(a.updatedAt) || compareNoteTitles(a, b);
   }
 }
 
-function compareNoteTitles(a: Pick<Note, 'title'>, b: Pick<Note, 'title'>) {
-  return richTextToPlainText(a.title).localeCompare(richTextToPlainText(b.title), undefined, { numeric: true, sensitivity: 'base' });
+function compareNoteTitles(a: Pick<Note, "title">, b: Pick<Note, "title">) {
+  return richTextToPlainText(a.title).localeCompare(richTextToPlainText(b.title), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
 }

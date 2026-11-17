@@ -39,7 +39,10 @@
   min-height: 12.6rem;
   align-content: space-between;
   padding: var(--nx-space-5);
-  transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    background 160ms ease;
 }
 
 .stat-card:hover {
@@ -125,7 +128,10 @@
   background: var(--nx-color-surface);
   padding: var(--nx-space-4);
   text-align: left;
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .quick-pin-card:hover,
@@ -162,7 +168,11 @@
   color: var(--nx-color-text-muted);
   opacity: 0.9;
   padding: 0;
-  transition: opacity 160ms ease, color 160ms ease, border-color 160ms ease, background 160ms ease;
+  transition:
+    opacity 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
 }
 
 .quick-pin-slot:hover .quick-pin-edit,

@@ -1,23 +1,27 @@
-import { invoke, isTauri } from '@tauri-apps/api/core';
-import { create } from 'zustand';
-import { defaultUserSettings } from '../config/appSettings';
-import { db } from '../core/db/notexDb';
-import { waitForNoteMutations } from '../core/mcp/noteMutationCoordinator';
-import type { GoogleAccount } from '../core/services/googleConfig';
-import { clearGoogleWebAuthorization, loginGoogleWeb } from '../core/services/googleWebAuth';
-import { initializeStorage, rememberWebAccount } from '../core/services/storageBootstrap';
-import { desktopInvoke, pauseDesktopStorage, selectDesktopLibrary } from '../core/storage/desktopInvoke';
-import { closeBrowserLibrary, openBrowserLibrary } from '../core/storage/storageRuntime';
-import { useAppStore } from './useAppStore';
-import { useKnowledgeStore } from './useKnowledgeStore';
-import { useNotesStore } from './useNotesStore';
-import { useCloudStore } from './useCloudStore';
-import { beginLibraryTransition } from '../core/storage/libraryTransition';
-import { isDevAuthBypassEnabled } from '../core/services/developmentAuth';
+import { invoke, isTauri } from "@tauri-apps/api/core";
+import { create } from "zustand";
+import { defaultUserSettings } from "../config/appSettings";
+import { db } from "../core/db/notexDb";
+import { waitForNoteMutations } from "../core/mcp/noteMutationCoordinator";
+import type { GoogleAccount } from "../core/services/googleConfig";
+import { clearGoogleWebAuthorization, loginGoogleWeb } from "../core/services/googleWebAuth";
+import { initializeStorage, rememberWebAccount } from "../core/services/storageBootstrap";
+import {
+  desktopInvoke,
+  pauseDesktopStorage,
+  selectDesktopLibrary,
+} from "../core/storage/desktopInvoke";
+import { closeBrowserLibrary, openBrowserLibrary } from "../core/storage/storageRuntime";
+import { useAppStore } from "./useAppStore";
+import { useKnowledgeStore } from "./useKnowledgeStore";
+import { useNotesStore } from "./useNotesStore";
+import { useCloudStore } from "./useCloudStore";
+import { beginLibraryTransition } from "../core/storage/libraryTransition";
+import { isDevAuthBypassEnabled } from "../core/services/developmentAuth";
 
 type AccountState = {
   account: GoogleAccount | null;
-  status: 'starting' | 'ready' | 'login-required' | 'switching' | 'error';
+  status: "starting" | "ready" | "login-required" | "switching" | "error";
   error: string | null;
   modalOpen: boolean;
   authorizing: boolean;
@@ -28,15 +32,21 @@ type AccountState = {
   closeLogin: () => void;
   login: () => Promise<void>;
   logout: () => Promise<void>;
-  resolveAdoption: (choice: 'local' | 'remote') => void;
+  resolveAdoption: (choice: "local" | "remote") => void;
 };
 let initialization: Promise<void> | undefined;
 let loginAttempt = 0;
 
 async function loadLibrary(seedDemo: boolean) {
   if (!seedDemo && !(await db.userSettings.get(defaultUserSettings.id))) {
-    await db.userSettings.put({ ...useAppStore.getState().settings,
-      primaryCollectionId: '', favoriteTagIds: [], pinnedNoteIds: [], quickPinNoteIds: [], noteHiddenPanelIds: [] });
+    await db.userSettings.put({
+      ...useAppStore.getState().settings,
+      primaryCollectionId: "",
+      favoriteTagIds: [],
+      pinnedNoteIds: [],
+      quickPinNoteIds: [],
+      noteHiddenPanelIds: [],
+    });
   }
   await useAppStore.getState().hydrateSettings();
   const settings = useAppStore.getState().settings;
@@ -46,7 +56,13 @@ async function loadLibrary(seedDemo: boolean) {
 
 function clearLibraryView() {
   useNotesStore.setState({ notes: [], isReady: false });
-  useKnowledgeStore.setState({ tags: [], collections: [], activities: [], user: null, isReady: false });
+  useKnowledgeStore.setState({
+    tags: [],
+    collections: [],
+    activities: [],
+    user: null,
+    isReady: false,
+  });
   useAppStore.setState({ isHydrated: false });
 }
 
@@ -55,8 +71,8 @@ async function prepareSwitch() {
   try {
     await useCloudStore.getState().stop();
     if (isTauri()) {
-      const { useLocalMcpStore } = await import('./useLocalMcpStore');
-      if (useLocalMcpStore.getState().connection.state === 'running') {
+      const { useLocalMcpStore } = await import("./useLocalMcpStore");
+      if (useLocalMcpStore.getState().connection.state === "running") {
         restoreMcp = () => useLocalMcpStore.getState().start();
         await useLocalMcpStore.getState().stop();
       }
@@ -64,20 +80,34 @@ async function prepareSwitch() {
     await waitForNoteMutations();
     if (isTauri()) await pauseDesktopStorage();
     return restoreMcp;
-  } catch (error) { await restoreMcp(); throw error; }
+  } catch (error) {
+    await restoreMcp();
+    throw error;
+  }
 }
 
 export const useGoogleAccountStore = create<AccountState>((set, get) => ({
-  account: null, status: 'starting', error: null, modalOpen: false, authorizing: false, pendingAccount: null, adoptionChoices: {},
+  account: null,
+  status: "starting",
+  error: null,
+  modalOpen: false,
+  authorizing: false,
+  pendingAccount: null,
+  adoptionChoices: {},
   initialize: async () => {
     initialization ??= (async () => {
       const result = await initializeStorage();
       if (result.error) throw new Error(result.error);
-      if (result.requiresLogin) { set({ status: 'login-required', modalOpen: true }); return; }
+      if (result.requiresLogin) {
+        set({ status: "login-required", modalOpen: true });
+        return;
+      }
       await loadLibrary(result.shouldSeedDemo ?? false);
-      set({ status: 'ready', account: result.account ?? null });
+      set({ status: "ready", account: result.account ?? null });
       if (result.account) await useCloudStore.getState().start(result.account.id);
-    })().catch((error) => { set({ status: 'error', error: String(error instanceof Error ? error.message : error) }); });
+    })().catch((error) => {
+      set({ status: "error", error: String(error instanceof Error ? error.message : error) });
+    });
     await initialization;
   },
   showLogin: () => {
@@ -85,15 +115,21 @@ export const useGoogleAccountStore = create<AccountState>((set, get) => ({
     set({ modalOpen: true, error: null });
   },
   closeLogin: () => {
-    if (get().status === 'switching' || (get().authorizing && get().pendingAccount)) return;
+    if (get().status === "switching" || (get().authorizing && get().pendingAccount)) return;
     loginAttempt++;
-    if (isTauri()) void invoke('notex_google_cancel_login');
+    if (isTauri()) void invoke("notex_google_cancel_login");
     else clearGoogleWebAuthorization();
-    set({ modalOpen: !isTauri() && !get().account, authorizing: false, error: null, pendingAccount: null, adoptionChoices: {} });
+    set({
+      modalOpen: !isTauri() && !get().account,
+      authorizing: false,
+      error: null,
+      pendingAccount: null,
+      adoptionChoices: {},
+    });
   },
   login: async () => {
     if (isDevAuthBypassEnabled()) return;
-    if (get().authorizing || get().status === 'switching') return;
+    if (get().authorizing || get().status === "switching") return;
     const previousAccount = get().account;
     const previousStatus = get().status;
     const attempt = ++loginAttempt;
@@ -105,40 +141,55 @@ export const useGoogleAccountStore = create<AccountState>((set, get) => ({
     try {
       release = beginLibraryTransition();
       // The web call must happen in this click's stack, before any await.
-      const authorized = get().pendingAccount ?? (isTauri() ? await invoke<GoogleAccount>('notex_google_login') : await loginGoogleWeb());
+      const authorized =
+        get().pendingAccount ??
+        (isTauri() ? await invoke<GoogleAccount>("notex_google_login") : await loginGoogleWeb());
       if (attempt !== loginAttempt) return;
       set({ pendingAccount: authorized });
       prepared = true;
       restoreMcp = await prepareSwitch();
-      set({ status: 'switching' });
+      set({ status: "switching" });
       const account = isTauri()
-        ? await invoke<GoogleAccount>('notex_google_activate', { libraryId: previousAccount?.id ?? null, resolutions: get().adoptionChoices })
+        ? await invoke<GoogleAccount>("notex_google_activate", {
+            libraryId: previousAccount?.id ?? null,
+            resolutions: get().adoptionChoices,
+          })
         : authorized;
       activated = true;
       clearLibraryView();
       if (isTauri()) selectDesktopLibrary(account.id);
-      else { await openBrowserLibrary(account.id); rememberWebAccount(account); }
+      else {
+        await openBrowserLibrary(account.id);
+        rememberWebAccount(account);
+      }
       set({ account });
       await loadLibrary(false);
-      set({ status: 'ready', modalOpen: false, pendingAccount: null, adoptionChoices: {} });
+      set({ status: "ready", modalOpen: false, pendingAccount: null, adoptionChoices: {} });
       await useCloudStore.getState().start(account.id);
     } catch (error) {
       if (attempt !== loginAttempt) return;
       if (!activated && prepared && isTauri()) selectDesktopLibrary(previousAccount?.id ?? null);
-      set({ status: activated ? 'error' : previousStatus, error: error instanceof Error ? error.message : String(error) });
-      if (!activated && prepared && previousAccount) await useCloudStore.getState().start(previousAccount.id);
+      set({
+        status: activated ? "error" : previousStatus,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      if (!activated && prepared && previousAccount)
+        await useCloudStore.getState().start(previousAccount.id);
       if (!activated) await restoreMcp?.();
-    } finally { release?.(); if (attempt === loginAttempt) set({ authorizing: false }); }
+    } finally {
+      release?.();
+      if (attempt === loginAttempt) set({ authorizing: false });
+    }
   },
   resolveAdoption: (choice) => {
     const error = get().error;
-    if (!error?.startsWith('ACCOUNT_NOTE_CONFLICT:')) return;
-    const id = error.slice('ACCOUNT_NOTE_CONFLICT:'.length);
+    if (!error?.startsWith("ACCOUNT_NOTE_CONFLICT:")) return;
+    const id = error.slice("ACCOUNT_NOTE_CONFLICT:".length);
     set({ adoptionChoices: { ...get().adoptionChoices, [id]: choice } });
     void get().login();
   },
   logout: async () => {
-    if (get().authorizing || get().status !== 'ready') return;
+    if (get().authorizing || get().status !== "ready") return;
     const previous = get().account;
     if (!previous) return;
     set({ authorizing: true, error: null });
@@ -150,9 +201,9 @@ export const useGoogleAccountStore = create<AccountState>((set, get) => ({
       release = beginLibraryTransition();
       prepared = true;
       restoreMcp = await prepareSwitch();
-      set({ status: 'switching' });
+      set({ status: "switching" });
       if (isTauri()) {
-        await invoke('notex_library_logout', { libraryId: previous.id });
+        await invoke("notex_library_logout", { libraryId: previous.id });
         selectDesktopLibrary(null);
       } else {
         rememberWebAccount(null);
@@ -163,15 +214,21 @@ export const useGoogleAccountStore = create<AccountState>((set, get) => ({
       clearLibraryView();
       set({ account: null });
       if (isTauri()) {
-        const status = await desktopInvoke<{ shouldSeedDemo: boolean }>('notex_sqlite_status');
+        const status = await desktopInvoke<{ shouldSeedDemo: boolean }>("notex_sqlite_status");
         await loadLibrary(status.shouldSeedDemo);
-        set({ status: 'ready' });
-      } else set({ status: 'login-required', modalOpen: true });
+        set({ status: "ready" });
+      } else set({ status: "login-required", modalOpen: true });
     } catch (error) {
       if (!loggedOut && prepared && isTauri()) selectDesktopLibrary(previous.id);
-      set({ status: loggedOut ? 'error' : 'ready', error: error instanceof Error ? error.message : String(error) });
+      set({
+        status: loggedOut ? "error" : "ready",
+        error: error instanceof Error ? error.message : String(error),
+      });
       if (!loggedOut && prepared) await useCloudStore.getState().start(previous.id);
       if (!loggedOut) await restoreMcp?.();
-    } finally { release?.(); set({ authorizing: false }); }
+    } finally {
+      release?.();
+      set({ authorizing: false });
+    }
   },
 }));

@@ -1,10 +1,5 @@
-import settings from './settings.json';
-import type {
-  NoteThumbnail,
-  StartupPage,
-  TagColor,
-  UserSettings,
-} from '../core/models/models';
+import settings from "./settings.json";
+import type { NoteThumbnail, StartupPage, TagColor, UserSettings } from "../core/models/models";
 
 export type AppSettings = typeof settings;
 
@@ -22,23 +17,24 @@ export const updaterSettings = settings.updater;
 export const tagColorOptions = settings.options.tagColors as TagColor[];
 export const thumbnailOptions = settings.options.thumbnailVariants as Array<{
   asset: string;
-  id: NoteThumbnail['variant'];
+  id: NoteThumbnail["variant"];
 }>;
 
 export const defaultNewTagColor = settings.defaults.newTagColor as TagColor;
 export const defaultNewCollectionColor = settings.defaults.newCollectionColor as TagColor;
-export const defaultNoteThumbnailVariant = settings.defaults.noteThumbnailVariant as NoteThumbnail['variant'];
+export const defaultNoteThumbnailVariant = settings.defaults
+  .noteThumbnailVariant as NoteThumbnail["variant"];
 
 const userSettingsDefaults = settings.defaults.userSettings;
 
 export const defaultUserSettings: UserSettings = {
-  id: 'local-user-settings',
-  theme: userSettingsDefaults.theme as UserSettings['theme'],
-  language: userSettingsDefaults.language as UserSettings['language'],
+  id: "local-user-settings",
+  theme: userSettingsDefaults.theme as UserSettings["theme"],
+  language: userSettingsDefaults.language as UserSettings["language"],
   mcpPort: userSettingsDefaults.mcpPort,
   username: userSettingsDefaults.username,
   startupPage: userSettingsDefaults.startupPage as StartupPage,
-  preferredLayout: userSettingsDefaults.preferredLayout as UserSettings['preferredLayout'],
+  preferredLayout: userSettingsDefaults.preferredLayout as UserSettings["preferredLayout"],
   primaryCollectionId: userSettingsDefaults.primaryCollectionId,
   favoriteTagIds: userSettingsDefaults.favoriteTagIds,
   pinnedNoteIds: userSettingsDefaults.pinnedNoteIds,

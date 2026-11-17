@@ -1,46 +1,52 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { BRIDGE_PROTOCOL_VERSION, type CommandName, type CommandOutput } from '@notex/mcp-contract';
-import type { Note, NoteBlock } from '../models/models';
-import { useKnowledgeStore } from '../../store/useKnowledgeStore';
-import { useNotesStore } from '../../store/useNotesStore';
-import { dispatchMcpCommand, type McpBridgeResponse } from './dispatcher';
-import { setLocalDraftPending } from './noteMutationCoordinator';
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { BRIDGE_PROTOCOL_VERSION, type CommandName, type CommandOutput } from "@notex/mcp-contract";
+import type { Note, NoteBlock } from "../models/models";
+import { useKnowledgeStore } from "../../store/useKnowledgeStore";
+import { useNotesStore } from "../../store/useNotesStore";
+import { dispatchMcpCommand, type McpBridgeResponse } from "./dispatcher";
+import { setLocalDraftPending } from "./noteMutationCoordinator";
 
 const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }));
 
-vi.mock('@tauri-apps/api/core', () => ({
+vi.mock("@tauri-apps/api/core", () => ({
   isTauri: () => true,
   convertFileSrc: (path: string) => path,
   invoke: invokeMock,
 }));
 
 const activeNote = createNote({
-  id: 'note-active',
-  title: '<p>Introdução à linguagem</p>',
-  subtitle: '<p><em>Referência principal</em></p>',
-  collectionId: 'collection-reference',
-  tagIds: ['tag-grammar'],
-  linkedNoteIds: ['note-trash'],
-  additionalExamples: ['Example sentence'],
-  relatedLinks: [{ id: 'link-reference', title: 'Reference', href: 'https://example.com' }],
+  id: "note-active",
+  title: "<p>Introdução à linguagem</p>",
+  subtitle: "<p><em>Referência principal</em></p>",
+  collectionId: "collection-reference",
+  tagIds: ["tag-grammar"],
+  linkedNoteIds: ["note-trash"],
+  additionalExamples: ["Example sentence"],
+  relatedLinks: [{ id: "link-reference", title: "Reference", href: "https://example.com" }],
   isFavorite: true,
-  thumbnail: { variant: 'paper' },
+  thumbnail: { variant: "paper" },
   version: 4,
   blocks: [
-    createBlock({ id: 'block-later', noteId: 'note-active', sortOrder: 2, title: 'Later', contentText: 'Second' }),
     createBlock({
-      id: 'block-first',
-      noteId: 'note-active',
+      id: "block-later",
+      noteId: "note-active",
+      sortOrder: 2,
+      title: "Later",
+      contentText: "Second",
+    }),
+    createBlock({
+      id: "block-first",
+      noteId: "note-active",
       sortOrder: 0,
-      title: '<p><strong>Summary</strong></p>',
-      contentText: 'Body needle',
+      title: "<p><strong>Summary</strong></p>",
+      contentText: "Body needle",
       contentJson: {
-        type: 'doc',
+        type: "doc",
         content: [
-          { type: 'paragraph', content: [{ type: 'text', text: 'Body needle' }] },
+          { type: "paragraph", content: [{ type: "text", text: "Body needle" }] },
           {
-            type: 'noteFile',
-            attrs: { id: 'private-file', relativePath: 'files/private.pdf', checksum: 'private' },
+            type: "noteFile",
+            attrs: { id: "private-file", relativePath: "files/private.pdf", checksum: "private" },
           },
         ],
       },
@@ -48,18 +54,32 @@ const activeNote = createNote({
   ],
 });
 const trashNote = createNote({
-  id: 'note-trash',
-  title: 'Deleted note',
+  id: "note-trash",
+  title: "Deleted note",
   isTrashed: true,
-  updatedAt: '2026-02-02T00:00:00.000Z',
+  updatedAt: "2026-02-02T00:00:00.000Z",
   version: 2,
-  blocks: [createBlock({ id: 'trash-block', noteId: 'note-trash', sortOrder: 0, contentText: 'Trash body' })],
+  blocks: [
+    createBlock({
+      id: "trash-block",
+      noteId: "note-trash",
+      sortOrder: 0,
+      contentText: "Trash body",
+    }),
+  ],
 });
 
-describe('dispatchMcpCommand', () => {
-  it('rejects invalidated remote work before a mutation', async () => {
-    const response = await dispatchMcpCommand({ ...request('create_note', { collectionId: null }), generation: 'old-connection', isActive: async () => false }, 'test');
-    expect(response).toMatchObject({ ok: false, error: { code: 'TIMEOUT', retryable: false } });
+describe("dispatchMcpCommand", () => {
+  it("rejects invalidated remote work before a mutation", async () => {
+    const response = await dispatchMcpCommand(
+      {
+        ...request("create_note", { collectionId: null }),
+        generation: "old-connection",
+        isActive: async () => false,
+      },
+      "test",
+    );
+    expect(response).toMatchObject({ ok: false, error: { code: "TIMEOUT", retryable: false } });
     expect(invokeMock).not.toHaveBeenCalled();
   });
   beforeEach(() => {
@@ -68,558 +88,766 @@ describe('dispatchMcpCommand', () => {
     useKnowledgeStore.setState({
       isReady: true,
       tags: [
-        { id: 'tag-work', name: 'Trabalho' },
-        { id: 'tag-grammar', name: 'Gramática', color: 'blue' },
+        { id: "tag-work", name: "Trabalho" },
+        { id: "tag-grammar", name: "Gramática", color: "blue" },
       ],
       collections: [
-        { id: 'collection-work', name: 'Projetos', color: 'green' },
-        { id: 'collection-reference', name: 'Referência', color: 'amber' },
+        { id: "collection-work", name: "Projetos", color: "green" },
+        { id: "collection-reference", name: "Referência", color: "amber" },
       ],
     });
   });
 
-  it('submits note and initial blocks as one transaction and publishes only after commit', async () => {
+  it("submits note and initial blocks as one transaction and publishes only after commit", async () => {
     let complete!: () => void;
-    invokeMock.mockImplementation(() => new Promise<void>((resolve) => { complete = resolve; }));
-    const pending = dispatchMcpCommand(request('create_note', {
-      collectionId: null, blocks: [{ content: { format: 'text', value: 'Atomic block' } }],
-    }), '2.1.0');
+    invokeMock.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          complete = resolve;
+        }),
+    );
+    const pending = dispatchMcpCommand(
+      request("create_note", {
+        collectionId: null,
+        blocks: [{ content: { format: "text", value: "Atomic block" } }],
+      }),
+      "2.1.0",
+    );
     await vi.waitFor(() => expect(invokeMock).toHaveBeenCalledTimes(1));
-    expect(invokeMock.mock.calls[0][0]).toBe('notex_sqlite_transaction');
-    expect(invokeMock.mock.calls[0][1].operations.map((op: { table: string }) => op.table)).toEqual(['notes', 'noteBlocks']);
+    expect(invokeMock.mock.calls[0][0]).toBe("notex_sqlite_transaction");
+    expect(invokeMock.mock.calls[0][1].operations.map((op: { table: string }) => op.table)).toEqual(
+      ["notes", "noteBlocks"],
+    );
     expect(useNotesStore.getState().notes).toHaveLength(2);
     complete();
     expect((await pending).ok).toBe(true);
     expect(useNotesStore.getState().notes).toHaveLength(3);
   });
 
-  it('does not publish a note when its transaction fails', async () => {
-    invokeMock.mockRejectedValue(new Error('Storage failure'));
-    expectFailure(await dispatchMcpCommand(request('create_note', { collectionId: null, blocks: [{}] }), '2.1.0'), 'INTERNAL');
+  it("does not publish a note when its transaction fails", async () => {
+    invokeMock.mockRejectedValue(new Error("Storage failure"));
+    expectFailure(
+      await dispatchMcpCommand(
+        request("create_note", { collectionId: null, blocks: [{}] }),
+        "2.1.0",
+      ),
+      "INTERNAL",
+    );
     expect(useNotesStore.getState().notes).toHaveLength(2);
   });
 
-  it('rejects dirty drafts before sending any write to storage', async () => {
-    setLocalDraftPending(activeNote.id, 'test-header', true);
+  it("rejects dirty drafts before sending any write to storage", async () => {
+    setLocalDraftPending(activeNote.id, "test-header", true);
     try {
-      expectFailure(await dispatchMcpCommand(request('update_note_header', {
-        noteId: activeNote.id, expectedVersion: activeNote.version,
-        title: { format: 'text', value: 'Remote' },
-      }), '2.1.0'), 'LOCAL_EDITS_PENDING');
+      expectFailure(
+        await dispatchMcpCommand(
+          request("update_note_header", {
+            noteId: activeNote.id,
+            expectedVersion: activeNote.version,
+            title: { format: "text", value: "Remote" },
+          }),
+          "2.1.0",
+        ),
+        "LOCAL_EDITS_PENDING",
+      );
       expect(invokeMock).not.toHaveBeenCalled();
     } finally {
-      setLocalDraftPending(activeNote.id, 'test-header', false);
+      setLocalDraftPending(activeNote.id, "test-header", false);
     }
   });
 
-  it('reports online status and rejects expired or invalid requests', async () => {
-    const status = successResult<'notex_status'>(
-      await dispatchMcpCommand(request('notex_status', {}), '2.1.0'),
+  it("reports online status and rejects expired or invalid requests", async () => {
+    const status = successResult<"notex_status">(
+      await dispatchMcpCommand(request("notex_status", {}), "2.1.0"),
     );
-    expect(status).toEqual({ state: 'online', appVersion: '2.1.0', protocolVersion: BRIDGE_PROTOCOL_VERSION });
+    expect(status).toEqual({
+      state: "online",
+      appVersion: "2.1.0",
+      protocolVersion: BRIDGE_PROTOCOL_VERSION,
+    });
 
     const expired = await dispatchMcpCommand(
-      { ...request('search_notes', {}), deadlineAt: '2020-01-01T00:00:00.000Z' },
-      '2.1.0',
+      { ...request("search_notes", {}), deadlineAt: "2020-01-01T00:00:00.000Z" },
+      "2.1.0",
     );
-    expectFailure(expired, 'TIMEOUT');
+    expectFailure(expired, "TIMEOUT");
 
-    const invalid = await dispatchMcpCommand(request('search_notes', { limit: 0 }), '2.1.0');
-    expectFailure(invalid, 'INVALID_INPUT');
+    const invalid = await dispatchMcpCommand(request("search_notes", { limit: 0 }), "2.1.0");
+    expectFailure(invalid, "INVALID_INPUT");
   });
 
-  it('searches active notes by default and exposes trash only when requested', async () => {
-    const active = successResult<'search_notes'>(
-      await dispatchMcpCommand(request('search_notes', { query: 'needle' }), '2.1.0'),
+  it("searches active notes by default and exposes trash only when requested", async () => {
+    const active = successResult<"search_notes">(
+      await dispatchMcpCommand(request("search_notes", { query: "needle" }), "2.1.0"),
     );
-    expect(active.results.map((item) => item.id)).toEqual(['note-active']);
+    expect(active.results.map((item) => item.id)).toEqual(["note-active"]);
     expect(active.results[0]).toMatchObject({
-      title: 'Introdução à linguagem',
+      title: "Introdução à linguagem",
       isTrashed: false,
       version: 4,
     });
 
-    const trash = successResult<'search_notes'>(
+    const trash = successResult<"search_notes">(
       await dispatchMcpCommand(
-        request('search_notes', { query: '', location: 'trash', limit: 20 }),
-        '2.1.0',
+        request("search_notes", { query: "", location: "trash", limit: 20 }),
+        "2.1.0",
       ),
     );
-    expect(trash.results.map((item) => item.id)).toEqual(['note-trash']);
+    expect(trash.results.map((item) => item.id)).toEqual(["note-trash"]);
 
-    const all = successResult<'search_notes'>(
-      await dispatchMcpCommand(request('search_notes', { query: '', location: 'all', limit: 20 }), '2.1.0'),
+    const all = successResult<"search_notes">(
+      await dispatchMcpCommand(
+        request("search_notes", { query: "", location: "all", limit: 20 }),
+        "2.1.0",
+      ),
     );
-    expect(all.results.map((item) => item.id)).toEqual(['note-trash', 'note-active']);
+    expect(all.results.map((item) => item.id)).toEqual(["note-trash", "note-active"]);
   });
 
-  it('returns ordered note summaries and marks trash as read-only', async () => {
-    const active = successResult<'get_note'>(
-      await dispatchMcpCommand(request('get_note', { noteId: activeNote.id }), '2.1.0'),
+  it("returns ordered note summaries and marks trash as read-only", async () => {
+    const active = successResult<"get_note">(
+      await dispatchMcpCommand(request("get_note", { noteId: activeNote.id }), "2.1.0"),
     );
     expect(active.readOnly).toBe(false);
-    expect(active.title).toEqual({ html: '<p>Introdução à linguagem</p>', text: 'Introdução à linguagem' });
-    expect(active.blocks.map((block) => block.id)).toEqual(['block-first', 'block-later']);
-    expect(active.blocks[0].contentPreview).toBe('Body needle');
+    expect(active.title).toEqual({
+      html: "<p>Introdução à linguagem</p>",
+      text: "Introdução à linguagem",
+    });
+    expect(active.blocks.map((block) => block.id)).toEqual(["block-first", "block-later"]);
+    expect(active.blocks[0].contentPreview).toBe("Body needle");
     expect(active).toMatchObject({
-      linkedNoteIds: ['note-trash'],
-      additionalExamples: ['Example sentence'],
-      relatedLinks: [{ id: 'link-reference', title: 'Reference', href: 'https://example.com' }],
+      linkedNoteIds: ["note-trash"],
+      additionalExamples: ["Example sentence"],
+      relatedLinks: [{ id: "link-reference", title: "Reference", href: "https://example.com" }],
       isFavorite: true,
       isPinned: false,
-      thumbnail: { variant: 'paper' },
+      thumbnail: { variant: "paper" },
     });
 
-    const trash = successResult<'get_note'>(
-      await dispatchMcpCommand(request('get_note', { noteId: trashNote.id }), '2.1.0'),
+    const trash = successResult<"get_note">(
+      await dispatchMcpCommand(request("get_note", { noteId: trashNote.id }), "2.1.0"),
     );
     expect(trash.readOnly).toBe(true);
     expect(trash.isTrashed).toBe(true);
   });
 
-  it('returns exact block content without local file metadata', async () => {
-    const block = successResult<'get_note_block'>(
+  it("returns exact block content without local file metadata", async () => {
+    const block = successResult<"get_note_block">(
       await dispatchMcpCommand(
-        request('get_note_block', { noteId: activeNote.id, blockId: 'block-first' }),
-        '2.1.0',
+        request("get_note_block", { noteId: activeNote.id, blockId: "block-first" }),
+        "2.1.0",
       ),
     );
 
     expect(block.noteVersion).toBe(4);
     expect(block.readOnly).toBe(false);
-    expect(block.content.text).toBe('Body needle');
-    expect(block.content.html).toContain('<p>Body needle</p>');
-    expect(block.content.html).not.toContain('notex-file');
-    expect(block.content.html).not.toContain('private.pdf');
+    expect(block.content.text).toBe("Body needle");
+    expect(block.content.html).toContain("<p>Body needle</p>");
+    expect(block.content.html).not.toContain("notex-file");
+    expect(block.content.html).not.toContain("private.pdf");
   });
 
-  it('filters and limits tags and collections with accent-insensitive queries', async () => {
-    const tags = successResult<'list_tags'>(
-      await dispatchMcpCommand(request('list_tags', { query: 'gramatica', limit: 1 }), '2.1.0'),
+  it("filters and limits tags and collections with accent-insensitive queries", async () => {
+    const tags = successResult<"list_tags">(
+      await dispatchMcpCommand(request("list_tags", { query: "gramatica", limit: 1 }), "2.1.0"),
     );
-    expect(tags.tags).toEqual([{ id: 'tag-grammar', name: 'Gramática', color: 'blue' }]);
+    expect(tags.tags).toEqual([{ id: "tag-grammar", name: "Gramática", color: "blue" }]);
 
-    const collections = successResult<'list_collections'>(
-      await dispatchMcpCommand(request('list_collections', { query: '', limit: 100 }), '2.1.0'),
+    const collections = successResult<"list_collections">(
+      await dispatchMcpCommand(request("list_collections", { query: "", limit: 100 }), "2.1.0"),
     );
     expect(collections.collections).toEqual([
-      { id: 'collection-work', name: 'Projetos', color: 'green' },
-      { id: 'collection-reference', name: 'Referência', color: 'amber' },
+      { id: "collection-work", name: "Projetos", color: "green" },
+      { id: "collection-reference", name: "Referência", color: "amber" },
     ]);
   });
 
-  it('creates, updates, and deletes tags through the existing stores', async () => {
-    const created = successResult<'create_tag'>(
-      await dispatchMcpCommand(request('create_tag', { name: 'Planning', color: 'violet' }), '2.2.1'),
+  it("creates, updates, and deletes tags through the existing stores", async () => {
+    const created = successResult<"create_tag">(
+      await dispatchMcpCommand(
+        request("create_tag", { name: "Planning", color: "violet" }),
+        "2.2.1",
+      ),
     );
-    expect(created.tag).toMatchObject({ name: 'Planning', color: 'violet' });
+    expect(created.tag).toMatchObject({ name: "Planning", color: "violet" });
     expect(created.tag.id).toMatch(/^tag-planning-/);
 
-    const updated = successResult<'update_tag'>(
-      await dispatchMcpCommand(request('update_tag', { tagId: created.tag.id, color: 'cyan' }), '2.2.1'),
+    const updated = successResult<"update_tag">(
+      await dispatchMcpCommand(
+        request("update_tag", { tagId: created.tag.id, color: "cyan" }),
+        "2.2.1",
+      ),
     );
-    expect(updated.tag).toEqual({ id: created.tag.id, name: 'Planning', color: 'cyan' });
+    expect(updated.tag).toEqual({ id: created.tag.id, name: "Planning", color: "cyan" });
 
-    const deleted = successResult<'delete_tag'>(
-      await dispatchMcpCommand(request('delete_tag', { tagId: 'tag-grammar' }), '2.2.1'),
+    const deleted = successResult<"delete_tag">(
+      await dispatchMcpCommand(request("delete_tag", { tagId: "tag-grammar" }), "2.2.1"),
     );
-    expect(deleted).toEqual({ tagId: 'tag-grammar', deleted: true, affectedNoteCount: 1 });
-    expect(useKnowledgeStore.getState().tags.some((tag) => tag.id === 'tag-grammar')).toBe(false);
+    expect(deleted).toEqual({ tagId: "tag-grammar", deleted: true, affectedNoteCount: 1 });
+    expect(useKnowledgeStore.getState().tags.some((tag) => tag.id === "tag-grammar")).toBe(false);
     expect(useNotesStore.getState().notes.find((note) => note.id === activeNote.id)).toMatchObject({
       tagIds: [],
       version: 5,
     });
   });
 
-  it('creates, updates, and deletes collections through the existing stores', async () => {
-    const created = successResult<'create_collection'>(
-      await dispatchMcpCommand(request('create_collection', { name: 'Archive', color: 'slate' }), '2.2.1'),
+  it("creates, updates, and deletes collections through the existing stores", async () => {
+    const created = successResult<"create_collection">(
+      await dispatchMcpCommand(
+        request("create_collection", { name: "Archive", color: "slate" }),
+        "2.2.1",
+      ),
     );
-    expect(created.collection).toMatchObject({ name: 'Archive', color: 'slate' });
+    expect(created.collection).toMatchObject({ name: "Archive", color: "slate" });
     expect(created.collection.id).toMatch(/^collection-archive-/);
 
-    const updated = successResult<'update_collection'>(
-      await dispatchMcpCommand(request('update_collection', {
-        collectionId: created.collection.id, name: 'Archive 2026',
-      }), '2.2.1'),
+    const updated = successResult<"update_collection">(
+      await dispatchMcpCommand(
+        request("update_collection", {
+          collectionId: created.collection.id,
+          name: "Archive 2026",
+        }),
+        "2.2.1",
+      ),
     );
     expect(updated.collection).toEqual({
       id: created.collection.id,
-      name: 'Archive 2026',
-      color: 'slate',
+      name: "Archive 2026",
+      color: "slate",
     });
 
-    const deleted = successResult<'delete_collection'>(
-      await dispatchMcpCommand(request('delete_collection', {
-        collectionId: 'collection-reference',
-      }), '2.2.1'),
+    const deleted = successResult<"delete_collection">(
+      await dispatchMcpCommand(
+        request("delete_collection", {
+          collectionId: "collection-reference",
+        }),
+        "2.2.1",
+      ),
     );
     expect(deleted).toEqual({
-      collectionId: 'collection-reference', deleted: true, affectedNoteCount: 1,
+      collectionId: "collection-reference",
+      deleted: true,
+      affectedNoteCount: 1,
     });
-    expect(useKnowledgeStore.getState().collections.some(
-      (collection) => collection.id === 'collection-reference',
-    )).toBe(false);
+    expect(
+      useKnowledgeStore
+        .getState()
+        .collections.some((collection) => collection.id === "collection-reference"),
+    ).toBe(false);
     expect(useNotesStore.getState().notes.find((note) => note.id === activeNote.id)).toMatchObject({
       collectionId: null,
       version: 5,
     });
   });
 
-  it('protects affected notes while deleting tags or collections', async () => {
-    setLocalDraftPending(activeNote.id, 'test-knowledge-delete', true);
+  it("protects affected notes while deleting tags or collections", async () => {
+    setLocalDraftPending(activeNote.id, "test-knowledge-delete", true);
     try {
       expectFailure(
-        await dispatchMcpCommand(request('delete_tag', { tagId: 'tag-grammar' }), '2.2.1'),
-        'LOCAL_EDITS_PENDING',
+        await dispatchMcpCommand(request("delete_tag", { tagId: "tag-grammar" }), "2.2.1"),
+        "LOCAL_EDITS_PENDING",
       );
       expectFailure(
-        await dispatchMcpCommand(request('delete_collection', {
-          collectionId: 'collection-reference',
-        }), '2.2.1'),
-        'LOCAL_EDITS_PENDING',
+        await dispatchMcpCommand(
+          request("delete_collection", {
+            collectionId: "collection-reference",
+          }),
+          "2.2.1",
+        ),
+        "LOCAL_EDITS_PENDING",
       );
-      expect(useKnowledgeStore.getState().tags.some((tag) => tag.id === 'tag-grammar')).toBe(true);
-      expect(useKnowledgeStore.getState().collections.some(
-        (collection) => collection.id === 'collection-reference',
-      )).toBe(true);
+      expect(useKnowledgeStore.getState().tags.some((tag) => tag.id === "tag-grammar")).toBe(true);
+      expect(
+        useKnowledgeStore
+          .getState()
+          .collections.some((collection) => collection.id === "collection-reference"),
+      ).toBe(true);
       expect(invokeMock).not.toHaveBeenCalled();
     } finally {
-      setLocalDraftPending(activeNote.id, 'test-knowledge-delete', false);
+      setLocalDraftPending(activeNote.id, "test-knowledge-delete", false);
     }
   });
 
-  it('rejects unknown tag and collection IDs', async () => {
+  it("rejects unknown tag and collection IDs", async () => {
     expectFailure(
-      await dispatchMcpCommand(request('update_tag', { tagId: 'missing', name: 'Missing' }), '2.2.1'),
-      'NOT_FOUND',
+      await dispatchMcpCommand(
+        request("update_tag", { tagId: "missing", name: "Missing" }),
+        "2.2.1",
+      ),
+      "NOT_FOUND",
     );
     expectFailure(
-      await dispatchMcpCommand(request('delete_collection', { collectionId: 'missing' }), '2.2.1'),
-      'NOT_FOUND',
+      await dispatchMcpCommand(request("delete_collection", { collectionId: "missing" }), "2.2.1"),
+      "NOT_FOUND",
     );
     expect(invokeMock).not.toHaveBeenCalled();
   });
 
-  it('returns NOT_FOUND for mismatched IDs and never calls SQLite during reads', async () => {
-    const missingNote = await dispatchMcpCommand(request('get_note', { noteId: 'missing' }), '2.1.0');
-    expectFailure(missingNote, 'NOT_FOUND');
+  it("returns NOT_FOUND for mismatched IDs and never calls SQLite during reads", async () => {
+    const missingNote = await dispatchMcpCommand(
+      request("get_note", { noteId: "missing" }),
+      "2.1.0",
+    );
+    expectFailure(missingNote, "NOT_FOUND");
 
     const mismatchedBlock = await dispatchMcpCommand(
-      request('get_note_block', { noteId: activeNote.id, blockId: 'trash-block' }),
-      '2.1.0',
+      request("get_note_block", { noteId: activeNote.id, blockId: "trash-block" }),
+      "2.1.0",
     );
-    expectFailure(mismatchedBlock, 'NOT_FOUND');
+    expectFailure(mismatchedBlock, "NOT_FOUND");
     expect(invokeMock).not.toHaveBeenCalled();
   });
 
-  it.each(['terminal', 'checklist', 'ideas', 'research', 'calendar'] as const)('sets favorite, pinned, and thumbnail state deterministically (%s)', async (variant) => {
-    const favorite = successResult<'set_note_favorite'>(
-      await dispatchMcpCommand(request('set_note_favorite', {
-        noteId: activeNote.id, expectedVersion: 4, isFavorite: false,
-      }), '2.2.1'),
-    );
-    expect(favorite).toEqual({ noteId: activeNote.id, version: 5 });
+  it.each(["terminal", "checklist", "ideas", "research", "calendar"] as const)(
+    "sets favorite, pinned, and thumbnail state deterministically (%s)",
+    async (variant) => {
+      const favorite = successResult<"set_note_favorite">(
+        await dispatchMcpCommand(
+          request("set_note_favorite", {
+            noteId: activeNote.id,
+            expectedVersion: 4,
+            isFavorite: false,
+          }),
+          "2.2.1",
+        ),
+      );
+      expect(favorite).toEqual({ noteId: activeNote.id, version: 5 });
 
-    const pinned = successResult<'set_note_pinned'>(
-      await dispatchMcpCommand(request('set_note_pinned', {
-        noteId: activeNote.id, expectedVersion: 5, isPinned: true,
-      }), '2.2.1'),
-    );
-    expect(pinned).toEqual({ noteId: activeNote.id, version: 6 });
+      const pinned = successResult<"set_note_pinned">(
+        await dispatchMcpCommand(
+          request("set_note_pinned", {
+            noteId: activeNote.id,
+            expectedVersion: 5,
+            isPinned: true,
+          }),
+          "2.2.1",
+        ),
+      );
+      expect(pinned).toEqual({ noteId: activeNote.id, version: 6 });
 
-    const thumbnail = successResult<'set_note_thumbnail'>(
-      await dispatchMcpCommand(request('set_note_thumbnail', {
-        noteId: activeNote.id, expectedVersion: 6, variant,
-      }), '2.2.1'),
-    );
-    expect(thumbnail).toEqual({ noteId: activeNote.id, version: 7 });
-    expect(useNotesStore.getState().notes.find((note) => note.id === activeNote.id)).toMatchObject({
-      isFavorite: false,
-      isPinned: true,
-      thumbnail: { variant },
-      version: 7,
-    });
+      const thumbnail = successResult<"set_note_thumbnail">(
+        await dispatchMcpCommand(
+          request("set_note_thumbnail", {
+            noteId: activeNote.id,
+            expectedVersion: 6,
+            variant,
+          }),
+          "2.2.1",
+        ),
+      );
+      expect(thumbnail).toEqual({ noteId: activeNote.id, version: 7 });
+      expect(
+        useNotesStore.getState().notes.find((note) => note.id === activeNote.id),
+      ).toMatchObject({
+        isFavorite: false,
+        isPinned: true,
+        thumbnail: { variant },
+        version: 7,
+      });
 
-    invokeMock.mockClear();
-    const unchanged = successResult<'set_note_thumbnail'>(
-      await dispatchMcpCommand(request('set_note_thumbnail', {
-        noteId: activeNote.id, expectedVersion: 7, variant,
-      }), '2.2.1'),
-    );
-    expect(unchanged.version).toBe(7);
-    expect(invokeMock).not.toHaveBeenCalled();
-  });
+      invokeMock.mockClear();
+      const unchanged = successResult<"set_note_thumbnail">(
+        await dispatchMcpCommand(
+          request("set_note_thumbnail", {
+            noteId: activeNote.id,
+            expectedVersion: 7,
+            variant,
+          }),
+          "2.2.1",
+        ),
+      );
+      expect(unchanged.version).toBe(7);
+      expect(invokeMock).not.toHaveBeenCalled();
+    },
+  );
 
-  it('adds and removes linked notes without changing the target note', async () => {
+  it("adds and removes linked notes without changing the target note", async () => {
     const linkedTarget = createNote({
-      id: 'note-linked-target',
-      title: 'Linked target',
+      id: "note-linked-target",
+      title: "Linked target",
       version: 2,
       blocks: [],
     });
     useNotesStore.setState({ notes: [activeNote, trashNote, linkedTarget] });
 
-    const added = successResult<'add_linked_note'>(
-      await dispatchMcpCommand(request('add_linked_note', {
-        noteId: activeNote.id,
-        linkedNoteId: linkedTarget.id,
-        expectedVersion: 4,
-      }), '2.2.1'),
+    const added = successResult<"add_linked_note">(
+      await dispatchMcpCommand(
+        request("add_linked_note", {
+          noteId: activeNote.id,
+          linkedNoteId: linkedTarget.id,
+          expectedVersion: 4,
+        }),
+        "2.2.1",
+      ),
     );
     expect(added).toEqual({ noteId: activeNote.id, linkedNoteId: linkedTarget.id, version: 5 });
-    expect(useNotesStore.getState().notes.find((note) => note.id === activeNote.id)?.linkedNoteIds)
-      .toEqual(['note-trash', linkedTarget.id]);
-    expect(useNotesStore.getState().notes.find((note) => note.id === linkedTarget.id)).toMatchObject({
+    expect(
+      useNotesStore.getState().notes.find((note) => note.id === activeNote.id)?.linkedNoteIds,
+    ).toEqual(["note-trash", linkedTarget.id]);
+    expect(
+      useNotesStore.getState().notes.find((note) => note.id === linkedTarget.id),
+    ).toMatchObject({
       linkedNoteIds: [],
       version: 2,
     });
 
     invokeMock.mockClear();
-    const duplicate = successResult<'add_linked_note'>(
-      await dispatchMcpCommand(request('add_linked_note', {
-        noteId: activeNote.id,
-        linkedNoteId: linkedTarget.id,
-        expectedVersion: 5,
-      }), '2.2.1'),
+    const duplicate = successResult<"add_linked_note">(
+      await dispatchMcpCommand(
+        request("add_linked_note", {
+          noteId: activeNote.id,
+          linkedNoteId: linkedTarget.id,
+          expectedVersion: 5,
+        }),
+        "2.2.1",
+      ),
     );
     expect(duplicate.version).toBe(5);
     expect(invokeMock).not.toHaveBeenCalled();
 
-    const removed = successResult<'remove_linked_note'>(
-      await dispatchMcpCommand(request('remove_linked_note', {
-        noteId: activeNote.id,
-        linkedNoteId: linkedTarget.id,
-        expectedVersion: 5,
-      }), '2.2.1'),
+    const removed = successResult<"remove_linked_note">(
+      await dispatchMcpCommand(
+        request("remove_linked_note", {
+          noteId: activeNote.id,
+          linkedNoteId: linkedTarget.id,
+          expectedVersion: 5,
+        }),
+        "2.2.1",
+      ),
     );
     expect(removed).toEqual({ noteId: activeNote.id, linkedNoteId: linkedTarget.id, version: 6 });
 
     invokeMock.mockClear();
-    const alreadyRemoved = successResult<'remove_linked_note'>(
-      await dispatchMcpCommand(request('remove_linked_note', {
-        noteId: activeNote.id,
-        linkedNoteId: linkedTarget.id,
-        expectedVersion: 6,
-      }), '2.2.1'),
+    const alreadyRemoved = successResult<"remove_linked_note">(
+      await dispatchMcpCommand(
+        request("remove_linked_note", {
+          noteId: activeNote.id,
+          linkedNoteId: linkedTarget.id,
+          expectedVersion: 6,
+        }),
+        "2.2.1",
+      ),
     );
     expect(alreadyRemoved.version).toBe(6);
     expect(invokeMock).not.toHaveBeenCalled();
   });
 
-  it('rejects invalid linked-note targets', async () => {
+  it("rejects invalid linked-note targets", async () => {
     expectFailure(
-      await dispatchMcpCommand(request('add_linked_note', {
-        noteId: activeNote.id, linkedNoteId: activeNote.id, expectedVersion: 4,
-      }), '2.2.1'),
-      'INVALID_INPUT',
+      await dispatchMcpCommand(
+        request("add_linked_note", {
+          noteId: activeNote.id,
+          linkedNoteId: activeNote.id,
+          expectedVersion: 4,
+        }),
+        "2.2.1",
+      ),
+      "INVALID_INPUT",
     );
     expectFailure(
-      await dispatchMcpCommand(request('add_linked_note', {
-        noteId: activeNote.id, linkedNoteId: 'missing', expectedVersion: 4,
-      }), '2.2.1'),
-      'NOT_FOUND',
+      await dispatchMcpCommand(
+        request("add_linked_note", {
+          noteId: activeNote.id,
+          linkedNoteId: "missing",
+          expectedVersion: 4,
+        }),
+        "2.2.1",
+      ),
+      "NOT_FOUND",
     );
     expectFailure(
-      await dispatchMcpCommand(request('add_linked_note', {
-        noteId: activeNote.id, linkedNoteId: trashNote.id, expectedVersion: 4,
-      }), '2.2.1'),
-      'READ_ONLY_TRASH',
+      await dispatchMcpCommand(
+        request("add_linked_note", {
+          noteId: activeNote.id,
+          linkedNoteId: trashNote.id,
+          expectedVersion: 4,
+        }),
+        "2.2.1",
+      ),
+      "READ_ONLY_TRASH",
     );
     expect(invokeMock).not.toHaveBeenCalled();
   });
 
-  it('adds, updates, and deletes additional examples', async () => {
-    const added = successResult<'add_note_example'>(
-      await dispatchMcpCommand(request('add_note_example', {
-        noteId: activeNote.id, expectedVersion: 4, example: 'Second example',
-      }), '2.2.1'),
+  it("adds, updates, and deletes additional examples", async () => {
+    const added = successResult<"add_note_example">(
+      await dispatchMcpCommand(
+        request("add_note_example", {
+          noteId: activeNote.id,
+          expectedVersion: 4,
+          example: "Second example",
+        }),
+        "2.2.1",
+      ),
     );
     expect(added).toEqual({ noteId: activeNote.id, version: 5, exampleIndex: 1 });
 
-    const updated = successResult<'update_note_example'>(
-      await dispatchMcpCommand(request('update_note_example', {
-        noteId: activeNote.id, expectedVersion: 5, exampleIndex: 0, example: 'Updated example',
-      }), '2.2.1'),
+    const updated = successResult<"update_note_example">(
+      await dispatchMcpCommand(
+        request("update_note_example", {
+          noteId: activeNote.id,
+          expectedVersion: 5,
+          exampleIndex: 0,
+          example: "Updated example",
+        }),
+        "2.2.1",
+      ),
     );
     expect(updated).toEqual({ noteId: activeNote.id, version: 6, exampleIndex: 0 });
 
-    const deleted = successResult<'delete_note_example'>(
-      await dispatchMcpCommand(request('delete_note_example', {
-        noteId: activeNote.id, expectedVersion: 6, exampleIndex: 1,
-      }), '2.2.1'),
+    const deleted = successResult<"delete_note_example">(
+      await dispatchMcpCommand(
+        request("delete_note_example", {
+          noteId: activeNote.id,
+          expectedVersion: 6,
+          exampleIndex: 1,
+        }),
+        "2.2.1",
+      ),
     );
     expect(deleted).toEqual({ noteId: activeNote.id, version: 7, exampleIndex: 1, deleted: true });
-    expect(useNotesStore.getState().notes.find((note) => note.id === activeNote.id)?.additionalExamples)
-      .toEqual(['Updated example']);
+    expect(
+      useNotesStore.getState().notes.find((note) => note.id === activeNote.id)?.additionalExamples,
+    ).toEqual(["Updated example"]);
   });
 
-  it('adds and deletes external related links', async () => {
-    const added = successResult<'add_note_link'>(
-      await dispatchMcpCommand(request('add_note_link', {
-        noteId: activeNote.id,
-        expectedVersion: 4,
-        title: 'Documentation',
-        href: 'https://example.com/docs',
-      }), '2.2.1'),
+  it("adds and deletes external related links", async () => {
+    const added = successResult<"add_note_link">(
+      await dispatchMcpCommand(
+        request("add_note_link", {
+          noteId: activeNote.id,
+          expectedVersion: 4,
+          title: "Documentation",
+          href: "https://example.com/docs",
+        }),
+        "2.2.1",
+      ),
     );
     expect(added.version).toBe(5);
-    expect(added.link).toMatchObject({ title: 'Documentation', href: 'https://example.com/docs' });
+    expect(added.link).toMatchObject({ title: "Documentation", href: "https://example.com/docs" });
 
-    const deleted = successResult<'delete_note_link'>(
-      await dispatchMcpCommand(request('delete_note_link', {
-        noteId: activeNote.id, expectedVersion: 5, linkId: 'link-reference',
-      }), '2.2.1'),
+    const deleted = successResult<"delete_note_link">(
+      await dispatchMcpCommand(
+        request("delete_note_link", {
+          noteId: activeNote.id,
+          expectedVersion: 5,
+          linkId: "link-reference",
+        }),
+        "2.2.1",
+      ),
     );
-    expect(deleted).toEqual({ noteId: activeNote.id, version: 6, linkId: 'link-reference', deleted: true });
-    expect(useNotesStore.getState().notes.find((note) => note.id === activeNote.id)?.relatedLinks)
-      .toEqual([added.link]);
+    expect(deleted).toEqual({
+      noteId: activeNote.id,
+      version: 6,
+      linkId: "link-reference",
+      deleted: true,
+    });
+    expect(
+      useNotesStore.getState().notes.find((note) => note.id === activeNote.id)?.relatedLinks,
+    ).toEqual([added.link]);
   });
 
-  it('rejects unknown example indexes and related link IDs', async () => {
+  it("rejects unknown example indexes and related link IDs", async () => {
     expectFailure(
-      await dispatchMcpCommand(request('update_note_example', {
-        noteId: activeNote.id, expectedVersion: 4, exampleIndex: 5, example: 'Missing',
-      }), '2.2.1'),
-      'NOT_FOUND',
+      await dispatchMcpCommand(
+        request("update_note_example", {
+          noteId: activeNote.id,
+          expectedVersion: 4,
+          exampleIndex: 5,
+          example: "Missing",
+        }),
+        "2.2.1",
+      ),
+      "NOT_FOUND",
     );
     expectFailure(
-      await dispatchMcpCommand(request('delete_note_link', {
-        noteId: activeNote.id, expectedVersion: 4, linkId: 'missing',
-      }), '2.2.1'),
-      'NOT_FOUND',
+      await dispatchMcpCommand(
+        request("delete_note_link", {
+          noteId: activeNote.id,
+          expectedVersion: 4,
+          linkId: "missing",
+        }),
+        "2.2.1",
+      ),
+      "NOT_FOUND",
     );
     expect(invokeMock).not.toHaveBeenCalled();
   });
 
-  it('deletes a block and its associated physical files', async () => {
+  it("deletes a block and its associated physical files", async () => {
     const noteWithBlockFile: Note = {
       ...activeNote,
-      files: [{
-        id: 'block-file',
-        noteId: activeNote.id,
-        blockId: 'block-first',
-        kind: 'image',
-        originalName: 'diagram.png',
-        mimeType: 'image/png',
-        sizeBytes: 128,
-        checksum: 'block-file-checksum',
-        relativePath: 'note-active/diagram.png',
-        createdAt: '2026-01-01T00:00:00.000Z',
-      }],
+      files: [
+        {
+          id: "block-file",
+          noteId: activeNote.id,
+          blockId: "block-first",
+          kind: "image",
+          originalName: "diagram.png",
+          mimeType: "image/png",
+          sizeBytes: 128,
+          checksum: "block-file-checksum",
+          relativePath: "note-active/diagram.png",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
     };
     useNotesStore.setState({ notes: [noteWithBlockFile, trashNote] });
 
-    const deleted = successResult<'delete_note_block'>(
-      await dispatchMcpCommand(request('delete_note_block', {
-        noteId: activeNote.id, expectedVersion: 4, blockId: 'block-first',
-      }), '2.2.1'),
+    const deleted = successResult<"delete_note_block">(
+      await dispatchMcpCommand(
+        request("delete_note_block", {
+          noteId: activeNote.id,
+          expectedVersion: 4,
+          blockId: "block-first",
+        }),
+        "2.2.1",
+      ),
     );
-    expect(deleted).toEqual({ noteId: activeNote.id, version: 5, blockId: 'block-first', deleted: true });
+    expect(deleted).toEqual({
+      noteId: activeNote.id,
+      version: 5,
+      blockId: "block-first",
+      deleted: true,
+    });
     const updated = useNotesStore.getState().notes.find((note) => note.id === activeNote.id);
-    expect(updated?.blocks?.map((block) => [block.id, block.sortOrder])).toEqual([['block-later', 0]]);
+    expect(updated?.blocks?.map((block) => [block.id, block.sortOrder])).toEqual([
+      ["block-later", 0],
+    ]);
     expect(updated?.files).toEqual([]);
-    expect(invokeMock).toHaveBeenCalledWith('notex_note_file_delete', {
+    expect(invokeMock).toHaveBeenCalledWith("notex_note_file_delete", {
       libraryId: null,
-      relativePath: 'note-active/diagram.png',
+      relativePath: "note-active/diagram.png",
     });
   });
 
-  it('reorders the complete block set and skips an unchanged order', async () => {
-    const unchanged = successResult<'reorder_note_blocks'>(
-      await dispatchMcpCommand(request('reorder_note_blocks', {
-        noteId: activeNote.id,
-        expectedVersion: 4,
-        blockIds: ['block-first', 'block-later'],
-      }), '2.2.1'),
+  it("reorders the complete block set and skips an unchanged order", async () => {
+    const unchanged = successResult<"reorder_note_blocks">(
+      await dispatchMcpCommand(
+        request("reorder_note_blocks", {
+          noteId: activeNote.id,
+          expectedVersion: 4,
+          blockIds: ["block-first", "block-later"],
+        }),
+        "2.2.1",
+      ),
     );
     expect(unchanged).toEqual({
-      noteId: activeNote.id, version: 4, blockIds: ['block-first', 'block-later'],
+      noteId: activeNote.id,
+      version: 4,
+      blockIds: ["block-first", "block-later"],
     });
     expect(invokeMock).not.toHaveBeenCalled();
 
-    const reordered = successResult<'reorder_note_blocks'>(
-      await dispatchMcpCommand(request('reorder_note_blocks', {
-        noteId: activeNote.id,
-        expectedVersion: 4,
-        blockIds: ['block-later', 'block-first'],
-      }), '2.2.1'),
+    const reordered = successResult<"reorder_note_blocks">(
+      await dispatchMcpCommand(
+        request("reorder_note_blocks", {
+          noteId: activeNote.id,
+          expectedVersion: 4,
+          blockIds: ["block-later", "block-first"],
+        }),
+        "2.2.1",
+      ),
     );
     expect(reordered).toEqual({
-      noteId: activeNote.id, version: 5, blockIds: ['block-later', 'block-first'],
+      noteId: activeNote.id,
+      version: 5,
+      blockIds: ["block-later", "block-first"],
     });
     expect(
       [...(useNotesStore.getState().notes.find((note) => note.id === activeNote.id)?.blocks ?? [])]
         .sort((left, right) => left.sortOrder - right.sortOrder)
         .map((block) => block.id),
-    ).toEqual(['block-later', 'block-first']);
+    ).toEqual(["block-later", "block-first"]);
   });
 
-  it('rejects incomplete or unknown block orders', async () => {
+  it("rejects incomplete or unknown block orders", async () => {
     expectFailure(
-      await dispatchMcpCommand(request('reorder_note_blocks', {
-        noteId: activeNote.id, expectedVersion: 4, blockIds: ['block-first'],
-      }), '2.2.1'),
-      'INVALID_INPUT',
+      await dispatchMcpCommand(
+        request("reorder_note_blocks", {
+          noteId: activeNote.id,
+          expectedVersion: 4,
+          blockIds: ["block-first"],
+        }),
+        "2.2.1",
+      ),
+      "INVALID_INPUT",
     );
     expectFailure(
-      await dispatchMcpCommand(request('reorder_note_blocks', {
-        noteId: activeNote.id, expectedVersion: 4, blockIds: ['block-first', 'missing'],
-      }), '2.2.1'),
-      'INVALID_INPUT',
+      await dispatchMcpCommand(
+        request("reorder_note_blocks", {
+          noteId: activeNote.id,
+          expectedVersion: 4,
+          blockIds: ["block-first", "missing"],
+        }),
+        "2.2.1",
+      ),
+      "INVALID_INPUT",
     );
     expectFailure(
-      await dispatchMcpCommand(request('delete_note_block', {
-        noteId: activeNote.id, expectedVersion: 4, blockId: 'missing',
-      }), '2.2.1'),
-      'NOT_FOUND',
+      await dispatchMcpCommand(
+        request("delete_note_block", {
+          noteId: activeNote.id,
+          expectedVersion: 4,
+          blockId: "missing",
+        }),
+        "2.2.1",
+      ),
+      "NOT_FOUND",
     );
     expect(invokeMock).not.toHaveBeenCalled();
   });
 
-  it('moves active notes to trash and restores trashed notes with version checks', async () => {
-    const moved = successResult<'move_note_to_trash'>(
+  it("moves active notes to trash and restores trashed notes with version checks", async () => {
+    const moved = successResult<"move_note_to_trash">(
       await dispatchMcpCommand(
-        request('move_note_to_trash', { noteId: activeNote.id, expectedVersion: activeNote.version }),
-        '2.2.0',
+        request("move_note_to_trash", {
+          noteId: activeNote.id,
+          expectedVersion: activeNote.version,
+        }),
+        "2.2.0",
       ),
     );
     expect(moved).toEqual({ noteId: activeNote.id, version: activeNote.version + 1 });
-    expect(useNotesStore.getState().notes.find((note) => note.id === activeNote.id)?.isTrashed).toBe(true);
+    expect(
+      useNotesStore.getState().notes.find((note) => note.id === activeNote.id)?.isTrashed,
+    ).toBe(true);
 
-    const restored = successResult<'restore_note'>(
+    const restored = successResult<"restore_note">(
       await dispatchMcpCommand(
-        request('restore_note', { noteId: trashNote.id, expectedVersion: trashNote.version }),
-        '2.2.0',
+        request("restore_note", { noteId: trashNote.id, expectedVersion: trashNote.version }),
+        "2.2.0",
       ),
     );
     expect(restored).toEqual({ noteId: trashNote.id, version: trashNote.version + 1 });
-    expect(useNotesStore.getState().notes.find((note) => note.id === trashNote.id)?.isTrashed).toBe(false);
+    expect(useNotesStore.getState().notes.find((note) => note.id === trashNote.id)?.isTrashed).toBe(
+      false,
+    );
 
     expectFailure(
       await dispatchMcpCommand(
-        request('restore_note', { noteId: trashNote.id, expectedVersion: trashNote.version + 1 }),
-        '2.2.0',
+        request("restore_note", { noteId: trashNote.id, expectedVersion: trashNote.version + 1 }),
+        "2.2.0",
       ),
-      'INVALID_INPUT',
+      "INVALID_INPUT",
     );
   });
 
-  it('permanently deletes only trashed notes and removes their attachment files', async () => {
+  it("permanently deletes only trashed notes and removes their attachment files", async () => {
     const trashWithFile: Note = {
       ...trashNote,
       files: [
         {
-          id: 'trash-file',
+          id: "trash-file",
           noteId: trashNote.id,
           blockId: null,
-          kind: 'attachment',
-          originalName: 'archive.pdf',
-          mimeType: 'application/pdf',
+          kind: "attachment",
+          originalName: "archive.pdf",
+          mimeType: "application/pdf",
           sizeBytes: 42,
-          checksum: 'checksum',
-          relativePath: 'note-trash/archive.pdf',
-          createdAt: '2026-01-01T00:00:00.000Z',
+          checksum: "checksum",
+          relativePath: "note-trash/archive.pdf",
+          createdAt: "2026-01-01T00:00:00.000Z",
         },
       ],
     };
@@ -627,61 +855,61 @@ describe('dispatchMcpCommand', () => {
 
     expectFailure(
       await dispatchMcpCommand(
-        request('delete_note_permanently', {
+        request("delete_note_permanently", {
           noteId: activeNote.id,
           expectedVersion: activeNote.version,
         }),
-        '2.2.0',
+        "2.2.0",
       ),
-      'INVALID_INPUT',
+      "INVALID_INPUT",
     );
 
-    const deleted = successResult<'delete_note_permanently'>(
+    const deleted = successResult<"delete_note_permanently">(
       await dispatchMcpCommand(
-        request('delete_note_permanently', {
+        request("delete_note_permanently", {
           noteId: trashWithFile.id,
           expectedVersion: trashWithFile.version,
         }),
-        '2.2.0',
+        "2.2.0",
       ),
     );
     expect(deleted).toEqual({ noteId: trashWithFile.id, deleted: true });
     expect(useNotesStore.getState().notes.map((note) => note.id)).toEqual([activeNote.id]);
-    expect(invokeMock).toHaveBeenCalledWith('notex_note_file_delete', {
+    expect(invokeMock).toHaveBeenCalledWith("notex_note_file_delete", {
       libraryId: null,
-      relativePath: 'note-trash/archive.pdf',
+      relativePath: "note-trash/archive.pdf",
     });
   });
 
-  it('clears only the complete trash set observed by the caller', async () => {
+  it("clears only the complete trash set observed by the caller", async () => {
     const secondTrash = createNote({
-      id: 'note-trash-2',
-      title: 'Second deleted note',
+      id: "note-trash-2",
+      title: "Second deleted note",
       isTrashed: true,
       version: 3,
       blocks: [],
     });
     useNotesStore.setState({ notes: [activeNote, trashNote, secondTrash] });
 
-    const trashStatus = successResult<'get_trash_status'>(
-      await dispatchMcpCommand(request('get_trash_status', {}), '2.2.0'),
+    const trashStatus = successResult<"get_trash_status">(
+      await dispatchMcpCommand(request("get_trash_status", {}), "2.2.0"),
     );
     expect(trashStatus.noteCount).toBe(2);
     expect(trashStatus.stateToken).toMatch(/^[a-f0-9]{64}$/);
 
     expectFailure(
       await dispatchMcpCommand(
-        request('clear_trash', { expectedStateToken: '0'.repeat(64) }),
-        '2.2.0',
+        request("clear_trash", { expectedStateToken: "0".repeat(64) }),
+        "2.2.0",
       ),
-      'CONFLICT',
+      "CONFLICT",
     );
     expect(invokeMock).not.toHaveBeenCalled();
 
-    const cleared = successResult<'clear_trash'>(
+    const cleared = successResult<"clear_trash">(
       await dispatchMcpCommand(
-        request('clear_trash', { expectedStateToken: trashStatus.stateToken }),
-        '2.2.0',
+        request("clear_trash", { expectedStateToken: trashStatus.stateToken }),
+        "2.2.0",
       ),
     );
     expect(cleared).toEqual({ deletedCount: 2 });
@@ -691,7 +919,7 @@ describe('dispatchMcpCommand', () => {
 
 function request(command: string, input: unknown) {
   return {
-    requestId: '11d29c3b-14f1-4878-aab9-65f901d62aba',
+    requestId: "11d29c3b-14f1-4878-aab9-65f901d62aba",
     command,
     input,
     deadlineAt: new Date(Date.now() + 60_000).toISOString(),
@@ -722,11 +950,11 @@ function createNote({
   isTrashed = false,
   linkedNoteIds = [],
   relatedLinks = [],
-  subtitle = '',
+  subtitle = "",
   tagIds = [],
   thumbnail,
   title,
-  updatedAt = '2026-02-01T00:00:00.000Z',
+  updatedAt = "2026-02-01T00:00:00.000Z",
   version,
 }: {
   additionalExamples?: string[];
@@ -737,10 +965,10 @@ function createNote({
   isPinned?: boolean;
   isTrashed?: boolean;
   linkedNoteIds?: string[];
-  relatedLinks?: Note['relatedLinks'];
+  relatedLinks?: Note["relatedLinks"];
   subtitle?: string;
   tagIds?: string[];
-  thumbnail?: Note['thumbnail'];
+  thumbnail?: Note["thumbnail"];
   title: string;
   updatedAt?: string;
   version: number;
@@ -758,8 +986,8 @@ function createNote({
     isPinned,
     isArchived: false,
     isTrashed,
-    saveState: 'saved',
-    createdAt: '2026-01-01T00:00:00.000Z',
+    saveState: "saved",
+    createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt,
     stats: { wordCount: 0, characterCount: 0, readingTimeMinutes: 1 },
     thumbnail,
@@ -770,14 +998,14 @@ function createNote({
 }
 
 function createBlock({
-  contentJson = { type: 'doc', content: [{ type: 'paragraph' }] },
-  contentText = '',
+  contentJson = { type: "doc", content: [{ type: "paragraph" }] },
+  contentText = "",
   id,
   noteId,
   sortOrder,
-  title = '',
+  title = "",
 }: {
-  contentJson?: NoteBlock['contentJson'];
+  contentJson?: NoteBlock["contentJson"];
   contentText?: string;
   id: string;
   noteId: string;
@@ -789,10 +1017,10 @@ function createBlock({
     noteId,
     sortOrder,
     title,
-    kind: 'content',
+    kind: "content",
     contentJson,
     contentText,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-02-01T00:00:00.000Z',
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-02-01T00:00:00.000Z",
   };
 }

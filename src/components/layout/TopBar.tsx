@@ -58,11 +58,7 @@ export function TopBar({
       ) : (
         <span />
       )}
-      <div
-        className="topbar__actions"
-        ref={actionsRef}
-        onKeyDown={menu.onKeyDown}
-      >
+      <div className="topbar__actions" ref={actionsRef} onKeyDown={menu.onKeyDown}>
         <button
           className="icon-button"
           type="button"
@@ -94,10 +90,7 @@ export function TopBar({
           <ChevronDown className="topbar__account-chevron" />
         </button>
         {accountOpen ? (
-          <div
-            className="floating-menu topbar-menu account-menu"
-            ref={menu.menuRef}
-          >
+          <div className="floating-menu topbar-menu account-menu" ref={menu.menuRef}>
             {account || user ? (
               <>
                 <strong>{account?.name ?? user?.name}</strong>

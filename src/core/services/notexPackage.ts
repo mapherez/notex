@@ -1,16 +1,16 @@
-import { desktopInvoke as invoke } from '../storage/desktopInvoke';
-import { open, save } from '@tauri-apps/plugin-dialog';
-import type { SqliteExportInfo } from './sqliteDataManagement';
+import { desktopInvoke as invoke } from "../storage/desktopInvoke";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import type { SqliteExportInfo } from "./sqliteDataManagement";
 
 const packageFilters = [
   {
-    name: 'NoteX package',
-    extensions: ['notex'],
+    name: "NoteX package",
+    extensions: ["notex"],
   },
 ];
 
 export function createNotexPackageTempExport() {
-  return invoke<SqliteExportInfo>('notex_package_create_temp_export');
+  return invoke<SqliteExportInfo>("notex_package_create_temp_export");
 }
 
 export async function chooseNotexPackageExportDestination(exportInfo: SqliteExportInfo) {
@@ -23,7 +23,7 @@ export async function chooseNotexPackageExportDestination(exportInfo: SqliteExpo
     return null;
   }
 
-  return invoke<string>('notex_package_copy_export_to', {
+  return invoke<string>("notex_package_copy_export_to", {
     tempPath: exportInfo.tempPath,
     destinationPath,
   });
@@ -35,10 +35,10 @@ export async function chooseNotexPackageImportFile() {
     filters: packageFilters,
   });
 
-  return typeof selected === 'string' ? selected : null;
+  return typeof selected === "string" ? selected : null;
 }
 
 export async function replaceFromNotexPackage(sourcePath: string) {
-  const { replaceDesktopLibrary } = await import('./replaceDesktopLibrary');
-  await replaceDesktopLibrary('notex_package_replace_from_file', sourcePath);
+  const { replaceDesktopLibrary } = await import("./replaceDesktopLibrary");
+  await replaceDesktopLibrary("notex_package_replace_from_file", sourcePath);
 }

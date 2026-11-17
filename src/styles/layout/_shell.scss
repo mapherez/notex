@@ -26,8 +26,7 @@
     radial-gradient(circle at 50% 42%, var(--nx-color-accent-soft), transparent 42%),
     var(--nx-color-canvas);
   color: var(--nx-color-text);
-  padding:
-    max(var(--nx-space-5), env(safe-area-inset-top))
+  padding: max(var(--nx-space-5), env(safe-area-inset-top))
     max(var(--nx-space-6), env(safe-area-inset-right))
     max(var(--nx-space-5), env(safe-area-inset-bottom))
     max(var(--nx-space-6), env(safe-area-inset-left));
@@ -137,7 +136,9 @@
   border: 0;
   background: transparent;
   color: inherit;
-  transition: background 140ms ease, color 140ms ease;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
 }
 
 .window-titlebar__tooltip {
@@ -274,7 +275,10 @@
   border-radius: var(--nx-radius-sm);
   background: transparent;
   color: var(--nx-color-text-muted);
-  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
 }
 
 .icon-button svg {
@@ -380,7 +384,9 @@
   font-size: 0.98rem;
   font-weight: 560;
   text-align: left;
-  transition: background 160ms ease, color 160ms ease;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
 }
 
 .nav-item span {
@@ -550,7 +556,9 @@
 .sidebar-legal-link {
   border-radius: var(--nx-radius-sm);
   padding: var(--nx-space-1) var(--nx-space-2);
-  transition: color 160ms ease, background 160ms ease;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
 }
 
 .sidebar-legal-link:hover,
@@ -571,7 +579,9 @@
   padding: var(--nx-space-1) var(--nx-space-2);
   font-size: 0.74rem;
   text-align: center;
-  transition: color 160ms ease, background 160ms ease;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
 }
 
 .sidebar-runtime-status {
@@ -593,7 +603,9 @@
   color: var(--nx-color-text-soft);
   padding: 0 var(--nx-space-2);
   font-size: 0.74rem;
-  transition: color 160ms ease, background 160ms ease;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
 }
 
 .sidebar-version:hover,
@@ -697,10 +709,10 @@
   margin-left: var(--nx-space-1);
   color: var(--nx-color-text-muted);
   transition: transform 160ms ease;
-  }
-  
-  .avatar-button[aria-expanded="true"] .topbar__account-chevron {
-    transform: rotate(180deg);
+}
+
+.avatar-button[aria-expanded="true"] .topbar__account-chevron {
+  transform: rotate(180deg);
 }
 
 .user-meta {
@@ -797,7 +809,10 @@
   width: var(--nx-popover-anchor-width, 100%);
   max-width: var(--nx-popover-max-width, calc(100vw - (var(--nx-page-gutter) * 2)));
   overflow: auto;
-  max-height: min(26rem, var(--nx-popover-max-height, calc(100dvh - 8rem - var(--nx-shell-top-offset, 0px))));
+  max-height: min(
+    26rem,
+    var(--nx-popover-max-height, calc(100dvh - 8rem - var(--nx-shell-top-offset, 0px)))
+  );
   overscroll-behavior: contain;
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-md);

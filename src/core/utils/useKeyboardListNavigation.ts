@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import { useCallback, useEffect, useState } from "react";
+import type { KeyboardEvent } from "react";
 
 export function useKeyboardListNavigation({
   enabled,
@@ -20,7 +20,9 @@ export function useKeyboardListNavigation({
       return;
     }
 
-    setActiveIndex((currentIndex) => (currentIndex < 0 ? 0 : Math.min(currentIndex, itemCount - 1)));
+    setActiveIndex((currentIndex) =>
+      currentIndex < 0 ? 0 : Math.min(currentIndex, itemCount - 1),
+    );
   }, [enabled, itemCount]);
 
   const onKeyDown = useCallback(
@@ -29,7 +31,7 @@ export function useKeyboardListNavigation({
         return;
       }
 
-      if (event.key === 'ArrowDown') {
+      if (event.key === "ArrowDown") {
         event.preventDefault();
         event.stopPropagation();
         setActiveIndex((currentIndex) => {
@@ -42,7 +44,7 @@ export function useKeyboardListNavigation({
         return;
       }
 
-      if (event.key === 'ArrowUp') {
+      if (event.key === "ArrowUp") {
         event.preventDefault();
         event.stopPropagation();
         setActiveIndex((currentIndex) => {
@@ -55,14 +57,14 @@ export function useKeyboardListNavigation({
         return;
       }
 
-      if (event.key === 'Enter' && itemCount > 0) {
+      if (event.key === "Enter" && itemCount > 0) {
         event.preventDefault();
         event.stopPropagation();
         onSelect(activeIndex >= 0 ? activeIndex : 0);
         return;
       }
 
-      if (event.key === 'Escape' && onEscape) {
+      if (event.key === "Escape" && onEscape) {
         event.preventDefault();
         event.stopPropagation();
         onEscape();

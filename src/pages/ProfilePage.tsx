@@ -18,14 +18,7 @@ import {
   UserRound,
   type LucideIcon,
 } from "lucide-react";
-import {
-  type PropsWithChildren,
-  type ReactNode,
-  useEffect,
-  useState,
-  lazy,
-  Suspense,
-} from "react";
+import { type PropsWithChildren, type ReactNode, useEffect, useState, lazy, Suspense } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AppModal } from "../components/ui/AppModal";
 import { GoogleSignInButton } from "../components/profile/GoogleSignInButton";
@@ -63,8 +56,8 @@ import { useNotesStore } from "../store/useNotesStore";
 import { useKnowledgeStore } from "../store/useKnowledgeStore";
 import { useToastStore } from "../store/useToastStore";
 import type { Note, Locale, ThemePreference } from "../core/models/models";
-import { isTauri } from '@tauri-apps/api/core';
-import { useGoogleAccountStore } from '../store/useGoogleAccountStore';
+import { isTauri } from "@tauri-apps/api/core";
+import { useGoogleAccountStore } from "../store/useGoogleAccountStore";
 
 type ExportModalState =
   | null
@@ -72,23 +65,24 @@ type ExportModalState =
   | { phase: "exporting" }
   | { phase: "ready"; exportInfo: SqliteExportInfo };
 
-const McpProfileSection = lazy(() => import('../components/profile/McpProfileSection').then((module) => ({ default: module.McpProfileSection })));
+const McpProfileSection = lazy(() =>
+  import("../components/profile/McpProfileSection").then((module) => ({
+    default: module.McpProfileSection,
+  })),
+);
 
 export function ProfilePage() {
   const { account, showLogin, login, logout, authorizing } = useGoogleAccountStore();
   const { locale, t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
-  const [databaseInfo, setDatabaseInfo] = useState<SqliteDatabaseInfo | null>(
-    null,
-  );
+  const [databaseInfo, setDatabaseInfo] = useState<SqliteDatabaseInfo | null>(null);
   const [exportModal, setExportModal] = useState<ExportModalState>(null);
   const [importChoiceModalOpen, setImportChoiceModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [isImportingDatabase, setIsImportingDatabase] = useState(false);
   const [isImportingNote, setIsImportingNote] = useState(false);
-  const [noteImportSummary, setNoteImportSummary] =
-    useState<NotexNoteImportInfo | null>(null);
+  const [noteImportSummary, setNoteImportSummary] = useState<NotexNoteImportInfo | null>(null);
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
   const settings = useAppStore((state) => state.settings);
   const hydrateSettings = useAppStore((state) => state.hydrateSettings);
@@ -110,11 +104,7 @@ export function ProfilePage() {
   const favoriteNotes = activeNotes.filter((note) => note.isFavorite);
   const mostRecentNote = filterNotes(notes, { mode: "recent" })[0];
   const lastActivityValue = mostRecentNote
-    ? formatRecentActivityTimestamp(
-        getRecentTimestamp(mostRecentNote),
-        locale,
-        t,
-      )
+    ? formatRecentActivityTimestamp(getRecentTimestamp(mostRecentNote), locale, t)
     : t("profile.values.noActivity");
 
   useEffect(() => {
@@ -130,9 +120,7 @@ export function ProfilePage() {
       .catch((error) => {
         if (!cancelled) {
           pushToast(
-            error instanceof Error
-              ? error.message
-              : t("profile.dataManagement.databasePathError"),
+            error instanceof Error ? error.message : t("profile.dataManagement.databasePathError"),
             "warning",
           );
         }
@@ -166,9 +154,7 @@ export function ProfilePage() {
     } catch (error) {
       setExportModal(null);
       pushToast(
-        error instanceof Error
-          ? error.message
-          : t("profile.dataManagement.exportFailed"),
+        error instanceof Error ? error.message : t("profile.dataManagement.exportFailed"),
         "warning",
       );
     }
@@ -176,17 +162,14 @@ export function ProfilePage() {
 
   async function handleSaveDatabaseExport(exportInfo: SqliteExportInfo) {
     try {
-      const destinationPath =
-        await chooseNotexPackageExportDestination(exportInfo);
+      const destinationPath = await chooseNotexPackageExportDestination(exportInfo);
       if (destinationPath) {
         setExportModal(null);
         pushToast(t("profile.dataManagement.exportSaved"), "success");
       }
     } catch (error) {
       pushToast(
-        error instanceof Error
-          ? error.message
-          : t("profile.dataManagement.exportFailed"),
+        error instanceof Error ? error.message : t("profile.dataManagement.exportFailed"),
         "warning",
       );
     }
@@ -212,9 +195,7 @@ export function ProfilePage() {
       pushToast(t("profile.dataManagement.importComplete"), "success");
     } catch (error) {
       pushToast(
-        error instanceof Error
-          ? error.message
-          : t("profile.dataManagement.importFailed"),
+        error instanceof Error ? error.message : t("profile.dataManagement.importFailed"),
         "warning",
       );
     } finally {
@@ -241,9 +222,7 @@ export function ProfilePage() {
       }
     } catch (error) {
       pushToast(
-        error instanceof Error
-          ? error.message
-          : t("profile.dataManagement.noteImportFailed"),
+        error instanceof Error ? error.message : t("profile.dataManagement.noteImportFailed"),
         "warning",
       );
     } finally {
@@ -256,9 +235,7 @@ export function ProfilePage() {
       await openSqliteDatabaseFolder();
     } catch (error) {
       pushToast(
-        error instanceof Error
-          ? error.message
-          : t("profile.dataManagement.openFolderFailed"),
+        error instanceof Error ? error.message : t("profile.dataManagement.openFolderFailed"),
         "warning",
       );
     }
@@ -269,9 +246,7 @@ export function ProfilePage() {
       await openSqliteLocalDataFolder();
     } catch (error) {
       pushToast(
-        error instanceof Error
-          ? error.message
-          : t("profile.dataManagement.openFolderFailed"),
+        error instanceof Error ? error.message : t("profile.dataManagement.openFolderFailed"),
         "warning",
       );
     }
@@ -282,9 +257,7 @@ export function ProfilePage() {
       await openSqliteFilesFolder();
     } catch (error) {
       pushToast(
-        error instanceof Error
-          ? error.message
-          : t("profile.dataManagement.openFolderFailed"),
+        error instanceof Error ? error.message : t("profile.dataManagement.openFolderFailed"),
         "warning",
       );
     }
@@ -297,10 +270,7 @@ export function ProfilePage() {
         pushToast(t("updater.upToDate"), "success");
       }
     } catch (error) {
-      pushToast(
-        error instanceof Error ? error.message : t("updater.checkFailed"),
-        "warning",
-      );
+      pushToast(error instanceof Error ? error.message : t("updater.checkFailed"), "warning");
     }
   }
 
@@ -348,13 +318,24 @@ export function ProfilePage() {
           <div className="connected">{account?.email ?? t("profile.localAccount")}</div>
           <div className="profile-account-actions">
             {account ? (
-              <button className="profile-sign-out-button" type="button" disabled={authorizing} onClick={() => void logout()}>
+              <button
+                className="profile-sign-out-button"
+                type="button"
+                disabled={authorizing}
+                onClick={() => void logout()}
+              >
                 <LogOut aria-hidden="true" />
-                <span>{t('google.logout')}</span>
+                <span>{t("google.logout")}</span>
               </button>
             ) : (
-              <GoogleSignInButton disabled={authorizing} onClick={() => { if (isTauri()) void login(); else showLogin(); }}>
-                {t('google.continue')}
+              <GoogleSignInButton
+                disabled={authorizing}
+                onClick={() => {
+                  if (isTauri()) void login();
+                  else showLogin();
+                }}
+              >
+                {t("google.continue")}
               </GoogleSignInButton>
             )}
           </div>
@@ -385,16 +366,18 @@ export function ProfilePage() {
             description={t("profile.preferences.languageDescription")}
             value={settings.language}
             onChange={(value) =>
-              void setLanguage(value as Locale).then(() =>
-                pushToast(t("common.done"), "success"),
-              )
+              void setLanguage(value as Locale).then(() => pushToast(t("common.done"), "success"))
             }
             options={[
               { value: "pt", label: t("profile.preferences.portuguese") },
               { value: "en", label: t("profile.preferences.english") },
             ]}
           />
-          <button className="profile-action-row profile-shortcuts-action" type="button" onClick={() => setShortcutHelpOpen(true)}>
+          <button
+            className="profile-action-row profile-shortcuts-action"
+            type="button"
+            onClick={() => setShortcutHelpOpen(true)}
+          >
             <IconBadge icon={Keyboard} color="blue" />
             <span>
               <span className="profile-row-label">{t("profile.shortcuts.title")}</span>
@@ -405,40 +388,46 @@ export function ProfilePage() {
         </ProfileSection>
 
         <ProfileSection className="profile-data-section" title={t("profile.dataManagement.title")}>
-          {isTauri() && <>
-            <button
-              className="profile-action-row"
-              type="button"
-              onClick={() => setExportModal({ phase: "confirm" })}
-            >
-              <Download className="profile-action-row__icon profile-action-row__icon--success" />
-              <span>
-                <span>{t("profile.dataManagement.exportData")}</span>
-                <span className="profile-row-description">
-                  {t("profile.dataManagement.exportDescription")}
+          {isTauri() && (
+            <>
+              <button
+                className="profile-action-row"
+                type="button"
+                onClick={() => setExportModal({ phase: "confirm" })}
+              >
+                <Download className="profile-action-row__icon profile-action-row__icon--success" />
+                <span>
+                  <span>{t("profile.dataManagement.exportData")}</span>
+                  <span className="profile-row-description">
+                    {t("profile.dataManagement.exportDescription")}
+                  </span>
                 </span>
-              </span>
-              <ChevronRight />
-            </button>
-            <button
-              className="profile-action-row"
-              type="button"
-              onClick={() => setImportChoiceModalOpen(true)}
-            >
-              <Upload className="profile-action-row__icon profile-action-row__icon--blue" />
-              <span>
-                <span>{t("profile.dataManagement.importData")}</span>
-                <span className="profile-row-description">
-                  {t("profile.dataManagement.importDescription")}
+                <ChevronRight />
+              </button>
+              <button
+                className="profile-action-row"
+                type="button"
+                onClick={() => setImportChoiceModalOpen(true)}
+              >
+                <Upload className="profile-action-row__icon profile-action-row__icon--blue" />
+                <span>
+                  <span>{t("profile.dataManagement.importData")}</span>
+                  <span className="profile-row-description">
+                    {t("profile.dataManagement.importDescription")}
+                  </span>
                 </span>
-              </span>
-              <ChevronRight />
-            </button>
-          </>}
+                <ChevronRight />
+              </button>
+            </>
+          )}
           {account && <GoogleDriveStatus />}
         </ProfileSection>
 
-        {isTauri() && <Suspense fallback={null}><McpProfileSection /></Suspense>}
+        {isTauri() && (
+          <Suspense fallback={null}>
+            <McpProfileSection />
+          </Suspense>
+        )}
 
         {isTauri() && (
           <ProfileSection
@@ -448,8 +437,7 @@ export function ProfilePage() {
             <div className="database-management-grid">
               <DatabasePathRow
                 databasePath={
-                  databaseInfo?.databasePath ??
-                  t("profile.dataManagement.databasePathLoading")
+                  databaseInfo?.databasePath ?? t("profile.dataManagement.databasePathLoading")
                 }
                 icon={Database}
                 label={t("profile.databaseManagement.currentDatabase")}
@@ -468,8 +456,7 @@ export function ProfilePage() {
               />
               <DatabasePathRow
                 databasePath={
-                  databaseInfo?.filesDirectory ??
-                  t("profile.databaseManagement.filesPathLoading")
+                  databaseInfo?.filesDirectory ?? t("profile.databaseManagement.filesPathLoading")
                 }
                 icon={Folder}
                 label={t("profile.databaseManagement.filesPath")}
@@ -480,7 +467,10 @@ export function ProfilePage() {
           </ProfileSection>
         )}
 
-        <ProfileSection className="profile-module--full profile-statistics-section" title={t("profile.statistics")}>
+        <ProfileSection
+          className="profile-module--full profile-statistics-section"
+          title={t("profile.statistics")}
+        >
           <div className="meta-list profile-stat-grid">
             <Metric
               icon={CalendarClock}
@@ -563,11 +553,7 @@ export function ProfilePage() {
         }}
         t={t}
       />
-      <ShortcutHelpModal
-        open={shortcutHelpOpen}
-        onClose={() => setShortcutHelpOpen(false)}
-        t={t}
-      />
+      <ShortcutHelpModal open={shortcutHelpOpen} onClose={() => setShortcutHelpOpen(false)} t={t} />
     </div>
   );
 }
@@ -578,9 +564,7 @@ function ProfileSection({
   className,
 }: PropsWithChildren<{ title?: string; className?: string }>) {
   return (
-    <section
-      className={["profile-section", className].filter(Boolean).join(" ")}
-    >
+    <section className={["profile-section", className].filter(Boolean).join(" ")}>
       {title ? (
         <div className="profile-section-header">
           <h2 className="profile-section-title">{title}</h2>
@@ -635,12 +619,7 @@ function PreferenceSelect({
         <span className="profile-row-label">{label}</span>
         <span className="profile-row-description">{description}</span>
       </span>
-      <CustomSelect
-        ariaLabel={label}
-        onChange={onChange}
-        options={options}
-        value={value}
-      />
+      <CustomSelect ariaLabel={label} onChange={onChange} options={options} value={value} />
     </div>
   );
 }
@@ -667,12 +646,7 @@ function DatabasePathRow({
           {databasePath}
         </span>
       </span>
-      <button
-        className="icon-button"
-        type="button"
-        aria-label={openLabel}
-        onClick={onOpen}
-      >
+      <button className="icon-button" type="button" aria-label={openLabel} onClick={onOpen}>
         <FolderOpen />
       </button>
     </div>
@@ -704,9 +678,7 @@ function ExportDatabaseModal({
       onClose={onCancel}
       open
     >
-      <h2 id="export-db-title">
-        {t("profile.dataManagement.exportModalTitle")}
-      </h2>
+      <h2 id="export-db-title">{t("profile.dataManagement.exportModalTitle")}</h2>
       {modal.phase === "confirm" ? (
         <>
           <p>{t("profile.dataManagement.exportModalDescription")}</p>
@@ -730,10 +702,7 @@ function ExportDatabaseModal({
       {modal.phase === "ready" ? (
         <>
           <p>{t("profile.dataManagement.exportReadyDescription")}</p>
-          <div
-            className="choice-modal-path"
-            title={modal.exportInfo.tempPath}
-          >
+          <div className="choice-modal-path" title={modal.exportInfo.tempPath}>
             {modal.exportInfo.tempPath}
           </div>
           <div className="choice-modal-actions">
@@ -741,9 +710,7 @@ function ExportDatabaseModal({
               <FolderOpen />
               <span>
                 <span>{t("profile.dataManagement.downloadExport")}</span>
-                <span>
-                  {t("profile.dataManagement.downloadExportDescription")}
-                </span>
+                <span>{t("profile.dataManagement.downloadExportDescription")}</span>
               </span>
             </button>
           </div>
@@ -780,9 +747,7 @@ function ImportChoiceModal({
       onClose={onCancel}
       open={open}
     >
-      <h2 id="import-choice-title">
-        {t("profile.dataManagement.importChoiceTitle")}
-      </h2>
+      <h2 id="import-choice-title">{t("profile.dataManagement.importChoiceTitle")}</h2>
       <p>{t("profile.dataManagement.importChoiceDescription")}</p>
       {isImportingNote ? (
         <div className="choice-modal-status">
@@ -791,28 +756,18 @@ function ImportChoiceModal({
         </div>
       ) : null}
       <div className="choice-modal-actions">
-        <button
-          type="button"
-          disabled={isImportingNote}
-          onClick={onImportNote}
-        >
+        <button type="button" disabled={isImportingNote} onClick={onImportNote}>
           <FileText />
           <span>
             <span>{t("profile.dataManagement.importNoteData")}</span>
             <span>{t("profile.dataManagement.importNoteDescription")}</span>
           </span>
         </button>
-        <button
-          type="button"
-          disabled={isImportingNote}
-          onClick={onImportPackage}
-        >
+        <button type="button" disabled={isImportingNote} onClick={onImportPackage}>
           <Upload />
           <span>
             <span>{t("profile.dataManagement.chooseImportDatabase")}</span>
-            <span>
-              {t("profile.dataManagement.chooseImportDatabaseDescription")}
-            </span>
+            <span>{t("profile.dataManagement.chooseImportDatabaseDescription")}</span>
           </span>
         </button>
         <button type="button" disabled={isImportingNote} onClick={onCancel}>
@@ -850,9 +805,7 @@ function ImportDatabaseModal({
       onClose={onCancel}
       open={open}
     >
-      <h2 id="import-db-title">
-        {t("profile.dataManagement.importModalTitle")}
-      </h2>
+      <h2 id="import-db-title">{t("profile.dataManagement.importModalTitle")}</h2>
       <p>{t("profile.dataManagement.importModalDescription")}</p>
       {isImporting ? (
         <div className="choice-modal-status">
@@ -861,30 +814,18 @@ function ImportDatabaseModal({
         </div>
       ) : null}
       <div className="choice-modal-actions">
-        <button
-          type="button"
-          disabled={isImporting}
-          onClick={onExportCurrent}
-        >
+        <button type="button" disabled={isImporting} onClick={onExportCurrent}>
           <Download />
           <span>
-            <span>
-              {t("profile.dataManagement.exportCurrentBeforeImport")}
-            </span>
-            <span>
-              {t(
-                "profile.dataManagement.exportCurrentBeforeImportDescription",
-              )}
-            </span>
+            <span>{t("profile.dataManagement.exportCurrentBeforeImport")}</span>
+            <span>{t("profile.dataManagement.exportCurrentBeforeImportDescription")}</span>
           </span>
         </button>
         <button type="button" disabled={isImporting} onClick={onImport}>
           <Upload />
           <span>
             <span>{t("profile.dataManagement.chooseImportDatabase")}</span>
-            <span>
-              {t("profile.dataManagement.chooseImportDatabaseDescription")}
-            </span>
+            <span>{t("profile.dataManagement.chooseImportDatabaseDescription")}</span>
           </span>
         </button>
         <button type="button" disabled={isImporting} onClick={onCancel}>
@@ -928,8 +869,7 @@ function NoteImportSummaryModal({
         }
       : null,
   ].filter((item): item is { label: string; value: string } => Boolean(item));
-  const title =
-    richTextToPlainText(importInfo.title).trim() || t("notes.untitled");
+  const title = richTextToPlainText(importInfo.title).trim() || t("notes.untitled");
 
   return (
     <AppModal
@@ -938,9 +878,7 @@ function NoteImportSummaryModal({
       onClose={onClose}
       open
     >
-      <h2 id="note-import-summary-title">
-        {t("profile.dataManagement.noteImportSummaryTitle")}
-      </h2>
+      <h2 id="note-import-summary-title">{t("profile.dataManagement.noteImportSummaryTitle")}</h2>
       <p>
         {t("profile.dataManagement.noteImportSummaryDescription", {
           title,
@@ -990,10 +928,7 @@ function ShortcutHelpModal({
             <h3>{group.title}</h3>
             <div className="shortcut-help-rows">
               {group.items.map((item) => (
-                <div
-                  className="shortcut-help-row"
-                  key={`${group.title}-${item.description}`}
-                >
+                <div className="shortcut-help-row" key={`${group.title}-${item.description}`}>
                   <span className="shortcut-help-keys">
                     {item.keys.map((key) => (
                       <kbd className="kbd" key={key}>
@@ -1204,29 +1139,35 @@ function getRecentTimestamp(note: Note) {
   return note.updatedAt;
 }
 
-function formatRecentActivityTimestamp(value: string, locale: string, t: ReturnType<typeof useI18n>['t']) {
+function formatRecentActivityTimestamp(
+  value: string,
+  locale: string,
+  t: ReturnType<typeof useI18n>["t"],
+) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
 
   const now = new Date();
-  const localeCode = locale === 'pt' ? 'pt-PT' : 'en-US';
-  const time = new Intl.DateTimeFormat(localeCode, { hour: '2-digit', minute: '2-digit' }).format(date);
+  const localeCode = locale === "pt" ? "pt-PT" : "en-US";
+  const time = new Intl.DateTimeFormat(localeCode, { hour: "2-digit", minute: "2-digit" }).format(
+    date,
+  );
 
   if (date.toDateString() === now.toDateString()) {
-    return `${t('common.today')}, ${time}`;
+    return `${t("common.today")}, ${time}`;
   }
 
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   if (date.toDateString() === yesterday.toDateString()) {
-    return `${t('common.yesterday')}, ${time}`;
+    return `${t("common.yesterday")}, ${time}`;
   }
 
   return new Intl.DateTimeFormat(localeCode, {
-    day: '2-digit',
-    month: 'short',
-    year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric',
+    day: "2-digit",
+    month: "short",
+    year: date.getFullYear() === now.getFullYear() ? undefined : "numeric",
   }).format(date);
 }

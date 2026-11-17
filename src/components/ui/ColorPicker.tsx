@@ -1,11 +1,11 @@
-import { Check, ChevronDown } from 'lucide-react';
-import clsx from 'clsx';
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
-import type { TagColor } from '../../core/models/models';
-import { tagColorOptions } from '../../core/utils/tagColors';
-import { useClickOutside } from '../../core/utils/useClickOutside';
-import { useFloatingPopover } from '../../core/utils/useFloatingPopover';
-import { useI18n } from '../../i18n/I18nProvider';
+import { Check, ChevronDown } from "lucide-react";
+import clsx from "clsx";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import type { TagColor } from "../../core/models/models";
+import { tagColorOptions } from "../../core/utils/tagColors";
+import { useClickOutside } from "../../core/utils/useClickOutside";
+import { useFloatingPopover } from "../../core/utils/useFloatingPopover";
+import { useI18n } from "../../i18n/I18nProvider";
 
 const colorPickerColumnCount = 5;
 
@@ -37,7 +37,7 @@ export function ColorPicker({
   const activeColor = tagColorOptions[activeIndex] ?? value;
 
   useClickOutside(pickerRef, open, () => setOpen(false));
-  useFloatingPopover(open, triggerRef, menuRef, 'bottom-start');
+  useFloatingPopover(open, triggerRef, menuRef, "bottom-start");
 
   useEffect(() => {
     if (disabled && open) {
@@ -82,35 +82,35 @@ export function ColorPicker({
       return;
     }
 
-    if (event.key === 'ArrowDown') {
+    if (event.key === "ArrowDown") {
       event.preventDefault();
       event.stopPropagation();
       moveActiveColor(colorPickerColumnCount);
       return;
     }
 
-    if (event.key === 'ArrowUp') {
+    if (event.key === "ArrowUp") {
       event.preventDefault();
       event.stopPropagation();
       moveActiveColor(-colorPickerColumnCount);
       return;
     }
 
-    if (event.key === 'ArrowRight') {
+    if (event.key === "ArrowRight") {
       event.preventDefault();
       event.stopPropagation();
       moveActiveColor(1);
       return;
     }
 
-    if (event.key === 'ArrowLeft') {
+    if (event.key === "ArrowLeft") {
       event.preventDefault();
       event.stopPropagation();
       moveActiveColor(-1);
       return;
     }
 
-    if (event.key === 'Escape' && open) {
+    if (event.key === "Escape" && open) {
       event.preventDefault();
       event.stopPropagation();
       setOpen(false);
@@ -118,20 +118,23 @@ export function ColorPicker({
       return;
     }
 
-    if (event.key === 'Enter' && open) {
+    if (event.key === "Enter" && open) {
       event.preventDefault();
       event.stopPropagation();
       selectColor(activeColor, onKeyboardCommit);
       return;
     }
 
-    if (event.key === 'Tab' && open) {
+    if (event.key === "Tab" && open) {
       setOpen(false);
     }
   }
 
   return (
-    <div className={clsx('color-picker', disabled && 'color-picker--disabled', className)} ref={pickerRef}>
+    <div
+      className={clsx("color-picker", disabled && "color-picker--disabled", className)}
+      ref={pickerRef}
+    >
       <button
         ref={triggerRef}
         className="color-picker__trigger"
@@ -153,14 +156,20 @@ export function ColorPicker({
         <ChevronDown className="color-picker__chevron" />
       </button>
       {open ? (
-        <div className="color-picker__menu color-palette-menu" ref={menuRef} id={menuId} role="listbox" aria-label={ariaLabel}>
+        <div
+          className="color-picker__menu color-palette-menu"
+          ref={menuRef}
+          id={menuId}
+          role="listbox"
+          aria-label={ariaLabel}
+        >
           {tagColorOptions.map((color, index) => (
             <button
               className={clsx(
-                'color-palette-menu__swatch',
+                "color-palette-menu__swatch",
                 `color-palette-menu__swatch--${color}`,
-                color === value && 'is-selected',
-                index === activeIndex && 'is-active',
+                color === value && "is-selected",
+                index === activeIndex && "is-active",
               )}
               id={`${menuId}-option-${color}`}
               key={color}

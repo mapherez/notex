@@ -1,10 +1,23 @@
-import { create } from 'zustand';
-import { defaultNewCollectionColor, defaultNewTagColor, defaultUserSettings, demoSettings } from '../config/appSettings';
-import { createMockData } from '../core/data/createMockData';
-import { db, readAllKnowledge, seedDatabaseIfEmpty } from '../core/storage/notexRepository';
-import type { ActivityItem, Collection, Locale, Tag, TagColor, User, UserSettings } from '../core/models/models';
-import { useNotesStore } from './useNotesStore';
-import { createUuid } from '../core/utils/createUuid';
+import { create } from "zustand";
+import {
+  defaultNewCollectionColor,
+  defaultNewTagColor,
+  defaultUserSettings,
+  demoSettings,
+} from "../config/appSettings";
+import { createMockData } from "../core/data/createMockData";
+import { db, readAllKnowledge, seedDatabaseIfEmpty } from "../core/storage/notexRepository";
+import type {
+  ActivityItem,
+  Collection,
+  Locale,
+  Tag,
+  TagColor,
+  User,
+  UserSettings,
+} from "../core/models/models";
+import { useNotesStore } from "./useNotesStore";
+import { createUuid } from "../core/utils/createUuid";
 
 type KnowledgeStore = {
   tags: Tag[];
@@ -16,7 +29,10 @@ type KnowledgeStore = {
   refreshKnowledge: () => Promise<void>;
   setUser: (user: User) => Promise<void>;
   createCollection: (name: string, color?: TagColor) => Promise<Collection | null>;
-  updateCollection: (collectionId: string, input: { name: string; color?: TagColor }) => Promise<void>;
+  updateCollection: (
+    collectionId: string,
+    input: { name: string; color?: TagColor },
+  ) => Promise<void>;
   setCollectionPinned: (collectionId: string, pinned: boolean) => Promise<void>;
   deleteCollection: (collectionId: string) => Promise<void>;
   createTag: (name: string, color?: TagColor) => Promise<Tag | null>;
@@ -57,7 +73,7 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     });
   },
   setUser: async (user) => {
-    await db.transaction('rw', [db.users], async (db) => {
+    await db.transaction("rw", [db.users], async (db) => {
       await db.users.clear();
       await db.users.put(user);
     });
@@ -69,7 +85,9 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       return null;
     }
 
-    const existing = get().collections.find((collection) => collection.name.toLowerCase() === trimmed.toLowerCase());
+    const existing = get().collections.find(
+      (collection) => collection.name.toLowerCase() === trimmed.toLowerCase(),
+    );
     if (existing) {
       return existing;
     }
@@ -78,7 +96,7 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       id: createCollectionId(trimmed),
       name: trimmed,
       color,
-      icon: 'folder',
+      icon: "folder",
     };
 
     await db.collections.put(collection);
@@ -95,18 +113,24 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     const updated: Collection = {
       ...collection,
       name: trimmed,
-      color: input.color ?? collection.color ?? 'neutral',
+      color: input.color ?? collection.color ?? "neutral",
     };
 
     await db.collections.put(updated);
-    set((state) => ({ collections: sortCollections(state.collections.map((item) => (item.id === collectionId ? updated : item))) }));
+    set((state) => ({
+      collections: sortCollections(
+        state.collections.map((item) => (item.id === collectionId ? updated : item)),
+      ),
+    }));
   },
   setCollectionPinned: async (collectionId, pinned) => {
     const collection = get().collections.find((item) => item.id === collectionId);
     if (!collection || (collection.isPinned === true) === pinned) return;
     const updated = { ...collection, isPinned: pinned };
     await db.collections.put(updated);
-    set((state) => ({ collections: state.collections.map((item) => item.id === collectionId ? updated : item) }));
+    set((state) => ({
+      collections: state.collections.map((item) => (item.id === collectionId ? updated : item)),
+    }));
   },
   deleteCollection: async (collectionId) => {
     const collection = get().collections.find((item) => item.id === collectionId);
@@ -158,18 +182,20 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     const updated: Tag = {
       ...tag,
       name: trimmed,
-      color: input.color ?? tag.color ?? 'neutral',
+      color: input.color ?? tag.color ?? "neutral",
     };
 
     await db.tags.put(updated);
-    set((state) => ({ tags: sortTags(state.tags.map((item) => (item.id === tagId ? updated : item))) }));
+    set((state) => ({
+      tags: sortTags(state.tags.map((item) => (item.id === tagId ? updated : item))),
+    }));
   },
   setTagPinned: async (tagId, pinned) => {
     const tag = get().tags.find((item) => item.id === tagId);
     if (!tag || (tag.isPinned === true) === pinned) return;
     const updated = { ...tag, isPinned: pinned };
     await db.tags.put(updated);
-    set((state) => ({ tags: state.tags.map((item) => item.id === tagId ? updated : item) }));
+    set((state) => ({ tags: state.tags.map((item) => (item.id === tagId ? updated : item)) }));
   },
   deleteTag: async (tagId) => {
     const affectedNoteIds = useNotesStore
@@ -187,8 +213,17 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
   resetDemoData: async (locale, settings) => {
     const bundle = createMockData(locale);
     await db.transaction(
-      'rw',
-      [db.notes, db.noteBlocks, db.noteFiles, db.tags, db.collections, db.users, db.activities, db.userSettings],
+      "rw",
+      [
+        db.notes,
+        db.noteBlocks,
+        db.noteFiles,
+        db.tags,
+        db.collections,
+        db.users,
+        db.activities,
+        db.userSettings,
+      ],
       async (db) => {
         await db.notes.clear();
         await db.noteBlocks.clear();
@@ -244,25 +279,27 @@ function createId() {
 
 function createTagId(name: string) {
   const slug = createSlug(name);
-  return `tag-${slug || 'label'}-${createId().slice(0, 8)}`;
+  return `tag-${slug || "label"}-${createId().slice(0, 8)}`;
 }
 
 function createCollectionId(name: string) {
   const slug = createSlug(name);
-  return `collection-${slug || 'group'}-${createId().slice(0, 8)}`;
+  return `collection-${slug || "group"}-${createId().slice(0, 8)}`;
 }
 
 function createSlug(value: string) {
   return value
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
     .slice(0, 40);
 }
 
-function stripNoteRelations<T extends { blocks?: unknown; files?: unknown }>(note: T): Omit<T, 'blocks' | 'files'> {
+function stripNoteRelations<T extends { blocks?: unknown; files?: unknown }>(
+  note: T,
+): Omit<T, "blocks" | "files"> {
   const { blocks: _blocks, files: _files, ...baseNote } = note;
   return baseNote;
 }

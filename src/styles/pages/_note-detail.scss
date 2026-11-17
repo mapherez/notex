@@ -401,7 +401,6 @@
   outline-offset: 2px;
 }
 
-
 .thumbnail-option.active {
   border-color: color-mix(in srgb, var(--nx-color-accent) 68%, var(--nx-color-border-strong));
 }
@@ -494,7 +493,7 @@
   min-height: 6rem;
   margin: var(--nx-space-6) 0 var(--nx-space-4);
   line-height: 1.7;
-    resize: vertical;
+  resize: vertical;
 }
 
 .document-title-stack .document-title,

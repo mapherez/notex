@@ -17,55 +17,83 @@ import {
   Tag as TagIcon,
   Trash2,
   X,
-} from 'lucide-react';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
-import { useMenuOptionFocus } from '../core/utils/useMenuOptionFocus';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { InlineFormattedText } from '../components/editing/InlineFormattedText';
-import { NoteHeaderDraftProvider, useNoteHeaderDraft } from '../components/notes/NoteHeaderDraft';
-import { StyledTextField } from '../components/editing/TextStyleToolbar';
+} from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+} from "react";
+import { useMenuOptionFocus } from "../core/utils/useMenuOptionFocus";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { InlineFormattedText } from "../components/editing/InlineFormattedText";
+import { NoteHeaderDraftProvider, useNoteHeaderDraft } from "../components/notes/NoteHeaderDraft";
+import { StyledTextField } from "../components/editing/TextStyleToolbar";
 import {
   NoteInlineTiptapEditor,
   NoteTiptapEditor,
   NoteTiptapToolbar,
   type NoteTiptapInsertTextRequest,
   type NoteTiptapToolbarTarget,
-} from '../components/notes/NoteTiptapEditor';
-import { ColorPicker } from '../components/ui/ColorPicker';
-import { CustomSelect } from '../components/ui/CustomSelect';
-import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
-import { AppModal } from '../components/ui/AppModal';
-import { EmptyState } from '../components/ui/EmptyState';
-import { NoteThumbnail } from '../components/ui/NoteThumbnail';
-import { Panel } from '../components/ui/Panel';
-import { ResponsiveSidePanel } from '../components/ui/ResponsiveSidePanel';
-import { SortableTagList } from '../components/ui/SortableTagList';
-import { TagChip } from '../components/ui/TagChip';
-import { appLimits, defaultNewTagColor, defaultNoteThumbnailVariant, editorSettings, thumbnailOptions } from '../config/appSettings';
-import type { Collection, Note, NoteBlock, NoteFile, NoteFileKind, NoteThumbnail as NoteThumbnailModel, Tag, TagColor, TiptapDocument } from '../core/models/models';
-import { beginLocalSave, setLocalDraftPending } from '../core/mcp/noteMutationCoordinator';
-import { chooseNoteAttachment, exportNoteAttachment, openNoteAttachment } from '../core/services/noteFiles';
-import { chooseNotexNoteExportDestination, createNotexNoteTempExport } from '../core/services/notexNotePackage';
-import { openExternalUrl } from '../core/services/externalLinks';
-import { stripInlineFormatting } from '../core/utils/inlineFormatting';
+} from "../components/notes/NoteTiptapEditor";
+import { ColorPicker } from "../components/ui/ColorPicker";
+import { CustomSelect } from "../components/ui/CustomSelect";
+import { DeleteConfirmModal } from "../components/ui/DeleteConfirmModal";
+import { AppModal } from "../components/ui/AppModal";
+import { EmptyState } from "../components/ui/EmptyState";
+import { NoteThumbnail } from "../components/ui/NoteThumbnail";
+import { Panel } from "../components/ui/Panel";
+import { ResponsiveSidePanel } from "../components/ui/ResponsiveSidePanel";
+import { SortableTagList } from "../components/ui/SortableTagList";
+import { TagChip } from "../components/ui/TagChip";
 import {
-  isEditableShortcutTarget,
-  isPlainLetterShortcut,
-} from '../core/utils/keyboardShortcuts';
-import { normalizeExternalHref, titleFromExternalHref } from '../core/utils/linkUtils';
-import { richTextToPlainText } from '../core/utils/richText';
-import { useClickOutside } from '../core/utils/useClickOutside';
-import { useAdaptedContent, useTouchInputAvailable } from '../core/utils/useAdaptedContent';
-import { useFloatingPopover } from '../core/utils/useFloatingPopover';
-import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
-import { sortTagsByFavoriteOrder } from '../core/utils/tagSorting';
-import { useI18n } from '../i18n/I18nProvider';
-import { useAppStore } from '../store/useAppStore';
-import { useNotesStore, emptyTiptapDocument } from '../store/useNotesStore';
-import { useKnowledgeStore } from '../store/useKnowledgeStore';
-import { useToastStore } from '../store/useToastStore';
-import { useCloudStore } from '../store/useCloudStore';
-import { isTauri } from '@tauri-apps/api/core';
+  appLimits,
+  defaultNewTagColor,
+  defaultNoteThumbnailVariant,
+  editorSettings,
+  thumbnailOptions,
+} from "../config/appSettings";
+import type {
+  Collection,
+  Note,
+  NoteBlock,
+  NoteFile,
+  NoteFileKind,
+  NoteThumbnail as NoteThumbnailModel,
+  Tag,
+  TagColor,
+  TiptapDocument,
+} from "../core/models/models";
+import { beginLocalSave, setLocalDraftPending } from "../core/mcp/noteMutationCoordinator";
+import {
+  chooseNoteAttachment,
+  exportNoteAttachment,
+  openNoteAttachment,
+} from "../core/services/noteFiles";
+import {
+  chooseNotexNoteExportDestination,
+  createNotexNoteTempExport,
+} from "../core/services/notexNotePackage";
+import { openExternalUrl } from "../core/services/externalLinks";
+import { stripInlineFormatting } from "../core/utils/inlineFormatting";
+import { isEditableShortcutTarget, isPlainLetterShortcut } from "../core/utils/keyboardShortcuts";
+import { normalizeExternalHref, titleFromExternalHref } from "../core/utils/linkUtils";
+import { richTextToPlainText } from "../core/utils/richText";
+import { useClickOutside } from "../core/utils/useClickOutside";
+import { useAdaptedContent, useTouchInputAvailable } from "../core/utils/useAdaptedContent";
+import { useFloatingPopover } from "../core/utils/useFloatingPopover";
+import { useKeyboardListNavigation } from "../core/utils/useKeyboardListNavigation";
+import { sortTagsByFavoriteOrder } from "../core/utils/tagSorting";
+import { useI18n } from "../i18n/I18nProvider";
+import { useAppStore } from "../store/useAppStore";
+import { useNotesStore, emptyTiptapDocument } from "../store/useNotesStore";
+import { useKnowledgeStore } from "../store/useKnowledgeStore";
+import { useToastStore } from "../store/useToastStore";
+import { useCloudStore } from "../store/useCloudStore";
+import { isTauri } from "@tauri-apps/api/core";
 
 type DeleteBlockState = null | {
   blockId: string;
@@ -73,7 +101,7 @@ type DeleteBlockState = null | {
 };
 
 type HeaderTypingRequest = {
-  field: 'subtitle' | 'title';
+  field: "subtitle" | "title";
   nonce: number;
   text: string;
 };
@@ -94,7 +122,7 @@ type TouchHoldState = {
   lineLeft: number;
   lineTop: number;
   lineWidth: number;
-  menuDeleteSide: 'left' | 'right';
+  menuDeleteSide: "left" | "right";
   menuLeft: number;
   menuOpen: boolean;
   menuTop: number;
@@ -131,7 +159,7 @@ export function NoteDetailPage() {
   const [panelsOpen, setPanelsOpen] = useState(false);
   const panelsTriggerRef = useRef<HTMLButtonElement>(null);
   const createStartedRef = useRef(false);
-  const isNewNote = id === 'new';
+  const isNewNote = id === "new";
   const notes = useNotesStore((state) => state.notes);
   const notesReady = useNotesStore((state) => state.isReady);
   const createNote = useNotesStore((state) => state.createNote);
@@ -168,15 +196,16 @@ export function NoteDetailPage() {
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
   const [dragBlockIds, setDragBlockIds] = useState<string[] | null>(null);
   const [headerTypingRequest, setHeaderTypingRequest] = useState<HeaderTypingRequest | null>(null);
-  const [firstBlockTypingRequest, setFirstBlockTypingRequest] = useState<NoteTiptapInsertTextRequest | null>(null);
+  const [firstBlockTypingRequest, setFirstBlockTypingRequest] =
+    useState<NoteTiptapInsertTextRequest | null>(null);
   const [tocEntries, setTocEntries] = useState<TocEntry[]>([]);
   const [activeTocId, setActiveTocId] = useState<string | null>(null);
   const [exampleOpen, setExampleOpen] = useState(false);
-  const [exampleText, setExampleText] = useState('');
+  const [exampleText, setExampleText] = useState("");
   const [editingExampleIndex, setEditingExampleIndex] = useState<number | null>(null);
-  const [editingExampleText, setEditingExampleText] = useState('');
+  const [editingExampleText, setEditingExampleText] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
-  const [linkInput, setLinkInput] = useState('');
+  const [linkInput, setLinkInput] = useState("");
   const [selectedLinkedNoteId, setSelectedLinkedNoteId] = useState<string | null>(null);
   const draggedBlockIdRef = useRef<string | null>(null);
   const [desktopDragState, setDesktopDragState] = useState<DesktopDragState | null>(null);
@@ -214,7 +243,7 @@ export function NoteDetailPage() {
     noteActionsOpen,
     noteActionsMenu.triggerRef,
     noteActionsMenu.menuRef,
-    'bottom-end',
+    "bottom-end",
   );
   const note = isNewNote ? undefined : notes.find((item) => item.id === id);
   const ensureAvailable = useCloudStore((state) => state.ensureAvailable);
@@ -224,7 +253,9 @@ export function NoteDetailPage() {
   const excludedNotes = useCloudStore((state) => state.excludedNotes);
   const toggleExcluded = useCloudStore((state) => state.toggleExcluded);
   useClickOutside(noteActionsRef, noteActionsOpen, () => setNoteActionsOpen(false));
-  useEffect(() => { setPanelsOpen(false); }, [adapted, id]);
+  useEffect(() => {
+    setPanelsOpen(false);
+  }, [adapted, id]);
   useEffect(() => {
     if (!touchAdapted) setNoteActionsOpen(false);
   }, [id, touchAdapted]);
@@ -247,10 +278,13 @@ export function NoteDetailPage() {
   useEffect(() => {
     let active = true;
     setDownloadError(null);
-    if (note?.cloudOnly) void ensureAvailable(note.id).catch((error) => {
-      if (active) setDownloadError(error instanceof Error ? error.message : String(error));
-    });
-    return () => { active = false; };
+    if (note?.cloudOnly)
+      void ensureAvailable(note.id).catch((error) => {
+        if (active) setDownloadError(error instanceof Error ? error.message : String(error));
+      });
+    return () => {
+      active = false;
+    };
   }, [note?.id, note?.cloudOnly, ensureAvailable]);
 
   useEffect(() => {
@@ -259,7 +293,7 @@ export function NoteDetailPage() {
     }
     createStartedRef.current = true;
     void createNote({
-      collectionId: searchParams.get('collection') || settings.primaryCollectionId,
+      collectionId: searchParams.get("collection") || settings.primaryCollectionId,
     }).then((created) => navigate(`/notes/${created.id}`, { replace: true }));
   }, [createNote, notesReady, isNewNote, navigate, searchParams, settings.primaryCollectionId]);
 
@@ -291,10 +325,10 @@ export function NoteDetailPage() {
     return [...ordered, ...blocks.filter((block) => !orderedIds.has(block.id))];
   }, [dragBlockIds, note?.blocks]);
   const touchHeldBlock = touchHoldState
-    ? (note?.blocks ?? []).find((block) => block.id === touchHoldState.blockId) ?? null
+    ? ((note?.blocks ?? []).find((block) => block.id === touchHoldState.blockId) ?? null)
     : null;
   const desktopDraggedBlock = desktopDragState
-    ? (note?.blocks ?? []).find((block) => block.id === desktopDragState.blockId) ?? null
+    ? ((note?.blocks ?? []).find((block) => block.id === desktopDragState.blockId) ?? null)
     : null;
   const touchMenuBlockIds = dragBlockIds ?? (note?.blocks ?? []).map((block) => block.id);
   const touchMenuBlockIndex = touchHoldState?.menuOpen
@@ -302,18 +336,32 @@ export function NoteDetailPage() {
     : -1;
   const firstBlockId = (note?.blocks ?? [])[0]?.id ?? null;
   const linkedNotes = useMemo(
-    () => note?.linkedNoteIds.flatMap((linkedId) => notes.find((item) => item.id === linkedId && !item.isTrashed) ?? []) ?? [],
+    () =>
+      note?.linkedNoteIds.flatMap(
+        (linkedId) => notes.find((item) => item.id === linkedId && !item.isTrashed) ?? [],
+      ) ?? [],
     [notes, note?.linkedNoteIds],
   );
   const backlinkNotes = useMemo(
-    () => (note ? notes.filter((item) => item.id !== note.id && item.linkedNoteIds.includes(note.id)) : []),
+    () =>
+      note
+        ? notes.filter((item) => item.id !== note.id && item.linkedNoteIds.includes(note.id))
+        : [],
     [notes, note],
   );
-  const linkSearchActive = linkInput.trim().startsWith('/');
-  const linkSearchQuery = linkSearchActive ? linkInput.trim().slice(1).toLowerCase() : '';
+  const linkSearchActive = linkInput.trim().startsWith("/");
+  const linkSearchQuery = linkSearchActive ? linkInput.trim().slice(1).toLowerCase() : "";
   const linkableNotes = notes
-    .filter((item) => item.id !== note?.id && !item.isTrashed && !note?.linkedNoteIds.includes(item.id))
-    .filter((item) => !linkSearchQuery || richTextToPlainText(stripInlineFormatting(item.title)).toLowerCase().includes(linkSearchQuery))
+    .filter(
+      (item) => item.id !== note?.id && !item.isTrashed && !note?.linkedNoteIds.includes(item.id),
+    )
+    .filter(
+      (item) =>
+        !linkSearchQuery ||
+        richTextToPlainText(stripInlineFormatting(item.title))
+          .toLowerCase()
+          .includes(linkSearchQuery),
+    )
     .slice(0, appLimits.linkedNoteSuggestions);
   const linkableNoteNavigation = useKeyboardListNavigation({
     enabled: linkOpen && linkSearchActive,
@@ -350,12 +398,12 @@ export function NoteDetailPage() {
       const exportInfo = await createNotexNoteTempExport(note.id);
       const destinationPath = await chooseNotexNoteExportDestination(exportInfo);
       if (destinationPath) {
-        pushToast(t('notes.noteExported'), 'success');
+        pushToast(t("notes.noteExported"), "success");
       }
       setNoteExportConfirmOpen(false);
       setNoteExportSkipConfirm(false);
     } catch (error) {
-      pushToast(error instanceof Error ? error.message : t('notes.noteExportFailed'), 'warning');
+      pushToast(error instanceof Error ? error.message : t("notes.noteExportFailed"), "warning");
     } finally {
       setIsExportingNote(false);
     }
@@ -370,7 +418,9 @@ export function NoteDetailPage() {
       tocRefreshFrameRef.current = null;
       const nextEntries = collectNoteTocEntries();
       tocEntriesRef.current = nextEntries;
-      setTocEntries((currentEntries) => (sameTocEntries(currentEntries, nextEntries) ? currentEntries : nextEntries));
+      setTocEntries((currentEntries) =>
+        sameTocEntries(currentEntries, nextEntries) ? currentEntries : nextEntries,
+      );
       setActiveTocId(findActiveTocEntryId(nextEntries));
     });
   }, []);
@@ -379,62 +429,70 @@ export function NoteDetailPage() {
     if (!toolbarTarget || !note) {
       return;
     }
-    if (toolbarTarget.blockId && !(note.blocks ?? []).some((block) => block.id === toolbarTarget.blockId)) {
+    if (
+      toolbarTarget.blockId &&
+      !(note.blocks ?? []).some((block) => block.id === toolbarTarget.blockId)
+    ) {
       setToolbarTarget(null);
     }
   }, [note, toolbarTarget]);
 
-  const activateTouchBlock = useCallback((blockId: string) => {
-    if (!touchAdapted) return;
-    if (!touchActiveBlockId) {
-      touchViewportHeightRef.current = window.visualViewport?.height ?? window.innerHeight;
-      touchKeyboardSeenRef.current = false;
-    }
-    setTouchActiveBlockId(blockId);
-  }, [touchActiveBlockId, touchAdapted]);
+  const activateTouchBlock = useCallback(
+    (blockId: string) => {
+      if (!touchAdapted) return;
+      if (!touchActiveBlockId) {
+        touchViewportHeightRef.current = window.visualViewport?.height ?? window.innerHeight;
+        touchKeyboardSeenRef.current = false;
+      }
+      setTouchActiveBlockId(blockId);
+    },
+    [touchActiveBlockId, touchAdapted],
+  );
 
   const deactivateTouchBlock = useCallback((blockId?: string) => {
     setTouchActiveBlockId((current) => (blockId && current !== blockId ? current : null));
     setToolbarTarget((current) => (!blockId || current?.blockId === blockId ? null : current));
   }, []);
 
-  const beginTouchBlockHold = useCallback((blockId: string, x: number, y: number) => {
-    const block = document.getElementById(`block-${blockId}`);
-    const rect = block?.getBoundingClientRect();
-    const blockList = block?.closest<HTMLElement>('.note-block-list');
-    const listRect = blockList?.getBoundingClientRect();
-    const blockIds = (note?.blocks ?? []).map((item) => item.id);
-    const sourceIndex = Math.max(0, blockIds.indexOf(blockId));
-    const anchorRatio = rect && rect.height > 0
-      ? Math.min(1, Math.max(0, (y - rect.top) / rect.height))
-      : 0.5;
-    const nextState: TouchHoldState = {
-      anchorRatio,
-      blockId,
-      dragging: false,
-      dropIndex: sourceIndex,
-      ghostLeft: listRect?.left ?? rect?.left ?? 0,
-      ghostWidth: listRect?.width ?? rect?.width ?? 0,
-      lineLeft: listRect?.left ?? rect?.left ?? 0,
-      lineTop: rect?.top ?? y,
-      lineWidth: listRect?.width ?? rect?.width ?? 0,
-      menuDeleteSide: 'right',
-      menuLeft: x,
-      menuOpen: false,
-      menuTop: y,
-      startX: x,
-      startY: y,
-      x,
-      y,
-    };
-    touchHoldStateRef.current = nextState;
-    touchInitialBlockIdsRef.current = blockIds;
-    touchMenuBlockIdsRef.current = blockIds;
-    setTouchHoldState(nextState);
-    if (typeof navigator.vibrate === 'function') {
-      navigator.vibrate(editorSettings.blockTouch.holdHapticMs);
-    }
-  }, [note?.blocks]);
+  const beginTouchBlockHold = useCallback(
+    (blockId: string, x: number, y: number) => {
+      const block = document.getElementById(`block-${blockId}`);
+      const rect = block?.getBoundingClientRect();
+      const blockList = block?.closest<HTMLElement>(".note-block-list");
+      const listRect = blockList?.getBoundingClientRect();
+      const blockIds = (note?.blocks ?? []).map((item) => item.id);
+      const sourceIndex = Math.max(0, blockIds.indexOf(blockId));
+      const anchorRatio =
+        rect && rect.height > 0 ? Math.min(1, Math.max(0, (y - rect.top) / rect.height)) : 0.5;
+      const nextState: TouchHoldState = {
+        anchorRatio,
+        blockId,
+        dragging: false,
+        dropIndex: sourceIndex,
+        ghostLeft: listRect?.left ?? rect?.left ?? 0,
+        ghostWidth: listRect?.width ?? rect?.width ?? 0,
+        lineLeft: listRect?.left ?? rect?.left ?? 0,
+        lineTop: rect?.top ?? y,
+        lineWidth: listRect?.width ?? rect?.width ?? 0,
+        menuDeleteSide: "right",
+        menuLeft: x,
+        menuOpen: false,
+        menuTop: y,
+        startX: x,
+        startY: y,
+        x,
+        y,
+      };
+      touchHoldStateRef.current = nextState;
+      touchInitialBlockIdsRef.current = blockIds;
+      touchMenuBlockIdsRef.current = blockIds;
+      setTouchHoldState(nextState);
+      if (typeof navigator.vibrate === "function") {
+        navigator.vibrate(editorSettings.blockTouch.holdHapticMs);
+      }
+    },
+    [note?.blocks],
+  );
 
   const endTouchBlockHold = useCallback((blockId: string) => {
     const current = touchHoldStateRef.current;
@@ -462,11 +520,10 @@ export function NoteDetailPage() {
     const viewportPadding = 12;
     const canShowDeleteRight = x + actionExtent <= viewportRight - viewportPadding;
     const canShowDeleteLeft = x - actionExtent >= viewportLeft + viewportPadding;
-    const menuDeleteSide: TouchHoldState['menuDeleteSide'] = canShowDeleteRight || !canShowDeleteLeft
-      ? 'right'
-      : 'left';
-    const horizontalStartEdge = menuDeleteSide === 'left' ? actionExtent + viewportPadding : 32;
-    const horizontalEndEdge = menuDeleteSide === 'right' ? actionExtent + viewportPadding : 32;
+    const menuDeleteSide: TouchHoldState["menuDeleteSide"] =
+      canShowDeleteRight || !canShowDeleteLeft ? "right" : "left";
+    const horizontalStartEdge = menuDeleteSide === "left" ? actionExtent + viewportPadding : 32;
+    const horizontalEndEdge = menuDeleteSide === "right" ? actionExtent + viewportPadding : 32;
     const verticalEdge = actionExtent + viewportPadding;
     const nextState: TouchHoldState = {
       ...current,
@@ -483,7 +540,7 @@ export function NoteDetailPage() {
     };
     touchHoldStateRef.current = nextState;
     setTouchHoldState(nextState);
-    if (typeof navigator.vibrate === 'function') {
+    if (typeof navigator.vibrate === "function") {
       navigator.vibrate(editorSettings.blockTouch.menuHapticPatternMs);
     }
   }, []);
@@ -508,19 +565,34 @@ export function NoteDetailPage() {
       : rect.top + rect.height * anchor.anchorRatio;
     const offset = targetY - anchor.y;
     if (Math.abs(offset) > 1) {
-      window.scrollBy({ top: offset, behavior: 'instant' });
+      window.scrollBy({ top: offset, behavior: "instant" });
     }
     if (!touchHoldState) touchReleaseAnchorRef.current = null;
   }, [touchHoldState]);
 
   useLayoutEffect(() => {
     if (!touchHoldState?.dragging) return;
-    touchDragGhostRef.current?.style.setProperty('--nx-touch-drag-left', `${touchHoldState.ghostLeft}px`);
-    touchDragGhostRef.current?.style.setProperty('--nx-touch-drag-top', `${touchHoldState.y}px`);
-    touchDragGhostRef.current?.style.setProperty('--nx-touch-drag-width', `${touchHoldState.ghostWidth}px`);
-    touchDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-left', `${touchHoldState.lineLeft}px`);
-    touchDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-top', `${touchHoldState.lineTop}px`);
-    touchDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-width', `${touchHoldState.lineWidth}px`);
+    touchDragGhostRef.current?.style.setProperty(
+      "--nx-touch-drag-left",
+      `${touchHoldState.ghostLeft}px`,
+    );
+    touchDragGhostRef.current?.style.setProperty("--nx-touch-drag-top", `${touchHoldState.y}px`);
+    touchDragGhostRef.current?.style.setProperty(
+      "--nx-touch-drag-width",
+      `${touchHoldState.ghostWidth}px`,
+    );
+    touchDropIndicatorRef.current?.style.setProperty(
+      "--nx-touch-drop-left",
+      `${touchHoldState.lineLeft}px`,
+    );
+    touchDropIndicatorRef.current?.style.setProperty(
+      "--nx-touch-drop-top",
+      `${touchHoldState.lineTop}px`,
+    );
+    touchDropIndicatorRef.current?.style.setProperty(
+      "--nx-touch-drop-width",
+      `${touchHoldState.lineWidth}px`,
+    );
   }, [touchHoldState]);
 
   useLayoutEffect(() => {
@@ -532,7 +604,7 @@ export function NoteDetailPage() {
       const targetY = rect.top + rect.height * current.anchorRatio;
       const offset = targetY - current.anchorY;
       desktopDragCompactionPendingRef.current = false;
-      if (Math.abs(offset) > 1) window.scrollBy({ top: offset, behavior: 'instant' });
+      if (Math.abs(offset) > 1) window.scrollBy({ top: offset, behavior: "instant" });
       updateDesktopDragPosition(current.x, current.y);
       return;
     }
@@ -548,24 +620,48 @@ export function NoteDetailPage() {
     const rect = heldBlock.getBoundingClientRect();
     const targetY = rect.top + rect.height * releaseAnchor.anchorRatio;
     const offset = targetY - releaseAnchor.anchorY;
-    if (Math.abs(offset) > 1) window.scrollBy({ top: offset, behavior: 'instant' });
+    if (Math.abs(offset) > 1) window.scrollBy({ top: offset, behavior: "instant" });
     desktopDragReleaseAnchorRef.current = null;
   }, [desktopDragState, dragBlockIds]);
 
   useLayoutEffect(() => {
     if (!desktopDragState) return;
-    desktopDragGhostRef.current?.style.setProperty('--nx-touch-drag-left', `${desktopDragState.ghostLeft}px`);
-    desktopDragGhostRef.current?.style.setProperty('--nx-touch-drag-top', `${desktopDragState.y}px`);
-    desktopDragGhostRef.current?.style.setProperty('--nx-touch-drag-width', `${desktopDragState.ghostWidth}px`);
-    desktopDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-left', `${desktopDragState.lineLeft}px`);
-    desktopDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-top', `${desktopDragState.lineTop}px`);
-    desktopDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-width', `${desktopDragState.lineWidth}px`);
+    desktopDragGhostRef.current?.style.setProperty(
+      "--nx-touch-drag-left",
+      `${desktopDragState.ghostLeft}px`,
+    );
+    desktopDragGhostRef.current?.style.setProperty(
+      "--nx-touch-drag-top",
+      `${desktopDragState.y}px`,
+    );
+    desktopDragGhostRef.current?.style.setProperty(
+      "--nx-touch-drag-width",
+      `${desktopDragState.ghostWidth}px`,
+    );
+    desktopDropIndicatorRef.current?.style.setProperty(
+      "--nx-touch-drop-left",
+      `${desktopDragState.lineLeft}px`,
+    );
+    desktopDropIndicatorRef.current?.style.setProperty(
+      "--nx-touch-drop-top",
+      `${desktopDragState.lineTop}px`,
+    );
+    desktopDropIndicatorRef.current?.style.setProperty(
+      "--nx-touch-drop-width",
+      `${desktopDragState.lineWidth}px`,
+    );
   }, [desktopDragState]);
 
   useLayoutEffect(() => {
     if (!touchHoldState?.menuOpen) return;
-    touchBlockMenuRef.current?.style.setProperty('--nx-touch-menu-left', `${touchHoldState.menuLeft}px`);
-    touchBlockMenuRef.current?.style.setProperty('--nx-touch-menu-top', `${touchHoldState.menuTop}px`);
+    touchBlockMenuRef.current?.style.setProperty(
+      "--nx-touch-menu-left",
+      `${touchHoldState.menuLeft}px`,
+    );
+    touchBlockMenuRef.current?.style.setProperty(
+      "--nx-touch-menu-top",
+      `${touchHoldState.menuTop}px`,
+    );
   }, [touchHoldState]);
 
   useEffect(() => {
@@ -579,14 +675,18 @@ export function NoteDetailPage() {
       if (!current) return false;
       if (current.menuOpen) return false;
       const moved = Math.hypot(clientX - current.startX, clientY - current.startY);
-      if (!current.dragging && !forceDragging && moved <= editorSettings.blockTouch.tapMovementTolerance) {
+      if (
+        !current.dragging &&
+        !forceDragging &&
+        moved <= editorSettings.blockTouch.tapMovementTolerance
+      ) {
         return false;
       }
 
-      const blockList = document.querySelector<HTMLElement>('.note-block-list');
+      const blockList = document.querySelector<HTMLElement>(".note-block-list");
       if (!blockList) return false;
       const listRect = blockList.getBoundingClientRect();
-      const candidates = Array.from(blockList.querySelectorAll<HTMLElement>('[data-note-block-id]'))
+      const candidates = Array.from(blockList.querySelectorAll<HTMLElement>("[data-note-block-id]"))
         .filter((element) => element.dataset.noteBlockId !== current.blockId)
         .map((element) => ({ element, rect: element.getBoundingClientRect() }));
       let dropIndex = candidates.findIndex(({ rect }) => clientY < rect.top + rect.height / 2);
@@ -670,7 +770,7 @@ export function NoteDetailPage() {
       }
       if (touchHoldStateRef.current?.menuOpen) {
         const target = event.target instanceof Element ? event.target : null;
-        if (!target?.closest('.note-touch-block-menu-action') && event.cancelable) {
+        if (!target?.closest(".note-touch-block-menu-action") && event.cancelable) {
           event.preventDefault();
         }
         return;
@@ -719,14 +819,14 @@ export function NoteDetailPage() {
       animationFrame = window.requestAnimationFrame(runAutoScroll);
     }
 
-    window.addEventListener('touchmove', handleTouchMove, { capture: true, passive: false });
-    window.addEventListener('touchend', handleTouchEnd, { capture: true, passive: false });
-    window.addEventListener('touchcancel', handleTouchCancel, { capture: true, passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { capture: true, passive: false });
+    window.addEventListener("touchend", handleTouchEnd, { capture: true, passive: false });
+    window.addEventListener("touchcancel", handleTouchCancel, { capture: true, passive: true });
     finishTouchDragRef.current = finishTouchDrag;
     return () => {
-      window.removeEventListener('touchmove', handleTouchMove, true);
-      window.removeEventListener('touchend', handleTouchEnd, true);
-      window.removeEventListener('touchcancel', handleTouchCancel, true);
+      window.removeEventListener("touchmove", handleTouchMove, true);
+      window.removeEventListener("touchend", handleTouchEnd, true);
+      window.removeEventListener("touchcancel", handleTouchCancel, true);
       if (finishTouchDragRef.current === finishTouchDrag) {
         finishTouchDragRef.current = () => undefined;
       }
@@ -745,7 +845,10 @@ export function NoteDetailPage() {
         touchKeyboardSeenRef.current = true;
         return;
       }
-      if (touchKeyboardSeenRef.current && heightLoss <= editorSettings.blockTouch.keyboardThreshold / 2) {
+      if (
+        touchKeyboardSeenRef.current &&
+        heightLoss <= editorSettings.blockTouch.keyboardThreshold / 2
+      ) {
         const activeElement = document.activeElement;
         if (activeElement instanceof HTMLElement && activeElement.isContentEditable) {
           activeElement.blur();
@@ -755,11 +858,11 @@ export function NoteDetailPage() {
       }
     }
 
-    visualViewport?.addEventListener('resize', updateKeyboardState);
-    window.addEventListener('resize', updateKeyboardState);
+    visualViewport?.addEventListener("resize", updateKeyboardState);
+    window.addEventListener("resize", updateKeyboardState);
     return () => {
-      visualViewport?.removeEventListener('resize', updateKeyboardState);
-      window.removeEventListener('resize', updateKeyboardState);
+      visualViewport?.removeEventListener("resize", updateKeyboardState);
+      window.removeEventListener("resize", updateKeyboardState);
     };
   }, [deactivateTouchBlock, touchActiveBlockId, touchAdapted]);
 
@@ -768,12 +871,13 @@ export function NoteDetailPage() {
 
     function handlePointerDown(event: globalThis.PointerEvent) {
       const target = event.target instanceof Element ? event.target : null;
-      if (!target || target.closest('.note-block, .document-top-toolbar, .note-toolbar-popover')) return;
+      if (!target || target.closest(".note-block, .document-top-toolbar, .note-toolbar-popover"))
+        return;
       deactivateTouchBlock(touchActiveBlockId ?? undefined);
     }
 
-    document.addEventListener('pointerdown', handlePointerDown, true);
-    return () => document.removeEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDown, true);
   }, [deactivateTouchBlock, touchActiveBlockId, touchAdapted]);
 
   useEffect(() => {
@@ -781,45 +885,46 @@ export function NoteDetailPage() {
   }, [refreshTocEntries, note?.id, visibleBlocks]);
 
   useLayoutEffect(() => {
-    const shell = document.querySelector<HTMLElement>('.note-document-shell');
-    const documentTop = document.querySelector<HTMLElement>('.document-top');
-    const topbar = document.querySelector<HTMLElement>('.topbar');
+    const shell = document.querySelector<HTMLElement>(".note-document-shell");
+    const documentTop = document.querySelector<HTMLElement>(".document-top");
+    const topbar = document.querySelector<HTMLElement>(".topbar");
     if (!shell || !documentTop) return;
     const visualViewport = window.visualViewport;
     const topbarBaseTop = topbar
       ? Math.max(0, Number.parseFloat(window.getComputedStyle(topbar).top) || 0)
       : 0;
-    const bars = Array.from(document.querySelectorAll<HTMLElement>('.topbar, .document-top, .note-edit-toolbar-shell'));
+    const bars = Array.from(
+      document.querySelectorAll<HTMLElement>(".topbar, .document-top, .note-edit-toolbar-shell"),
+    );
     function updateOffset() {
       if (topbar) {
-        const visualViewportTop = touchAdapted
-          ? Math.max(0, visualViewport?.offsetTop ?? 0)
-          : 0;
-        topbar.style.setProperty('--nx-visual-viewport-top', `${visualViewportTop}px`);
-        const documentTopOffset = topbarBaseTop + visualViewportTop + topbar.getBoundingClientRect().height;
-        documentTop!.style.setProperty('--nx-document-top-offset', `${documentTopOffset}px`);
+        const visualViewportTop = touchAdapted ? Math.max(0, visualViewport?.offsetTop ?? 0) : 0;
+        topbar.style.setProperty("--nx-visual-viewport-top", `${visualViewportTop}px`);
+        const documentTopOffset =
+          topbarBaseTop + visualViewportTop + topbar.getBoundingClientRect().height;
+        documentTop!.style.setProperty("--nx-document-top-offset", `${documentTopOffset}px`);
       }
       const bottom = Math.max(0, ...bars.map((bar) => bar.getBoundingClientRect().bottom));
-      shell!.style.setProperty('--nx-note-navigation-top', `${bottom + 16}px`);
+      shell!.style.setProperty("--nx-note-navigation-top", `${bottom + 16}px`);
     }
     const observer = new ResizeObserver(updateOffset);
     bars.forEach((bar) => observer.observe(bar));
     updateOffset();
-    window.addEventListener('resize', updateOffset);
-    visualViewport?.addEventListener('resize', updateOffset);
-    visualViewport?.addEventListener('scroll', updateOffset);
+    window.addEventListener("resize", updateOffset);
+    visualViewport?.addEventListener("resize", updateOffset);
+    visualViewport?.addEventListener("scroll", updateOffset);
     return () => {
       observer.disconnect();
-      window.removeEventListener('resize', updateOffset);
-      visualViewport?.removeEventListener('resize', updateOffset);
-      visualViewport?.removeEventListener('scroll', updateOffset);
-      topbar?.style.removeProperty('--nx-visual-viewport-top');
-      documentTop.style.removeProperty('--nx-document-top-offset');
+      window.removeEventListener("resize", updateOffset);
+      visualViewport?.removeEventListener("resize", updateOffset);
+      visualViewport?.removeEventListener("scroll", updateOffset);
+      topbar?.style.removeProperty("--nx-visual-viewport-top");
+      documentTop.style.removeProperty("--nx-document-top-offset");
     };
   }, [note?.id, touchAdapted]);
 
   useEffect(() => {
-    const blockList = document.querySelector('.note-block-list');
+    const blockList = document.querySelector(".note-block-list");
     if (!blockList) {
       return undefined;
     }
@@ -839,12 +944,12 @@ export function NoteDetailPage() {
       setActiveTocId(findActiveTocEntryId(tocEntriesRef.current));
     }
 
-    window.addEventListener('scroll', updateActiveTocEntry, { passive: true });
-    window.addEventListener('resize', updateActiveTocEntry);
+    window.addEventListener("scroll", updateActiveTocEntry, { passive: true });
+    window.addEventListener("resize", updateActiveTocEntry);
 
     return () => {
-      window.removeEventListener('scroll', updateActiveTocEntry);
-      window.removeEventListener('resize', updateActiveTocEntry);
+      window.removeEventListener("scroll", updateActiveTocEntry);
+      window.removeEventListener("resize", updateActiveTocEntry);
       if (tocRefreshFrameRef.current) {
         window.cancelAnimationFrame(tocRefreshFrameRef.current);
       }
@@ -867,13 +972,13 @@ export function NoteDetailPage() {
       const request = { nonce: ++typingRequestNonceRef.current, text: event.key };
       if (!richTextToPlainText(note.title).trim()) {
         event.preventDefault();
-        setHeaderTypingRequest({ ...request, field: 'title' });
+        setHeaderTypingRequest({ ...request, field: "title" });
         return;
       }
 
       if (!richTextToPlainText(note.subtitle).trim()) {
         event.preventDefault();
-        setHeaderTypingRequest({ ...request, field: 'subtitle' });
+        setHeaderTypingRequest({ ...request, field: "subtitle" });
         return;
       }
 
@@ -883,8 +988,8 @@ export function NoteDetailPage() {
       }
     }
 
-    window.addEventListener('keydown', handleInitialTyping);
-    return () => window.removeEventListener('keydown', handleInitialTyping);
+    window.addEventListener("keydown", handleInitialTyping);
+    return () => window.removeEventListener("keydown", handleInitialTyping);
   }, [deleteBlockState, draggedBlockId, firstBlockId, note, panelsOpen]);
 
   useEffect(() => {
@@ -921,7 +1026,7 @@ export function NoteDetailPage() {
     }
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key !== 'Escape' || !desktopDragStateRef.current) return;
+      if (event.key !== "Escape" || !desktopDragStateRef.current) return;
       event.preventDefault();
       event.stopPropagation();
       finishDesktopBlockDrag(true);
@@ -953,19 +1058,19 @@ export function NoteDetailPage() {
       animationFrame = window.requestAnimationFrame(runAutoScroll);
     }
 
-    window.addEventListener('pointermove', handlePointerMove, { capture: true });
-    window.addEventListener('pointerup', handlePointerEnd, { capture: true });
-    window.addEventListener('pointercancel', handlePointerCancel, { capture: true });
-    window.addEventListener('lostpointercapture', handleLostPointerCapture, { capture: true });
-    window.addEventListener('keydown', handleEscape, { capture: true });
+    window.addEventListener("pointermove", handlePointerMove, { capture: true });
+    window.addEventListener("pointerup", handlePointerEnd, { capture: true });
+    window.addEventListener("pointercancel", handlePointerCancel, { capture: true });
+    window.addEventListener("lostpointercapture", handleLostPointerCapture, { capture: true });
+    window.addEventListener("keydown", handleEscape, { capture: true });
     animationFrame = window.requestAnimationFrame(runAutoScroll);
 
     return () => {
-      window.removeEventListener('pointermove', handlePointerMove, true);
-      window.removeEventListener('pointerup', handlePointerEnd, true);
-      window.removeEventListener('pointercancel', handlePointerCancel, true);
-      window.removeEventListener('lostpointercapture', handleLostPointerCapture, true);
-      window.removeEventListener('keydown', handleEscape, true);
+      window.removeEventListener("pointermove", handlePointerMove, true);
+      window.removeEventListener("pointerup", handlePointerEnd, true);
+      window.removeEventListener("pointercancel", handlePointerCancel, true);
+      window.removeEventListener("lostpointercapture", handleLostPointerCapture, true);
+      window.removeEventListener("keydown", handleEscape, true);
       if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
     };
   }, [draggedBlockId]);
@@ -973,37 +1078,55 @@ export function NoteDetailPage() {
   if (!notesReady || isNewNote) {
     return null;
   }
-  if (note?.cloudOnly) return <div className="page-content">
-    <button className="back-button" type="button" onClick={() => navigate(-1)}><ChevronLeft />{t('common.back')}</button>
-    <p role="status">{t(transferError || downloadError ? 'cloud.noteUnavailable' : 'cloud.loadingNote')}</p>
-    {(transferError || downloadError) && <button className="secondary-button" type="button" onClick={() => {
-      setDownloadError(null);
-      void ensureAvailable(note.id).catch((error) => setDownloadError(String(error)));
-    }}>{t('google.retry')}</button>}
-  </div>;
+  if (note?.cloudOnly)
+    return (
+      <div className="page-content">
+        <button className="back-button" type="button" onClick={() => navigate(-1)}>
+          <ChevronLeft />
+          {t("common.back")}
+        </button>
+        <p role="status">
+          {t(transferError || downloadError ? "cloud.noteUnavailable" : "cloud.loadingNote")}
+        </p>
+        {(transferError || downloadError) && (
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => {
+              setDownloadError(null);
+              void ensureAvailable(note.id).catch((error) => setDownloadError(String(error)));
+            }}
+          >
+            {t("google.retry")}
+          </button>
+        )}
+      </div>
+    );
 
   if (!note) {
     return (
       <div className="page-content list-page-grid">
         <button className="back-button" type="button" onClick={() => navigate(-1)}>
           <ChevronLeft />
-          {t('common.back')}
+          {t("common.back")}
         </button>
         <EmptyState />
       </div>
     );
   }
 
-  async function addContentBlock(kind: NoteBlock['kind']) {
+  async function addContentBlock(kind: NoteBlock["kind"]) {
     if (!note) {
       return;
     }
     const block = await addBlock(note.id, {
       kind,
-      contentJson: kind === 'content' ? emptyTiptapDocument : null,
+      contentJson: kind === "content" ? emptyTiptapDocument : null,
     });
     if (block) {
-      requestAnimationFrame(() => document.getElementById(`block-${block.id}`)?.scrollIntoView({ block: 'center' }));
+      requestAnimationFrame(() =>
+        document.getElementById(`block-${block.id}`)?.scrollIntoView({ block: "center" }),
+      );
     }
   }
 
@@ -1013,18 +1136,20 @@ export function NoteDetailPage() {
     }
     await deleteBlock(note.id, deleteBlockState.blockId);
     setDeleteBlockState(null);
-    pushToast(t('notes.blockDeleted'), 'warning');
+    pushToast(t("notes.blockDeleted"), "warning");
   }
 
   async function handleDeleteFile(fileId: string) {
-    const exists = useNotesStore.getState().notes
-      .find((item) => item.id === note?.id)?.files?.some((file) => file.id === fileId);
+    const exists = useNotesStore
+      .getState()
+      .notes.find((item) => item.id === note?.id)
+      ?.files?.some((file) => file.id === fileId);
     if (!note || !exists) return;
     try {
       await deleteFile(note.id, fileId);
-      pushToast(t('notes.fileDeleted'), 'warning');
+      pushToast(t("notes.fileDeleted"), "warning");
     } catch {
-      pushToast(t('notes.fileDeleteFailed'), 'warning');
+      pushToast(t("notes.fileDeleteFailed"), "warning");
     }
   }
 
@@ -1035,7 +1160,7 @@ export function NoteDetailPage() {
 
   function cancelExampleEdit() {
     setEditingExampleIndex(null);
-    setEditingExampleText('');
+    setEditingExampleText("");
   }
 
   async function saveExampleEdit(index: number) {
@@ -1045,7 +1170,7 @@ export function NoteDetailPage() {
 
     await updateAdditionalExample(note.id, index, editingExampleText);
     cancelExampleEdit();
-    pushToast(t('noteDetail.exampleUpdated'), 'success');
+    pushToast(t("noteDetail.exampleUpdated"), "success");
   }
 
   function selectLinkedNote(linkedNoteId: string) {
@@ -1055,7 +1180,7 @@ export function NoteDetailPage() {
     }
 
     setSelectedLinkedNoteId(selected.id);
-    setLinkInput(richTextToPlainText(stripInlineFormatting(selected.title)) || t('notes.untitled'));
+    setLinkInput(richTextToPlainText(stripInlineFormatting(selected.title)) || t("notes.untitled"));
   }
 
   async function saveRelatedLink() {
@@ -1069,22 +1194,22 @@ export function NoteDetailPage() {
       const href = normalizeExternalHref(linkInput);
       const title = titleFromExternalHref(linkInput);
       if (!href || !title) {
-        pushToast(t('noteDetail.linkUrlRequired'), 'warning');
+        pushToast(t("noteDetail.linkUrlRequired"), "warning");
         return;
       }
       await addRelatedLink(note.id, title, href);
     }
 
-    setLinkInput('');
+    setLinkInput("");
     setSelectedLinkedNoteId(null);
     setLinkOpen(false);
-    pushToast(t('noteDetail.linkAdded'), 'success');
+    pushToast(t("noteDetail.linkAdded"), "success");
   }
 
   function startBlockDrag(event: PointerEvent<HTMLButtonElement>, blockId: string) {
-    if (!note || event.button !== 0 || event.pointerType === 'touch') return;
+    if (!note || event.button !== 0 || event.pointerType === "touch") return;
     const block = document.getElementById(`block-${blockId}`);
-    const blockList = block?.closest<HTMLElement>('.note-block-list');
+    const blockList = block?.closest<HTMLElement>(".note-block-list");
     const rect = block?.getBoundingClientRect();
     const listRect = blockList?.getBoundingClientRect();
     if (!rect || !listRect) return;
@@ -1094,9 +1219,8 @@ export function NoteDetailPage() {
     const blockIds = dragBlockIds ?? (note.blocks ?? []).map((block) => block.id);
     const sourceIndex = Math.max(0, blockIds.indexOf(blockId));
     const nextState: DesktopDragState = {
-      anchorRatio: rect.height > 0
-        ? Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height))
-        : 0.5,
+      anchorRatio:
+        rect.height > 0 ? Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)) : 0.5,
       anchorY: event.clientY,
       blockId,
       dropIndex: sourceIndex,
@@ -1132,28 +1256,40 @@ export function NoteDetailPage() {
       requestAnimationFrame(() => {
         const element = document.getElementById(`block-${blockId}`);
         if (!element) return;
-        const handle = element.querySelector<HTMLButtonElement>('.note-block-handle');
+        const handle = element.querySelector<HTMLButtonElement>(".note-block-handle");
         handle?.focus({ preventScroll: true });
         const rect = element.getBoundingClientRect();
-        const headerBottom = Math.max(0, ...Array.from(document.querySelectorAll<HTMLElement>('.topbar, .document-top, .note-edit-toolbar-shell'))
-          .map((bar) => bar.getBoundingClientRect().bottom)) + 16;
+        const headerBottom =
+          Math.max(
+            0,
+            ...Array.from(
+              document.querySelectorAll<HTMLElement>(
+                ".topbar, .document-top, .note-edit-toolbar-shell",
+              ),
+            ).map((bar) => bar.getBoundingClientRect().bottom),
+          ) + 16;
         const available = Math.max(0, window.innerHeight - headerBottom - 16);
         // Very tall blocks cannot fit: keep their heading and reorder handle
         // visible while centering shorter blocks in the unobscured viewport.
         const height = Math.min(rect.height, available);
         const desiredTop = headerBottom + (available - height) / 2;
-        window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - desiredTop), behavior: 'instant' });
+        window.scrollTo({
+          top: Math.max(0, window.scrollY + rect.top - desiredTop),
+          behavior: "instant",
+        });
       });
-    } finally { keyboardReorderPendingRef.current = false; }
+    } finally {
+      keyboardReorderPendingRef.current = false;
+    }
   }
 
   function updateDesktopDragPosition(clientX: number, clientY: number) {
     const current = desktopDragStateRef.current;
     if (!current) return;
-    const blockList = document.querySelector<HTMLElement>('.note-block-list');
+    const blockList = document.querySelector<HTMLElement>(".note-block-list");
     if (!blockList) return;
     const listRect = blockList.getBoundingClientRect();
-    const candidates = Array.from(blockList.querySelectorAll<HTMLElement>('[data-note-block-id]'))
+    const candidates = Array.from(blockList.querySelectorAll<HTMLElement>("[data-note-block-id]"))
       .filter((element) => element.dataset.noteBlockId !== current.blockId)
       .map((element) => element.getBoundingClientRect());
     let dropIndex = candidates.findIndex((rect) => clientY < rect.top + rect.height / 2);
@@ -1221,9 +1357,10 @@ export function NoteDetailPage() {
   function moveTouchMenuBlock(direction: -1 | 1) {
     const current = touchHoldStateRef.current;
     if (!note || !current?.menuOpen) return;
-    const blockIds = touchMenuBlockIdsRef.current.length > 0
-      ? [...touchMenuBlockIdsRef.current]
-      : (note.blocks ?? []).map((block) => block.id);
+    const blockIds =
+      touchMenuBlockIdsRef.current.length > 0
+        ? [...touchMenuBlockIdsRef.current]
+        : (note.blocks ?? []).map((block) => block.id);
     const index = blockIds.indexOf(current.blockId);
     const targetIndex = index + direction;
     if (index < 0 || targetIndex < 0 || targetIndex >= blockIds.length) return;
@@ -1245,14 +1382,22 @@ export function NoteDetailPage() {
       const element = document.getElementById(`block-${current.blockId}`);
       if (!element) return;
       const rect = element.getBoundingClientRect();
-      const headerBottom = Math.max(0, ...Array.from(document.querySelectorAll<HTMLElement>('.topbar, .document-top, .note-edit-toolbar-shell'))
-        .map((bar) => bar.getBoundingClientRect().bottom)) + 16;
+      const headerBottom =
+        Math.max(
+          0,
+          ...Array.from(
+            document.querySelectorAll<HTMLElement>(
+              ".topbar, .document-top, .note-edit-toolbar-shell",
+            ),
+          ).map((bar) => bar.getBoundingClientRect().bottom),
+        ) + 16;
       const viewport = window.visualViewport;
-      const viewportBottom = (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight) - 16;
+      const viewportBottom =
+        (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight) - 16;
       if (rect.top < headerBottom) {
-        window.scrollBy({ top: rect.top - headerBottom, behavior: 'smooth' });
+        window.scrollBy({ top: rect.top - headerBottom, behavior: "smooth" });
       } else if (rect.bottom > viewportBottom) {
-        window.scrollBy({ top: rect.bottom - viewportBottom, behavior: 'smooth' });
+        window.scrollBy({ top: rect.bottom - viewportBottom, behavior: "smooth" });
       }
     });
   }
@@ -1260,21 +1405,25 @@ export function NoteDetailPage() {
   function moveCurrentNoteToTrash() {
     if (!note) return;
     void moveToTrash(note.id).then(() => {
-      pushToast(t('notes.trashChanged'), 'warning');
-      navigate('/trash');
+      pushToast(t("notes.trashChanged"), "warning");
+      navigate("/trash");
     });
   }
 
   return (
     <>
-      <header className={[
-        'document-top',
-        touchAdapted ? 'document-top--touch-adapted' : '',
-        adapted && !touchAdapted ? 'document-top--narrow-desktop' : '',
-      ].filter(Boolean).join(' ')}>
+      <header
+        className={[
+          "document-top",
+          touchAdapted ? "document-top--touch-adapted" : "",
+          adapted && !touchAdapted ? "document-top--narrow-desktop" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <button className="back-button" type="button" onClick={() => navigate(-1)}>
           <ChevronLeft />
-          {t('common.back')}
+          {t("common.back")}
         </button>
         <div className="document-top-toolbar">
           <NoteTiptapToolbar
@@ -1285,11 +1434,15 @@ export function NoteDetailPage() {
           />
         </div>
         {touchAdapted ? (
-          <div className="note-document-actions-menu" ref={noteActionsRef} onKeyDown={noteActionsMenu.onKeyDown}>
+          <div
+            className="note-document-actions-menu"
+            ref={noteActionsRef}
+            onKeyDown={noteActionsMenu.onKeyDown}
+          >
             <button
               className="icon-button"
               type="button"
-              aria-label={t('notes.openMenu')}
+              aria-label={t("notes.openMenu")}
               aria-expanded={noteActionsOpen}
               aria-haspopup="menu"
               ref={noteActionsMenu.triggerRef}
@@ -1313,8 +1466,8 @@ export function NoteDetailPage() {
                   >
                     <Cloud />
                     {excludedNotes.includes(note.id)
-                      ? t('noteDetail.includeInBackup')
-                      : t('noteDetail.excludeFromBackup')}
+                      ? t("noteDetail.includeInBackup")
+                      : t("noteDetail.excludeFromBackup")}
                   </button>
                 ) : null}
                 <button
@@ -1324,497 +1477,628 @@ export function NoteDetailPage() {
                   onClick={() => void toggleFavorite(note.id)}
                 >
                   <Star />
-                  {note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
+                  {note.isFavorite ? t("common.unfavorite") : t("common.favorite")}
                 </button>
-                <button className="danger" type="button" role="menuitem" onClick={moveCurrentNoteToTrash}>
+                <button
+                  className="danger"
+                  type="button"
+                  role="menuitem"
+                  onClick={moveCurrentNoteToTrash}
+                >
                   <Trash2 />
-                  {t('notes.moveToTrash')}
+                  {t("notes.moveToTrash")}
                 </button>
               </div>
             ) : null}
           </div>
         ) : (
-        <div className="document-actions">
-          {cloudAccountId && <button className="icon-button" type="button"
-            aria-label={excludedNotes.includes(note.id) ? t('noteDetail.includeInBackup') : t('noteDetail.excludeFromBackup')}
-            title={excludedNotes.includes(note.id) ? t('noteDetail.includeInBackup') : t('noteDetail.excludeFromBackup')}
-            aria-pressed={!excludedNotes.includes(note.id)}
-            onClick={() => void toggleExcluded(note.id)}><Cloud /></button>}
-          <button
-            className={note.isFavorite ? 'icon-button document-actions__favorite is-active' : 'icon-button document-actions__favorite'}
-            type="button"
-            aria-label={note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
-            aria-pressed={note.isFavorite}
-            onClick={() => void toggleFavorite(note.id)}
-          >
-            <Star />
-          </button>
-          <button
-            className="icon-button"
-            type="button"
-            aria-label={t('notes.exportNote')}
-            hidden={!isTauri()}
-            disabled={isExportingNote}
-            onClick={() => void handleExportNote()}
-          >
-            <Download />
-          </button>
-          <span className="inline-actions">
-            <FileText />
-            {t('noteDetail.savedLocal')}
-          </span>
-          <button
-            className="icon-button danger"
-            type="button"
-            aria-label={t('notes.moveToTrash')}
-            onClick={moveCurrentNoteToTrash}
-          >
-            <Trash2 />
-          </button>
-        </div>
+          <div className="document-actions">
+            {cloudAccountId && (
+              <button
+                className="icon-button"
+                type="button"
+                aria-label={
+                  excludedNotes.includes(note.id)
+                    ? t("noteDetail.includeInBackup")
+                    : t("noteDetail.excludeFromBackup")
+                }
+                title={
+                  excludedNotes.includes(note.id)
+                    ? t("noteDetail.includeInBackup")
+                    : t("noteDetail.excludeFromBackup")
+                }
+                aria-pressed={!excludedNotes.includes(note.id)}
+                onClick={() => void toggleExcluded(note.id)}
+              >
+                <Cloud />
+              </button>
+            )}
+            <button
+              className={
+                note.isFavorite
+                  ? "icon-button document-actions__favorite is-active"
+                  : "icon-button document-actions__favorite"
+              }
+              type="button"
+              aria-label={note.isFavorite ? t("common.unfavorite") : t("common.favorite")}
+              aria-pressed={note.isFavorite}
+              onClick={() => void toggleFavorite(note.id)}
+            >
+              <Star />
+            </button>
+            <button
+              className="icon-button"
+              type="button"
+              aria-label={t("notes.exportNote")}
+              hidden={!isTauri()}
+              disabled={isExportingNote}
+              onClick={() => handleExportNote()}
+            >
+              <Download />
+            </button>
+            <span className="inline-actions">
+              <FileText />
+              {t("noteDetail.savedLocal")}
+            </span>
+            <button
+              className="icon-button danger"
+              type="button"
+              aria-label={t("notes.moveToTrash")}
+              onClick={moveCurrentNoteToTrash}
+            >
+              <Trash2 />
+            </button>
+          </div>
         )}
       </header>
 
       <NoteHeaderDraftProvider key={note.id} note={note} onSave={updateHeader}>
-      <div className={[
-        'note-document-shell',
-        adapted ? 'note-document-shell--adapted' : '',
-        touchAdapted ? 'note-document-shell--touch' : '',
-      ].filter(Boolean).join(' ')}>
-        <aside className="note-toc" aria-label={t('notes.tableOfContents')}>
-          <div className="note-toc-dashes" aria-hidden="true">
-            {tocEntries.map((entry) => (
-              <span
-                className={[
-                  'note-toc-dash',
-                  `note-toc-dash--level-${entry.level}`,
-                  activeTocId === entry.id && 'is-active',
-                ].filter(Boolean).join(' ')}
-                key={entry.id}
-              />
-            ))}
-          </div>
-          <div className="note-toc-content">
-            {tocEntries.length ? (
-              <nav>
-                {tocEntries.map((entry) => (
-                  <button
-                    className={[
-                      'note-toc-link',
-                      `note-toc-link--level-${entry.level}`,
-                      activeTocId === entry.id && 'is-active',
-                    ].filter(Boolean).join(' ')}
-                    key={entry.id}
-                    type="button"
-                    onClick={(event) => {
-                      event.currentTarget.blur();
-                      scrollToTocEntry(entry.id);
-                    }}
-                  >
-                    {entry.label}
-                  </button>
-                ))}
-              </nav>
-            ) : (
-              <span className="note-toc-empty">{t('notes.emptyToc')}</span>
-            )}
-          </div>
-        </aside>
+        <div
+          className={[
+            "note-document-shell",
+            adapted ? "note-document-shell--adapted" : "",
+            touchAdapted ? "note-document-shell--touch" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          <aside className="note-toc" aria-label={t("notes.tableOfContents")}>
+            <div className="note-toc-dashes" aria-hidden="true">
+              {tocEntries.map((entry) => (
+                <span
+                  className={[
+                    "note-toc-dash",
+                    `note-toc-dash--level-${entry.level}`,
+                    activeTocId === entry.id && "is-active",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  key={entry.id}
+                />
+              ))}
+            </div>
+            <div className="note-toc-content">
+              {tocEntries.length ? (
+                <nav>
+                  {tocEntries.map((entry) => (
+                    <button
+                      className={[
+                        "note-toc-link",
+                        `note-toc-link--level-${entry.level}`,
+                        activeTocId === entry.id && "is-active",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      key={entry.id}
+                      type="button"
+                      onClick={(event) => {
+                        event.currentTarget.blur();
+                        scrollToTocEntry(entry.id);
+                      }}
+                    >
+                      {entry.label}
+                    </button>
+                  ))}
+                </nav>
+              ) : (
+                <span className="note-toc-empty">{t("notes.emptyToc")}</span>
+              )}
+            </div>
+          </aside>
 
-        <main className="note-document-main">
-          <NoteHeader
-            note={note}
-            noteTags={noteTags}
-            onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
-            onThumbnailChange={(thumbnail) => void updateThumbnail(note.id, thumbnail)}
-            onToolbarTargetChange={setToolbarTarget}
-            t={t}
-            typingRequest={headerTypingRequest}
-          />
+          <main className="note-document-main">
+            <NoteHeader
+              note={note}
+              noteTags={noteTags}
+              onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
+              onThumbnailChange={(thumbnail) => void updateThumbnail(note.id, thumbnail)}
+              onToolbarTargetChange={setToolbarTarget}
+              t={t}
+              typingRequest={headerTypingRequest}
+            />
 
-          <section className={[
-            'note-block-list',
-            draggedBlockId ? 'is-reordering' : '',
-            desktopDragState ? 'is-desktop-drag-compacted' : '',
-            touchHoldState ? 'is-touch-compacted' : '',
-          ].filter(Boolean).join(' ')}>
-            {visibleBlocks.map((block) => (
-              <BlockEditor
-                block={block}
-                bubbleMenuEnabled={!touchAdapted}
-                contentTypingRequest={block.id === firstBlockId ? firstBlockTypingRequest : null}
-                dragged={draggedBlockId === block.id}
-                key={block.id}
-                noteId={note.id}
-                onDelete={() => setDeleteBlockState({ blockId: block.id, title: richTextToPlainText(block.title).trim() || t('notes.untitledBlock') })}
-                onDeleteFile={handleDeleteFile}
-                onDragStart={(event) => startBlockDrag(event, block.id)}
-                onKeyboardReorder={(direction) => void moveBlockWithKeyboard(block.id, direction)}
-                onRequestFileUpload={async (kind) => {
-                  try {
-                    const sourcePath = await chooseNoteAttachment(kind);
-                    if (!sourcePath) {
+            <section
+              className={[
+                "note-block-list",
+                draggedBlockId ? "is-reordering" : "",
+                desktopDragState ? "is-desktop-drag-compacted" : "",
+                touchHoldState ? "is-touch-compacted" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {visibleBlocks.map((block) => (
+                <BlockEditor
+                  block={block}
+                  bubbleMenuEnabled={!touchAdapted}
+                  contentTypingRequest={block.id === firstBlockId ? firstBlockTypingRequest : null}
+                  dragged={draggedBlockId === block.id}
+                  key={block.id}
+                  noteId={note.id}
+                  onDelete={() =>
+                    setDeleteBlockState({
+                      blockId: block.id,
+                      title: richTextToPlainText(block.title).trim() || t("notes.untitledBlock"),
+                    })
+                  }
+                  onDeleteFile={handleDeleteFile}
+                  onDragStart={(event) => startBlockDrag(event, block.id)}
+                  onKeyboardReorder={(direction) => void moveBlockWithKeyboard(block.id, direction)}
+                  onRequestFileUpload={async (kind) => {
+                    try {
+                      const sourcePath = await chooseNoteAttachment(kind);
+                      if (!sourcePath) {
+                        return null;
+                      }
+                      const file = await importFileForBlock(sourcePath, note.id, block.id);
+                      if (file) {
+                        pushToast(t("notes.fileAdded"), "success");
+                      }
+                      return file;
+                    } catch {
+                      pushToast(t("notes.fileAddFailed"), "warning");
                       return null;
                     }
-                    const file = await importFileForBlock(sourcePath, note.id, block.id);
-                    if (file) {
-                      pushToast(t('notes.fileAdded'), 'success');
-                    }
-                    return file;
-                  } catch {
-                    pushToast(t('notes.fileAddFailed'), 'warning');
-                    return null;
-                  }
+                  }}
+                  onTouchHoldEnd={() => endTouchBlockHold(block.id)}
+                  onTouchHoldStart={(x, y) => beginTouchBlockHold(block.id, x, y)}
+                  onTouchMenuOpen={(x, y) => openTouchBlockMenu(block.id, x, y)}
+                  onTouchActivate={() => activateTouchBlock(block.id)}
+                  onToolbarTargetChange={setToolbarTarget}
+                  onTocChange={refreshTocEntries}
+                  touchActive={touchActiveBlockId === block.id}
+                  touchCompacted={Boolean(touchHoldState || desktopDragState)}
+                  touchDragging={touchHoldState?.blockId === block.id && touchHoldState.dragging}
+                  touchHeld={touchHoldState?.blockId === block.id}
+                  touchHoldEnabled={touchAdapted && !touchActiveBlockId && !draggedBlockId}
+                  touchMenuOpen={touchHoldState?.blockId === block.id && touchHoldState.menuOpen}
+                  touchMode={touchAdapted}
+                />
+              ))}
+            </section>
+
+            {touchHoldState?.dragging && touchHeldBlock ? (
+              <>
+                <div className="note-touch-drag-ghost" ref={touchDragGhostRef} aria-hidden="true">
+                  {richTextToPlainText(touchHeldBlock.title).trim() ? (
+                    <div className="note-block-compact-title">
+                      {richTextToPlainText(touchHeldBlock.title).trim()}
+                    </div>
+                  ) : null}
+                  {touchHeldBlock.contentText.trim() ? (
+                    <div className="note-block-compact-content">
+                      {touchHeldBlock.contentText.trim()}
+                    </div>
+                  ) : null}
+                </div>
+                <div
+                  className="note-touch-drop-indicator"
+                  ref={touchDropIndicatorRef}
+                  aria-hidden="true"
+                />
+              </>
+            ) : null}
+
+            {desktopDragState && desktopDraggedBlock ? (
+              <>
+                <div
+                  className="note-touch-drag-ghost note-desktop-drag-ghost"
+                  ref={desktopDragGhostRef}
+                  aria-hidden="true"
+                >
+                  {richTextToPlainText(desktopDraggedBlock.title).trim() ? (
+                    <div className="note-block-compact-title">
+                      {richTextToPlainText(desktopDraggedBlock.title).trim()}
+                    </div>
+                  ) : null}
+                  {desktopDraggedBlock.contentText.trim() ? (
+                    <div className="note-block-compact-content">
+                      {desktopDraggedBlock.contentText.trim()}
+                    </div>
+                  ) : null}
+                </div>
+                <div
+                  className="note-touch-drop-indicator note-desktop-drop-indicator"
+                  ref={desktopDropIndicatorRef}
+                  aria-hidden="true"
+                />
+              </>
+            ) : null}
+
+            {touchHoldState?.menuOpen && touchHeldBlock ? (
+              <div
+                className="note-touch-block-menu-layer"
+                onPointerDown={(event) => {
+                  if (event.target === event.currentTarget) closeTouchBlockMenu();
                 }}
-                onTouchHoldEnd={() => endTouchBlockHold(block.id)}
-                onTouchHoldStart={(x, y) => beginTouchBlockHold(block.id, x, y)}
-                onTouchMenuOpen={(x, y) => openTouchBlockMenu(block.id, x, y)}
-                onTouchActivate={() => activateTouchBlock(block.id)}
-                onToolbarTargetChange={setToolbarTarget}
-                onTocChange={refreshTocEntries}
-                touchActive={touchActiveBlockId === block.id}
-                touchCompacted={Boolean(touchHoldState || desktopDragState)}
-                touchDragging={touchHoldState?.blockId === block.id && touchHoldState.dragging}
-                touchHeld={touchHoldState?.blockId === block.id}
-                touchHoldEnabled={touchAdapted && !touchActiveBlockId && !draggedBlockId}
-                touchMenuOpen={touchHoldState?.blockId === block.id && touchHoldState.menuOpen}
-                touchMode={touchAdapted}
-              />
-            ))}
-          </section>
-
-          {touchHoldState?.dragging && touchHeldBlock ? (
-            <>
-              <div className="note-touch-drag-ghost" ref={touchDragGhostRef} aria-hidden="true">
-                {richTextToPlainText(touchHeldBlock.title).trim() ? (
-                  <div className="note-block-compact-title">{richTextToPlainText(touchHeldBlock.title).trim()}</div>
-                ) : null}
-                {touchHeldBlock.contentText.trim() ? (
-                  <div className="note-block-compact-content">{touchHeldBlock.contentText.trim()}</div>
-                ) : null}
-              </div>
-              <div className="note-touch-drop-indicator" ref={touchDropIndicatorRef} aria-hidden="true" />
-            </>
-          ) : null}
-
-          {desktopDragState && desktopDraggedBlock ? (
-            <>
-              <div
-                className="note-touch-drag-ghost note-desktop-drag-ghost"
-                ref={desktopDragGhostRef}
-                aria-hidden="true"
               >
-                {richTextToPlainText(desktopDraggedBlock.title).trim() ? (
-                  <div className="note-block-compact-title">{richTextToPlainText(desktopDraggedBlock.title).trim()}</div>
-                ) : null}
-                {desktopDraggedBlock.contentText.trim() ? (
-                  <div className="note-block-compact-content">{desktopDraggedBlock.contentText.trim()}</div>
-                ) : null}
+                <div
+                  className="note-touch-block-menu"
+                  ref={touchBlockMenuRef}
+                  role="menu"
+                  aria-label={t("notes.reorderBlock")}
+                >
+                  <button
+                    className="note-touch-block-menu-action is-up"
+                    type="button"
+                    role="menuitem"
+                    aria-label={t("notes.moveBlockUp")}
+                    title={t("notes.moveBlockUp")}
+                    disabled={touchMenuBlockIndex <= 0}
+                    onClick={() => moveTouchMenuBlock(-1)}
+                  >
+                    <ChevronUp aria-hidden="true" />
+                  </button>
+                  <button
+                    className="note-touch-block-menu-action is-down"
+                    type="button"
+                    role="menuitem"
+                    aria-label={t("notes.moveBlockDown")}
+                    title={t("notes.moveBlockDown")}
+                    disabled={
+                      touchMenuBlockIndex < 0 || touchMenuBlockIndex >= touchMenuBlockIds.length - 1
+                    }
+                    onClick={() => moveTouchMenuBlock(1)}
+                  >
+                    <ChevronDown aria-hidden="true" />
+                  </button>
+                  <button
+                    className={`note-touch-block-menu-action is-delete is-${touchHoldState.menuDeleteSide}`}
+                    type="button"
+                    role="menuitem"
+                    aria-label={t("common.delete")}
+                    title={t("common.delete")}
+                    onClick={() => {
+                      closeTouchBlockMenu();
+                      setDeleteBlockState({
+                        blockId: touchHeldBlock.id,
+                        title:
+                          richTextToPlainText(touchHeldBlock.title).trim() ||
+                          t("notes.untitledBlock"),
+                      });
+                    }}
+                  >
+                    <Trash2 aria-hidden="true" />
+                  </button>
+                </div>
               </div>
-              <div
-                className="note-touch-drop-indicator note-desktop-drop-indicator"
-                ref={desktopDropIndicatorRef}
-                aria-hidden="true"
-              />
-            </>
-          ) : null}
+            ) : null}
 
-          {touchHoldState?.menuOpen && touchHeldBlock ? (
-            <div
-              className="note-touch-block-menu-layer"
-              onPointerDown={(event) => {
-                if (event.target === event.currentTarget) closeTouchBlockMenu();
-              }}
-            >
-              <div
-                className="note-touch-block-menu"
-                ref={touchBlockMenuRef}
-                role="menu"
-                aria-label={t('notes.reorderBlock')}
+            <div className="note-add-block-row">
+              <button
+                type="button"
+                aria-label={t("notes.addContentBlock")}
+                title={t("notes.addContentBlock")}
+                onClick={() => void addContentBlock("content")}
               >
-                <button
-                  className="note-touch-block-menu-action is-up"
-                  type="button"
-                  role="menuitem"
-                  aria-label={t('notes.moveBlockUp')}
-                  title={t('notes.moveBlockUp')}
-                  disabled={touchMenuBlockIndex <= 0}
-                  onClick={() => moveTouchMenuBlock(-1)}
-                >
-                  <ChevronUp aria-hidden="true" />
-                </button>
-                <button
-                  className="note-touch-block-menu-action is-down"
-                  type="button"
-                  role="menuitem"
-                  aria-label={t('notes.moveBlockDown')}
-                  title={t('notes.moveBlockDown')}
-                  disabled={touchMenuBlockIndex < 0 || touchMenuBlockIndex >= touchMenuBlockIds.length - 1}
-                  onClick={() => moveTouchMenuBlock(1)}
-                >
-                  <ChevronDown aria-hidden="true" />
-                </button>
-                <button
-                  className={`note-touch-block-menu-action is-delete is-${touchHoldState.menuDeleteSide}`}
-                  type="button"
-                  role="menuitem"
-                  aria-label={t('common.delete')}
-                  title={t('common.delete')}
-                  onClick={() => {
-                    closeTouchBlockMenu();
-                    setDeleteBlockState({
-                      blockId: touchHeldBlock.id,
-                      title: richTextToPlainText(touchHeldBlock.title).trim() || t('notes.untitledBlock'),
+                +
+              </button>
+            </div>
+          </main>
+
+          {adapted ? (
+            <div className="note-panels-navigation">
+              <button
+                ref={panelsTriggerRef}
+                className="icon-button"
+                type="button"
+                aria-label={t("noteDetail.openPanels")}
+                title={t("noteDetail.openPanels")}
+                aria-controls="note-detail-panels"
+                aria-expanded={panelsOpen}
+                onClick={() => setPanelsOpen(true)}
+              >
+                <ChevronLeft aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
+          <ResponsiveSidePanel
+            compact={adapted}
+            id="note-detail-panels"
+            label={t("noteDetail.panels")}
+            open={panelsOpen}
+            onClose={() => setPanelsOpen(false)}
+            triggerRef={panelsTriggerRef}
+          >
+            <Panel title={t("noteDetail.metadata")}>
+              <div className="meta-list">
+                <div className="meta-row">
+                  <span>{t("noteDetail.createdAt")}</span>
+                  <span className="meta-value">{formatDate(note.createdAt, locale)}</span>
+                </div>
+                <div className="meta-row">
+                  <span>{t("noteDetail.updatedAt")}</span>
+                  <span className="meta-value">{formatDate(note.updatedAt, locale)}</span>
+                </div>
+                <div className="meta-row meta-row--collection">
+                  <span>{t("noteDetail.collectionLabel")}</span>
+                  <span className="meta-value">
+                    {collections.find((collection) => collection.id === note.collectionId)?.name ??
+                      t("noteDetail.noCollection")}
+                  </span>
+                </div>
+                <div className="meta-row">
+                  <span>{t("noteDetail.author")}</span>
+                  <span className="meta-value">{user?.name || note.authorId || "Local user"}</span>
+                </div>
+              </div>
+            </Panel>
+
+            <Panel title={t("noteDetail.collectionLabel")}>
+              <NoteCollectionField collections={collections} t={t} />
+            </Panel>
+
+            <Panel title={t("noteDetail.tags")}>
+              <TagEditor
+                favoriteTagIds={favoriteTagIds}
+                note={note}
+                noteTags={noteTags}
+                onCreateTag={createTag}
+                onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
+                tags={tags}
+              />
+            </Panel>
+
+            <Panel title={t("noteDetail.additionalExamples")}>
+              <ul className="side-list">
+                {note.additionalExamples?.map((example, index) => (
+                  <li className="side-edit-row" key={`${example}-${index}`}>
+                    {editingExampleIndex === index ? (
+                      <span className="side-edit-form">
+                        <StyledTextField
+                          className="side-styled-field"
+                          controlClassName="side-styled-field__control"
+                          multiline
+                          value={editingExampleText}
+                          onChange={setEditingExampleText}
+                        />
+                        <span className="side-row-actions">
+                          <button
+                            className="icon-button"
+                            type="button"
+                            aria-label={t("editor.accept")}
+                            onClick={() => void saveExampleEdit(index)}
+                          >
+                            <Check />
+                          </button>
+                          <button
+                            className="icon-button"
+                            type="button"
+                            aria-label={t("common.cancel")}
+                            onClick={cancelExampleEdit}
+                          >
+                            <X />
+                          </button>
+                        </span>
+                      </span>
+                    ) : (
+                      <>
+                        <span>
+                          <InlineFormattedText value={example} />
+                        </span>
+                        <span className="side-row-actions">
+                          <button
+                            className="icon-button"
+                            type="button"
+                            aria-label={t("editor.edit")}
+                            onClick={() => startExampleEdit(index, example)}
+                          >
+                            <Pencil />
+                          </button>
+                          <button
+                            className="icon-button danger"
+                            type="button"
+                            aria-label={t("common.remove")}
+                            onClick={() =>
+                              void deleteAdditionalExample(note.id, index).then(() =>
+                                pushToast(t("noteDetail.exampleDeleted"), "warning"),
+                              )
+                            }
+                          >
+                            <Trash2 />
+                          </button>
+                        </span>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <button
+                className="nav-item nav-item--spaced"
+                type="button"
+                onClick={() => setExampleOpen((value) => !value)}
+              >
+                <Plus />
+                {t("noteDetail.addExample")}
+              </button>
+              {exampleOpen ? (
+                <form
+                  className="inline-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void addAdditionalExample(note.id, exampleText).then(() => {
+                      setExampleText("");
+                      setExampleOpen(false);
+                      pushToast(t("noteDetail.exampleAdded"), "success");
                     });
                   }}
                 >
-                  <Trash2 aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-          ) : null}
+                  <StyledTextField
+                    className="side-styled-field"
+                    controlClassName="side-styled-field__control"
+                    multiline
+                    value={exampleText}
+                    onChange={setExampleText}
+                    placeholder={t("noteDetail.examplePlaceholder")}
+                  />
+                  <button type="submit">{t("common.save")}</button>
+                </form>
+              ) : null}
+            </Panel>
 
-          <div className="note-add-block-row">
-            <button type="button" aria-label={t('notes.addContentBlock')} title={t('notes.addContentBlock')} onClick={() => void addContentBlock('content')}>
-              +
-            </button>
-          </div>
-        </main>
-
-        {adapted ? (
-          <div className="note-panels-navigation">
-            <button ref={panelsTriggerRef} className="icon-button" type="button" aria-label={t('noteDetail.openPanels')}
-              title={t('noteDetail.openPanels')} aria-controls="note-detail-panels" aria-expanded={panelsOpen}
-              onClick={() => setPanelsOpen(true)}>
-              <ChevronLeft aria-hidden="true" />
-            </button>
-          </div>
-        ) : null}
-        <ResponsiveSidePanel compact={adapted} id="note-detail-panels" label={t('noteDetail.panels')}
-          open={panelsOpen} onClose={() => setPanelsOpen(false)} triggerRef={panelsTriggerRef}>
-          <Panel title={t('noteDetail.metadata')}>
-            <div className="meta-list">
-              <div className="meta-row">
-                <span>{t('noteDetail.createdAt')}</span>
-                <span className="meta-value">{formatDate(note.createdAt, locale)}</span>
+            <Panel title={t("noteDetail.relatedLinks")}>
+              <div className="side-list">
+                {linkedNotes.map((linkedNote) => (
+                  <LinkedNoteRow
+                    key={linkedNote.id}
+                    noteId={linkedNote.id}
+                    title={linkedNote.title}
+                    onRemove={() =>
+                      void updateLinkedNotes(
+                        note.id,
+                        note.linkedNoteIds.filter((linkedId) => linkedId !== linkedNote.id),
+                      ).then(() => pushToast(t("noteDetail.linkDeleted"), "warning"))
+                    }
+                  />
+                ))}
+                {note.relatedLinks?.map((link) => (
+                  <RelatedLinkRow
+                    key={link.id}
+                    href={link.href}
+                    title={link.title}
+                    onRemove={() =>
+                      void deleteRelatedLink(note.id, link.id).then(() =>
+                        pushToast(t("noteDetail.linkDeleted"), "warning"),
+                      )
+                    }
+                  />
+                ))}
               </div>
-              <div className="meta-row">
-                <span>{t('noteDetail.updatedAt')}</span>
-                <span className="meta-value">{formatDate(note.updatedAt, locale)}</span>
-              </div>
-              <div className="meta-row meta-row--collection">
-                <span>{t('noteDetail.collectionLabel')}</span>
-                <span className="meta-value">{collections.find((collection) => collection.id === note.collectionId)?.name ?? t('noteDetail.noCollection')}</span>
-              </div>
-              <div className="meta-row">
-                <span>{t('noteDetail.author')}</span>
-                <span className="meta-value">{user?.name || note.authorId || 'Local user'}</span>
-              </div>
-            </div>
-          </Panel>
-
-          <Panel title={t('noteDetail.collectionLabel')}>
-            <NoteCollectionField collections={collections} t={t} />
-          </Panel>
-
-          <Panel title={t('noteDetail.tags')}>
-            <TagEditor
-              favoriteTagIds={favoriteTagIds}
-              note={note}
-              noteTags={noteTags}
-              onCreateTag={createTag}
-              onTagsChange={(tagIds) => void updateTags(note.id, tagIds)}
-              tags={tags}
-            />
-          </Panel>
-
-          <Panel title={t('noteDetail.additionalExamples')}>
-            <ul className="side-list">
-              {note.additionalExamples?.map((example, index) => (
-                <li className="side-edit-row" key={`${example}-${index}`}>
-                  {editingExampleIndex === index ? (
-                    <span className="side-edit-form">
-                      <StyledTextField
-                        className="side-styled-field"
-                        controlClassName="side-styled-field__control"
-                        multiline
-                        value={editingExampleText}
-                        onChange={setEditingExampleText}
+              <button
+                className="nav-item nav-item--spaced"
+                type="button"
+                onClick={() => setLinkOpen((value) => !value)}
+              >
+                <Plus />
+                {t("noteDetail.addLink")}
+              </button>
+              {linkOpen ? (
+                <form
+                  className="inline-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void saveRelatedLink();
+                  }}
+                >
+                  <input
+                    ref={linkInputRef}
+                    value={linkInput}
+                    onChange={(event) => {
+                      setLinkInput(event.target.value);
+                      setSelectedLinkedNoteId(null);
+                    }}
+                    onKeyDown={linkSearchActive ? linkableNoteNavigation.onKeyDown : undefined}
+                    placeholder={t("noteDetail.linkInputPlaceholder")}
+                    title={t("noteDetail.linkInputPlaceholder")}
+                  />
+                  {linkSearchActive ? (
+                    <div className="note-link-picker">
+                      {linkableNotes.length ? (
+                        linkableNotes.map((linkableNote, linkIndex) => (
+                          <button
+                            className={
+                              linkIndex === linkableNoteNavigation.activeIndex
+                                ? "active"
+                                : undefined
+                            }
+                            key={linkableNote.id}
+                            type="button"
+                            onClick={() => selectLinkedNote(linkableNote.id)}
+                            onMouseEnter={() => linkableNoteNavigation.setActiveIndex(linkIndex)}
+                          >
+                            <FileText />
+                            {richTextToPlainText(linkableNote.title).trim() ? (
+                              <InlineFormattedText value={linkableNote.title} />
+                            ) : (
+                              t("notes.untitled")
+                            )}
+                          </button>
+                        ))
+                      ) : (
+                        <span>{t("noteDetail.noLinkableNotes")}</span>
+                      )}
+                    </div>
+                  ) : null}
+                  <button type="submit">{t("common.save")}</button>
+                </form>
+              ) : null}
+              {backlinkNotes.length ? (
+                <div className="backlink-section">
+                  <h3>{t("noteDetail.backlinks")}</h3>
+                  <div className="side-list">
+                    {backlinkNotes.map((backlink) => (
+                      <LinkedNoteRow
+                        key={backlink.id}
+                        noteId={backlink.id}
+                        title={backlink.title}
                       />
-                      <span className="side-row-actions">
-                        <button className="icon-button" type="button" aria-label={t('editor.accept')} onClick={() => void saveExampleEdit(index)}>
-                          <Check />
-                        </button>
-                        <button className="icon-button" type="button" aria-label={t('common.cancel')} onClick={cancelExampleEdit}>
-                          <X />
-                        </button>
-                      </span>
-                    </span>
-                  ) : (
-                    <>
-                      <span>
-                        <InlineFormattedText value={example} />
-                      </span>
-                      <span className="side-row-actions">
-                        <button className="icon-button" type="button" aria-label={t('editor.edit')} onClick={() => startExampleEdit(index, example)}>
-                          <Pencil />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </Panel>
+
+            <Panel title={t("notes.files")}>
+              {note.files?.length ? (
+                <ul className="side-list note-file-side-list">
+                  {note.files.map((file) => (
+                    <li key={file.id}>
+                      {file.kind === "image" ? <ImageIcon /> : <FileText />}
+                      <button
+                        className="note-file-name"
+                        type="button"
+                        title={file.originalName}
+                        onClick={() => void openNoteAttachment(file.relativePath)}
+                      >
+                        {file.originalName}
+                      </button>
+                      <span className="side-list-actions">
+                        <button
+                          className="icon-button note-file-export"
+                          type="button"
+                          aria-label={t("common.export")}
+                          onClick={() => void exportNoteAttachment(file)}
+                        >
+                          <Download />
                         </button>
                         <button
                           className="icon-button danger"
                           type="button"
-                          aria-label={t('common.remove')}
-                          onClick={() => void deleteAdditionalExample(note.id, index).then(() => pushToast(t('noteDetail.exampleDeleted'), 'warning'))}
+                          aria-label={t("common.delete")}
+                          onClick={() => void handleDeleteFile(file.id)}
                         >
                           <Trash2 />
                         </button>
                       </span>
-                    </>
-                  )}
-                </li>
-              ))}
-            </ul>
-            <button className="nav-item nav-item--spaced" type="button" onClick={() => setExampleOpen((value) => !value)}>
-              <Plus />
-              {t('noteDetail.addExample')}
-            </button>
-            {exampleOpen ? (
-              <form
-                className="inline-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void addAdditionalExample(note.id, exampleText).then(() => {
-                    setExampleText('');
-                    setExampleOpen(false);
-                    pushToast(t('noteDetail.exampleAdded'), 'success');
-                  });
-                }}
-              >
-                <StyledTextField
-                  className="side-styled-field"
-                  controlClassName="side-styled-field__control"
-                  multiline
-                  value={exampleText}
-                  onChange={setExampleText}
-                  placeholder={t('noteDetail.examplePlaceholder')}
-                />
-                <button type="submit">{t('common.save')}</button>
-              </form>
-            ) : null}
-          </Panel>
-
-          <Panel title={t('noteDetail.relatedLinks')}>
-            <div className="side-list">
-              {linkedNotes.map((linkedNote) => (
-                <LinkedNoteRow
-                  key={linkedNote.id}
-                  noteId={linkedNote.id}
-                  title={linkedNote.title}
-                  onRemove={() => void updateLinkedNotes(note.id, note.linkedNoteIds.filter((linkedId) => linkedId !== linkedNote.id)).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'))}
-                />
-              ))}
-              {note.relatedLinks?.map((link) => (
-                <RelatedLinkRow
-                  key={link.id}
-                  href={link.href}
-                  title={link.title}
-                  onRemove={() => void deleteRelatedLink(note.id, link.id).then(() => pushToast(t('noteDetail.linkDeleted'), 'warning'))}
-                />
-              ))}
-            </div>
-            <button className="nav-item nav-item--spaced" type="button" onClick={() => setLinkOpen((value) => !value)}>
-              <Plus />
-              {t('noteDetail.addLink')}
-            </button>
-            {linkOpen ? (
-              <form
-                className="inline-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void saveRelatedLink();
-                }}
-              >
-                <input
-                  ref={linkInputRef}
-                  value={linkInput}
-                  onChange={(event) => {
-                    setLinkInput(event.target.value);
-                    setSelectedLinkedNoteId(null);
-                  }}
-                  onKeyDown={linkSearchActive ? linkableNoteNavigation.onKeyDown : undefined}
-                  placeholder={t('noteDetail.linkInputPlaceholder')}
-                  title={t('noteDetail.linkInputPlaceholder')}
-                />
-                {linkSearchActive ? (
-                  <div className="note-link-picker">
-                    {linkableNotes.length ? (
-                      linkableNotes.map((linkableNote, linkIndex) => (
-                        <button
-                          className={linkIndex === linkableNoteNavigation.activeIndex ? 'active' : undefined}
-                          key={linkableNote.id}
-                          type="button"
-                          onClick={() => selectLinkedNote(linkableNote.id)}
-                          onMouseEnter={() => linkableNoteNavigation.setActiveIndex(linkIndex)}
-                        >
-                          <FileText />
-                          {richTextToPlainText(linkableNote.title).trim() ? <InlineFormattedText value={linkableNote.title} /> : t('notes.untitled')}
-                        </button>
-                      ))
-                    ) : (
-                      <span>{t('noteDetail.noLinkableNotes')}</span>
-                    )}
-                  </div>
-                ) : null}
-                <button type="submit">{t('common.save')}</button>
-              </form>
-            ) : null}
-            {backlinkNotes.length ? (
-              <div className="backlink-section">
-                <h3>{t('noteDetail.backlinks')}</h3>
-                <div className="side-list">
-                  {backlinkNotes.map((backlink) => (
-                    <LinkedNoteRow key={backlink.id} noteId={backlink.id} title={backlink.title} />
+                    </li>
                   ))}
-                </div>
-              </div>
-            ) : null}
-          </Panel>
-
-          <Panel title={t('notes.files')}>
-            {note.files?.length ? (
-              <ul className="side-list note-file-side-list">
-                {note.files.map((file) => (
-                  <li key={file.id}>
-                    {file.kind === 'image' ? <ImageIcon /> : <FileText />}
-                    <button
-                      className="note-file-name"
-                      type="button"
-                      title={file.originalName}
-                      onClick={() => void openNoteAttachment(file.relativePath)}
-                    >
-                      {file.originalName}
-                    </button>
-                    <span className="side-list-actions">
-                      <button className="icon-button note-file-export" type="button" aria-label={t('common.export')} onClick={() => void exportNoteAttachment(file)}>
-                        <Download />
-                      </button>
-                      <button
-                        className="icon-button danger"
-                        type="button"
-                        aria-label={t('common.delete')}
-                        onClick={() => void handleDeleteFile(file.id)}
-                      >
-                        <Trash2 />
-                      </button>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="inline-help">{t('notes.noFiles')}</p>
-            )}
-          </Panel>
-        </ResponsiveSidePanel>
-      </div>
+                </ul>
+              ) : (
+                <p className="inline-help">{t("notes.noFiles")}</p>
+              )}
+            </Panel>
+          </ResponsiveSidePanel>
+        </div>
       </NoteHeaderDraftProvider>
 
       <ExportNoteConfirmModal
@@ -1834,12 +2118,12 @@ export function NoteDetailPage() {
 
       {deleteBlockState ? (
         <DeleteConfirmModal
-          cancelLabel={t('common.cancel')}
-          confirmLabel={t('common.delete')}
-          description={t('notes.deleteBlockDescription', { title: deleteBlockState.title })}
+          cancelLabel={t("common.cancel")}
+          confirmLabel={t("common.delete")}
+          description={t("notes.deleteBlockDescription", { title: deleteBlockState.title })}
           onCancel={() => setDeleteBlockState(null)}
           onConfirm={() => void confirmDeleteBlock()}
-          title={t('notes.deleteBlockTitle')}
+          title={t("notes.deleteBlockTitle")}
         />
       ) : null}
     </>
@@ -1861,7 +2145,7 @@ function ExportNoteConfirmModal({
   onCancel: () => void;
   onConfirm: () => void;
   onSkipConfirmChange: (value: boolean) => void;
-  t: ReturnType<typeof useI18n>['t'];
+  t: ReturnType<typeof useI18n>["t"];
 }) {
   if (!open) {
     return null;
@@ -1875,8 +2159,8 @@ function ExportNoteConfirmModal({
       onClose={onCancel}
       open={open}
     >
-      <h2 id="export-note-title">{t('notes.exportNoteModalTitle')}</h2>
-      <p>{t('notes.exportNoteModalDescription')}</p>
+      <h2 id="export-note-title">{t("notes.exportNoteModalTitle")}</h2>
+      <p>{t("notes.exportNoteModalDescription")}</p>
       <label className="choice-modal-checkbox">
         <input
           type="checkbox"
@@ -1884,15 +2168,15 @@ function ExportNoteConfirmModal({
           disabled={disabled}
           onChange={(event) => onSkipConfirmChange(event.currentTarget.checked)}
         />
-        <span>{t('notes.exportNoteDontShowAgain')}</span>
+        <span>{t("notes.exportNoteDontShowAgain")}</span>
       </label>
       <div className="choice-modal-actions two-column-actions">
         <button type="button" disabled={disabled} onClick={onCancel}>
-          <span>{t('common.cancel')}</span>
+          <span>{t("common.cancel")}</span>
         </button>
         <button type="button" disabled={disabled} onClick={onConfirm}>
           <Download />
-          <span>{t('common.export')}</span>
+          <span>{t("common.export")}</span>
         </button>
       </div>
     </AppModal>
@@ -1913,7 +2197,7 @@ function NoteHeader({
   onTagsChange: (tagIds: string[]) => void;
   onThumbnailChange: (thumbnail: NoteThumbnailModel) => void;
   onToolbarTargetChange: (target: NoteTiptapToolbarTarget) => void;
-  t: ReturnType<typeof useI18n>['t'];
+  t: ReturnType<typeof useI18n>["t"];
   typingRequest?: HeaderTypingRequest | null;
 }) {
   const { title, subtitle, setTitle, setSubtitle } = useNoteHeaderDraft();
@@ -1925,10 +2209,10 @@ function NoteHeader({
           <NoteInlineTiptapEditor
             className="document-title-input note-title-input"
             id={`note-title-${note.id}`}
-            insertTextRequest={typingRequest?.field === 'title' ? typingRequest : null}
+            insertTextRequest={typingRequest?.field === "title" ? typingRequest : null}
             onChange={(nextTitle) => setTitle(nextTitle)}
             onToolbarTargetChange={onToolbarTargetChange}
-            placeholder={t('noteDetail.titlePlaceholder')}
+            placeholder={t("noteDetail.titlePlaceholder")}
             value={title}
           />
         </div>
@@ -1937,7 +2221,7 @@ function NoteHeader({
 
       {noteTags.length ? (
         <SortableTagList
-          ariaLabel={t('noteDetail.tags')}
+          ariaLabel={t("noteDetail.tags")}
           className="document-title-tags"
           getHref={(tag) => `/notes?tag=${tag.id}`}
           onReorder={onTagsChange}
@@ -1948,32 +2232,41 @@ function NoteHeader({
       <NoteInlineTiptapEditor
         className="document-intro-input note-subtitle-input"
         id={`note-subtitle-${note.id}`}
-        insertTextRequest={typingRequest?.field === 'subtitle' ? typingRequest : null}
+        insertTextRequest={typingRequest?.field === "subtitle" ? typingRequest : null}
         onChange={(nextSubtitle) => setSubtitle(nextSubtitle)}
         onToolbarTargetChange={onToolbarTargetChange}
-        placeholder={t('notes.subtitlePlaceholder')}
+        placeholder={t("notes.subtitlePlaceholder")}
         value={subtitle}
       />
     </section>
   );
 }
 
-function NoteCollectionField({ collections, t }: {
+function NoteCollectionField({
+  collections,
+  t,
+}: {
   collections: Collection[];
-  t: ReturnType<typeof useI18n>['t'];
+  t: ReturnType<typeof useI18n>["t"];
 }) {
   const { collectionId, setCollectionId } = useNoteHeaderDraft();
   const selectedCollection = collections.find((collection) => collection.id === collectionId);
   return (
-    <div className={`editable-collection-field editing note-collection-field ${selectedCollection?.color ?? 'neutral'}`}>
+    <div
+      className={`editable-collection-field editing note-collection-field ${selectedCollection?.color ?? "neutral"}`}
+    >
       <Folder aria-hidden="true" />
       <CustomSelect
-        ariaLabel={t('noteDetail.collectionLabel')}
-        emptyText={t('notes.filters.noCollections')}
+        ariaLabel={t("noteDetail.collectionLabel")}
+        emptyText={t("notes.filters.noCollections")}
         onChange={setCollectionId}
         options={[
-          { label: t('noteDetail.noCollection'), value: '' },
-          ...collections.map((collection) => ({ color: collection.color, label: collection.name, value: collection.id })),
+          { label: t("noteDetail.noCollection"), value: "" },
+          ...collections.map((collection) => ({
+            color: collection.color,
+            label: collection.name,
+            value: collection.id,
+          })),
         ]}
         value={collectionId}
       />
@@ -1988,7 +2281,7 @@ function ThumbnailPicker({
 }: {
   current?: NoteThumbnailModel;
   onSelect: (thumbnail: NoteThumbnailModel) => void;
-  t: ReturnType<typeof useI18n>['t'];
+  t: ReturnType<typeof useI18n>["t"];
 }) {
   const [open, setOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
@@ -1996,19 +2289,25 @@ function ThumbnailPicker({
   const currentThumbnail = current ?? { variant: defaultNoteThumbnailVariant };
 
   useClickOutside(pickerRef, open, () => setOpen(false));
-  useFloatingPopover(open, menu.triggerRef, menu.menuRef, 'bottom-end');
+  useFloatingPopover(open, menu.triggerRef, menu.menuRef, "bottom-end");
 
   return (
-    <div className="thumbnail-picker" ref={pickerRef} onKeyDown={menu.onKeyDown}
-      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}>
+    <div
+      className="thumbnail-picker"
+      ref={pickerRef}
+      onKeyDown={menu.onKeyDown}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+      }}
+    >
       <button
         className="thumbnail-picker-trigger"
         ref={menu.triggerRef}
         type="button"
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={t('noteDetail.changeThumbnail')}
-        title={t('noteDetail.changeThumbnail')}
+        aria-label={t("noteDetail.changeThumbnail")}
+        title={t("noteDetail.changeThumbnail")}
         onClick={() => setOpen((value) => !value)}
       >
         <NoteThumbnail thumbnail={currentThumbnail} />
@@ -2017,16 +2316,25 @@ function ThumbnailPicker({
         </span>
       </button>
       {open ? (
-        <div className="thumbnail-picker-menu" ref={menu.menuRef} role="menu" aria-label={t('noteDetail.thumbnail')}>
+        <div
+          className="thumbnail-picker-menu"
+          ref={menu.menuRef}
+          role="menu"
+          aria-label={t("noteDetail.thumbnail")}
+        >
           {thumbnailOptions.map(({ id: variant }) => (
             <button
-              className={variant === currentThumbnail.variant ? 'thumbnail-option active' : 'thumbnail-option'}
+              className={
+                variant === currentThumbnail.variant
+                  ? "thumbnail-option active"
+                  : "thumbnail-option"
+              }
               key={variant}
               type="button"
               role="menuitemradio"
               tabIndex={-1}
               aria-checked={variant === currentThumbnail.variant}
-              aria-label={`${t('noteDetail.changeThumbnail')}: ${variant}`}
+              aria-label={`${t("noteDetail.changeThumbnail")}: ${variant}`}
               onClick={() => {
                 onSelect({ variant });
                 menu.closeAndFocus();
@@ -2097,7 +2405,7 @@ function BlockEditor({
   const [contentText, setContentText] = useState(block.contentText);
   const [titleActive, setTitleActive] = useState(false);
   const [contentActive, setContentActive] = useState(false);
-  const [touchEditingRegion, setTouchEditingRegion] = useState<'content' | 'title' | null>(null);
+  const [touchEditingRegion, setTouchEditingRegion] = useState<"content" | "title" | null>(null);
   const saveTimeoutRef = useRef<number | null>(null);
   const draftRevisionRef = useRef(0);
   const lastTypingNonceRef = useRef<number | null>(null);
@@ -2138,7 +2446,7 @@ function BlockEditor({
   }
 
   function handleTouchHoldPointerDown(event: PointerEvent<HTMLElement>) {
-    if (!touchHoldEnabled || !event.isPrimary || event.pointerType === 'mouse') return;
+    if (!touchHoldEnabled || !event.isPrimary || event.pointerType === "mouse") return;
     const target = event.target instanceof Element ? event.target : null;
     if (target?.closest('a, button, input, select, textarea, [role="button"]')) return;
     clearTouchHoldTimer();
@@ -2170,14 +2478,21 @@ function BlockEditor({
   function handleTouchHoldPointerMove(event: PointerEvent<HTMLElement>) {
     const pointer = touchHoldPointerRef.current;
     if (!pointer || pointer.id !== event.pointerId) return;
-    if (!pointer.activated && Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > editorSettings.blockTouch.tapMovementTolerance) {
+    if (
+      !pointer.activated &&
+      Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) >
+        editorSettings.blockTouch.tapMovementTolerance
+    ) {
       clearTouchHoldTimer();
       clearTouchMenuTimer();
       touchHoldPointerRef.current = null;
       return;
     }
     if (pointer.activated) {
-      if (Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > editorSettings.blockTouch.tapMovementTolerance) {
+      if (
+        Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) >
+        editorSettings.blockTouch.tapMovementTolerance
+      ) {
         clearTouchMenuTimer();
       }
       event.preventDefault();
@@ -2217,11 +2532,11 @@ function BlockEditor({
     clearTouchHoldTimer();
     clearTouchMenuTimer();
     touchHoldPointerRef.current = null;
-    if (activated && pointer.pointerType === 'touch') return;
+    if (activated && pointer.pointerType === "touch") return;
     if (activated) onTouchHoldEnd();
   }
 
-  function beginTouchEditing(region: 'content' | 'title') {
+  function beginTouchEditing(region: "content" | "title") {
     if (!touchMode) return;
     setTouchEditingRegion(region);
     onTouchActivate();
@@ -2237,15 +2552,18 @@ function BlockEditor({
     if (!touchActive) setTouchEditingRegion(null);
   }, [touchActive]);
 
-  useEffect(() => () => {
-    draftRevisionRef.current += 1;
-    setLocalDraftPending(noteId, draftSourceId, false);
-    clearTouchHoldTimer();
-    clearTouchMenuTimer();
-    if (suppressHoldClickTimerRef.current !== null) {
-      window.clearTimeout(suppressHoldClickTimerRef.current);
-    }
-  }, [draftSourceId, noteId]);
+  useEffect(
+    () => () => {
+      draftRevisionRef.current += 1;
+      setLocalDraftPending(noteId, draftSourceId, false);
+      clearTouchHoldTimer();
+      clearTouchMenuTimer();
+      if (suppressHoldClickTimerRef.current !== null) {
+        window.clearTimeout(suppressHoldClickTimerRef.current);
+      }
+    },
+    [draftSourceId, noteId],
+  );
 
   useEffect(() => {
     contentJsonRef.current = contentJson;
@@ -2260,7 +2578,7 @@ function BlockEditor({
     lastTypingNonceRef.current = contentTypingRequest.nonce;
     setContentJson((current) => current ?? emptyTiptapDocument);
     setContentActive(true);
-    beginTouchEditing('content');
+    beginTouchEditing("content");
   }, [contentTypingRequest]);
 
   useEffect(() => {
@@ -2281,7 +2599,7 @@ function BlockEditor({
         let saved = false;
         try {
           await updateBlock(noteId, block.id, {
-            kind: contentHasContent || contentJson ? 'content' : block.kind,
+            kind: contentHasContent || contentJson ? "content" : block.kind,
             title,
             contentJson,
             contentText,
@@ -2302,7 +2620,20 @@ function BlockEditor({
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [block.contentJson, block.contentText, block.id, block.kind, block.title, contentHasContent, contentJson, contentText, draftSourceId, noteId, title, updateBlock]);
+  }, [
+    block.contentJson,
+    block.contentText,
+    block.id,
+    block.kind,
+    block.title,
+    contentHasContent,
+    contentJson,
+    contentText,
+    draftSourceId,
+    noteId,
+    title,
+    updateBlock,
+  ]);
 
   function setFileInsertPending(pending: boolean) {
     fileInsertPendingRef.current = pending;
@@ -2322,15 +2653,17 @@ function BlockEditor({
   return (
     <article
       className={[
-        'note-block',
-        dragged ? 'is-dragging' : '',
-        touchActive ? 'is-touch-active' : '',
-        touchDragging ? 'is-touch-dragging-source' : '',
-        touchHeld ? 'is-touch-held' : '',
-      ].filter(Boolean).join(' ')}
+        "note-block",
+        dragged ? "is-dragging" : "",
+        touchActive ? "is-touch-active" : "",
+        touchDragging ? "is-touch-dragging-source" : "",
+        touchHeld ? "is-touch-held" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       data-note-block-id={block.id}
       id={`block-${block.id}`}
-      data-empty={blockIsEmpty ? 'true' : undefined}
+      data-empty={blockIsEmpty ? "true" : undefined}
       onContextMenuCapture={(event) => {
         if (touchHoldEnabled || touchHeld) event.preventDefault();
       }}
@@ -2348,15 +2681,16 @@ function BlockEditor({
       <button
         className="note-block-handle"
         type="button"
-        aria-label={t('notes.reorderBlock')}
+        aria-label={t("notes.reorderBlock")}
         aria-grabbed={dragged}
-        title={t('notes.reorderBlock')}
+        title={t("notes.reorderBlock")}
         onPointerDown={onDragStart}
         onClick={(event) => event.currentTarget.focus({ preventScroll: true })}
         onKeyDown={(event) => {
-          if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
-          event.preventDefault(); event.stopPropagation();
-          onKeyboardReorder(event.key === 'ArrowUp' ? -1 : 1);
+          if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+          event.preventDefault();
+          event.stopPropagation();
+          onKeyboardReorder(event.key === "ArrowUp" ? -1 : 1);
         }}
       >
         <GripVertical />
@@ -2386,9 +2720,9 @@ function BlockEditor({
               onTocChange();
             }}
             onToolbarTargetChange={onToolbarTargetChange}
-            onTouchEditStart={() => beginTouchEditing('title')}
+            onTouchEditStart={() => beginTouchEditing("title")}
             placeholder=""
-            touchEditing={touchActive && touchEditingRegion === 'title'}
+            touchEditing={touchActive && touchEditingRegion === "title"}
             touchMode={touchMode}
             value={title}
           />
@@ -2396,11 +2730,11 @@ function BlockEditor({
           <button
             className="note-block-zone-add note-block-zone-add-title"
             type="button"
-            aria-label={t('notes.addTitleBlock')}
-            title={t('notes.addTitleBlock')}
+            aria-label={t("notes.addTitleBlock")}
+            title={t("notes.addTitleBlock")}
             onClick={() => {
               setTitleActive(true);
-              beginTouchEditing('title');
+              beginTouchEditing("title");
             }}
           >
             <Plus />
@@ -2431,9 +2765,9 @@ function BlockEditor({
             onFocus={() => setContentActive(true)}
             onPendingFileInsertChange={setFileInsertPending}
             onRequestFileUpload={onRequestFileUpload}
-            onTouchEditStart={() => beginTouchEditing('content')}
+            onTouchEditStart={() => beginTouchEditing("content")}
             onToolbarTargetChange={onToolbarTargetChange}
-            touchEditing={touchActive && touchEditingRegion === 'content'}
+            touchEditing={touchActive && touchEditingRegion === "content"}
             touchMode={touchMode}
             value={contentJson ?? emptyTiptapDocument}
           />
@@ -2441,19 +2775,25 @@ function BlockEditor({
           <button
             className="note-block-zone-add note-block-zone-add-content"
             type="button"
-            aria-label={t('notes.addContentBlock')}
-            title={t('notes.addContentBlock')}
+            aria-label={t("notes.addContentBlock")}
+            title={t("notes.addContentBlock")}
             onClick={() => {
               setContentJson((current) => current ?? emptyTiptapDocument);
               setContentActive(true);
-              beginTouchEditing('content');
+              beginTouchEditing("content");
             }}
           >
             <Plus />
           </button>
         )}
       </div>
-      <button className="note-block-delete" type="button" aria-label={t('common.delete')} title={t('common.delete')} onClick={onDelete}>
+      <button
+        className="note-block-delete"
+        type="button"
+        aria-label={t("common.delete")}
+        title={t("common.delete")}
+        onClick={onDelete}
+      >
         <Trash2 />
       </button>
     </article>
@@ -2477,9 +2817,12 @@ function TagEditor({
 }) {
   const { t } = useI18n();
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
-  const [newTagName, setNewTagName] = useState('');
+  const [newTagName, setNewTagName] = useState("");
   const [newTagColor, setNewTagColor] = useState<TagColor>(defaultNewTagColor);
-  const availableTags = sortTagsByFavoriteOrder(tags.filter((tag) => !note.tagIds.includes(tag.id)), favoriteTagIds);
+  const availableTags = sortTagsByFavoriteOrder(
+    tags.filter((tag) => !note.tagIds.includes(tag.id)),
+    favoriteTagIds,
+  );
 
   async function createAndAttachTag() {
     const created = await onCreateTag(newTagName, newTagColor);
@@ -2487,7 +2830,7 @@ function TagEditor({
       return;
     }
     onTagsChange([...note.tagIds, created.id]);
-    setNewTagName('');
+    setNewTagName("");
     setNewTagColor(defaultNewTagColor);
     setTagPickerOpen(false);
   }
@@ -2495,29 +2838,37 @@ function TagEditor({
   return (
     <>
       <SortableTagList
-        ariaLabel={t('noteDetail.tags')}
+        ariaLabel={t("noteDetail.tags")}
         className="tag-row"
         onRemove={(tagId) => onTagsChange(note.tagIds.filter((id) => id !== tagId))}
         onReorder={onTagsChange}
         removable
         tags={noteTags}
       />
-      <button className="nav-item nav-item--spaced" type="button" onClick={() => setTagPickerOpen((value) => !value)}>
+      <button
+        className="nav-item nav-item--spaced"
+        type="button"
+        onClick={() => setTagPickerOpen((value) => !value)}
+      >
         <Plus />
-        {t('noteDetail.addTag')}
+        {t("noteDetail.addTag")}
       </button>
       {tagPickerOpen ? (
         <div className="note-tag-picker">
           {availableTags.length ? (
             <div className="inline-picker note-tag-picker">
               {availableTags.map((tag) => (
-                <button key={tag.id} type="button" onClick={() => onTagsChange([...note.tagIds, tag.id])}>
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => onTagsChange([...note.tagIds, tag.id])}
+                >
                   <TagChip tag={tag} />
                 </button>
               ))}
             </div>
           ) : (
-            <p className="inline-help">{t('noteDetail.noTagsAvailable')}</p>
+            <p className="inline-help">{t("noteDetail.noTagsAvailable")}</p>
           )}
           <form
             className="inline-form tag-create-form"
@@ -2526,9 +2877,17 @@ function TagEditor({
               void createAndAttachTag();
             }}
           >
-            <input value={newTagName} onChange={(event) => setNewTagName(event.target.value)} placeholder={t('noteDetail.newTagPlaceholder')} />
-            <ColorPicker ariaLabel={t('profile.labels.color')} onChange={setNewTagColor} value={newTagColor} />
-            <button type="submit">{t('noteDetail.createAndAddTag')}</button>
+            <input
+              value={newTagName}
+              onChange={(event) => setNewTagName(event.target.value)}
+              placeholder={t("noteDetail.newTagPlaceholder")}
+            />
+            <ColorPicker
+              ariaLabel={t("profile.labels.color")}
+              onChange={setNewTagColor}
+              value={newTagColor}
+            />
+            <button type="submit">{t("noteDetail.createAndAddTag")}</button>
           </form>
         </div>
       ) : null}
@@ -2536,8 +2895,16 @@ function TagEditor({
   );
 }
 
-function LinkedNoteRow({ noteId, onRemove, title }: { noteId: string; onRemove?: () => void; title: string }) {
-  const plainTitle = richTextToPlainText(title).trim() || 'Untitled';
+function LinkedNoteRow({
+  noteId,
+  onRemove,
+  title,
+}: {
+  noteId: string;
+  onRemove?: () => void;
+  title: string;
+}) {
+  const plainTitle = richTextToPlainText(title).trim() || "Untitled";
 
   return (
     <span className="linked-row-shell">
@@ -2549,7 +2916,12 @@ function LinkedNoteRow({ noteId, onRemove, title }: { noteId: string; onRemove?:
         <ExternalLink />
       </Link>
       {onRemove ? (
-        <button className="icon-button danger" type="button" aria-label={plainTitle} onClick={onRemove}>
+        <button
+          className="icon-button danger"
+          type="button"
+          aria-label={plainTitle}
+          onClick={onRemove}
+        >
           <Trash2 />
         </button>
       ) : null}
@@ -2557,7 +2929,15 @@ function LinkedNoteRow({ noteId, onRemove, title }: { noteId: string; onRemove?:
   );
 }
 
-function RelatedLinkRow({ href, onRemove, title }: { href: string; onRemove?: () => void; title: string }) {
+function RelatedLinkRow({
+  href,
+  onRemove,
+  title,
+}: {
+  href: string;
+  onRemove?: () => void;
+  title: string;
+}) {
   const content = (
     <>
       <span className="inline-actions">
@@ -2568,14 +2948,19 @@ function RelatedLinkRow({ href, onRemove, title }: { href: string; onRemove?: ()
     </>
   );
 
-  if (href.startsWith('/')) {
+  if (href.startsWith("/")) {
     return (
       <span className="linked-row-shell">
         <Link className="linked-row" to={href}>
           {content}
         </Link>
         {onRemove ? (
-          <button className="icon-button danger" type="button" aria-label={title} onClick={onRemove}>
+          <button
+            className="icon-button danger"
+            type="button"
+            aria-label={title}
+            onClick={onRemove}
+          >
             <Trash2 />
           </button>
         ) : null}
@@ -2611,11 +2996,11 @@ function formatDate(value: string, locale: string) {
   }
 
   return new Intl.DateTimeFormat(locale, {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(date);
 }
 
@@ -2625,7 +3010,9 @@ function arraysEqual(left: string[], right: string[]) {
 
 function collectNoteTocEntries() {
   const entries: TocEntry[] = [];
-  const blockElements = Array.from(document.querySelectorAll<HTMLElement>('.note-block-list [data-note-block-id]'));
+  const blockElements = Array.from(
+    document.querySelectorAll<HTMLElement>(".note-block-list [data-note-block-id]"),
+  );
 
   blockElements.forEach((blockElement) => {
     const blockId = blockElement.dataset.noteBlockId;
@@ -2633,7 +3020,7 @@ function collectNoteTocEntries() {
       return;
     }
 
-    const titleElement = blockElement.querySelector<HTMLElement>('.note-block-title');
+    const titleElement = blockElement.querySelector<HTMLElement>(".note-block-title");
     const title = titleElement?.textContent?.trim();
     if (title && titleElement) {
       const id = `block-title-${blockId}`;
@@ -2641,7 +3028,11 @@ function collectNoteTocEntries() {
       entries.push({ id, label: title, level: 1 });
     }
 
-    const headings = Array.from(blockElement.querySelectorAll<HTMLHeadingElement>('.note-tiptap-prosemirror h1, .note-tiptap-prosemirror h2, .note-tiptap-prosemirror h3'));
+    const headings = Array.from(
+      blockElement.querySelectorAll<HTMLHeadingElement>(
+        ".note-tiptap-prosemirror h1, .note-tiptap-prosemirror h2, .note-tiptap-prosemirror h3",
+      ),
+    );
     headings.forEach((heading, index) => {
       const label = heading.textContent?.trim();
       if (!label) {
@@ -2696,10 +3087,10 @@ function scrollToTocEntry(entryId: string) {
     return;
   }
 
-  const documentTop = document.querySelector<HTMLElement>('.document-top');
+  const documentTop = document.querySelector<HTMLElement>(".document-top");
   const stickyBottom = documentTop?.getBoundingClientRect().bottom ?? 0;
   const targetTop = window.scrollY + element.getBoundingClientRect().top - stickyBottom - 16;
-  window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+  window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
 }
 
 function findTocTarget(entryId: string) {
@@ -2734,11 +3125,16 @@ type TiptapNodeLike = {
 };
 
 function hasMeaningfulTiptapNode(node: TiptapNodeLike): boolean {
-  if (node.type === 'text') {
+  if (node.type === "text") {
     return Boolean(node.text?.trim());
   }
 
-  if (node.type === 'noteFile' || node.type === 'noteTip' || node.type === 'image' || node.type === 'table') {
+  if (
+    node.type === "noteFile" ||
+    node.type === "noteTip" ||
+    node.type === "image" ||
+    node.type === "table"
+  ) {
     return true;
   }
 

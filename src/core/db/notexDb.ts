@@ -1,4 +1,4 @@
-import { desktopInvoke as invoke } from '../storage/desktopInvoke';
+import { desktopInvoke as invoke } from "../storage/desktopInvoke";
 import type {
   ActivityItem,
   Collection,
@@ -8,18 +8,18 @@ import type {
   Tag,
   User,
   UserSettings,
-} from '../models/models';
-import type { MockDataBundle } from '../data/createMockData';
+} from "../models/models";
+import type { MockDataBundle } from "../data/createMockData";
 
 type TableName =
-  | 'notes'
-  | 'noteBlocks'
-  | 'noteFiles'
-  | 'tags'
-  | 'collections'
-  | 'users'
-  | 'activities'
-  | 'userSettings';
+  | "notes"
+  | "noteBlocks"
+  | "noteFiles"
+  | "tags"
+  | "collections"
+  | "users"
+  | "activities"
+  | "userSettings";
 
 type WhereQuery<T> = {
   delete: () => Promise<unknown>;
@@ -53,16 +53,20 @@ export type NoteXStorageDatabase = {
   users: StorageTable<User>;
   activities: StorageTable<ActivityItem>;
   userSettings: StorageTable<UserSettings>;
-  transaction: <T>(mode: string, tables: unknown[], scope: (transaction: NoteXStorageDatabase) => Promise<T>) => Promise<T>;
+  transaction: <T>(
+    mode: string,
+    tables: unknown[],
+    scope: (transaction: NoteXStorageDatabase) => Promise<T>,
+  ) => Promise<T>;
 };
 
 type SqliteOperation =
-  | { table: TableName; kind: 'put'; value: unknown }
-  | { table: TableName; kind: 'bulkPut'; values: unknown[] }
-  | { table: TableName; kind: 'delete'; key: string }
-  | { table: TableName; kind: 'bulkDelete'; keys: string[] }
-  | { table: TableName; kind: 'clear' }
-  | { table: TableName; kind: 'whereDelete'; index: string; values: unknown[] };
+  | { table: TableName; kind: "put"; value: unknown }
+  | { table: TableName; kind: "bulkPut"; values: unknown[] }
+  | { table: TableName; kind: "delete"; key: string }
+  | { table: TableName; kind: "bulkDelete"; keys: string[] }
+  | { table: TableName; kind: "clear" }
+  | { table: TableName; kind: "whereDelete"; index: string; values: unknown[] };
 
 type SqliteTransactionContext = {
   operations: SqliteOperation[];
@@ -111,14 +115,17 @@ class SqliteStorageAdapter implements NoteXStorageDatabase {
 }
 
 class SqliteTable<T> implements StorageTable<T> {
-  constructor(private readonly table: TableName, private readonly context?: SqliteTransactionContext) {}
+  constructor(
+    private readonly table: TableName,
+    private readonly context?: SqliteTransactionContext,
+  ) {}
 
   async get(key: string) {
-    return (await invoke<T | null>('notex_sqlite_get', { table: this.table, key })) ?? undefined;
+    return (await invoke<T | null>("notex_sqlite_get", { table: this.table, key })) ?? undefined;
   }
 
   async put(value: T) {
-    await this.write({ table: this.table, kind: 'put', value });
+    await this.write({ table: this.table, kind: "put", value });
   }
 
   async bulkPut(values: T[]) {
@@ -126,11 +133,11 @@ class SqliteTable<T> implements StorageTable<T> {
       return;
     }
 
-    await this.write({ table: this.table, kind: 'bulkPut', values });
+    await this.write({ table: this.table, kind: "bulkPut", values });
   }
 
   async delete(key: string) {
-    await this.write({ table: this.table, kind: 'delete', key });
+    await this.write({ table: this.table, kind: "delete", key });
   }
 
   async bulkDelete(keys: string[]) {
@@ -138,19 +145,19 @@ class SqliteTable<T> implements StorageTable<T> {
       return;
     }
 
-    await this.write({ table: this.table, kind: 'bulkDelete', keys });
+    await this.write({ table: this.table, kind: "bulkDelete", keys });
   }
 
   async clear() {
-    await this.write({ table: this.table, kind: 'clear' });
+    await this.write({ table: this.table, kind: "clear" });
   }
 
   async toArray() {
-    return invoke<T[]>('notex_sqlite_read_table', { table: this.table });
+    return invoke<T[]>("notex_sqlite_read_table", { table: this.table });
   }
 
   async count() {
-    return invoke<number>('notex_sqlite_count', { table: this.table });
+    return invoke<number>("notex_sqlite_count", { table: this.table });
   }
 
   where(index: string): WhereClause<T> {
@@ -163,7 +170,7 @@ class SqliteTable<T> implements StorageTable<T> {
       return;
     }
 
-    await invoke('notex_sqlite_transaction', { operations: [operation] });
+    await invoke("notex_sqlite_transaction", { operations: [operation] });
   }
 }
 
@@ -198,7 +205,7 @@ class SqliteWhereQuery<T> implements WhereQuery<T> {
 
     const operation: SqliteOperation = {
       table: this.table,
-      kind: 'whereDelete',
+      kind: "whereDelete",
       index: this.index,
       values: this.values,
     };
@@ -208,7 +215,7 @@ class SqliteWhereQuery<T> implements WhereQuery<T> {
       return;
     }
 
-    await invoke('notex_sqlite_transaction', { operations: [operation] });
+    await invoke("notex_sqlite_transaction", { operations: [operation] });
   }
 
   async count() {
@@ -216,7 +223,7 @@ class SqliteWhereQuery<T> implements WhereQuery<T> {
       return 0;
     }
 
-    return invoke<number>('notex_sqlite_where_count', {
+    return invoke<number>("notex_sqlite_where_count", {
       table: this.table,
       index: this.index,
       values: this.values,
@@ -228,7 +235,7 @@ class SqliteWhereQuery<T> implements WhereQuery<T> {
       return [];
     }
 
-    return invoke<T[]>('notex_sqlite_where_read', {
+    return invoke<T[]>("notex_sqlite_where_read", {
       table: this.table,
       index: this.index,
       values: this.values,
@@ -250,16 +257,29 @@ export async function seedDatabaseIfEmpty(bundle: MockDataBundle, settings: User
     return;
   }
 
-  await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles, db.tags, db.collections, db.users, db.activities, db.userSettings], async (db) => {
-    await db.notes.bulkPut(bundle.notes.map(stripNoteRelations));
-    await db.noteBlocks.bulkPut(bundle.noteBlocks);
-    await db.noteFiles.bulkPut(bundle.noteFiles);
-    await db.tags.bulkPut(bundle.tags);
-    await db.collections.bulkPut(bundle.collections);
-    await db.users.put(bundle.user);
-    await db.activities.bulkPut(bundle.activities);
-    await db.userSettings.put(settings);
-  });
+  await db.transaction(
+    "rw",
+    [
+      db.notes,
+      db.noteBlocks,
+      db.noteFiles,
+      db.tags,
+      db.collections,
+      db.users,
+      db.activities,
+      db.userSettings,
+    ],
+    async (db) => {
+      await db.notes.bulkPut(bundle.notes.map(stripNoteRelations));
+      await db.noteBlocks.bulkPut(bundle.noteBlocks);
+      await db.noteFiles.bulkPut(bundle.noteFiles);
+      await db.tags.bulkPut(bundle.tags);
+      await db.collections.bulkPut(bundle.collections);
+      await db.users.put(bundle.user);
+      await db.activities.bulkPut(bundle.activities);
+      await db.userSettings.put(settings);
+    },
+  );
 }
 
 export async function readAllKnowledge() {

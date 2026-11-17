@@ -1,106 +1,115 @@
-import { generateHTML, generateText, type JSONContent } from '@tiptap/core';
-import type { RichTextOutput } from '@notex/mcp-contract';
-import { createNoteContentExtensions } from '../editor/noteEditorExtensions';
-import type { TiptapDocument } from '../models/models';
-import { isSafeMarkdownHref } from '../utils/markdown';
-import { richTextToPlainText } from '../utils/richText';
+import { generateHTML, generateText, type JSONContent } from "@tiptap/core";
+import type { RichTextOutput } from "@notex/mcp-contract";
+import { createNoteContentExtensions } from "../editor/noteEditorExtensions";
+import type { TiptapDocument } from "../models/models";
+import { isSafeMarkdownHref } from "../utils/markdown";
+import { richTextToPlainText } from "../utils/richText";
 
 const contentExtensions = createNoteContentExtensions();
-const legacyInlinePattern = /(\[\[(color|bg):([a-z-]+)\]\][\s\S]+?\[\[\/\2\]\]|\[\[u\]\][\s\S]+?\[\[\/u\]\]|~~[^~]+~~|`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|\[[^\]]+\]\([^)]+\))/g;
+const legacyInlinePattern =
+  /(\[\[(color|bg):([a-z-]+)\]\][\s\S]+?\[\[\/\2\]\]|\[\[u\]\][\s\S]+?\[\[\/u\]\]|~~[^~]+~~|`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|\[[^\]]+\]\([^)]+\))/g;
 const htmlTagPattern = /<\/?[a-z][\s\S]*>/i;
 const blockedTags = new Set([
-  'audio',
-  'button',
-  'embed',
-  'form',
-  'iframe',
-  'img',
-  'input',
-  'notex-file',
-  'object',
-  'picture',
-  'script',
-  'source',
-  'style',
-  'svg',
-  'video',
+  "audio",
+  "button",
+  "embed",
+  "form",
+  "iframe",
+  "img",
+  "input",
+  "notex-file",
+  "object",
+  "picture",
+  "script",
+  "source",
+  "style",
+  "svg",
+  "video",
 ]);
 const allowedTags = new Set([
-  'a',
-  'b',
-  'blockquote',
-  'br',
-  'code',
-  'col',
-  'colgroup',
-  'del',
-  'div',
-  'em',
-  'h1',
-  'h2',
-  'h3',
-  'h4',
-  'h5',
-  'h6',
-  'hr',
-  'i',
-  'label',
-  'li',
-  'mark',
-  'notex-tip',
-  'ol',
-  'p',
-  'pre',
-  's',
-  'span',
-  'strike',
-  'strong',
-  'table',
-  'tbody',
-  'td',
-  'tfoot',
-  'th',
-  'thead',
-  'tr',
-  'u',
-  'ul',
+  "a",
+  "b",
+  "blockquote",
+  "br",
+  "code",
+  "col",
+  "colgroup",
+  "del",
+  "div",
+  "em",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "hr",
+  "i",
+  "label",
+  "li",
+  "mark",
+  "notex-tip",
+  "ol",
+  "p",
+  "pre",
+  "s",
+  "span",
+  "strike",
+  "strong",
+  "table",
+  "tbody",
+  "td",
+  "tfoot",
+  "th",
+  "thead",
+  "tr",
+  "u",
+  "ul",
 ]);
 const allowedAttributes = new Set([
-  'colspan',
-  'colwidth',
-  'data-checked',
-  'data-color',
-  'data-notex-bg',
-  'data-notex-color',
-  'data-type',
-  'rowspan',
-  'start',
-  'title',
+  "colspan",
+  "colwidth",
+  "data-checked",
+  "data-color",
+  "data-notex-bg",
+  "data-notex-color",
+  "data-type",
+  "rowspan",
+  "start",
+  "title",
 ]);
-const allowedStyleProperties = new Set(['background-color', 'color', 'min-width', 'text-align', 'width']);
+const allowedStyleProperties = new Set([
+  "background-color",
+  "color",
+  "min-width",
+  "text-align",
+  "width",
+]);
 const plainTextBlockTags = new Set([
-  'blockquote',
-  'div',
-  'h1',
-  'h2',
-  'h3',
-  'h4',
-  'h5',
-  'h6',
-  'li',
-  'notex-tip',
-  'p',
-  'pre',
-  'tr',
+  "blockquote",
+  "div",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "li",
+  "notex-tip",
+  "p",
+  "pre",
+  "tr",
 ]);
 
 export function inlineRichTextOutput(value: string | null | undefined): RichTextOutput {
-  const source = value ?? '';
+  const source = value ?? "";
   if (!source) {
-    return { html: '', text: '' };
+    return { html: "", text: "" };
   }
 
-  const html = htmlTagPattern.test(source) ? sanitizeRichTextHtml(source) : renderLegacyInline(source);
+  const html = htmlTagPattern.test(source)
+    ? sanitizeRichTextHtml(source)
+    : renderLegacyInline(source);
   return {
     html,
     text: htmlToPlainText(html),
@@ -112,7 +121,7 @@ export function blockRichTextOutput(
   storedText: string | null | undefined,
 ): RichTextOutput {
   const documentWithoutFiles = removeFileNodes(documentValue);
-  const fallbackText = storedText ?? '';
+  const fallbackText = storedText ?? "";
 
   if (!documentWithoutFiles) {
     return {
@@ -123,10 +132,12 @@ export function blockRichTextOutput(
 
   try {
     const generatedText = generateText(documentWithoutFiles as JSONContent, contentExtensions, {
-      blockSeparator: '\n',
+      blockSeparator: "\n",
     });
     return {
-      html: sanitizeRichTextHtml(generateHTML(documentWithoutFiles as JSONContent, contentExtensions)),
+      html: sanitizeRichTextHtml(
+        generateHTML(documentWithoutFiles as JSONContent, contentExtensions),
+      ),
       text: fallbackText || generatedText,
     };
   } catch {
@@ -147,13 +158,13 @@ function removeFileNodes(documentValue: TiptapDocument | null | undefined): Tipt
     return null;
   }
   if (!filtered.content?.length) {
-    filtered.content = [{ type: 'paragraph' }];
+    filtered.content = [{ type: "paragraph" }];
   }
   return filtered as TiptapDocument;
 }
 
 function filterNode(node: JSONContent): JSONContent | null {
-  if (node.type === 'noteFile') {
+  if (node.type === "noteFile") {
     return null;
   }
 
@@ -168,11 +179,11 @@ function filterNode(node: JSONContent): JSONContent | null {
 }
 
 function sanitizeRichTextHtml(html: string) {
-  if (typeof document === 'undefined') {
+  if (typeof document === "undefined") {
     return plainTextToHtml(richTextToPlainText(html));
   }
 
-  const template = document.createElement('template');
+  const template = document.createElement("template");
   template.innerHTML = html;
   sanitizeChildren(template.content);
   return template.innerHTML;
@@ -199,16 +210,16 @@ function sanitizeChildren(parent: ParentNode) {
 function sanitizeAttributes(element: HTMLElement, tagName: string) {
   for (const attribute of Array.from(element.attributes)) {
     const name = attribute.name.toLowerCase();
-    if (name === 'href' && tagName === 'a') {
+    if (name === "href" && tagName === "a") {
       if (!isSafeMarkdownHref(attribute.value)) {
         element.removeAttribute(attribute.name);
       }
       continue;
     }
-    if (name === 'style') {
+    if (name === "style") {
       const style = sanitizeStyle(attribute.value);
       if (style) {
-        element.setAttribute('style', style);
+        element.setAttribute("style", style);
       } else {
         element.removeAttribute(attribute.name);
       }
@@ -222,9 +233,9 @@ function sanitizeAttributes(element: HTMLElement, tagName: string) {
 
 function sanitizeStyle(style: string) {
   return style
-    .split(';')
+    .split(";")
     .flatMap((declaration) => {
-      const separator = declaration.indexOf(':');
+      const separator = declaration.indexOf(":");
       if (separator < 0) {
         return [];
       }
@@ -235,7 +246,7 @@ function sanitizeStyle(style: string) {
       }
       return [`${property}: ${value}`];
     })
-    .join('; ');
+    .join("; ");
 }
 
 function isSafeStyleValue(value: string) {
@@ -247,7 +258,7 @@ function isSafeStyleValue(value: string) {
 }
 
 function renderLegacyInline(value: string): string {
-  let html = '';
+  let html = "";
   let lastIndex = 0;
 
   for (const match of value.matchAll(legacyInlinePattern)) {
@@ -259,7 +270,7 @@ function renderLegacyInline(value: string): string {
   }
 
   html += escapeHtml(value.slice(lastIndex));
-  return html.replace(/\r?\n/g, '<br>');
+  return html.replace(/\r?\n/g, "<br>");
 }
 
 function renderLegacyToken(token: string): string {
@@ -274,16 +285,22 @@ function renderLegacyToken(token: string): string {
   if (underline) {
     return `<u>${renderLegacyInline(underline[1])}</u>`;
   }
-  if (token.startsWith('~~') && token.endsWith('~~')) {
+  if (token.startsWith("~~") && token.endsWith("~~")) {
     return `<s>${renderLegacyInline(token.slice(2, -2))}</s>`;
   }
-  if (token.startsWith('`') && token.endsWith('`')) {
+  if (token.startsWith("`") && token.endsWith("`")) {
     return `<code>${escapeHtml(token.slice(1, -1))}</code>`;
   }
-  if ((token.startsWith('**') && token.endsWith('**')) || (token.startsWith('__') && token.endsWith('__'))) {
+  if (
+    (token.startsWith("**") && token.endsWith("**")) ||
+    (token.startsWith("__") && token.endsWith("__"))
+  ) {
     return `<strong>${renderLegacyInline(token.slice(2, -2))}</strong>`;
   }
-  if ((token.startsWith('*') && token.endsWith('*')) || (token.startsWith('_') && token.endsWith('_'))) {
+  if (
+    (token.startsWith("*") && token.endsWith("*")) ||
+    (token.startsWith("_") && token.endsWith("_"))
+  ) {
     return `<em>${renderLegacyInline(token.slice(1, -1))}</em>`;
   }
 
@@ -297,49 +314,49 @@ function renderLegacyToken(token: string): string {
 }
 
 function htmlToPlainText(html: string) {
-  if (typeof document === 'undefined') {
+  if (typeof document === "undefined") {
     return richTextToPlainText(html);
   }
-  const element = document.createElement('div');
+  const element = document.createElement("div");
   element.innerHTML = html;
   appendPlainTextSeparators(element);
-  return (element.textContent ?? '')
-    .replace(/\u00a0/g, ' ')
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/^\n+|\n+$/g, '');
+  return (element.textContent ?? "")
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/^\n+|\n+$/g, "");
 }
 
 function appendPlainTextSeparators(parent: ParentNode) {
   for (const child of Array.from(parent.children)) {
     appendPlainTextSeparators(child);
     const tagName = child.tagName.toLowerCase();
-    if (tagName === 'br') {
-      child.replaceWith(document.createTextNode('\n'));
-    } else if (tagName === 'td' || tagName === 'th') {
-      child.append(document.createTextNode('\t'));
+    if (tagName === "br") {
+      child.replaceWith(document.createTextNode("\n"));
+    } else if (tagName === "td" || tagName === "th") {
+      child.append(document.createTextNode("\t"));
     } else if (plainTextBlockTags.has(tagName)) {
-      child.append(document.createTextNode('\n'));
+      child.append(document.createTextNode("\n"));
     }
   }
 }
 
 function plainTextToHtml(text: string) {
   if (!text) {
-    return '';
+    return "";
   }
   return text
-    .replace(/\r\n/g, '\n')
-    .split('\n')
+    .replace(/\r\n/g, "\n")
+    .split("\n")
     .map((line) => `<p>${escapeHtml(line)}</p>`)
-    .join('');
+    .join("");
 }
 
 function escapeHtml(value: string) {
   return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

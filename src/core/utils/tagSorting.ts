@@ -1,8 +1,8 @@
-import type { Tag } from '../models/models';
+import type { Tag } from "../models/models";
 
-type TagLike = Pick<Tag, 'id' | 'name'>;
+type TagLike = Pick<Tag, "id" | "name">;
 
-export function sortTagsByName<T extends Pick<Tag, 'name'>>(tags: T[]) {
+export function sortTagsByName<T extends Pick<Tag, "name">>(tags: T[]) {
   return [...tags].sort(compareTagNames);
 }
 
@@ -31,6 +31,6 @@ export function sortTagsByFavoriteOrder<T extends TagLike>(tags: T[], favoriteTa
   });
 }
 
-function compareTagNames<T extends Pick<Tag, 'name'>>(a: T, b: T) {
-  return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+function compareTagNames<T extends Pick<Tag, "name">>(a: T, b: T) {
+  return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
 }

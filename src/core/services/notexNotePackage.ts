@@ -1,6 +1,6 @@
-import { desktopInvoke as invoke } from '../storage/desktopInvoke';
-import { open, save } from '@tauri-apps/plugin-dialog';
-import type { SqliteExportInfo } from './sqliteDataManagement';
+import { desktopInvoke as invoke } from "../storage/desktopInvoke";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import type { SqliteExportInfo } from "./sqliteDataManagement";
 
 export type NotexNoteImportInfo = {
   noteId: string;
@@ -16,13 +16,13 @@ export type NotexNoteImportInfo = {
 
 const notePackageFilters = [
   {
-    name: 'NoteX note',
-    extensions: ['notex-note'],
+    name: "NoteX note",
+    extensions: ["notex-note"],
   },
 ];
 
 export function createNotexNoteTempExport(noteId: string) {
-  return invoke<SqliteExportInfo>('notex_note_package_create_temp_export', { noteId });
+  return invoke<SqliteExportInfo>("notex_note_package_create_temp_export", { noteId });
 }
 
 export async function chooseNotexNoteExportDestination(exportInfo: SqliteExportInfo) {
@@ -35,7 +35,7 @@ export async function chooseNotexNoteExportDestination(exportInfo: SqliteExportI
     return null;
   }
 
-  return invoke<string>('notex_note_package_copy_export_to', {
+  return invoke<string>("notex_note_package_copy_export_to", {
     tempPath: exportInfo.tempPath,
     destinationPath,
   });
@@ -47,9 +47,9 @@ export async function chooseNotexNoteImportFile() {
     filters: notePackageFilters,
   });
 
-  return typeof selected === 'string' ? selected : null;
+  return typeof selected === "string" ? selected : null;
 }
 
 export function importNotexNotePackage(sourcePath: string) {
-  return invoke<NotexNoteImportInfo>('notex_note_package_import_from_file', { sourcePath });
+  return invoke<NotexNoteImportInfo>("notex_note_package_import_from_file", { sourcePath });
 }

@@ -30,8 +30,7 @@
   --green: #3b7a61;
   --focus: #6374df;
   --font-sans:
-    "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+    "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display: "Manrope", var(--font-sans);
   --app-bg: #090b10;
   --app-panel: #11141c;

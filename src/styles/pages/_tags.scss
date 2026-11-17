@@ -50,7 +50,10 @@
   border-radius: var(--nx-radius-card);
   background: var(--nx-color-surface);
   padding: var(--nx-space-4);
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .tag-card:hover {

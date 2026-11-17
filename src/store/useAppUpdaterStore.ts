@@ -1,13 +1,13 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 import {
   checkForAppUpdate,
   closeAppUpdate,
   installAppUpdate,
   type AppUpdateInfo,
   type UpdateInstallProgress,
-} from '../core/services/appUpdater';
+} from "../core/services/appUpdater";
 
-export type AppUpdaterStatus = 'idle' | 'checking' | 'available' | 'installing';
+export type AppUpdaterStatus = "idle" | "checking" | "available" | "installing";
 
 type AppUpdaterStore = {
   progress: UpdateInstallProgress | null;
@@ -22,7 +22,7 @@ let activeCheck: Promise<AppUpdateInfo | null> | null = null;
 
 export const useAppUpdaterStore = create<AppUpdaterStore>((set, get) => ({
   progress: null,
-  status: 'idle',
+  status: "idle",
   updateInfo: null,
   check: async () => {
     const currentState = get();
@@ -33,18 +33,18 @@ export const useAppUpdaterStore = create<AppUpdaterStore>((set, get) => ({
       return activeCheck;
     }
 
-    set({ status: 'checking' });
+    set({ status: "checking" });
     activeCheck = checkForAppUpdate()
       .then((updateInfo) => {
         set({
           progress: null,
-          status: updateInfo ? 'available' : 'idle',
+          status: updateInfo ? "available" : "idle",
           updateInfo,
         });
         return updateInfo;
       })
       .catch((error) => {
-        set({ status: 'idle' });
+        set({ status: "idle" });
         throw error;
       })
       .finally(() => {
@@ -55,7 +55,7 @@ export const useAppUpdaterStore = create<AppUpdaterStore>((set, get) => ({
   },
   dismiss: async () => {
     const update = get().updateInfo?.update;
-    set({ progress: null, status: 'idle', updateInfo: null });
+    set({ progress: null, status: "idle", updateInfo: null });
     if (update) {
       try {
         await closeAppUpdate(update);
@@ -66,15 +66,15 @@ export const useAppUpdaterStore = create<AppUpdaterStore>((set, get) => ({
   },
   install: async () => {
     const updateInfo = get().updateInfo;
-    if (!updateInfo || get().status === 'installing') {
+    if (!updateInfo || get().status === "installing") {
       return;
     }
 
-    set({ progress: null, status: 'installing' });
+    set({ progress: null, status: "installing" });
     try {
       await installAppUpdate(updateInfo.update, (progress) => set({ progress }));
     } catch (error) {
-      set({ status: 'available' });
+      set({ status: "available" });
       throw error;
     }
   },

@@ -1,39 +1,45 @@
-import { Check, Folder, Plus, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ColorPicker } from '../components/ui/ColorPicker';
-import { CustomSelect } from '../components/ui/CustomSelect';
-import { DeleteConfirmModal } from '../components/ui/DeleteConfirmModal';
-import { IconBadge } from '../components/ui/IconBadge';
-import { KnowledgeActionsMenu } from '../components/ui/KnowledgeActionsMenu';
-import { defaultNewCollectionColor } from '../config/appSettings';
-import type { Collection, TagColor } from '../core/models/models';
+import { Check, Folder, Plus, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { ColorPicker } from "../components/ui/ColorPicker";
+import { CustomSelect } from "../components/ui/CustomSelect";
+import { DeleteConfirmModal } from "../components/ui/DeleteConfirmModal";
+import { IconBadge } from "../components/ui/IconBadge";
+import { KnowledgeActionsMenu } from "../components/ui/KnowledgeActionsMenu";
+import { defaultNewCollectionColor } from "../config/appSettings";
+import type { Collection, TagColor } from "../core/models/models";
 import {
   focusTextControlAtEnd,
   isEditableShortcutTarget,
   isPlainLetterShortcut,
-} from '../core/utils/keyboardShortcuts';
-import { useI18n } from '../i18n/I18nProvider';
-import { useAppStore } from '../store/useAppStore';
-import { useNotesStore } from '../store/useNotesStore';
-import { useKnowledgeStore } from '../store/useKnowledgeStore';
-import { useToastStore } from '../store/useToastStore';
-import { NotesListViewPage } from './NotesListViewPage';
+} from "../core/utils/keyboardShortcuts";
+import { useI18n } from "../i18n/I18nProvider";
+import { useAppStore } from "../store/useAppStore";
+import { useNotesStore } from "../store/useNotesStore";
+import { useKnowledgeStore } from "../store/useKnowledgeStore";
+import { useToastStore } from "../store/useToastStore";
+import { NotesListViewPage } from "./NotesListViewPage";
 
 type CollectionDraft = {
   color: TagColor;
   name: string;
 };
 
-export function NotesListPage({ mode }: { mode: 'all' | 'favorites' | 'recent' | 'trash' }) {
+export function NotesListPage({ mode }: { mode: "all" | "favorites" | "recent" | "trash" }) {
   return <NotesListViewPage mode={mode} />;
 }
 
 export function CollectionsPage() {
   const { t } = useI18n();
-  const [newDraft, setNewDraft] = useState<CollectionDraft>({ name: '', color: defaultNewCollectionColor });
+  const [newDraft, setNewDraft] = useState<CollectionDraft>({
+    name: "",
+    color: defaultNewCollectionColor,
+  });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingDraft, setEditingDraft] = useState<CollectionDraft>({ name: '', color: defaultNewCollectionColor });
+  const [editingDraft, setEditingDraft] = useState<CollectionDraft>({
+    name: "",
+    color: defaultNewCollectionColor,
+  });
   const [deleteCandidate, setDeleteCandidate] = useState<Collection | null>(null);
   const editNameInputRef = useRef<HTMLInputElement>(null);
   const editSaveButtonRef = useRef<HTMLButtonElement>(null);
@@ -56,7 +62,12 @@ export function CollectionsPage() {
 
   useEffect(() => {
     function handleCollectionPageShortcut(event: KeyboardEvent) {
-      if (editingId || deleteCandidate || !isPlainLetterShortcut(event) || isEditableShortcutTarget(event.target)) {
+      if (
+        editingId ||
+        deleteCandidate ||
+        !isPlainLetterShortcut(event) ||
+        isEditableShortcutTarget(event.target)
+      ) {
         return;
       }
 
@@ -65,8 +76,8 @@ export function CollectionsPage() {
       requestAnimationFrame(() => focusTextControlAtEnd(newNameInputRef.current));
     }
 
-    window.addEventListener('keydown', handleCollectionPageShortcut);
-    return () => window.removeEventListener('keydown', handleCollectionPageShortcut);
+    window.addEventListener("keydown", handleCollectionPageShortcut);
+    return () => window.removeEventListener("keydown", handleCollectionPageShortcut);
   }, [deleteCandidate, editingId]);
 
   async function createCollectionFromDraft() {
@@ -75,15 +86,15 @@ export function CollectionsPage() {
       return;
     }
 
-    setNewDraft({ name: '', color: defaultNewCollectionColor });
-    pushToast(t('collections.created'), 'success');
+    setNewDraft({ name: "", color: defaultNewCollectionColor });
+    pushToast(t("collections.created"), "success");
   }
 
   function beginEdit(collection: Collection) {
     setEditingId(collection.id);
     setEditingDraft({
       name: collection.name,
-      color: collection.color ?? 'neutral',
+      color: collection.color ?? "neutral",
     });
   }
 
@@ -94,7 +105,7 @@ export function CollectionsPage() {
   async function saveEdit(collectionId: string) {
     await updateCollection(collectionId, editingDraft);
     setEditingId(null);
-    pushToast(t('collections.updated'), 'success');
+    pushToast(t("collections.updated"), "success");
   }
 
   async function confirmRemoveCollection() {
@@ -103,27 +114,31 @@ export function CollectionsPage() {
     }
 
     if (settings.primaryCollectionId === deleteCandidate.id) {
-      await setPrimaryCollection(collections.find((collection) => collection.id !== deleteCandidate.id)?.id ?? '');
+      await setPrimaryCollection(
+        collections.find((collection) => collection.id !== deleteCandidate.id)?.id ?? "",
+      );
     }
 
     await deleteCollection(deleteCandidate.id);
     setEditingId(null);
     setDeleteCandidate(null);
-    pushToast(t('collections.deleted'), 'warning');
+    pushToast(t("collections.deleted"), "warning");
   }
 
   return (
     <div className="page-content list-page-grid collections-page">
       <header>
-        <h1 className="page-title">{t('notes.collectionsTitle')}</h1>
-        <p className="page-subtitle">{t('notes.collectionsSubtitle')}</p>
+        <h1 className="page-title">{t("notes.collectionsTitle")}</h1>
+        <p className="page-subtitle">{t("notes.collectionsSubtitle")}</p>
       </header>
 
       <div className="collections-layout">
-        <section className="collections-main-section" aria-label={t('navigation.collections')}>
+        <section className="collections-main-section" aria-label={t("navigation.collections")}>
           <div className="collection-grid">
             {collections.map((collection) => {
-              const count = notes.filter((note) => note.collectionId === collection.id && !note.isTrashed).length;
+              const count = notes.filter(
+                (note) => note.collectionId === collection.id && !note.isTrashed,
+              ).length;
               const isEditing = editingId === collection.id;
               return (
                 <article className="collection-card" key={collection.id}>
@@ -131,7 +146,7 @@ export function CollectionsPage() {
                     <form
                       className="collection-edit-form"
                       onKeyDown={(event) => {
-                        if (event.key === 'Escape') {
+                        if (event.key === "Escape") {
                           event.preventDefault();
                           cancelEdit();
                         }
@@ -144,37 +159,52 @@ export function CollectionsPage() {
                       <IconBadge icon={Folder} color={editingDraft.color} />
                       <input
                         ref={editNameInputRef}
-                        aria-label={t('collections.name')}
+                        aria-label={t("collections.name")}
                         value={editingDraft.name}
-                        onChange={(event) => setEditingDraft((draft) => ({ ...draft, name: event.target.value }))}
+                        onChange={(event) =>
+                          setEditingDraft((draft) => ({ ...draft, name: event.target.value }))
+                        }
                       />
                       <ColorPicker
-                        ariaLabel={t('collections.color')}
+                        ariaLabel={t("collections.color")}
                         onKeyboardCancel={() => editNameInputRef.current?.focus()}
                         onKeyboardCommit={() => editSaveButtonRef.current?.focus()}
                         onChange={(color) => setEditingDraft((draft) => ({ ...draft, color }))}
                         value={editingDraft.color}
                       />
                       <div className="collection-card-actions">
-                        <button ref={editSaveButtonRef} className="collection-action-button" disabled={!editingDraft.name.trim()} type="submit">
+                        <button
+                          ref={editSaveButtonRef}
+                          className="collection-action-button"
+                          disabled={!editingDraft.name.trim()}
+                          type="submit"
+                        >
                           <Check />
-                          {t('common.save')}
+                          {t("common.save")}
                         </button>
-                        <button className="collection-action-button" type="button" onClick={cancelEdit}>
+                        <button
+                          className="collection-action-button"
+                          type="button"
+                          onClick={cancelEdit}
+                        >
                           <X />
-                          {t('common.cancel')}
+                          {t("common.cancel")}
                         </button>
                       </div>
                     </form>
                   ) : (
                     <div className="collection-card-header">
-                      <Link className="collection-card-link-overlay" to={`/notes?collection=${collection.id}`} aria-label={collection.name} />
+                      <Link
+                        className="collection-card-link-overlay"
+                        to={`/notes?collection=${collection.id}`}
+                        aria-label={collection.name}
+                      />
                       <div className="collection-card-main">
                         <IconBadge icon={Folder} color={collection.color} />
                         <div>
                           <div className="stat-label">{collection.name}</div>
                           <div className="stat-delta">
-                            {count} {t('navigation.notes')}
+                            {count} {t("navigation.notes")}
                           </div>
                         </div>
                       </div>
@@ -201,43 +231,49 @@ export function CollectionsPage() {
               void createCollectionFromDraft();
             }}
           >
-            <h2 className="settings-title">{t('collections.addNewCollection')}</h2>
+            <h2 className="settings-title">{t("collections.addNewCollection")}</h2>
             <input
               ref={newNameInputRef}
-              aria-label={t('collections.name')}
+              aria-label={t("collections.name")}
               value={newDraft.name}
               onChange={(event) => setNewDraft((draft) => ({ ...draft, name: event.target.value }))}
               onKeyDown={(event) => {
-                if (event.key === 'Escape') {
+                if (event.key === "Escape") {
                   event.preventDefault();
-                  setNewDraft((draft) => ({ ...draft, name: '' }));
+                  setNewDraft((draft) => ({ ...draft, name: "" }));
                   event.currentTarget.blur();
                 }
               }}
-              placeholder={t('collections.name')}
+              placeholder={t("collections.name")}
             />
             <div className="collection-create-actions">
-              <ColorPicker ariaLabel={t('collections.color')} onChange={(color) => setNewDraft((draft) => ({ ...draft, color }))} value={newDraft.color} />
+              <ColorPicker
+                ariaLabel={t("collections.color")}
+                onChange={(color) => setNewDraft((draft) => ({ ...draft, color }))}
+                value={newDraft.color}
+              />
               <button type="submit">
                 <Plus />
-                {t('collections.create')}
+                {t("collections.create")}
               </button>
             </div>
           </form>
 
           <section className="settings-card collection-preference-card">
-            <h2 className="settings-title">{t('collections.primaryCollection')}</h2>
-            <p className="settings-description">{t('collections.primaryCollectionDescription')}</p>
+            <h2 className="settings-title">{t("collections.primaryCollection")}</h2>
+            <p className="settings-description">{t("collections.primaryCollectionDescription")}</p>
             <CustomSelect
-              ariaLabel={t('collections.primaryCollection')}
-              emptyText={t('notes.filters.noCollections')}
+              ariaLabel={t("collections.primaryCollection")}
+              emptyText={t("notes.filters.noCollections")}
               onChange={(collectionId) => {
-                void setPrimaryCollection(collectionId).then(() => pushToast(t('collections.primaryCollectionUpdated'), 'success'));
+                void setPrimaryCollection(collectionId).then(() =>
+                  pushToast(t("collections.primaryCollectionUpdated"), "success"),
+                );
               }}
               options={[
                 {
-                  label: t('noteDetail.noCollection'),
-                  value: '',
+                  label: t("noteDetail.noCollection"),
+                  value: "",
                 },
                 ...collections.map((collection) => ({
                   color: collection.color,
@@ -245,7 +281,7 @@ export function CollectionsPage() {
                   value: collection.id,
                 })),
               ]}
-              placeholder={t('notes.filters.allCollections')}
+              placeholder={t("notes.filters.allCollections")}
               value={settings.primaryCollectionId}
             />
           </section>
@@ -253,12 +289,12 @@ export function CollectionsPage() {
       </div>
       {deleteCandidate ? (
         <DeleteConfirmModal
-          cancelLabel={t('common.cancel')}
-          confirmLabel={t('common.delete')}
-          description={t('collections.deleteConfirm')}
+          cancelLabel={t("common.cancel")}
+          confirmLabel={t("common.delete")}
+          description={t("collections.deleteConfirm")}
           onCancel={() => setDeleteCandidate(null)}
           onConfirm={() => void confirmRemoveCollection()}
-          title={t('collections.deleteTitle', { name: deleteCandidate.name })}
+          title={t("collections.deleteTitle", { name: deleteCandidate.name })}
         />
       ) : null}
     </div>

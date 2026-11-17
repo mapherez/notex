@@ -1,5 +1,9 @@
-import { create } from 'zustand';
-import { defaultNoteThumbnailVariant, defaultUserSettings, editorSettings } from '../config/appSettings';
+import { create } from "zustand";
+import {
+  defaultNoteThumbnailVariant,
+  defaultUserSettings,
+  editorSettings,
+} from "../config/appSettings";
 import type {
   Note,
   NoteBlock,
@@ -8,14 +12,14 @@ import type {
   NoteStats,
   RelatedLink,
   TiptapDocument,
-} from '../core/models/models';
-import { db } from '../core/storage/notexRepository';
-import { richTextToPlainText } from '../core/utils/richText';
-import { stableStringify } from '../core/utils/stableJson';
-import { downloadCloudNote, withCloudMetadata, markCloudDeleted } from '../core/cloud/cloudView';
-import { beginLocalSave } from '../core/mcp/noteMutationCoordinator';
-import { deleteNoteAttachment, importNoteAttachment } from '../core/services/noteFiles';
-import { createUuid } from '../core/utils/createUuid';
+} from "../core/models/models";
+import { db } from "../core/storage/notexRepository";
+import { richTextToPlainText } from "../core/utils/richText";
+import { stableStringify } from "../core/utils/stableJson";
+import { downloadCloudNote, withCloudMetadata, markCloudDeleted } from "../core/cloud/cloudView";
+import { beginLocalSave } from "../core/mcp/noteMutationCoordinator";
+import { deleteNoteAttachment, importNoteAttachment } from "../core/services/noteFiles";
+import { createUuid } from "../core/utils/createUuid";
 
 type NoteInput = {
   collectionId?: string | null;
@@ -37,7 +41,7 @@ type HeaderInput = {
 type BlockInput = {
   contentJson?: TiptapDocument | null;
   contentText?: string;
-  kind?: NoteBlock['kind'];
+  kind?: NoteBlock["kind"];
   title?: string;
 };
 
@@ -58,7 +62,7 @@ type NotesStore = {
   markNoteOpened: (noteId: string) => Promise<void>;
   updateNoteHeader: (noteId: string, input: HeaderInput) => Promise<void>;
   updateNoteTags: (noteId: string, tagIds: string[]) => Promise<void>;
-  updateNoteThumbnail: (noteId: string, thumbnail: Note['thumbnail']) => Promise<void>;
+  updateNoteThumbnail: (noteId: string, thumbnail: Note["thumbnail"]) => Promise<void>;
   bulkUpdateNoteCollection: (noteIds: string[], collectionId: string | null) => Promise<void>;
   bulkUpdateNoteTag: (noteIds: string[], tagId: string, assigned: boolean) => Promise<void>;
   updateNoteLinkedNotes: (noteId: string, linkedNoteIds: string[]) => Promise<void>;
@@ -75,7 +79,11 @@ type NotesStore = {
   updateBlock: (noteId: string, blockId: string, input: BlockInput) => Promise<void>;
   reorderBlocks: (noteId: string, blockIds: string[]) => Promise<void>;
   deleteBlock: (noteId: string, blockId: string) => Promise<void>;
-  importFileForBlock: (sourcePath: string | File, noteId: string, blockId: string | null) => Promise<NoteFile | null>;
+  importFileForBlock: (
+    sourcePath: string | File,
+    noteId: string,
+    blockId: string | null,
+  ) => Promise<NoteFile | null>;
   deleteFile: (noteId: string, fileId: string) => Promise<void>;
   moveNoteToTrash: (noteId: string) => Promise<void>;
   restoreNote: (noteId: string) => Promise<void>;
@@ -84,8 +92,8 @@ type NotesStore = {
 };
 
 export const emptyTiptapDocument: TiptapDocument = {
-  type: 'doc',
-  content: [{ type: 'paragraph' }],
+  type: "doc",
+  content: [{ type: "paragraph" }],
 };
 
 const noteContentMutationQueues = new Map<string, Promise<void>>();
@@ -93,7 +101,10 @@ const noteContentMutationQueues = new Map<string, Promise<void>>();
 async function runNoteContentMutation<T>(noteId: string, mutation: () => Promise<T>): Promise<T> {
   const previous = noteContentMutationQueues.get(noteId) ?? Promise.resolve();
   const result = previous.catch(() => undefined).then(mutation);
-  const tail = result.then(() => undefined, () => undefined);
+  const tail = result.then(
+    () => undefined,
+    () => undefined,
+  );
   noteContentMutationQueues.set(noteId, tail);
   try {
     return await result;
@@ -128,22 +139,23 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       id: createId(),
       noteId: baseNote.id,
       sortOrder,
-      title: blockInput.title ?? '',
-      kind: blockInput.kind ?? 'content',
-      contentJson: blockInput.contentJson === undefined ? emptyTiptapDocument : blockInput.contentJson,
-      contentText: blockInput.contentText ?? '',
+      title: blockInput.title ?? "",
+      kind: blockInput.kind ?? "content",
+      contentJson:
+        blockInput.contentJson === undefined ? emptyTiptapDocument : blockInput.contentJson,
+      contentText: blockInput.contentText ?? "",
       createdAt: baseNote.createdAt,
       updatedAt: baseNote.updatedAt,
     }));
     const noteWithoutStats: Note = {
       ...baseNote,
-      subtitle: input.subtitle?.trim() || '',
+      subtitle: input.subtitle?.trim() || "",
       tagIds: uniqueIds(input.tagIds ?? []),
       blocks,
     };
     const note = { ...noteWithoutStats, stats: calculateStats(noteWithoutStats) };
 
-    await db.transaction('rw', [db.notes, db.noteBlocks], async (db) => {
+    await db.transaction("rw", [db.notes, db.noteBlocks], async (db) => {
       await db.notes.put(stripNoteRelations(note));
       await db.noteBlocks.bulkPut(blocks);
     });
@@ -168,7 +180,8 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       (input.title === undefined || input.title === note.title) &&
       (input.subtitle === undefined || input.subtitle === note.subtitle) &&
       (input.collectionId === undefined || input.collectionId === note.collectionId)
-    ) return;
+    )
+      return;
     const updated = finalizeNote({
       ...note,
       title: input.title !== undefined ? input.title : note.title,
@@ -176,7 +189,9 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       collectionId: input.collectionId !== undefined ? input.collectionId : note.collectionId,
     });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   updateNoteTags: async (noteId, tagIds) => {
     const note = await findAvailableNote(get().notes, noteId);
@@ -187,7 +202,9 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     if (sameOrderedIds(note.tagIds, nextTagIds)) return;
     const updated = finalizeNote({ ...note, tagIds: nextTagIds });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   updateNoteThumbnail: async (noteId, thumbnail) => {
     const note = await findAvailableNote(get().notes, noteId);
@@ -196,13 +213,16 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     }
     const updated = finalizeNote({ ...note, thumbnail });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   bulkUpdateNoteCollection: async (noteIds, collectionId) => {
-    for (const id of noteIds) if (get().notes.find((note) => note.id === id)?.cloudOnly) await downloadCloudNote(id);
+    for (const id of noteIds)
+      if (get().notes.find((note) => note.id === id)?.cloudOnly) await downloadCloudNote(id);
     const noteIdSet = new Set(uniqueIds(noteIds));
-    const noteUpdates = get().notes
-      .filter((note) => noteIdSet.has(note.id) && note.collectionId !== collectionId)
+    const noteUpdates = get()
+      .notes.filter((note) => noteIdSet.has(note.id) && note.collectionId !== collectionId)
       .map((note) => finalizeNote({ ...note, collectionId }));
 
     if (!noteUpdates.length) {
@@ -216,12 +236,15 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     });
   },
   bulkUpdateNoteTag: async (noteIds, tagId, assigned) => {
-    for (const id of noteIds) if (get().notes.find((note) => note.id === id)?.cloudOnly) await downloadCloudNote(id);
+    for (const id of noteIds)
+      if (get().notes.find((note) => note.id === id)?.cloudOnly) await downloadCloudNote(id);
     const noteIdSet = new Set(uniqueIds(noteIds));
-    const noteUpdates = get().notes
-      .filter((note) => noteIdSet.has(note.id) && note.tagIds.includes(tagId) !== assigned)
+    const noteUpdates = get()
+      .notes.filter((note) => noteIdSet.has(note.id) && note.tagIds.includes(tagId) !== assigned)
       .map((note) => {
-        const nextTagIds = assigned ? [...note.tagIds, tagId] : note.tagIds.filter((id) => id !== tagId);
+        const nextTagIds = assigned
+          ? [...note.tagIds, tagId]
+          : note.tagIds.filter((id) => id !== tagId);
         return finalizeNote({ ...note, tagIds: uniqueIds(nextTagIds) });
       });
 
@@ -246,7 +269,9 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     }
     const updated = finalizeNote({ ...note, linkedNoteIds: nextLinkedNoteIds });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   addAdditionalExample: async (noteId, example) => {
     const trimmed = example.trim();
@@ -259,7 +284,9 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       additionalExamples: [...(note.additionalExamples ?? []), trimmed],
     });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   updateAdditionalExample: async (noteId, index, example) => {
     const trimmed = example.trim();
@@ -274,7 +301,9 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     examples[index] = trimmed;
     const updated = finalizeNote({ ...note, additionalExamples: examples });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   deleteAdditionalExample: async (noteId, index) => {
     const note = await findAvailableNote(get().notes, noteId);
@@ -283,10 +312,14 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     }
     const updated = finalizeNote({
       ...note,
-      additionalExamples: (note.additionalExamples ?? []).filter((_, itemIndex) => itemIndex !== index),
+      additionalExamples: (note.additionalExamples ?? []).filter(
+        (_, itemIndex) => itemIndex !== index,
+      ),
     });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   addRelatedLink: async (noteId, title, href) => {
     const trimmedTitle = title.trim();
@@ -302,7 +335,9 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     };
     const updated = finalizeNote({ ...note, relatedLinks: [...(note.relatedLinks ?? []), link] });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   deleteRelatedLink: async (noteId, linkId) => {
     const note = await findAvailableNote(get().notes, noteId);
@@ -314,7 +349,9 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       relatedLinks: (note.relatedLinks ?? []).filter((link) => link.id !== linkId),
     });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   setNoteFavorite: async (noteId, isFavorite) => {
     const note = await findAvailableNote(get().notes, noteId);
@@ -323,7 +360,9 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     }
     const updated = finalizeNote({ ...note, isFavorite });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   setNotePinned: async (noteId, isPinned) => {
     const note = await findAvailableNote(get().notes, noteId);
@@ -332,7 +371,9 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     }
     const updated = finalizeNote({ ...note, isPinned });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   toggleFavorite: async (noteId) => {
     const note = await findAvailableNote(get().notes, noteId);
@@ -357,54 +398,61 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       id: createId(),
       noteId,
       sortOrder: nextBlocks.length,
-      title: input.title ?? '',
-      kind: input.kind ?? 'content',
+      title: input.title ?? "",
+      kind: input.kind ?? "content",
       contentJson: input.contentJson === undefined ? emptyTiptapDocument : input.contentJson,
-      contentText: input.contentText ?? '',
+      contentText: input.contentText ?? "",
       createdAt: now,
       updatedAt: now,
     };
     const updated = finalizeNote({ ...note, blocks: [...nextBlocks, block] });
-    await db.transaction('rw', [db.notes, db.noteBlocks], async (db) => {
+    await db.transaction("rw", [db.notes, db.noteBlocks], async (db) => {
       await db.noteBlocks.put(block);
       await db.notes.put(stripNoteRelations(updated));
     });
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
     return block;
   },
-  updateBlock: (noteId, blockId, input) => runNoteContentMutation(noteId, async () => {
-    const note = await findAvailableNote(get().notes, noteId);
-    if (!note) {
-      return;
-    }
-    const blocks = note.blocks ?? [];
-    const block = blocks.find((item) => item.id === blockId);
-    if (!block) {
-      return;
-    }
-    const updatedBlock: NoteBlock = {
-      ...block,
-      kind: input.kind ?? block.kind,
-      title: input.title !== undefined ? input.title : block.title,
-      contentJson: input.contentJson !== undefined ? input.contentJson : block.contentJson,
-      contentText: input.contentText !== undefined ? input.contentText : block.contentText,
-      updatedAt: new Date().toISOString(),
-    };
-    if (
-      updatedBlock.kind === block.kind && updatedBlock.title === block.title &&
-      updatedBlock.contentText === block.contentText &&
-      stableStringify(updatedBlock.contentJson) === stableStringify(block.contentJson)
-    ) return;
-    const updated = finalizeNote({
-      ...note,
-      blocks: blocks.map((item) => (item.id === blockId ? updatedBlock : item)),
-    });
-    await db.transaction('rw', [db.notes, db.noteBlocks], async (db) => {
-      await db.noteBlocks.put(updatedBlock);
-      await db.notes.put(stripNoteRelations(updated));
-    });
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
-  }),
+  updateBlock: (noteId, blockId, input) =>
+    runNoteContentMutation(noteId, async () => {
+      const note = await findAvailableNote(get().notes, noteId);
+      if (!note) {
+        return;
+      }
+      const blocks = note.blocks ?? [];
+      const block = blocks.find((item) => item.id === blockId);
+      if (!block) {
+        return;
+      }
+      const updatedBlock: NoteBlock = {
+        ...block,
+        kind: input.kind ?? block.kind,
+        title: input.title !== undefined ? input.title : block.title,
+        contentJson: input.contentJson !== undefined ? input.contentJson : block.contentJson,
+        contentText: input.contentText !== undefined ? input.contentText : block.contentText,
+        updatedAt: new Date().toISOString(),
+      };
+      if (
+        updatedBlock.kind === block.kind &&
+        updatedBlock.title === block.title &&
+        updatedBlock.contentText === block.contentText &&
+        stableStringify(updatedBlock.contentJson) === stableStringify(block.contentJson)
+      )
+        return;
+      const updated = finalizeNote({
+        ...note,
+        blocks: blocks.map((item) => (item.id === blockId ? updatedBlock : item)),
+      });
+      await db.transaction("rw", [db.notes, db.noteBlocks], async (db) => {
+        await db.noteBlocks.put(updatedBlock);
+        await db.notes.put(stripNoteRelations(updated));
+      });
+      set((state) => ({
+        notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+      }));
+    }),
   reorderBlocks: async (noteId, blockIds) => {
     const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
@@ -431,11 +479,13 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       .map((block, index) => ({ ...block, sortOrder: reordered.length + index }));
     const blocks = [...reordered, ...tail];
     const updated = finalizeNote({ ...note, blocks });
-    await db.transaction('rw', [db.notes, db.noteBlocks], async (db) => {
+    await db.transaction("rw", [db.notes, db.noteBlocks], async (db) => {
       await db.noteBlocks.bulkPut(blocks);
       await db.notes.put(stripNoteRelations(updated));
     });
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   deleteBlock: async (noteId, blockId) => {
     const note = await findAvailableNote(get().notes, noteId);
@@ -453,58 +503,66 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
         deleteNoteAttachment(relativePath),
       ),
     );
-    await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
+    await db.transaction("rw", [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
       await db.noteBlocks.delete(blockId);
-      await db.noteFiles.where('blockId').equals(blockId).delete();
+      await db.noteFiles.where("blockId").equals(blockId).delete();
       await db.noteBlocks.bulkPut(blocks);
       await db.notes.put(stripNoteRelations(updated));
     });
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
-  importFileForBlock: (sourcePath, noteId, blockId) => runNoteContentMutation(noteId, async () => {
-    const note = await findAvailableNote(get().notes, noteId);
-    if (!note) {
-      return null;
-    }
-    const finishSave = beginLocalSave(noteId, 'attachment-import');
-    try {
-      // Placement belongs to the note model, not to the physical import. Images
-      // follow their editor block; ordinary attachments live only in the panel.
-      const imported = await importNoteAttachment(sourcePath, noteId, null);
-      const fileBlockId = imported.kind === 'image' ? blockId : null;
-      const file: NoteFile = {
-        id: imported.id,
-        noteId: imported.noteId,
-        blockId: fileBlockId,
-        kind: imported.kind as NoteFileKind,
-        originalName: imported.originalName,
-        mimeType: imported.mimeType,
-        sizeBytes: imported.sizeBytes,
-        checksum: imported.checksum,
-        relativePath: imported.relativePath,
-        createdAt: imported.createdAt,
-      };
-      const current = findNote(get().notes, noteId);
-      if (!current || (fileBlockId && !current.blocks?.some((block) => block.id === fileBlockId))) {
-        await deleteNoteAttachment(imported.relativePath);
+  importFileForBlock: (sourcePath, noteId, blockId) =>
+    runNoteContentMutation(noteId, async () => {
+      const note = await findAvailableNote(get().notes, noteId);
+      if (!note) {
         return null;
       }
-      const updated = finalizeNote({ ...current, files: [...(current.files ?? []), file] });
+      const finishSave = beginLocalSave(noteId, "attachment-import");
       try {
-        await db.transaction('rw', [db.notes, db.noteFiles], async (db) => {
-          await db.noteFiles.put(file);
-          await db.notes.put(stripNoteRelations(updated));
-        });
-      } catch (error) {
-        await deleteNoteAttachment(file.relativePath);
-        throw error;
+        // Placement belongs to the note model, not to the physical import. Images
+        // follow their editor block; ordinary attachments live only in the panel.
+        const imported = await importNoteAttachment(sourcePath, noteId, null);
+        const fileBlockId = imported.kind === "image" ? blockId : null;
+        const file: NoteFile = {
+          id: imported.id,
+          noteId: imported.noteId,
+          blockId: fileBlockId,
+          kind: imported.kind as NoteFileKind,
+          originalName: imported.originalName,
+          mimeType: imported.mimeType,
+          sizeBytes: imported.sizeBytes,
+          checksum: imported.checksum,
+          relativePath: imported.relativePath,
+          createdAt: imported.createdAt,
+        };
+        const current = findNote(get().notes, noteId);
+        if (
+          !current ||
+          (fileBlockId && !current.blocks?.some((block) => block.id === fileBlockId))
+        ) {
+          await deleteNoteAttachment(imported.relativePath);
+          return null;
+        }
+        const updated = finalizeNote({ ...current, files: [...(current.files ?? []), file] });
+        try {
+          await db.transaction("rw", [db.notes, db.noteFiles], async (db) => {
+            await db.noteFiles.put(file);
+            await db.notes.put(stripNoteRelations(updated));
+          });
+        } catch (error) {
+          await deleteNoteAttachment(file.relativePath);
+          throw error;
+        }
+        set((state) => ({
+          notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+        }));
+        return file;
+      } finally {
+        finishSave();
       }
-      set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
-      return file;
-    } finally {
-      finishSave();
-    }
-  }),
+    }),
   deleteFile: async (noteId, fileId) => {
     const note = await findAvailableNote(get().notes, noteId);
     if (!note) {
@@ -518,7 +576,11 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       if (nextContentJson === block.contentJson) {
         return block;
       }
-      const updatedBlock = { ...block, contentJson: nextContentJson, updatedAt: new Date().toISOString() };
+      const updatedBlock = {
+        ...block,
+        contentJson: nextContentJson,
+        updatedAt: new Date().toISOString(),
+      };
       changedBlocks.push(updatedBlock);
       return updatedBlock;
     });
@@ -528,14 +590,16 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
       files: (note.files ?? []).filter((file) => file.id !== fileId),
     });
     await deleteNoteAttachment(file.relativePath);
-    await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
+    await db.transaction("rw", [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
       if (changedBlocks.length) {
         await db.noteBlocks.bulkPut(changedBlocks);
       }
       await db.noteFiles.delete(fileId);
       await db.notes.put(stripNoteRelations(updated));
     });
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   moveNoteToTrash: async (noteId) => {
     const note = await findAvailableNote(get().notes, noteId);
@@ -544,7 +608,9 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     }
     const updated = finalizeNote({ ...note, isTrashed: true });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   restoreNote: async (noteId) => {
     const note = await findAvailableNote(get().notes, noteId);
@@ -553,31 +619,38 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     }
     const updated = finalizeNote({ ...note, isTrashed: false });
     await persistNote(updated);
-    set((state) => ({ notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))) }));
+    set((state) => ({
+      notes: sortNotes(state.notes.map((item) => (item.id === noteId ? updated : item))),
+    }));
   },
   deleteNotesPermanently: async (noteIds) => {
-    for (const id of noteIds) if (get().notes.find((note) => note.id === id)?.cloudOnly) await downloadCloudNote(id);
+    for (const id of noteIds)
+      if (get().notes.find((note) => note.id === id)?.cloudOnly) await downloadCloudNote(id);
     const ids = uniqueIds(noteIds);
     if (!ids.length) {
       return;
     }
     const idSet = new Set(ids);
     const attachmentPaths = uniqueIds(
-      get().notes
-        .filter((note) => idSet.has(note.id))
+      get()
+        .notes.filter((note) => idSet.has(note.id))
         .flatMap((note) => (note.files ?? []).map((file) => file.relativePath)),
     );
     await Promise.all(attachmentPaths.map((relativePath) => deleteNoteAttachment(relativePath)));
-    await db.transaction('rw', [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
+    await db.transaction("rw", [db.notes, db.noteBlocks, db.noteFiles], async (db) => {
       await db.notes.bulkDelete(ids);
-      await db.noteBlocks.where('noteId').anyOf(ids).delete();
-      await db.noteFiles.where('noteId').anyOf(ids).delete();
+      await db.noteBlocks.where("noteId").anyOf(ids).delete();
+      await db.noteFiles.where("noteId").anyOf(ids).delete();
     });
     markCloudDeleted(ids);
     set((state) => ({ notes: state.notes.filter((note) => !idSet.has(note.id)) }));
   },
   clearTrash: async () => {
-    await get().deleteNotesPermanently(get().notes.filter((note) => note.isTrashed).map((note) => note.id));
+    await get().deleteNotesPermanently(
+      get()
+        .notes.filter((note) => note.isTrashed)
+        .map((note) => note.id),
+    );
   },
 }));
 
@@ -590,11 +663,13 @@ async function readNotes() {
   const blocksByNote = groupBy(blocks, (block) => block.noteId);
   const filesByNote = groupBy(files, (file) => file.noteId);
 
-  return withCloudMetadata(notes.map((note) => ({
-    ...note,
-    blocks: (blocksByNote.get(note.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
-    files: filesByNote.get(note.id) ?? [],
-  })));
+  return withCloudMetadata(
+    notes.map((note) => ({
+      ...note,
+      blocks: (blocksByNote.get(note.id) ?? []).sort((a, b) => a.sortOrder - b.sortOrder),
+      files: filesByNote.get(note.id) ?? [],
+    })),
+  );
 }
 
 async function persistNote(note: Note) {
@@ -609,7 +684,7 @@ function stripNoteRelations(note: Note): Note {
 function finalizeNote(note: Note, incrementVersion = true): Note {
   const updated = {
     ...note,
-    saveState: 'saved',
+    saveState: "saved",
     updatedAt: new Date().toISOString(),
     version: incrementVersion ? note.version + 1 : note.version,
   } satisfies Note;
@@ -626,9 +701,10 @@ function calculateStats(note: Note): NoteStats {
     richTextToPlainText(note.subtitle),
     ...(note.additionalExamples ?? []),
     ...(note.relatedLinks?.flatMap((link) => [link.title, link.href]) ?? []),
-    ...(note.blocks?.flatMap((block) => [richTextToPlainText(block.title), block.contentText]) ?? []),
+    ...(note.blocks?.flatMap((block) => [richTextToPlainText(block.title), block.contentText]) ??
+      []),
     ...(note.files?.map((file) => file.originalName) ?? []),
-  ].join(' ');
+  ].join(" ");
   const wordCount = text.split(/\s+/).filter(Boolean).length;
 
   return {
@@ -650,8 +726,8 @@ function createNewNote(input: NoteInput): Note {
   const now = new Date().toISOString();
   return {
     id: createId(),
-    title: input.title?.trim() || '',
-    subtitle: '',
+    title: input.title?.trim() || "",
+    subtitle: "",
     collectionId: input.collectionId ?? defaultUserSettings.primaryCollectionId,
     tagIds: [],
     linkedNoteIds: [],
@@ -661,8 +737,8 @@ function createNewNote(input: NoteInput): Note {
     isPinned: false,
     isArchived: false,
     isTrashed: false,
-    saveState: 'saved',
-    authorId: 'user-local',
+    saveState: "saved",
+    authorId: "user-local",
     createdAt: now,
     updatedAt: now,
     lastOpenedAt: now,
@@ -702,17 +778,21 @@ function removeNoteFileFromDocument(document: TiptapDocument | null, fileId: str
 
   return {
     ...document,
-    content: content.length ? content : [{ type: 'paragraph' }],
+    content: content.length ? content : [{ type: "paragraph" }],
   } satisfies TiptapDocument;
 }
 
-function removeNoteFileFromNodes(nodes: unknown[], fileId: string, onChanged: () => void): unknown[] {
+function removeNoteFileFromNodes(
+  nodes: unknown[],
+  fileId: string,
+  onChanged: () => void,
+): unknown[] {
   return nodes.flatMap((node) => {
     if (!isTiptapNodeRecord(node)) {
       return [node];
     }
 
-    if (node.type === 'noteFile' && node.attrs?.id === fileId) {
+    if (node.type === "noteFile" && node.attrs?.id === fileId) {
       onChanged();
       return [];
     }
@@ -731,7 +811,7 @@ function removeNoteFileFromNodes(nodes: unknown[], fileId: string, onChanged: ()
 }
 
 function isTiptapNodeRecord(value: unknown): value is TiptapNodeRecord {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function groupBy<T>(items: T[], key: (item: T) => string) {

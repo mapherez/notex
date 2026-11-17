@@ -110,7 +110,9 @@
   color: var(--nx-color-text-muted);
   padding: 0 var(--nx-space-3);
   font-weight: 740;
-  transition: background 160ms ease, color 160ms ease;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
 }
 
 .notes-filter-view-button:hover,

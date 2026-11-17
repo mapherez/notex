@@ -1,13 +1,13 @@
-import type { Collection, Note, Tag } from '../models/models';
-import { stripInlineFormatting } from './inlineFormatting';
-import { richTextToPlainText } from './richText';
-import { sortTagsByName } from './tagSorting';
+import type { Collection, Note, Tag } from "../models/models";
+import { stripInlineFormatting } from "./inlineFormatting";
+import { richTextToPlainText } from "./richText";
+import { sortTagsByName } from "./tagSorting";
 
-export type NoteSearchLocation = 'active' | 'trash' | 'all';
+export type NoteSearchLocation = "active" | "trash" | "all";
 
 export type NoteSearchResult = {
   collectionName?: string;
-  matchType: 'collection' | 'tag' | 'title';
+  matchType: "collection" | "tag" | "title";
   matchedTermCount: number;
   note: Note;
   snippet: string;
@@ -17,7 +17,7 @@ export type NoteSearchResult = {
 export function searchNotes({
   collections,
   limit,
-  location = 'active',
+  location = "active",
   notes,
   query,
   tags,
@@ -45,13 +45,22 @@ export function searchNotes({
       const normalizedFields = searchableFields.map(normalizeSearchValue);
       const noteMatchedTerms = matchedTerms(normalizedFields, queryTerms);
       const matchedTags = queryTerms.length
-        ? sortTagsByName(noteTags.filter((tag) => matchesAnyTerm(normalizeSearchValue(tag.name), queryTerms)))
+        ? sortTagsByName(
+            noteTags.filter((tag) => matchesAnyTerm(normalizeSearchValue(tag.name), queryTerms)),
+          )
         : [];
-      const tagMatchedTerms = matchedTerms(matchedTags.map((tag) => normalizeSearchValue(tag.name)), queryTerms);
+      const tagMatchedTerms = matchedTerms(
+        matchedTags.map((tag) => normalizeSearchValue(tag.name)),
+        queryTerms,
+      );
       const collectionMatchedTerms = collection
         ? matchedTerms([normalizeSearchValue(collection.name)], queryTerms)
         : [];
-      const allMatchedTerms = new Set([...noteMatchedTerms, ...tagMatchedTerms, ...collectionMatchedTerms]);
+      const allMatchedTerms = new Set([
+        ...noteMatchedTerms,
+        ...tagMatchedTerms,
+        ...collectionMatchedTerms,
+      ]);
 
       if (queryTerms.length && !allMatchedTerms.size) {
         return [];
@@ -60,11 +69,18 @@ export function searchNotes({
       return [
         {
           collectionName: collection?.name,
-          matchType: !queryTerms.length || noteMatchedTerms.length ? 'title' : matchedTags.length ? 'tag' : 'collection',
+          matchType:
+            !queryTerms.length || noteMatchedTerms.length
+              ? "title"
+              : matchedTags.length
+                ? "tag"
+                : "collection",
           matchedTermCount: allMatchedTerms.size,
           note,
           snippet: createSearchSnippet(searchableFields, queryTerms),
-          tagNames: matchedTags.length ? matchedTags.map((tag) => tag.name) : noteTags.map((tag) => tag.name),
+          tagNames: matchedTags.length
+            ? matchedTags.map((tag) => tag.name)
+            : noteTags.map((tag) => tag.name),
         } satisfies NoteSearchResult,
       ];
     })
@@ -73,10 +89,14 @@ export function searchNotes({
         right.matchedTermCount - left.matchedTermCount ||
         searchResultScore(left) - searchResultScore(right) ||
         right.note.updatedAt.localeCompare(left.note.updatedAt) ||
-        plainInlineText(left.note.title).localeCompare(plainInlineText(right.note.title), undefined, {
-          numeric: true,
-          sensitivity: 'base',
-        }),
+        plainInlineText(left.note.title).localeCompare(
+          plainInlineText(right.note.title),
+          undefined,
+          {
+            numeric: true,
+            sensitivity: "base",
+          },
+        ),
     )
     .slice(0, Math.max(0, Math.floor(limit)));
 }
@@ -85,8 +105,8 @@ export function normalizeSearchValue(value: string) {
   return plainInlineText(value)
     .trim()
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 export function tokenizeSearchQuery(value: string) {
@@ -100,10 +120,10 @@ export function plainInlineText(value: string | null | undefined) {
 }
 
 function matchesLocation(note: Note, location: NoteSearchLocation) {
-  if (location === 'all') {
+  if (location === "all") {
     return true;
   }
-  return location === 'trash' ? note.isTrashed : !note.isTrashed;
+  return location === "trash" ? note.isTrashed : !note.isTrashed;
 }
 
 function noteSearchableFields(note: Note) {
@@ -127,7 +147,7 @@ function createSearchSnippet(fields: string[], queryTerms: string[]) {
   const matched = queryTerms.length
     ? normalizedFields.find((field) => matchesAnyTerm(normalizeSearchValue(field), queryTerms))
     : normalizedFields.find((field, index) => index > 0 && Boolean(field));
-  return truncateSnippet(matched ?? normalizedFields.find(Boolean) ?? '');
+  return truncateSnippet(matched ?? normalizedFields.find(Boolean) ?? "");
 }
 
 function truncateSnippet(value: string) {
@@ -139,14 +159,14 @@ function truncateSnippet(value: string) {
 }
 
 function normalizeWhitespace(value: string) {
-  return value.replace(/\s+/g, ' ').trim();
+  return value.replace(/\s+/g, " ").trim();
 }
 
 function searchResultScore(result: NoteSearchResult) {
-  if (result.matchType === 'title') {
+  if (result.matchType === "title") {
     return 0;
   }
-  if (result.matchType === 'tag') {
+  if (result.matchType === "tag") {
     return 1;
   }
   return 2;

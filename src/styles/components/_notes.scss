@@ -14,12 +14,12 @@
   border-color: color-mix(in srgb, var(--nx-color-accent) 26%, var(--nx-color-border));
 }
 
-.note-list-stack:has(> .pin-list):has(> .unpinned-list)>.pin-list {
+.note-list-stack:has(> .pin-list):has(> .unpinned-list) > .pin-list {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
 
-.note-list-stack:has(> .pin-list):has(> .unpinned-list)>.unpinned-list {
+.note-list-stack:has(> .pin-list):has(> .unpinned-list) > .unpinned-list {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
@@ -366,7 +366,10 @@
   font-weight: 650;
   white-space: nowrap;
   z-index: 1;
-  transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .tag-chip:hover,
@@ -422,7 +425,10 @@
   font-weight: 650;
   white-space: nowrap;
   z-index: 1;
-  transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .collection-chip span {

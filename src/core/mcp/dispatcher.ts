@@ -9,19 +9,19 @@ import {
   type CommandInput,
   type CommandName,
   type CommandOutput,
-} from '@notex/mcp-contract';
-import type { Collection, Note, NoteBlock, Tag } from '../models/models';
-import { normalizeSearchValue, searchNotes } from '../utils/noteSearch';
-import { useAppStore } from '../../store/useAppStore';
-import { useKnowledgeStore } from '../../store/useKnowledgeStore';
-import { useNotesStore } from '../../store/useNotesStore';
-import { tryBeginMcpMutation } from './noteMutationCoordinator';
+} from "@notex/mcp-contract";
+import type { Collection, Note, NoteBlock, Tag } from "../models/models";
+import { normalizeSearchValue, searchNotes } from "../utils/noteSearch";
+import { useAppStore } from "../../store/useAppStore";
+import { useKnowledgeStore } from "../../store/useKnowledgeStore";
+import { useNotesStore } from "../../store/useNotesStore";
+import { tryBeginMcpMutation } from "./noteMutationCoordinator";
 import {
   parseMcpBlockRichText,
   parseMcpInlineRichText,
   UnsupportedRichTextInputError,
-} from './richTextInput';
-import { blockRichTextOutput, inlineRichTextOutput } from './richTextOutput';
+} from "./richTextInput";
+import { blockRichTextOutput, inlineRichTextOutput } from "./richTextOutput";
 
 export type McpBridgeRequest = {
   requestId: string;
@@ -45,56 +45,60 @@ export async function dispatchMcpCommand(
   appVersion: string,
 ): Promise<McpBridgeResponse> {
   if (deadlineExpired(request.deadlineAt)) {
-    return failure(request.requestId, 'TIMEOUT', true);
+    return failure(request.requestId, "TIMEOUT", true);
   }
   if (!isCommandName(request.command)) {
-    return failure(request.requestId, 'INVALID_INPUT');
+    return failure(request.requestId, "INVALID_INPUT");
   }
 
   try {
     switch (request.command) {
-      case 'notex_status': {
-        parseInput('notex_status', request.input);
-        return success(request.requestId, 'notex_status', {
-          state: 'online',
+      case "notex_status": {
+        parseInput("notex_status", request.input);
+        return success(request.requestId, "notex_status", {
+          state: "online",
           appVersion,
           protocolVersion: BRIDGE_PROTOCOL_VERSION,
         });
       }
-      case 'search_notes': {
-        const input = parseInput('search_notes', request.input);
-        return success(request.requestId, 'search_notes', searchNotesCommand(input));
+      case "search_notes": {
+        const input = parseInput("search_notes", request.input);
+        return success(request.requestId, "search_notes", searchNotesCommand(input));
       }
-      case 'get_note': {
-        const input = parseInput('get_note', request.input);
+      case "get_note": {
+        const input = parseInput("get_note", request.input);
         const note = findNote(input.noteId);
         if (!note) {
-          return failure(request.requestId, 'NOT_FOUND');
+          return failure(request.requestId, "NOT_FOUND");
         }
-        return success(request.requestId, 'get_note', noteDetail(note));
+        return success(request.requestId, "get_note", noteDetail(note));
       }
-      case 'get_note_block': {
-        const input = parseInput('get_note_block', request.input);
+      case "get_note_block": {
+        const input = parseInput("get_note_block", request.input);
         const note = findNote(input.noteId);
         const block = note?.blocks?.find((item) => item.id === input.blockId);
         if (!note || !block) {
-          return failure(request.requestId, 'NOT_FOUND');
+          return failure(request.requestId, "NOT_FOUND");
         }
-        return success(request.requestId, 'get_note_block', noteBlockDetail(note, block));
+        return success(request.requestId, "get_note_block", noteBlockDetail(note, block));
       }
-      case 'get_trash_status': {
-        parseInput('get_trash_status', request.input);
-        return success(request.requestId, 'get_trash_status', await getTrashStatusCommand());
+      case "get_trash_status": {
+        parseInput("get_trash_status", request.input);
+        return success(request.requestId, "get_trash_status", await getTrashStatusCommand());
       }
-      case 'list_tags': {
-        const input = parseInput('list_tags', request.input);
-        return success(request.requestId, 'list_tags', {
-          tags: filterNamedEntities(useKnowledgeStore.getState().tags, input.query, input.limit).map(tagDto),
+      case "list_tags": {
+        const input = parseInput("list_tags", request.input);
+        return success(request.requestId, "list_tags", {
+          tags: filterNamedEntities(
+            useKnowledgeStore.getState().tags,
+            input.query,
+            input.limit,
+          ).map(tagDto),
         });
       }
-      case 'list_collections': {
-        const input = parseInput('list_collections', request.input);
-        return success(request.requestId, 'list_collections', {
+      case "list_collections": {
+        const input = parseInput("list_collections", request.input);
+        return success(request.requestId, "list_collections", {
           collections: filterNamedEntities(
             useKnowledgeStore.getState().collections,
             input.query,
@@ -102,205 +106,212 @@ export async function dispatchMcpCommand(
           ).map(collectionDto),
         });
       }
-      case 'create_tag': {
-        const input = parseInput('create_tag', request.input);
-        return success(request.requestId, 'create_tag', await createTagCommand(request, input));
+      case "create_tag": {
+        const input = parseInput("create_tag", request.input);
+        return success(request.requestId, "create_tag", await createTagCommand(request, input));
       }
-      case 'update_tag': {
-        const input = parseInput('update_tag', request.input);
-        return success(request.requestId, 'update_tag', await updateTagCommand(request, input));
+      case "update_tag": {
+        const input = parseInput("update_tag", request.input);
+        return success(request.requestId, "update_tag", await updateTagCommand(request, input));
       }
-      case 'delete_tag': {
-        const input = parseInput('delete_tag', request.input);
-        return success(request.requestId, 'delete_tag', await deleteTagCommand(request, input));
+      case "delete_tag": {
+        const input = parseInput("delete_tag", request.input);
+        return success(request.requestId, "delete_tag", await deleteTagCommand(request, input));
       }
-      case 'create_collection': {
-        const input = parseInput('create_collection', request.input);
+      case "create_collection": {
+        const input = parseInput("create_collection", request.input);
         return success(
           request.requestId,
-          'create_collection',
+          "create_collection",
           await createCollectionCommand(request, input),
         );
       }
-      case 'update_collection': {
-        const input = parseInput('update_collection', request.input);
+      case "update_collection": {
+        const input = parseInput("update_collection", request.input);
         return success(
           request.requestId,
-          'update_collection',
+          "update_collection",
           await updateCollectionCommand(request, input),
         );
       }
-      case 'delete_collection': {
-        const input = parseInput('delete_collection', request.input);
+      case "delete_collection": {
+        const input = parseInput("delete_collection", request.input);
         return success(
           request.requestId,
-          'delete_collection',
+          "delete_collection",
           await deleteCollectionCommand(request, input),
         );
       }
-      case 'create_note': {
-        const input = parseInput('create_note', request.input);
-        return success(request.requestId, 'create_note', await createNoteCommand(request, input));
+      case "create_note": {
+        const input = parseInput("create_note", request.input);
+        return success(request.requestId, "create_note", await createNoteCommand(request, input));
       }
-      case 'update_note_header': {
-        const input = parseInput('update_note_header', request.input);
+      case "update_note_header": {
+        const input = parseInput("update_note_header", request.input);
         return success(
           request.requestId,
-          'update_note_header',
+          "update_note_header",
           await updateNoteHeaderCommand(request, input),
         );
       }
-      case 'add_note_block': {
-        const input = parseInput('add_note_block', request.input);
-        return success(request.requestId, 'add_note_block', await addNoteBlockCommand(request, input));
-      }
-      case 'update_note_block': {
-        const input = parseInput('update_note_block', request.input);
+      case "add_note_block": {
+        const input = parseInput("add_note_block", request.input);
         return success(
           request.requestId,
-          'update_note_block',
+          "add_note_block",
+          await addNoteBlockCommand(request, input),
+        );
+      }
+      case "update_note_block": {
+        const input = parseInput("update_note_block", request.input);
+        return success(
+          request.requestId,
+          "update_note_block",
           await updateNoteBlockCommand(request, input),
         );
       }
-      case 'set_note_tags': {
-        const input = parseInput('set_note_tags', request.input);
-        return success(request.requestId, 'set_note_tags', await setNoteTagsCommand(request, input));
-      }
-      case 'set_note_favorite': {
-        const input = parseInput('set_note_favorite', request.input);
+      case "set_note_tags": {
+        const input = parseInput("set_note_tags", request.input);
         return success(
           request.requestId,
-          'set_note_favorite',
+          "set_note_tags",
+          await setNoteTagsCommand(request, input),
+        );
+      }
+      case "set_note_favorite": {
+        const input = parseInput("set_note_favorite", request.input);
+        return success(
+          request.requestId,
+          "set_note_favorite",
           await setNoteFavoriteCommand(request, input),
         );
       }
-      case 'set_note_pinned': {
-        const input = parseInput('set_note_pinned', request.input);
+      case "set_note_pinned": {
+        const input = parseInput("set_note_pinned", request.input);
         return success(
           request.requestId,
-          'set_note_pinned',
+          "set_note_pinned",
           await setNotePinnedCommand(request, input),
         );
       }
-      case 'set_note_thumbnail': {
-        const input = parseInput('set_note_thumbnail', request.input);
+      case "set_note_thumbnail": {
+        const input = parseInput("set_note_thumbnail", request.input);
         return success(
           request.requestId,
-          'set_note_thumbnail',
+          "set_note_thumbnail",
           await setNoteThumbnailCommand(request, input),
         );
       }
-      case 'add_linked_note': {
-        const input = parseInput('add_linked_note', request.input);
+      case "add_linked_note": {
+        const input = parseInput("add_linked_note", request.input);
         return success(
           request.requestId,
-          'add_linked_note',
+          "add_linked_note",
           await addLinkedNoteCommand(request, input),
         );
       }
-      case 'remove_linked_note': {
-        const input = parseInput('remove_linked_note', request.input);
+      case "remove_linked_note": {
+        const input = parseInput("remove_linked_note", request.input);
         return success(
           request.requestId,
-          'remove_linked_note',
+          "remove_linked_note",
           await removeLinkedNoteCommand(request, input),
         );
       }
-      case 'add_note_example': {
-        const input = parseInput('add_note_example', request.input);
+      case "add_note_example": {
+        const input = parseInput("add_note_example", request.input);
         return success(
           request.requestId,
-          'add_note_example',
+          "add_note_example",
           await addNoteExampleCommand(request, input),
         );
       }
-      case 'update_note_example': {
-        const input = parseInput('update_note_example', request.input);
+      case "update_note_example": {
+        const input = parseInput("update_note_example", request.input);
         return success(
           request.requestId,
-          'update_note_example',
+          "update_note_example",
           await updateNoteExampleCommand(request, input),
         );
       }
-      case 'delete_note_example': {
-        const input = parseInput('delete_note_example', request.input);
+      case "delete_note_example": {
+        const input = parseInput("delete_note_example", request.input);
         return success(
           request.requestId,
-          'delete_note_example',
+          "delete_note_example",
           await deleteNoteExampleCommand(request, input),
         );
       }
-      case 'add_note_link': {
-        const input = parseInput('add_note_link', request.input);
-        return success(request.requestId, 'add_note_link', await addNoteLinkCommand(request, input));
-      }
-      case 'delete_note_link': {
-        const input = parseInput('delete_note_link', request.input);
+      case "add_note_link": {
+        const input = parseInput("add_note_link", request.input);
         return success(
           request.requestId,
-          'delete_note_link',
+          "add_note_link",
+          await addNoteLinkCommand(request, input),
+        );
+      }
+      case "delete_note_link": {
+        const input = parseInput("delete_note_link", request.input);
+        return success(
+          request.requestId,
+          "delete_note_link",
           await deleteNoteLinkCommand(request, input),
         );
       }
-      case 'delete_note_block': {
-        const input = parseInput('delete_note_block', request.input);
+      case "delete_note_block": {
+        const input = parseInput("delete_note_block", request.input);
         return success(
           request.requestId,
-          'delete_note_block',
+          "delete_note_block",
           await deleteNoteBlockCommand(request, input),
         );
       }
-      case 'reorder_note_blocks': {
-        const input = parseInput('reorder_note_blocks', request.input);
+      case "reorder_note_blocks": {
+        const input = parseInput("reorder_note_blocks", request.input);
         return success(
           request.requestId,
-          'reorder_note_blocks',
+          "reorder_note_blocks",
           await reorderNoteBlocksCommand(request, input),
         );
       }
-      case 'move_note_to_trash': {
-        const input = parseInput('move_note_to_trash', request.input);
+      case "move_note_to_trash": {
+        const input = parseInput("move_note_to_trash", request.input);
         return success(
           request.requestId,
-          'move_note_to_trash',
+          "move_note_to_trash",
           await moveNoteToTrashCommand(request, input),
         );
       }
-      case 'restore_note': {
-        const input = parseInput('restore_note', request.input);
-        return success(request.requestId, 'restore_note', await restoreNoteCommand(request, input));
+      case "restore_note": {
+        const input = parseInput("restore_note", request.input);
+        return success(request.requestId, "restore_note", await restoreNoteCommand(request, input));
       }
-      case 'delete_note_permanently': {
-        const input = parseInput('delete_note_permanently', request.input);
+      case "delete_note_permanently": {
+        const input = parseInput("delete_note_permanently", request.input);
         return success(
           request.requestId,
-          'delete_note_permanently',
+          "delete_note_permanently",
           await deleteNotePermanentlyCommand(request, input),
         );
       }
-      case 'clear_trash': {
-        const input = parseInput('clear_trash', request.input);
-        return success(request.requestId, 'clear_trash', await clearTrashCommand(request, input));
+      case "clear_trash": {
+        const input = parseInput("clear_trash", request.input);
+        return success(request.requestId, "clear_trash", await clearTrashCommand(request, input));
       }
       default:
-        return failure(request.requestId, 'INTERNAL');
+        return failure(request.requestId, "INTERNAL");
     }
   } catch (error) {
     if (error instanceof InvalidInputError) {
-      return failure(request.requestId, 'INVALID_INPUT');
+      return failure(request.requestId, "INVALID_INPUT");
     }
     if (error instanceof UnsupportedRichTextInputError) {
-      return failure(request.requestId, 'UNSUPPORTED_CONTENT');
+      return failure(request.requestId, "UNSUPPORTED_CONTENT");
     }
     if (error instanceof CommandFailure) {
-      return failure(
-        request.requestId,
-        error.code,
-        error.retryable,
-        error.currentVersion,
-      );
+      return failure(request.requestId, error.code, error.retryable, error.currentVersion);
     }
-    return failure(request.requestId, 'INTERNAL');
+    return failure(request.requestId, "INTERNAL");
   }
 }
 
@@ -356,24 +367,24 @@ function failure(
 
 async function createTagCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'create_tag'>,
-): Promise<CommandOutput<'create_tag'>> {
+  input: CommandInput<"create_tag">,
+): Promise<CommandOutput<"create_tag">> {
   await ensureRequestActive(request);
   const tag = await useKnowledgeStore.getState().createTag(input.name, input.color);
   if (!tag) {
-    throw new CommandFailure('INVALID_INPUT');
+    throw new CommandFailure("INVALID_INPUT");
   }
   return { tag: tagDto(tag) };
 }
 
 async function updateTagCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'update_tag'>,
-): Promise<CommandOutput<'update_tag'>> {
+  input: CommandInput<"update_tag">,
+): Promise<CommandOutput<"update_tag">> {
   await ensureRequestActive(request);
   const current = findTag(input.tagId);
   if (!current) {
-    throw new CommandFailure('NOT_FOUND');
+    throw new CommandFailure("NOT_FOUND");
   }
   await useKnowledgeStore.getState().updateTag(input.tagId, {
     name: input.name ?? current.name,
@@ -381,18 +392,18 @@ async function updateTagCommand(
   });
   const updated = findTag(input.tagId);
   if (!updated) {
-    throw new CommandFailure('NOT_FOUND');
+    throw new CommandFailure("NOT_FOUND");
   }
   return { tag: tagDto(updated) };
 }
 
 async function deleteTagCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'delete_tag'>,
-): Promise<CommandOutput<'delete_tag'>> {
+  input: CommandInput<"delete_tag">,
+): Promise<CommandOutput<"delete_tag">> {
   await ensureRequestActive(request);
   if (!findTag(input.tagId)) {
-    throw new CommandFailure('NOT_FOUND');
+    throw new CommandFailure("NOT_FOUND");
   }
   const affectedNoteIds = useNotesStore
     .getState()
@@ -401,7 +412,7 @@ async function deleteTagCommand(
 
   return withNoteMutationLeases(request, affectedNoteIds, async () => {
     if (!findTag(input.tagId)) {
-      throw new CommandFailure('NOT_FOUND');
+      throw new CommandFailure("NOT_FOUND");
     }
     await useKnowledgeStore.getState().deleteTag(input.tagId);
     return { tagId: input.tagId, deleted: true, affectedNoteCount: affectedNoteIds.length };
@@ -410,24 +421,24 @@ async function deleteTagCommand(
 
 async function createCollectionCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'create_collection'>,
-): Promise<CommandOutput<'create_collection'>> {
+  input: CommandInput<"create_collection">,
+): Promise<CommandOutput<"create_collection">> {
   await ensureRequestActive(request);
   const collection = await useKnowledgeStore.getState().createCollection(input.name, input.color);
   if (!collection) {
-    throw new CommandFailure('INVALID_INPUT');
+    throw new CommandFailure("INVALID_INPUT");
   }
   return { collection: collectionDto(collection) };
 }
 
 async function updateCollectionCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'update_collection'>,
-): Promise<CommandOutput<'update_collection'>> {
+  input: CommandInput<"update_collection">,
+): Promise<CommandOutput<"update_collection">> {
   await ensureRequestActive(request);
   const current = findCollection(input.collectionId);
   if (!current) {
-    throw new CommandFailure('NOT_FOUND');
+    throw new CommandFailure("NOT_FOUND");
   }
   await useKnowledgeStore.getState().updateCollection(input.collectionId, {
     name: input.name ?? current.name,
@@ -435,18 +446,18 @@ async function updateCollectionCommand(
   });
   const updated = findCollection(input.collectionId);
   if (!updated) {
-    throw new CommandFailure('NOT_FOUND');
+    throw new CommandFailure("NOT_FOUND");
   }
   return { collection: collectionDto(updated) };
 }
 
 async function deleteCollectionCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'delete_collection'>,
-): Promise<CommandOutput<'delete_collection'>> {
+  input: CommandInput<"delete_collection">,
+): Promise<CommandOutput<"delete_collection">> {
   await ensureRequestActive(request);
   if (!findCollection(input.collectionId)) {
-    throw new CommandFailure('NOT_FOUND');
+    throw new CommandFailure("NOT_FOUND");
   }
   const affectedNoteIds = useNotesStore
     .getState()
@@ -455,7 +466,7 @@ async function deleteCollectionCommand(
 
   return withNoteMutationLeases(request, affectedNoteIds, async () => {
     if (!findCollection(input.collectionId)) {
-      throw new CommandFailure('NOT_FOUND');
+      throw new CommandFailure("NOT_FOUND");
     }
     await useKnowledgeStore.getState().deleteCollection(input.collectionId);
     return {
@@ -468,18 +479,18 @@ async function deleteCollectionCommand(
 
 async function createNoteCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'create_note'>,
-): Promise<CommandOutput<'create_note'>> {
+  input: CommandInput<"create_note">,
+): Promise<CommandOutput<"create_note">> {
   await ensureRequestActive(request);
   const collectionId = resolveCreateCollectionId(input.collectionId);
   const tagIds = validateTagIds(input.tagIds);
-  const title = input.title ? parseMcpInlineRichText(input.title) : '';
-  const subtitle = input.subtitle ? parseMcpInlineRichText(input.subtitle) : '';
+  const title = input.title ? parseMcpInlineRichText(input.title) : "";
+  const subtitle = input.subtitle ? parseMcpInlineRichText(input.subtitle) : "";
   const blocks = input.blocks.map((block) => {
     const content = block.content ? parseMcpBlockRichText(block.content) : undefined;
     return {
-      title: block.title ? parseMcpInlineRichText(block.title) : '',
-      ...(content ?? {}),
+      title: block.title ? parseMcpInlineRichText(block.title) : "",
+      ...content,
     };
   });
 
@@ -501,8 +512,8 @@ async function createNoteCommand(
 
 async function updateNoteHeaderCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'update_note_header'>,
-): Promise<CommandOutput<'update_note_header'>> {
+  input: CommandInput<"update_note_header">,
+): Promise<CommandOutput<"update_note_header">> {
   const update: { collectionId?: string | null; subtitle?: string; title?: string } = {};
   if (input.title !== undefined) {
     update.title = parseMcpInlineRichText(input.title);
@@ -515,7 +526,7 @@ async function updateNoteHeaderCommand(
     update.collectionId = input.collectionId;
   }
 
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, "active", async () => {
     await useNotesStore.getState().updateNoteHeader(input.noteId, update);
     return currentMutationResult(input.noteId);
   });
@@ -523,18 +534,18 @@ async function updateNoteHeaderCommand(
 
 async function addNoteBlockCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'add_note_block'>,
-): Promise<CommandOutput<'add_note_block'>> {
-  const title = input.title ? parseMcpInlineRichText(input.title) : '';
+  input: CommandInput<"add_note_block">,
+): Promise<CommandOutput<"add_note_block">> {
+  const title = input.title ? parseMcpInlineRichText(input.title) : "";
   const content = input.content ? parseMcpBlockRichText(input.content) : undefined;
 
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, "active", async () => {
     const block = await useNotesStore.getState().addBlock(input.noteId, {
       title,
-      ...(content ?? {}),
+      ...content,
     });
     if (!block) {
-      throw new CommandFailure('NOT_FOUND');
+      throw new CommandFailure("NOT_FOUND");
     }
     return {
       ...currentMutationResult(input.noteId),
@@ -545,10 +556,10 @@ async function addNoteBlockCommand(
 
 async function updateNoteBlockCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'update_note_block'>,
-): Promise<CommandOutput<'update_note_block'>> {
+  input: CommandInput<"update_note_block">,
+): Promise<CommandOutput<"update_note_block">> {
   const update: {
-    contentJson?: NoteBlock['contentJson'];
+    contentJson?: NoteBlock["contentJson"];
     contentText?: string;
     title?: string;
   } = {};
@@ -559,24 +570,30 @@ async function updateNoteBlockCommand(
     Object.assign(update, parseMcpBlockRichText(input.content));
   }
 
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
-    if (!(note.blocks ?? []).some((block) => block.id === input.blockId)) {
-      throw new CommandFailure('NOT_FOUND');
-    }
-    await useNotesStore.getState().updateBlock(input.noteId, input.blockId, update);
-    return {
-      ...currentMutationResult(input.noteId),
-      blockId: input.blockId,
-    };
-  });
+  return mutateExistingNote(
+    request,
+    input.noteId,
+    input.expectedVersion,
+    "active",
+    async (note) => {
+      if (!(note.blocks ?? []).some((block) => block.id === input.blockId)) {
+        throw new CommandFailure("NOT_FOUND");
+      }
+      await useNotesStore.getState().updateBlock(input.noteId, input.blockId, update);
+      return {
+        ...currentMutationResult(input.noteId),
+        blockId: input.blockId,
+      };
+    },
+  );
 }
 
 async function setNoteTagsCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'set_note_tags'>,
-): Promise<CommandOutput<'set_note_tags'>> {
+  input: CommandInput<"set_note_tags">,
+): Promise<CommandOutput<"set_note_tags">> {
   const tagIds = validateTagIds(input.tagIds);
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, "active", async () => {
     await useNotesStore.getState().updateNoteTags(input.noteId, tagIds);
     return currentMutationResult(input.noteId);
   });
@@ -584,9 +601,9 @@ async function setNoteTagsCommand(
 
 async function setNoteFavoriteCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'set_note_favorite'>,
-): Promise<CommandOutput<'set_note_favorite'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
+  input: CommandInput<"set_note_favorite">,
+): Promise<CommandOutput<"set_note_favorite">> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, "active", async () => {
     await useNotesStore.getState().setNoteFavorite(input.noteId, input.isFavorite);
     return currentMutationResult(input.noteId);
   });
@@ -594,9 +611,9 @@ async function setNoteFavoriteCommand(
 
 async function setNotePinnedCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'set_note_pinned'>,
-): Promise<CommandOutput<'set_note_pinned'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
+  input: CommandInput<"set_note_pinned">,
+): Promise<CommandOutput<"set_note_pinned">> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, "active", async () => {
     await useNotesStore.getState().setNotePinned(input.noteId, input.isPinned);
     return currentMutationResult(input.noteId);
   });
@@ -604,9 +621,9 @@ async function setNotePinnedCommand(
 
 async function setNoteThumbnailCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'set_note_thumbnail'>,
-): Promise<CommandOutput<'set_note_thumbnail'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
+  input: CommandInput<"set_note_thumbnail">,
+): Promise<CommandOutput<"set_note_thumbnail">> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, "active", async () => {
     await useNotesStore.getState().updateNoteThumbnail(input.noteId, { variant: input.variant });
     return currentMutationResult(input.noteId);
   });
@@ -614,163 +631,215 @@ async function setNoteThumbnailCommand(
 
 async function addLinkedNoteCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'add_linked_note'>,
-): Promise<CommandOutput<'add_linked_note'>> {
+  input: CommandInput<"add_linked_note">,
+): Promise<CommandOutput<"add_linked_note">> {
   if (input.noteId === input.linkedNoteId) {
-    throw new CommandFailure('INVALID_INPUT');
+    throw new CommandFailure("INVALID_INPUT");
   }
 
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
-    const linkedNote = findNote(input.linkedNoteId);
-    if (!linkedNote) {
-      throw new CommandFailure('NOT_FOUND');
-    }
-    if (linkedNote.isTrashed) {
-      throw new CommandFailure('READ_ONLY_TRASH');
-    }
-    if (!note.linkedNoteIds.includes(input.linkedNoteId)) {
-      await useNotesStore
-        .getState()
-        .updateNoteLinkedNotes(input.noteId, [...note.linkedNoteIds, input.linkedNoteId]);
-    }
-    return { ...currentMutationResult(input.noteId), linkedNoteId: input.linkedNoteId };
-  });
+  return mutateExistingNote(
+    request,
+    input.noteId,
+    input.expectedVersion,
+    "active",
+    async (note) => {
+      const linkedNote = findNote(input.linkedNoteId);
+      if (!linkedNote) {
+        throw new CommandFailure("NOT_FOUND");
+      }
+      if (linkedNote.isTrashed) {
+        throw new CommandFailure("READ_ONLY_TRASH");
+      }
+      if (!note.linkedNoteIds.includes(input.linkedNoteId)) {
+        await useNotesStore
+          .getState()
+          .updateNoteLinkedNotes(input.noteId, [...note.linkedNoteIds, input.linkedNoteId]);
+      }
+      return { ...currentMutationResult(input.noteId), linkedNoteId: input.linkedNoteId };
+    },
+  );
 }
 
 async function removeLinkedNoteCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'remove_linked_note'>,
-): Promise<CommandOutput<'remove_linked_note'>> {
+  input: CommandInput<"remove_linked_note">,
+): Promise<CommandOutput<"remove_linked_note">> {
   if (input.noteId === input.linkedNoteId) {
-    throw new CommandFailure('INVALID_INPUT');
+    throw new CommandFailure("INVALID_INPUT");
   }
 
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
-    if (note.linkedNoteIds.includes(input.linkedNoteId)) {
-      await useNotesStore
-        .getState()
-        .updateNoteLinkedNotes(
+  return mutateExistingNote(
+    request,
+    input.noteId,
+    input.expectedVersion,
+    "active",
+    async (note) => {
+      if (note.linkedNoteIds.includes(input.linkedNoteId)) {
+        await useNotesStore.getState().updateNoteLinkedNotes(
           input.noteId,
           note.linkedNoteIds.filter((linkedNoteId) => linkedNoteId !== input.linkedNoteId),
         );
-    }
-    return { ...currentMutationResult(input.noteId), linkedNoteId: input.linkedNoteId };
-  });
+      }
+      return { ...currentMutationResult(input.noteId), linkedNoteId: input.linkedNoteId };
+    },
+  );
 }
 
 async function addNoteExampleCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'add_note_example'>,
-): Promise<CommandOutput<'add_note_example'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
-    const exampleIndex = (note.additionalExamples ?? []).length;
-    await useNotesStore.getState().addAdditionalExample(input.noteId, input.example);
-    return { ...currentMutationResult(input.noteId), exampleIndex };
-  });
+  input: CommandInput<"add_note_example">,
+): Promise<CommandOutput<"add_note_example">> {
+  return mutateExistingNote(
+    request,
+    input.noteId,
+    input.expectedVersion,
+    "active",
+    async (note) => {
+      const exampleIndex = (note.additionalExamples ?? []).length;
+      await useNotesStore.getState().addAdditionalExample(input.noteId, input.example);
+      return { ...currentMutationResult(input.noteId), exampleIndex };
+    },
+  );
 }
 
 async function updateNoteExampleCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'update_note_example'>,
-): Promise<CommandOutput<'update_note_example'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
-    if (input.exampleIndex >= (note.additionalExamples ?? []).length) {
-      throw new CommandFailure('NOT_FOUND');
-    }
-    await useNotesStore
-      .getState()
-      .updateAdditionalExample(input.noteId, input.exampleIndex, input.example);
-    return { ...currentMutationResult(input.noteId), exampleIndex: input.exampleIndex };
-  });
+  input: CommandInput<"update_note_example">,
+): Promise<CommandOutput<"update_note_example">> {
+  return mutateExistingNote(
+    request,
+    input.noteId,
+    input.expectedVersion,
+    "active",
+    async (note) => {
+      if (input.exampleIndex >= (note.additionalExamples ?? []).length) {
+        throw new CommandFailure("NOT_FOUND");
+      }
+      await useNotesStore
+        .getState()
+        .updateAdditionalExample(input.noteId, input.exampleIndex, input.example);
+      return { ...currentMutationResult(input.noteId), exampleIndex: input.exampleIndex };
+    },
+  );
 }
 
 async function deleteNoteExampleCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'delete_note_example'>,
-): Promise<CommandOutput<'delete_note_example'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
-    if (input.exampleIndex >= (note.additionalExamples ?? []).length) {
-      throw new CommandFailure('NOT_FOUND');
-    }
-    await useNotesStore.getState().deleteAdditionalExample(input.noteId, input.exampleIndex);
-    return {
-      ...currentMutationResult(input.noteId),
-      exampleIndex: input.exampleIndex,
-      deleted: true,
-    };
-  });
+  input: CommandInput<"delete_note_example">,
+): Promise<CommandOutput<"delete_note_example">> {
+  return mutateExistingNote(
+    request,
+    input.noteId,
+    input.expectedVersion,
+    "active",
+    async (note) => {
+      if (input.exampleIndex >= (note.additionalExamples ?? []).length) {
+        throw new CommandFailure("NOT_FOUND");
+      }
+      await useNotesStore.getState().deleteAdditionalExample(input.noteId, input.exampleIndex);
+      return {
+        ...currentMutationResult(input.noteId),
+        exampleIndex: input.exampleIndex,
+        deleted: true,
+      };
+    },
+  );
 }
 
 async function addNoteLinkCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'add_note_link'>,
-): Promise<CommandOutput<'add_note_link'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
-    const existingLinkIds = new Set((note.relatedLinks ?? []).map((link) => link.id));
-    await useNotesStore.getState().addRelatedLink(input.noteId, input.title, input.href);
-    const updatedNote = findNote(input.noteId);
-    const link = updatedNote?.relatedLinks?.find((item) => !existingLinkIds.has(item.id));
-    if (!link) {
-      throw new CommandFailure('INTERNAL');
-    }
-    return { ...currentMutationResult(input.noteId), link: { ...link } };
-  });
+  input: CommandInput<"add_note_link">,
+): Promise<CommandOutput<"add_note_link">> {
+  return mutateExistingNote(
+    request,
+    input.noteId,
+    input.expectedVersion,
+    "active",
+    async (note) => {
+      const existingLinkIds = new Set((note.relatedLinks ?? []).map((link) => link.id));
+      await useNotesStore.getState().addRelatedLink(input.noteId, input.title, input.href);
+      const updatedNote = findNote(input.noteId);
+      const link = updatedNote?.relatedLinks?.find((item) => !existingLinkIds.has(item.id));
+      if (!link) {
+        throw new CommandFailure("INTERNAL");
+      }
+      return { ...currentMutationResult(input.noteId), link: { ...link } };
+    },
+  );
 }
 
 async function deleteNoteLinkCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'delete_note_link'>,
-): Promise<CommandOutput<'delete_note_link'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
-    if (!(note.relatedLinks ?? []).some((link) => link.id === input.linkId)) {
-      throw new CommandFailure('NOT_FOUND');
-    }
-    await useNotesStore.getState().deleteRelatedLink(input.noteId, input.linkId);
-    return { ...currentMutationResult(input.noteId), linkId: input.linkId, deleted: true };
-  });
+  input: CommandInput<"delete_note_link">,
+): Promise<CommandOutput<"delete_note_link">> {
+  return mutateExistingNote(
+    request,
+    input.noteId,
+    input.expectedVersion,
+    "active",
+    async (note) => {
+      if (!(note.relatedLinks ?? []).some((link) => link.id === input.linkId)) {
+        throw new CommandFailure("NOT_FOUND");
+      }
+      await useNotesStore.getState().deleteRelatedLink(input.noteId, input.linkId);
+      return { ...currentMutationResult(input.noteId), linkId: input.linkId, deleted: true };
+    },
+  );
 }
 
 async function deleteNoteBlockCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'delete_note_block'>,
-): Promise<CommandOutput<'delete_note_block'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
-    if (!(note.blocks ?? []).some((block) => block.id === input.blockId)) {
-      throw new CommandFailure('NOT_FOUND');
-    }
-    await useNotesStore.getState().deleteBlock(input.noteId, input.blockId);
-    return { ...currentMutationResult(input.noteId), blockId: input.blockId, deleted: true };
-  });
+  input: CommandInput<"delete_note_block">,
+): Promise<CommandOutput<"delete_note_block">> {
+  return mutateExistingNote(
+    request,
+    input.noteId,
+    input.expectedVersion,
+    "active",
+    async (note) => {
+      if (!(note.blocks ?? []).some((block) => block.id === input.blockId)) {
+        throw new CommandFailure("NOT_FOUND");
+      }
+      await useNotesStore.getState().deleteBlock(input.noteId, input.blockId);
+      return { ...currentMutationResult(input.noteId), blockId: input.blockId, deleted: true };
+    },
+  );
 }
 
 async function reorderNoteBlocksCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'reorder_note_blocks'>,
-): Promise<CommandOutput<'reorder_note_blocks'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async (note) => {
-    const currentBlockIds = [...(note.blocks ?? [])]
-      .sort((left, right) => left.sortOrder - right.sortOrder)
-      .map((block) => block.id);
-    const requestedBlockIds = input.blockIds;
-    const currentBlockIdSet = new Set(currentBlockIds);
-    if (
-      requestedBlockIds.length !== currentBlockIds.length ||
-      requestedBlockIds.some((blockId) => !currentBlockIdSet.has(blockId))
-    ) {
-      throw new CommandFailure('INVALID_INPUT');
-    }
-    if (!sameOrderedIds(currentBlockIds, requestedBlockIds)) {
-      await useNotesStore.getState().reorderBlocks(input.noteId, requestedBlockIds);
-    }
-    return { ...currentMutationResult(input.noteId), blockIds: [...requestedBlockIds] };
-  });
+  input: CommandInput<"reorder_note_blocks">,
+): Promise<CommandOutput<"reorder_note_blocks">> {
+  return mutateExistingNote(
+    request,
+    input.noteId,
+    input.expectedVersion,
+    "active",
+    async (note) => {
+      const currentBlockIds = [...(note.blocks ?? [])]
+        .sort((left, right) => left.sortOrder - right.sortOrder)
+        .map((block) => block.id);
+      const requestedBlockIds = input.blockIds;
+      const currentBlockIdSet = new Set(currentBlockIds);
+      if (
+        requestedBlockIds.length !== currentBlockIds.length ||
+        requestedBlockIds.some((blockId) => !currentBlockIdSet.has(blockId))
+      ) {
+        throw new CommandFailure("INVALID_INPUT");
+      }
+      if (!sameOrderedIds(currentBlockIds, requestedBlockIds)) {
+        await useNotesStore.getState().reorderBlocks(input.noteId, requestedBlockIds);
+      }
+      return { ...currentMutationResult(input.noteId), blockIds: [...requestedBlockIds] };
+    },
+  );
 }
 
 async function moveNoteToTrashCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'move_note_to_trash'>,
-): Promise<CommandOutput<'move_note_to_trash'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'active', async () => {
+  input: CommandInput<"move_note_to_trash">,
+): Promise<CommandOutput<"move_note_to_trash">> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, "active", async () => {
     await useNotesStore.getState().moveNoteToTrash(input.noteId);
     return currentMutationResult(input.noteId);
   });
@@ -778,9 +847,9 @@ async function moveNoteToTrashCommand(
 
 async function restoreNoteCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'restore_note'>,
-): Promise<CommandOutput<'restore_note'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'trash', async () => {
+  input: CommandInput<"restore_note">,
+): Promise<CommandOutput<"restore_note">> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, "trash", async () => {
     await useNotesStore.getState().restoreNote(input.noteId);
     return currentMutationResult(input.noteId);
   });
@@ -788,9 +857,9 @@ async function restoreNoteCommand(
 
 async function deleteNotePermanentlyCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'delete_note_permanently'>,
-): Promise<CommandOutput<'delete_note_permanently'>> {
-  return mutateExistingNote(request, input.noteId, input.expectedVersion, 'trash', async () => {
+  input: CommandInput<"delete_note_permanently">,
+): Promise<CommandOutput<"delete_note_permanently">> {
+  return mutateExistingNote(request, input.noteId, input.expectedVersion, "trash", async () => {
     await useNotesStore.getState().deleteNotesPermanently([input.noteId]);
     return { noteId: input.noteId, deleted: true };
   });
@@ -798,12 +867,12 @@ async function deleteNotePermanentlyCommand(
 
 async function clearTrashCommand(
   request: McpBridgeRequest,
-  input: CommandInput<'clear_trash'>,
-): Promise<CommandOutput<'clear_trash'>> {
+  input: CommandInput<"clear_trash">,
+): Promise<CommandOutput<"clear_trash">> {
   await ensureRequestActive(request);
   const initialSnapshot = await createTrashSnapshot();
   if (initialSnapshot.stateToken !== input.expectedStateToken) {
-    throw new CommandFailure('CONFLICT', true);
+    throw new CommandFailure("CONFLICT", true);
   }
 
   const leases: Array<ReturnType<typeof tryBeginMcpMutation> & { acquired: true }> = [];
@@ -812,10 +881,10 @@ async function clearTrashCommand(
       const lease = tryBeginMcpMutation(noteId);
       if (!lease.acquired) {
         const currentVersion = findNote(noteId)?.version;
-        if (lease.blockedBy === 'local') {
-          throw new CommandFailure('LOCAL_EDITS_PENDING', true, currentVersion);
+        if (lease.blockedBy === "local") {
+          throw new CommandFailure("LOCAL_EDITS_PENDING", true, currentVersion);
         }
-        throw new CommandFailure('CONFLICT', true, currentVersion);
+        throw new CommandFailure("CONFLICT", true, currentVersion);
       }
       leases.push(lease);
     }
@@ -823,7 +892,7 @@ async function clearTrashCommand(
     await ensureRequestActive(request);
     const currentSnapshot = await createTrashSnapshot();
     if (currentSnapshot.stateToken !== input.expectedStateToken) {
-      throw new CommandFailure('CONFLICT', true);
+      throw new CommandFailure("CONFLICT", true);
     }
     await ensureRequestActive(request);
     await useNotesStore.getState().deleteNotesPermanently(initialSnapshot.noteIds);
@@ -849,10 +918,10 @@ async function withNoteMutationLeases<T>(
       const lease = tryBeginMcpMutation(noteId);
       if (!lease.acquired) {
         const currentVersion = findNote(noteId)?.version;
-        if (lease.blockedBy === 'local') {
-          throw new CommandFailure('LOCAL_EDITS_PENDING', true, currentVersion);
+        if (lease.blockedBy === "local") {
+          throw new CommandFailure("LOCAL_EDITS_PENDING", true, currentVersion);
         }
-        throw new CommandFailure('CONFLICT', true, currentVersion);
+        throw new CommandFailure("CONFLICT", true, currentVersion);
       }
       leases.push(lease);
     }
@@ -869,7 +938,7 @@ async function mutateExistingNote<T>(
   request: McpBridgeRequest,
   noteId: string,
   expectedVersion: number,
-  requiredLocation: 'active' | 'trash',
+  requiredLocation: "active" | "trash",
   mutation: (note: Note) => Promise<T>,
 ): Promise<T> {
   await ensureRequestActive(request);
@@ -878,10 +947,10 @@ async function mutateExistingNote<T>(
   const lease = tryBeginMcpMutation(noteId);
   if (!lease.acquired) {
     const currentVersion = findNote(noteId)?.version;
-    if (lease.blockedBy === 'local') {
-      throw new CommandFailure('LOCAL_EDITS_PENDING', true, currentVersion);
+    if (lease.blockedBy === "local") {
+      throw new CommandFailure("LOCAL_EDITS_PENDING", true, currentVersion);
     }
-    throw new CommandFailure('CONFLICT', true, currentVersion);
+    throw new CommandFailure("CONFLICT", true, currentVersion);
   }
 
   try {
@@ -896,25 +965,25 @@ async function mutateExistingNote<T>(
 function assertNoteForMutation(
   noteId: string,
   expectedVersion: number,
-  requiredLocation: 'active' | 'trash',
+  requiredLocation: "active" | "trash",
 ) {
   const note = findNote(noteId);
   if (!note) {
-    throw new CommandFailure('NOT_FOUND');
+    throw new CommandFailure("NOT_FOUND");
   }
   if (note.version !== expectedVersion) {
-    throw new CommandFailure('CONFLICT', false, note.version);
+    throw new CommandFailure("CONFLICT", false, note.version);
   }
-  if (requiredLocation === 'active' && note.isTrashed) {
-    throw new CommandFailure('READ_ONLY_TRASH');
+  if (requiredLocation === "active" && note.isTrashed) {
+    throw new CommandFailure("READ_ONLY_TRASH");
   }
-  if (requiredLocation === 'trash' && !note.isTrashed) {
-    throw new CommandFailure('INVALID_INPUT');
+  if (requiredLocation === "trash" && !note.isTrashed) {
+    throw new CommandFailure("INVALID_INPUT");
   }
   return note;
 }
 
-async function getTrashStatusCommand(): Promise<CommandOutput<'get_trash_status'>> {
+async function getTrashStatusCommand(): Promise<CommandOutput<"get_trash_status">> {
   const snapshot = await createTrashSnapshot();
   return { noteCount: snapshot.noteIds.length, stateToken: snapshot.stateToken };
 }
@@ -927,17 +996,17 @@ async function createTrashSnapshot() {
   const encodedState = new TextEncoder().encode(
     JSON.stringify(notes.map((note) => [note.id, note.version])),
   );
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', encodedState);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", encodedState);
   const stateToken = [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
   return { noteIds: notes.map((note) => note.id), stateToken };
 }
 
 function currentMutationResult(noteId: string) {
   const note = findNote(noteId);
   if (!note) {
-    throw new CommandFailure('NOT_FOUND');
+    throw new CommandFailure("NOT_FOUND");
   }
   return { noteId, version: note.version };
 }
@@ -949,7 +1018,9 @@ function resolveCreateCollectionId(collectionId: string | null | undefined) {
   }
 
   const preferredId = useAppStore.getState().settings.primaryCollectionId;
-  return useKnowledgeStore.getState().collections.some((collection) => collection.id === preferredId)
+  return useKnowledgeStore
+    .getState()
+    .collections.some((collection) => collection.id === preferredId)
     ? preferredId
     : null;
 }
@@ -959,7 +1030,7 @@ function validateCollectionId(collectionId: string | null) {
     collectionId !== null &&
     !useKnowledgeStore.getState().collections.some((collection) => collection.id === collectionId)
   ) {
-    throw new CommandFailure('NOT_FOUND');
+    throw new CommandFailure("NOT_FOUND");
   }
 }
 
@@ -967,22 +1038,20 @@ function validateTagIds(tagIds: string[]) {
   const uniqueTagIds = [...new Set(tagIds)];
   const knownTagIds = new Set(useKnowledgeStore.getState().tags.map((tag) => tag.id));
   if (uniqueTagIds.some((tagId) => !knownTagIds.has(tagId))) {
-    throw new CommandFailure('NOT_FOUND');
+    throw new CommandFailure("NOT_FOUND");
   }
   return uniqueTagIds;
 }
 
 async function ensureRequestActive(request: McpBridgeRequest) {
-  if (request.isActive && !(await request.isActive())) throw new CommandFailure('TIMEOUT', false);
+  if (request.isActive && !(await request.isActive())) throw new CommandFailure("TIMEOUT", false);
   const deadlineAt = request.deadlineAt;
   if (deadlineExpired(deadlineAt)) {
-    throw new CommandFailure('TIMEOUT', false);
+    throw new CommandFailure("TIMEOUT", false);
   }
 }
 
-function searchNotesCommand(
-  input: CommandInput<'search_notes'>,
-): CommandOutput<'search_notes'> {
+function searchNotesCommand(input: CommandInput<"search_notes">): CommandOutput<"search_notes"> {
   const { collections, tags } = useKnowledgeStore.getState();
   const results = searchNotes({
     collections,
@@ -1008,7 +1077,7 @@ function searchNotesCommand(
   };
 }
 
-function noteDetail(note: Note): CommandOutput<'get_note'> {
+function noteDetail(note: Note): CommandOutput<"get_note"> {
   return {
     id: note.id,
     title: inlineRichTextOutput(note.title),
@@ -1032,13 +1101,15 @@ function noteDetail(note: Note): CommandOutput<'get_note'> {
         id: block.id,
         sortOrder: block.sortOrder,
         title: inlineRichTextOutput(block.title),
-        contentPreview: truncatePreview(blockRichTextOutput(block.contentJson, block.contentText).text),
+        contentPreview: truncatePreview(
+          blockRichTextOutput(block.contentJson, block.contentText).text,
+        ),
         updatedAt: block.updatedAt,
       })),
   };
 }
 
-function noteBlockDetail(note: Note, block: NoteBlock): CommandOutput<'get_note_block'> {
+function noteBlockDetail(note: Note, block: NoteBlock): CommandOutput<"get_note_block"> {
   return {
     id: block.id,
     noteId: note.id,
@@ -1060,14 +1131,24 @@ function findTag(tagId: string) {
 }
 
 function findCollection(collectionId: string) {
-  return useKnowledgeStore.getState().collections.find((collection) => collection.id === collectionId);
+  return useKnowledgeStore
+    .getState()
+    .collections.find((collection) => collection.id === collectionId);
 }
 
-function filterNamedEntities<T extends { name: string }>(entities: T[], query: string, limit: number) {
+function filterNamedEntities<T extends { name: string }>(
+  entities: T[],
+  query: string,
+  limit: number,
+) {
   const normalizedQuery = normalizeSearchValue(query);
   return entities
-    .filter((entity) => !normalizedQuery || normalizeSearchValue(entity.name).includes(normalizedQuery))
-    .sort((left, right) => left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' }))
+    .filter(
+      (entity) => !normalizedQuery || normalizeSearchValue(entity.name).includes(normalizedQuery),
+    )
+    .sort((left, right) =>
+      left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: "base" }),
+    )
     .slice(0, limit);
 }
 
@@ -1075,7 +1156,7 @@ function tagDto(tag: Tag) {
   return {
     id: tag.id,
     name: tag.name,
-    color: tag.color ?? 'neutral',
+    color: tag.color ?? "neutral",
   };
 }
 
@@ -1083,12 +1164,12 @@ function collectionDto(collection: Collection) {
   return {
     id: collection.id,
     name: collection.name,
-    color: collection.color ?? 'neutral',
+    color: collection.color ?? "neutral",
   };
 }
 
 function truncatePreview(value: string) {
-  const normalized = value.replace(/\s+/g, ' ').trim();
+  const normalized = value.replace(/\s+/g, " ").trim();
   return normalized.length <= 240 ? normalized : `${normalized.slice(0, 237).trimEnd()}...`;
 }
 

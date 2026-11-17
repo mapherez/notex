@@ -1,18 +1,25 @@
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { Search } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { appLimits } from '../../config/appSettings';
-import { isPrimaryShortcut } from '../../core/utils/keyboardShortcuts';
-import { normalizeSearchValue, searchNotes } from '../../core/utils/noteSearch';
-import { richTextToPlainText } from '../../core/utils/richText';
-import { useClickOutside } from '../../core/utils/useClickOutside';
-import { useFloatingPopover } from '../../core/utils/useFloatingPopover';
-import { useKeyboardListNavigation } from '../../core/utils/useKeyboardListNavigation';
-import { useI18n } from '../../i18n/I18nProvider';
-import { useNotesStore } from '../../store/useNotesStore';
-import { useKnowledgeStore } from '../../store/useKnowledgeStore';
-import { InlineFormattedText } from '../editing/InlineFormattedText';
-import { NoteThumbnail } from './NoteThumbnail';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
+import { Search } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { appLimits } from "../../config/appSettings";
+import { isPrimaryShortcut } from "../../core/utils/keyboardShortcuts";
+import { normalizeSearchValue, searchNotes } from "../../core/utils/noteSearch";
+import { richTextToPlainText } from "../../core/utils/richText";
+import { useClickOutside } from "../../core/utils/useClickOutside";
+import { useFloatingPopover } from "../../core/utils/useFloatingPopover";
+import { useKeyboardListNavigation } from "../../core/utils/useKeyboardListNavigation";
+import { useI18n } from "../../i18n/I18nProvider";
+import { useNotesStore } from "../../store/useNotesStore";
+import { useKnowledgeStore } from "../../store/useKnowledgeStore";
+import { InlineFormattedText } from "../editing/InlineFormattedText";
+import { NoteThumbnail } from "./NoteThumbnail";
 
 export function SearchBox({ className }: { className?: string }) {
   const { t } = useI18n();
@@ -21,7 +28,7 @@ export function SearchBox({ className }: { className?: string }) {
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [resultsOpen, setResultsOpen] = useState(false);
   const notes = useNotesStore((state) => state.notes);
   const tags = useKnowledgeStore((state) => state.tags);
@@ -48,11 +55,11 @@ export function SearchBox({ className }: { className?: string }) {
   });
 
   useClickOutside(searchRef, showResults, () => setResultsOpen(false));
-  useFloatingPopover(showResults, searchRef, resultsRef, 'bottom-start');
+  useFloatingPopover(showResults, searchRef, resultsRef, "bottom-start");
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
-      if (isPrimaryShortcut(event, "f") && !inputRef.current?.closest('[inert]')) {
+      if (isPrimaryShortcut(event, "f") && !inputRef.current?.closest("[inert]")) {
         event.preventDefault();
         inputRef.current?.focus();
         if (normalizedQuery) {
@@ -61,12 +68,12 @@ export function SearchBox({ className }: { className?: string }) {
       }
     }
 
-    window.addEventListener('keydown', handleShortcut);
-    return () => window.removeEventListener('keydown', handleShortcut);
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
   }, [normalizedQuery]);
 
   function closeSearch() {
-    setQuery('');
+    setQuery("");
     setResultsOpen(false);
   }
 
@@ -76,7 +83,7 @@ export function SearchBox({ className }: { className?: string }) {
   }
 
   function handleInputKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'Escape') {
+    if (event.key === "Escape") {
       event.preventDefault();
       closeSearch();
       inputRef.current?.blur();
@@ -87,31 +94,52 @@ export function SearchBox({ className }: { className?: string }) {
   }
 
   return (
-    <div className={className ? `search-box-shell ${className}` : 'search-box-shell'} ref={searchRef}>
+    <div
+      className={className ? `search-box-shell ${className}` : "search-box-shell"}
+      ref={searchRef}
+    >
       <label className="search-box">
         <Search />
         <input
           ref={inputRef}
           type="search"
-          placeholder={t('topbar.searchPlaceholder')}
-          aria-label={t('topbar.searchPlaceholder')}
+          placeholder={t("topbar.searchPlaceholder")}
+          aria-label={t("topbar.searchPlaceholder")}
           value={query}
           aria-expanded={showResults}
           aria-controls={showResults ? resultsId : undefined}
-          aria-activedescendant={showResults && resultNavigation.activeIndex >= 0 ? `${resultsId}-option-${resultNavigation.activeIndex}` : undefined}
+          aria-activedescendant={
+            showResults && resultNavigation.activeIndex >= 0
+              ? `${resultsId}-option-${resultNavigation.activeIndex}`
+              : undefined
+          }
           onChange={(event) => updateQuery(event.target.value)}
           onFocus={() => setResultsOpen(Boolean(query.trim()))}
           onKeyDown={handleInputKeyDown}
         />
-        <span className="kbd">{t('topbar.keyboardHint')}</span>
+        <span className="kbd">{t("topbar.keyboardHint")}</span>
       </label>
       {showResults ? (
-        <div className="search-results-popover" ref={resultsRef} id={resultsId} role="list" aria-label={t('topbar.searchResults')}>
-          {notes.some((note) => note.cloudOnly && !note.isTrashed) && <div className="search-result-empty" role="status">{t('cloud.searchPartial')}</div>}
+        <div
+          className="search-results-popover"
+          ref={resultsRef}
+          id={resultsId}
+          role="list"
+          aria-label={t("topbar.searchResults")}
+        >
+          {notes.some((note) => note.cloudOnly && !note.isTrashed) && (
+            <div className="search-result-empty" role="status">
+              {t("cloud.searchPartial")}
+            </div>
+          )}
           {results.length ? (
             results.map((result, index) => (
               <Link
-                className={index === resultNavigation.activeIndex ? 'search-result-row active' : 'search-result-row'}
+                className={
+                  index === resultNavigation.activeIndex
+                    ? "search-result-row active"
+                    : "search-result-row"
+                }
                 id={`${resultsId}-option-${index}`}
                 key={result.note.id}
                 to={`/notes/${result.note.id}`}
@@ -121,10 +149,16 @@ export function SearchBox({ className }: { className?: string }) {
                 <NoteThumbnail thumbnail={result.note.thumbnail} />
                 <span className="search-result-copy">
                   <strong>
-                    {richTextToPlainText(result.note.title).trim() ? <InlineFormattedText value={result.note.title} /> : t('notes.untitled')}
+                    {richTextToPlainText(result.note.title).trim() ? (
+                      <InlineFormattedText value={result.note.title} />
+                    ) : (
+                      t("notes.untitled")
+                    )}
                   </strong>
                   <span className="search-result-meta">
-                    <span className="search-result-match">{t(`topbar.searchMatch.${result.matchType}`)}</span>
+                    <span className="search-result-match">
+                      {t(`topbar.searchMatch.${result.matchType}`)}
+                    </span>
                     {result.collectionName ? <span>{result.collectionName}</span> : null}
                     {result.tagNames.slice(0, 2).map((tagName) => (
                       <span key={tagName}># {tagName}</span>
@@ -134,7 +168,7 @@ export function SearchBox({ className }: { className?: string }) {
               </Link>
             ))
           ) : (
-            <div className="search-result-empty">{t('topbar.noSearchResults')}</div>
+            <div className="search-result-empty">{t("topbar.noSearchResults")}</div>
           )}
         </div>
       ) : null}

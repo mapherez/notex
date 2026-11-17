@@ -4,10 +4,10 @@ import {
   useLayoutEffect,
   useRef,
   type PointerEvent as ReactPointerEvent,
-} from 'react';
-import { editorSettings } from '../../config/appSettings';
-import { useI18n } from '../../i18n/I18nProvider';
-import { AppModal } from '../ui/AppModal';
+} from "react";
+import { editorSettings } from "../../config/appSettings";
+import { useI18n } from "../../i18n/I18nProvider";
+import { AppModal } from "../ui/AppModal";
 
 type Point = { x: number; y: number };
 type Transform = { scale: number; x: number; y: number };
@@ -22,8 +22,8 @@ export function fitImagePreviewSize(
   const fraction = editorSettings.imagePreview.initialViewportFraction;
   const scale = Math.min(
     1,
-    viewportSize.width * fraction / naturalSize.width,
-    viewportSize.height * fraction / naturalSize.height,
+    (viewportSize.width * fraction) / naturalSize.width,
+    (viewportSize.height * fraction) / naturalSize.height,
   );
   return {
     height: naturalSize.height * scale,
@@ -89,9 +89,9 @@ export function NoteImagePreview({
       { height: stage.clientHeight, width: stage.clientWidth },
     );
     transformRef.current = constrained;
-    image.style.setProperty('--nx-image-preview-scale', String(constrained.scale));
-    image.style.setProperty('--nx-image-preview-x', `${constrained.x}px`);
-    image.style.setProperty('--nx-image-preview-y', `${constrained.y}px`);
+    image.style.setProperty("--nx-image-preview-scale", String(constrained.scale));
+    image.style.setProperty("--nx-image-preview-x", `${constrained.x}px`);
+    image.style.setProperty("--nx-image-preview-y", `${constrained.y}px`);
   }, []);
 
   const reset = useCallback(() => {
@@ -109,11 +109,11 @@ export function NoteImagePreview({
           width: Math.min(stage.clientWidth, viewport?.width ?? window.innerWidth),
         },
       );
-      image.style.setProperty('--nx-image-preview-height', `${fitted.height}px`);
-      image.style.setProperty('--nx-image-preview-width', `${fitted.width}px`);
+      image.style.setProperty("--nx-image-preview-height", `${fitted.height}px`);
+      image.style.setProperty("--nx-image-preview-width", `${fitted.width}px`);
     } else {
-      image?.style.removeProperty('--nx-image-preview-height');
-      image?.style.removeProperty('--nx-image-preview-width');
+      image?.style.removeProperty("--nx-image-preview-height");
+      image?.style.removeProperty("--nx-image-preview-width");
     }
     renderTransform(fittedTransform);
   }, [renderTransform]);
@@ -125,10 +125,10 @@ export function NoteImagePreview({
     if (!stage) return;
     const observer = new ResizeObserver(reset);
     observer.observe(stage);
-    window.visualViewport?.addEventListener('resize', reset);
+    window.visualViewport?.addEventListener("resize", reset);
     return () => {
       observer.disconnect();
-      window.visualViewport?.removeEventListener('resize', reset);
+      window.visualViewport?.removeEventListener("resize", reset);
     };
   }, [open, reset, src]);
 
@@ -137,7 +137,7 @@ export function NoteImagePreview({
   }, [open]);
 
   function startGesture(event: ReactPointerEvent<HTMLDivElement>) {
-    if (event.button !== 0 && event.pointerType === 'mouse') return;
+    if (event.button !== 0 && event.pointerType === "mouse") return;
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -187,7 +187,7 @@ export function NoteImagePreview({
         x: (stageBounds?.left ?? 0) + (stageBounds?.width ?? 0) / 2,
         y: (stageBounds?.top ?? 0) + (stageBounds?.height ?? 0) / 2,
       };
-      const scale = pinchRef.current.scale * distance(first, second) / pinchRef.current.distance;
+      const scale = (pinchRef.current.scale * distance(first, second)) / pinchRef.current.distance;
       renderTransform({
         scale,
         x: center.x - stageCenter.x - pinchRef.current.focus.x * scale,
@@ -195,7 +195,11 @@ export function NoteImagePreview({
       });
       return;
     }
-    if (pointers.length === 1 && panRef.current?.pointerId === event.pointerId && transformRef.current.scale > 1) {
+    if (
+      pointers.length === 1 &&
+      panRef.current?.pointerId === event.pointerId &&
+      transformRef.current.scale > 1
+    ) {
       renderTransform({
         ...panRef.current.transform,
         x: panRef.current.transform.x + event.clientX - panRef.current.point.x,
@@ -214,9 +218,10 @@ export function NoteImagePreview({
     }
     const remaining = [...pointersRef.current.entries()];
     pinchRef.current = null;
-    panRef.current = remaining.length === 1
-      ? { pointerId: remaining[0][0], point: remaining[0][1], transform: transformRef.current }
-      : null;
+    panRef.current =
+      remaining.length === 1
+        ? { pointerId: remaining[0][0], point: remaining[0][1], transform: transformRef.current }
+        : null;
   }
 
   return (
@@ -228,7 +233,7 @@ export function NoteImagePreview({
       restoreFocus={restoreFocus}
     >
       <h2 className="note-image-preview__title" id="note-image-preview-title">
-        {t('notes.editor.imagePreview')}
+        {t("notes.editor.imagePreview")}
       </h2>
       <div
         className="note-image-preview__stage"
@@ -238,13 +243,7 @@ export function NoteImagePreview({
         onPointerMove={moveGesture}
         onPointerUp={finishGesture}
       >
-        <img
-          ref={imageRef}
-          alt={alt}
-          draggable={false}
-          src={src}
-          onLoad={reset}
-        />
+        <img ref={imageRef} alt={alt} draggable={false} src={src} onLoad={reset} />
       </div>
     </AppModal>
   );

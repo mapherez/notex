@@ -1,10 +1,13 @@
-import { setStorageDatabase } from '../db/notexDb';
-import { IndexedDbStorage } from './indexedDbStorage';
+import { setStorageDatabase } from "../db/notexDb";
+import { IndexedDbStorage } from "./indexedDbStorage";
 
 let browserStorage: IndexedDbStorage | undefined;
 const objectUrls = new Map<string, string>();
 
-function clearUrls() { for (const url of objectUrls.values()) URL.revokeObjectURL(url); objectUrls.clear(); }
+function clearUrls() {
+  for (const url of objectUrls.values()) URL.revokeObjectURL(url);
+  objectUrls.clear();
+}
 
 export function releaseBrowserFileUrl(path: string) {
   const url = objectUrls.get(path);
@@ -18,7 +21,7 @@ export async function browserFileUrl(path: string) {
   if (existing) return existing;
   const storage = currentBrowserStorage();
   const blob = await storage.readBlob(path);
-  if (!blob || storage !== browserStorage) throw new Error('Attachment is not available');
+  if (!blob || storage !== browserStorage) throw new Error("Attachment is not available");
   const url = URL.createObjectURL(blob);
   objectUrls.set(path, url);
   return url;
@@ -43,6 +46,6 @@ export function closeBrowserLibrary() {
 }
 
 export function currentBrowserStorage() {
-  if (!browserStorage) throw new Error('GOOGLE_LOGIN_REQUIRED');
+  if (!browserStorage) throw new Error("GOOGLE_LOGIN_REQUIRED");
   return browserStorage;
 }

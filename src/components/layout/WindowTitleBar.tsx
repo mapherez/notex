@@ -1,10 +1,10 @@
-import { isTauri } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Copy, Minus, Square, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { appSettings } from '../../config/appSettings';
-import { BrandMark } from '../ui/Brand';
-import { useI18n } from '../../i18n/I18nProvider';
+import { isTauri } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { Copy, Minus, Square, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { appSettings } from "../../config/appSettings";
+import { BrandMark } from "../ui/Brand";
+import { useI18n } from "../../i18n/I18nProvider";
 
 export function useCustomWindowTitleBar() {
   const [customTitleBar, setCustomTitleBar] = useState(false);
@@ -15,18 +15,21 @@ export function useCustomWindowTitleBar() {
     }
 
     let cancelled = false;
-    void getCurrentWindow().isDecorated()
+    void getCurrentWindow()
+      .isDecorated()
       .then((decorated) => {
         if (!cancelled) setCustomTitleBar(!decorated);
       })
       .catch((error) => {
         if (!cancelled) {
-          console.error('Window decoration check failed', error);
+          console.error("Window decoration check failed", error);
           setCustomTitleBar(true);
         }
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return customTitleBar;
@@ -48,7 +51,7 @@ export function WindowTitleBar() {
 
   const runWindowAction = useCallback((action: () => Promise<void>) => {
     void action().catch((error) => {
-      console.error('Window action failed', error);
+      console.error("Window action failed", error);
     });
   }, []);
 
@@ -58,12 +61,12 @@ export function WindowTitleBar() {
     }
 
     void syncMaximizedState().catch((error) => {
-      console.error('Window state sync failed', error);
+      console.error("Window state sync failed", error);
     });
 
     const unlisten = appWindow.onResized(() => {
       void syncMaximizedState().catch((error) => {
-        console.error('Window state sync failed', error);
+        console.error("Window state sync failed", error);
       });
     });
 
@@ -76,7 +79,7 @@ export function WindowTitleBar() {
     return null;
   }
 
-  const maximizeLabel = isMaximized ? t('windowControls.restore') : t('windowControls.maximize');
+  const maximizeLabel = isMaximized ? t("windowControls.restore") : t("windowControls.maximize");
   const MaximizeIcon = isMaximized ? Copy : Square;
 
   return (
@@ -88,12 +91,12 @@ export function WindowTitleBar() {
         <button
           className="window-titlebar__control"
           type="button"
-          aria-label={t('windowControls.minimize')}
+          aria-label={t("windowControls.minimize")}
           onClick={() => runWindowAction(() => appWindow.minimize())}
         >
           <Minus />
           <span className="window-titlebar__tooltip" role="tooltip">
-            {t('windowControls.minimize')}
+            {t("windowControls.minimize")}
           </span>
         </button>
         <button
@@ -115,12 +118,12 @@ export function WindowTitleBar() {
         <button
           className="window-titlebar__control window-titlebar__control--close"
           type="button"
-          aria-label={t('windowControls.close')}
+          aria-label={t("windowControls.close")}
           onClick={() => runWindowAction(() => appWindow.close())}
         >
           <X />
           <span className="window-titlebar__tooltip" role="tooltip">
-            {t('windowControls.close')}
+            {t("windowControls.close")}
           </span>
         </button>
       </div>

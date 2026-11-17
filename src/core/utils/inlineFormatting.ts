@@ -1,14 +1,15 @@
-import { tagColorOptions } from '../../config/appSettings';
-import type { TagColor } from '../models/models';
+import { tagColorOptions } from "../../config/appSettings";
+import type { TagColor } from "../models/models";
 
 export const inlineStyleColors = tagColorOptions;
 
 export type InlineStyleColor = TagColor;
-export type InlineStyleKind = 'bg' | 'color';
-export type InlineFormatKind = 'bold' | 'code' | 'italic' | 'strike' | 'underline';
+export type InlineStyleKind = "bg" | "color";
+export type InlineFormatKind = "bold" | "code" | "italic" | "strike" | "underline";
 
 const inlineStyleColorSet = new Set<string>(inlineStyleColors);
-const inlineStyleTokenPattern = /\[\[(?:color|bg):[a-z-]+\]\]|\[\[\/(?:color|bg)\]\]|\[\[u\]\]|\[\[\/u\]\]/g;
+const inlineStyleTokenPattern =
+  /\[\[(?:color|bg):[a-z-]+\]\]|\[\[\/(?:color|bg)\]\]|\[\[u\]\]|\[\[\/u\]\]/g;
 
 export type InlineStyleTextEdit = {
   changed: boolean;
@@ -44,7 +45,7 @@ export function applyInlineFormatToken({
 
   return applyInlineTokenEdit({
     fallback,
-    mode: 'toggle',
+    mode: "toggle",
     selectionEnd,
     selectionStart,
     style: marker.style,
@@ -69,7 +70,7 @@ export function applyInlineStyleToken({
 }): InlineStyleTextEdit {
   return applyInlineTokenEdit({
     fallback,
-    mode: color ? 'set' : 'clear',
+    mode: color ? "set" : "clear",
     nextPrefix: color ? `[[${kind}:${color}]]` : null,
     nextSuffix: color ? `[[/${kind}]]` : null,
     selectionEnd,
@@ -81,7 +82,7 @@ export function applyInlineStyleToken({
 }
 
 export function stripInlineFormatting(value?: string | null) {
-  return (value ?? '').replace(inlineStyleTokenPattern, '');
+  return (value ?? "").replace(inlineStyleTokenPattern, "");
 }
 
 type InlineTokenStyle = InlineFormatKind | InlineStyleKind;
@@ -97,14 +98,14 @@ type InlineRange = {
   value?: InlineStyleColor;
 };
 
-type InlineTokenMode = 'clear' | 'set' | 'toggle';
+type InlineTokenMode = "clear" | "set" | "toggle";
 
 const inlineMarkers: Array<{ prefix: string; style: InlineFormatKind; suffix: string }> = [
-  { prefix: '**', style: 'bold', suffix: '**' },
-  { prefix: '*', style: 'italic', suffix: '*' },
-  { prefix: '[[u]]', style: 'underline', suffix: '[[/u]]' },
-  { prefix: '~~', style: 'strike', suffix: '~~' },
-  { prefix: '`', style: 'code', suffix: '`' },
+  { prefix: "**", style: "bold", suffix: "**" },
+  { prefix: "*", style: "italic", suffix: "*" },
+  { prefix: "[[u]]", style: "underline", suffix: "[[/u]]" },
+  { prefix: "~~", style: "strike", suffix: "~~" },
+  { prefix: "`", style: "code", suffix: "`" },
 ];
 
 function applyInlineTokenEdit({
@@ -132,7 +133,7 @@ function applyInlineTokenEdit({
   const end = Math.max(selectionStart, selectionEnd);
 
   if (start === end) {
-    if (mode === 'clear') {
+    if (mode === "clear") {
       return unchangedEdit(text, selectionStart, selectionEnd);
     }
 
@@ -149,7 +150,7 @@ function applyInlineTokenEdit({
   const ranges = findInlineRanges(text, style);
   const exactRange = ranges.find((range) => range.outerStart === start && range.outerEnd === end);
   if (exactRange) {
-    if (mode === 'set') {
+    if (mode === "set") {
       if (!nextPrefix || !nextSuffix || exactRange.value === value) {
         return unchangedEdit(text, selectionStart, selectionEnd);
       }
@@ -169,10 +170,12 @@ function applyInlineTokenEdit({
 
   const containingRange = ranges
     .filter((range) => range.innerStart <= start && end <= range.innerEnd)
-    .sort((left, right) => left.innerEnd - left.innerStart - (right.innerEnd - right.innerStart))[0];
+    .sort(
+      (left, right) => left.innerEnd - left.innerStart - (right.innerEnd - right.innerStart),
+    )[0];
 
   if (containingRange) {
-    if (mode === 'set' && containingRange.value === value) {
+    if (mode === "set" && containingRange.value === value) {
       return unchangedEdit(text, selectionStart, selectionEnd);
     }
 
@@ -181,12 +184,12 @@ function applyInlineTokenEdit({
       selectionEnd: end,
       selectionStart: start,
       text,
-      withPrefix: mode === 'set' ? nextPrefix : null,
-      withSuffix: mode === 'set' ? nextSuffix : null,
+      withPrefix: mode === "set" ? nextPrefix : null,
+      withSuffix: mode === "set" ? nextSuffix : null,
     });
   }
 
-  if (mode === 'clear') {
+  if (mode === "clear") {
     return clearRangesInsideSelection(text, ranges, start, end);
   }
 
@@ -212,7 +215,12 @@ function unwrapRange(text: string, range: InlineRange): InlineStyleTextEdit {
   };
 }
 
-function clearRangesInsideSelection(text: string, ranges: InlineRange[], selectionStart: number, selectionEnd: number) {
+function clearRangesInsideSelection(
+  text: string,
+  ranges: InlineRange[],
+  selectionStart: number,
+  selectionEnd: number,
+) {
   const containedRanges = ranges
     .filter((range) => range.outerStart >= selectionStart && range.outerEnd <= selectionEnd)
     .sort((left, right) => right.outerStart - left.outerStart);
@@ -281,17 +289,33 @@ function replaceInlineRange({
   withPrefix: string | null;
   withSuffix: string | null;
 }): InlineStyleTextEdit {
-  const operation = expandSelectionToNestedRanges(text, selectionStart, selectionEnd, range.innerStart, range.innerEnd, range.style);
+  const operation = expandSelectionToNestedRanges(
+    text,
+    selectionStart,
+    selectionEnd,
+    range.innerStart,
+    range.innerEnd,
+    range.style,
+  );
   const before = text.slice(range.innerStart, operation.start);
   const selected = text.slice(operation.start, operation.end);
   const after = text.slice(operation.end, range.innerEnd);
-  const beforePart = before ? `${range.prefix}${before}${range.suffix}` : '';
-  const selectedPart = withPrefix && withSuffix ? `${withPrefix}${selected}${withSuffix}` : selected;
-  const afterPart = after ? `${range.prefix}${after}${range.suffix}` : '';
+  const beforePart = before ? `${range.prefix}${before}${range.suffix}` : "";
+  const selectedPart =
+    withPrefix && withSuffix ? `${withPrefix}${selected}${withSuffix}` : selected;
+  const afterPart = after ? `${range.prefix}${after}${range.suffix}` : "";
   const replacement = `${beforePart}${selectedPart}${afterPart}`;
   const nextText = `${text.slice(0, range.outerStart)}${replacement}${text.slice(range.outerEnd)}`;
-  const nextSelectionStart = range.outerStart + beforePart.length + (withPrefix?.length ?? 0) + (selectionStart - operation.start);
-  const nextSelectionEnd = range.outerStart + beforePart.length + (withPrefix?.length ?? 0) + (selectionEnd - operation.start);
+  const nextSelectionStart =
+    range.outerStart +
+    beforePart.length +
+    (withPrefix?.length ?? 0) +
+    (selectionStart - operation.start);
+  const nextSelectionEnd =
+    range.outerStart +
+    beforePart.length +
+    (withPrefix?.length ?? 0) +
+    (selectionEnd - operation.start);
 
   return {
     changed: nextText !== text,
@@ -337,25 +361,27 @@ function expandSelectionToNestedRanges(
 }
 
 function findInlineRanges(text: string, style: InlineTokenStyle): InlineRange[] {
-  if (style === 'bg' || style === 'color') {
+  if (style === "bg" || style === "color") {
     return findColorRanges(text, style);
   }
 
-  if (style === 'underline') {
-    return findExplicitRanges(text, 'underline', '[[u]]', '[[/u]]');
+  if (style === "underline") {
+    return findExplicitRanges(text, "underline", "[[u]]", "[[/u]]");
   }
 
   return findDelimitedRanges(text, style);
 }
 
 function getAllInlineRanges(text: string) {
-  return (['bold', 'italic', 'underline', 'strike', 'code', 'color', 'bg'] as InlineTokenStyle[]).flatMap((style) => findInlineRanges(text, style));
+  return (
+    ["bold", "italic", "underline", "strike", "code", "color", "bg"] as InlineTokenStyle[]
+  ).flatMap((style) => findInlineRanges(text, style));
 }
 
 function findColorRanges(text: string, style: InlineStyleKind): InlineRange[] {
   const ranges: InlineRange[] = [];
   const stack: Array<{ prefix: string; start: number; value: InlineStyleColor }> = [];
-  const pattern = new RegExp(`\\[\\[${style}:([a-z-]+)\\]\\]|\\[\\[\\/${style}\\]\\]`, 'g');
+  const pattern = new RegExp(`\\[\\[${style}:([a-z-]+)\\]\\]|\\[\\[\\/${style}\\]\\]`, "g");
 
   for (const match of text.matchAll(pattern)) {
     const token = match[0];
@@ -387,12 +413,17 @@ function findColorRanges(text: string, style: InlineStyleKind): InlineRange[] {
   return ranges;
 }
 
-function findExplicitRanges(text: string, style: InlineFormatKind, prefix: string, suffix: string): InlineRange[] {
+function findExplicitRanges(
+  text: string,
+  style: InlineFormatKind,
+  prefix: string,
+  suffix: string,
+): InlineRange[] {
   const ranges: InlineRange[] = [];
   const stack: number[] = [];
   const escapedPrefix = escapeRegExp(prefix);
   const escapedSuffix = escapeRegExp(suffix);
-  const pattern = new RegExp(`${escapedPrefix}|${escapedSuffix}`, 'g');
+  const pattern = new RegExp(`${escapedPrefix}|${escapedSuffix}`, "g");
 
   for (const match of text.matchAll(pattern)) {
     const token = match[0];
@@ -456,34 +487,40 @@ function findDelimitedRanges(text: string, style: InlineFormatKind): InlineRange
 }
 
 function getDelimitedStyle(token: string): InlineFormatKind {
-  if (token === '**' || token === '__') {
-    return 'bold';
+  if (token === "**" || token === "__") {
+    return "bold";
   }
 
-  if (token === '*' || token === '_') {
-    return 'italic';
+  if (token === "*" || token === "_") {
+    return "italic";
   }
 
-  if (token === '~~') {
-    return 'strike';
+  if (token === "~~") {
+    return "strike";
   }
 
-  return 'code';
+  return "code";
 }
 
 function getInlineMarker(prefix: string, suffix: string) {
-  return inlineMarkers.find((marker) => marker.prefix === prefix && marker.suffix === suffix) ?? null;
+  return (
+    inlineMarkers.find((marker) => marker.prefix === prefix && marker.suffix === suffix) ?? null
+  );
 }
 
 function getDefaultPrefix(style: InlineTokenStyle) {
-  return inlineMarkers.find((marker) => marker.style === style)?.prefix ?? '';
+  return inlineMarkers.find((marker) => marker.style === style)?.prefix ?? "";
 }
 
 function getDefaultSuffix(style: InlineTokenStyle) {
-  return inlineMarkers.find((marker) => marker.style === style)?.suffix ?? '';
+  return inlineMarkers.find((marker) => marker.style === style)?.suffix ?? "";
 }
 
-function unchangedEdit(text: string, selectionStart: number, selectionEnd: number): InlineStyleTextEdit {
+function unchangedEdit(
+  text: string,
+  selectionStart: number,
+  selectionEnd: number,
+): InlineStyleTextEdit {
   return {
     changed: false,
     selectionStart,
@@ -493,5 +530,5 @@ function unchangedEdit(text: string, selectionStart: number, selectionEnd: numbe
 }
 
 function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

@@ -62,7 +62,9 @@
     color: var(--nx-color-text);
     font-size: 0.875rem;
     font-weight: 600;
-    transition: background 160ms ease, border-color 160ms ease;
+    transition:
+      background 160ms ease,
+      border-color 160ms ease;
   }
 
   &__actions button:hover:not(:disabled) {
@@ -80,7 +82,9 @@
     opacity: 0.55;
   }
 }
-.google-account-modal p { color: var(--nx-color-text-muted); }
+.google-account-modal p {
+  color: var(--nx-color-text-muted);
+}
 
 // Light button colors and spacing from Google's sign-in branding guidelines:
 // https://developers.google.com/identity/branding-guidelines
@@ -100,7 +104,9 @@
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
-  transition: box-shadow 160ms ease, border-color 160ms ease;
+  transition:
+    box-shadow 160ms ease,
+    border-color 160ms ease;
 }
 
 .google-sign-in-button img {
@@ -109,7 +115,9 @@
   flex: 0 0 20px;
 }
 
-.google-sign-in-button span { font: inherit; }
+.google-sign-in-button span {
+  font: inherit;
+}
 
 .google-sign-in-button:hover:not(:disabled) {
   border-color: #1f1f1f;

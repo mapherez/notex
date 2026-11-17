@@ -2,6 +2,10 @@
   "name": "@notex/mcp-contract",
   "version": "0.1.0",
   "private": true,
+  "files": [
+    "dist",
+    "generated"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,16 +15,12 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist",
-    "generated"
-  ],
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json && npm run generate:manifest",
     "generate:manifest": "node scripts/generate-tool-manifest.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run src"
+    "test": "vp test run src"
   },
   "dependencies": {
     "@nox/mcp": "https://github.com/mapherez/nox-mcp/releases/download/v0.6.1/nox-mcp.tgz",
@@ -28,6 +28,6 @@
   },
   "devDependencies": {
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vite-plus": "1.6.0"
   }
 }

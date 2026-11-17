@@ -1,5 +1,5 @@
-import { Trash2, X } from 'lucide-react';
-import { AppModal } from './AppModal';
+import { Trash2, X } from "lucide-react";
+import { AppModal } from "./AppModal";
 
 export function DeleteConfirmModal({
   cancelLabel,

@@ -1,8 +1,16 @@
-import clsx from 'clsx';
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import type { Tag } from '../../core/models/models';
-import { TagChip } from './TagChip';
+import clsx from "clsx";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+  type PointerEvent,
+} from "react";
+import { useNavigate } from "react-router-dom";
+import type { Tag } from "../../core/models/models";
+import { TagChip } from "./TagChip";
 
 type SortableTagListProps = {
   ariaLabel: string;
@@ -65,17 +73,17 @@ export function SortableTagList({
     }
 
     function handleKeyDown(event: globalThis.KeyboardEvent) {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         cancelPointerReorder();
       }
     }
 
-    window.addEventListener('pointerup', handlePointerUp);
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [activeId, tags]);
 
@@ -84,7 +92,11 @@ export function SortableTagList({
       return;
     }
 
-    const nextIds = moveId(orderedTags.map((tag) => tag.id), activeId, overId);
+    const nextIds = moveId(
+      orderedTags.map((tag) => tag.id),
+      activeId,
+      overId,
+    );
     updateOrderedIds(nextIds);
     void onReorder(nextIds);
   }
@@ -132,14 +144,14 @@ export function SortableTagList({
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLSpanElement>, tag: Tag, href?: string) {
-    if ((event.key === 'Enter' || event.key === ' ') && href) {
+    if ((event.key === "Enter" || event.key === " ") && href) {
       event.preventDefault();
       navigate(href);
       return;
     }
 
     if (
-      (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') ||
+      (event.key !== "ArrowLeft" && event.key !== "ArrowRight") ||
       (!event.altKey && !event.ctrlKey && !event.metaKey)
     ) {
       return;
@@ -147,7 +159,7 @@ export function SortableTagList({
 
     event.preventDefault();
     const currentIndex = tags.findIndex((item) => item.id === tag.id);
-    const nextIndex = event.key === 'ArrowLeft' ? currentIndex - 1 : currentIndex + 1;
+    const nextIndex = event.key === "ArrowLeft" ? currentIndex - 1 : currentIndex + 1;
     const target = tags[nextIndex];
     if (target) {
       commitReorder(tag.id, target.id);
@@ -182,22 +194,22 @@ export function SortableTagList({
 
   function updateOrderedIds(input: string[] | ((currentIds: string[]) => string[])) {
     setOrderedIds((currentIds) => {
-      const nextIds = typeof input === 'function' ? input(currentIds) : input;
+      const nextIds = typeof input === "function" ? input(currentIds) : input;
       orderedIdsRef.current = nextIds;
       return nextIds;
     });
   }
 
   return (
-    <div className={clsx('sortable-tag-list', className)} aria-label={ariaLabel} role="list">
+    <div className={clsx("sortable-tag-list", className)} aria-label={ariaLabel} role="list">
       {orderedTags.map((tag) => {
         const href = getHref?.(tag);
 
         return (
           <span
             aria-label={tag.name}
-            className={clsx('sortable-tag-list__item', {
-              'sortable-tag-list__item--active': activeId === tag.id,
+            className={clsx("sortable-tag-list__item", {
+              "sortable-tag-list__item--active": activeId === tag.id,
             })}
             key={tag.id}
             onClick={(event) => handleClick(event, href)}
@@ -210,11 +222,7 @@ export function SortableTagList({
             tabIndex={0}
             title={ariaLabel}
           >
-            <TagChip
-              tag={tag}
-              removable={removable}
-              onRemove={() => onRemove?.(tag.id)}
-            />
+            <TagChip tag={tag} removable={removable} onRemove={() => onRemove?.(tag.id)} />
           </span>
         );
       })}
@@ -227,7 +235,7 @@ function isSameOrder(left: string[], right: string[]) {
 }
 
 function isRemoveButton(target: EventTarget) {
-  return target instanceof Element && Boolean(target.closest('.tag-remove'));
+  return target instanceof Element && Boolean(target.closest(".tag-remove"));
 }
 
 function moveId(ids: string[], activeId: string, overId: string) {

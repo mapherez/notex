@@ -1,0 +1,29 @@
+{
+  "workflow": "ci.yml",
+  "marker": "notex-Release:",
+  "branch": "main",
+  "files": [
+    {
+      "path": "package.json",
+      "fields": [["version"]]
+    },
+    {
+      "path": "package-lock.json",
+      "fields": [["version"], ["packages", "", "version"]]
+    },
+    {
+      "path": "src-tauri/tauri.conf.json",
+      "fields": [["version"]]
+    },
+    {
+      "path": "src-tauri/Cargo.toml",
+      "section": "package",
+      "name": "NoteX"
+    },
+    {
+      "path": "src-tauri/Cargo.lock",
+      "section": "[[package]]",
+      "name": "NoteX"
+    }
+  ]
+}

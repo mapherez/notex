@@ -1,5 +1,5 @@
-import type { PropsWithChildren, ReactNode } from 'react';
-import clsx from 'clsx';
+import type { PropsWithChildren, ReactNode } from "react";
+import clsx from "clsx";
 
 export function Panel({
   children,
@@ -12,7 +12,7 @@ export function Panel({
   flush?: boolean;
 }>) {
   return (
-    <section className={clsx('panel', flush && 'flush')}>
+    <section className={clsx("panel", flush && "flush")}>
       {title ? (
         <div className="panel-header">
           <h2 className="panel-title">{title}</h2>

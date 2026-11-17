@@ -111,15 +111,15 @@ Automatic workflows use explicit path filters for their build inputs. Updating
 does not start application CI. Each automatic workflow still runs when its own
 workflow file changes, and all seven workflows support manual execution.
 
-| Workflow | Automatic triggers | Scope |
-| --- | --- | --- |
-| Local MCP and Desktop CI | PRs; pushes to `main` and `add_mcp` | App sources/assets, desktop Rust/config/icons, MCP contract, build/test configuration and scripts, npm workspace manifests and root lockfile. |
-| Validate macOS Apple Silicon | PRs; pushes to `main` and `add_mcp` | Same desktop/app inputs, with its own workflow file. |
-| MCP Backend CI | PRs; pushes to `main` | Backend sources/tests/config/Dockerfile, MCP contract, npm manifests/lockfile, MCP Docker context and Compose. |
-| Publish NoteX Landing Image | Pushes to `main` | Landing sources and published documentation, landing Docker files/check script, root manifest/lockfile and its workflow. `landing/README.md` is excluded. |
-| Publish NoteX Web Image | None; manual | Independent webapp image publication. |
-| Publish MCP Backend Image | None; manual | Independent backend image publication. |
-| Release Tauri App | None; manual | Desktop installers and updater release. |
+| Workflow                     | Automatic triggers                  | Scope                                                                                                                                                     |
+| ---------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local MCP and Desktop CI     | PRs; pushes to `main` and `add_mcp` | App sources/assets, desktop Rust/config/icons, MCP contract, build/test configuration and scripts, npm workspace manifests and root lockfile.             |
+| Validate macOS Apple Silicon | PRs; pushes to `main` and `add_mcp` | Same desktop/app inputs, with its own workflow file.                                                                                                      |
+| MCP Backend CI               | PRs; pushes to `main`               | Backend sources/tests/config/Dockerfile, MCP contract, npm manifests/lockfile, MCP Docker context and Compose.                                            |
+| Publish NoteX Landing Image  | Pushes to `main`                    | Landing sources and published documentation, landing Docker files/check script, root manifest/lockfile and its workflow. `landing/README.md` is excluded. |
+| Publish NoteX Web Image      | None; manual                        | Independent webapp image publication.                                                                                                                     |
+| Publish MCP Backend Image    | None; manual                        | Independent backend image publication.                                                                                                                    |
+| Release Tauri App            | None; manual                        | Desktop installers and updater release.                                                                                                                   |
 
 `landing/docs/content/*.md` is published site content, so editing those guides
 does publish a new landing image. `src/content/patch-notes.md` is bundled into
@@ -188,21 +188,21 @@ signed GitHub release artifacts. Browser deployment is documented separately in
 
 ## Scripts
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Start the Vite dev server. |
-| `npm run tauri:dev` | Start the Tauri desktop app in development mode. |
-| `npm run tauri:build` | Build the desktop app. |
-| `npm run tauri:icon` | Regenerate Tauri icons from `public/assets/notex-icon.svg`. |
-| `npm run release:tauri` | Run the Tauri release helper. |
-| `npm run test:release` | Test collection and publishing with fixtures and mocked GitHub calls. |
-| `npm run version:set` | Update the version in release manifests. |
+| Command                  | Purpose                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| `npm run dev`            | Start the Vite dev server.                                                              |
+| `npm run tauri:dev`      | Start the Tauri desktop app in development mode.                                        |
+| `npm run tauri:build`    | Build the desktop app.                                                                  |
+| `npm run tauri:icon`     | Regenerate Tauri icons from `public/assets/notex-icon.svg`.                             |
+| `npm run release:tauri`  | Run the Tauri release helper.                                                           |
+| `npm run test:release`   | Test collection and publishing with fixtures and mocked GitHub calls.                   |
+| `npm run version:set`    | Update the version in release manifests.                                                |
 | `npm run update:nox-mcp` | Update NoX MCP to the latest release across its consumers and install once at the root. |
-| `npm run build` | Typecheck and build the frontend and web worker. |
-| `npm run preview` | Preview the frontend build with Vite. |
-| `npm run typecheck` | Run TypeScript checks. |
-| `npm run check:styles` | Run SCSS Stylelint and inline-style guardrails. |
-| `npm test` | Build the MCP contract and run Vitest. |
+| `npm run build`          | Typecheck and build the frontend and web worker.                                        |
+| `npm run preview`        | Preview the frontend build with Vite.                                                   |
+| `npm run typecheck`      | Run TypeScript checks.                                                                  |
+| `npm run check:styles`   | Run SCSS Stylelint and inline-style guardrails.                                         |
+| `npm test`               | Build the MCP contract and run Vitest.                                                  |
 
 ## Project structure
 

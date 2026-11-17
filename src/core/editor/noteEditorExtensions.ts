@@ -1,23 +1,28 @@
-import { Extension, Node, mergeAttributes, wrappingInputRule, type Extensions } from '@tiptap/core';
-import Color from '@tiptap/extension-color';
-import Highlight from '@tiptap/extension-highlight';
-import Link from '@tiptap/extension-link';
-import { BulletList, OrderedList, bulletListInputRegex, orderedListInputRegex } from '@tiptap/extension-list';
-import Placeholder from '@tiptap/extension-placeholder';
-import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
-import TaskItem from '@tiptap/extension-task-item';
-import TaskList from '@tiptap/extension-task-list';
-import TextAlign from '@tiptap/extension-text-align';
-import { TextStyle } from '@tiptap/extension-text-style';
-import UnderlineExtension from '@tiptap/extension-underline';
-import type { Node as ProseMirrorNode, NodeType } from '@tiptap/pm/model';
-import { Plugin } from '@tiptap/pm/state';
-import StarterKit from '@tiptap/starter-kit';
-import { editorSettings } from '../../config/appSettings';
+import { Extension, Node, mergeAttributes, wrappingInputRule, type Extensions } from "@tiptap/core";
+import Color from "@tiptap/extension-color";
+import Highlight from "@tiptap/extension-highlight";
+import Link from "@tiptap/extension-link";
+import {
+  BulletList,
+  OrderedList,
+  bulletListInputRegex,
+  orderedListInputRegex,
+} from "@tiptap/extension-list";
+import Placeholder from "@tiptap/extension-placeholder";
+import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
+import TextAlign from "@tiptap/extension-text-align";
+import { TextStyle } from "@tiptap/extension-text-style";
+import UnderlineExtension from "@tiptap/extension-underline";
+import type { Node as ProseMirrorNode, NodeType } from "@tiptap/pm/model";
+import { Plugin } from "@tiptap/pm/state";
+import StarterKit from "@tiptap/starter-kit";
+import { editorSettings } from "../../config/appSettings";
 
 export const NoteFileNode = Node.create({
-  name: 'noteFile',
-  group: 'block',
+  name: "noteFile",
+  group: "block",
   atom: true,
   draggable: true,
 
@@ -26,47 +31,47 @@ export const NoteFileNode = Node.create({
       id: { default: null },
       noteId: { default: null },
       blockId: { default: null },
-      kind: { default: 'attachment' },
-      originalName: { default: '' },
-      mimeType: { default: 'application/octet-stream' },
+      kind: { default: "attachment" },
+      originalName: { default: "" },
+      mimeType: { default: "application/octet-stream" },
       sizeBytes: { default: 0 },
-      checksum: { default: '' },
-      relativePath: { default: '' },
-      createdAt: { default: '' },
-      align: { default: 'center' },
+      checksum: { default: "" },
+      relativePath: { default: "" },
+      createdAt: { default: "" },
+      align: { default: "center" },
       width: { default: editorSettings.imageSizing.defaultWidth },
-      wrap: { default: 'none' },
+      wrap: { default: "none" },
     };
   },
 
   parseHTML() {
-    return [{ tag: 'notex-file' }];
+    return [{ tag: "notex-file" }];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['notex-file', mergeAttributes(HTMLAttributes)];
+    return ["notex-file", mergeAttributes(HTMLAttributes)];
   },
 });
 
 export const NoteTipNode = Node.create({
-  name: 'noteTip',
-  group: 'block',
-  content: 'block+',
+  name: "noteTip",
+  group: "block",
+  content: "block+",
   defining: true,
   isolating: true,
 
   addAttributes() {
     return {
-      title: { default: 'Tip' },
+      title: { default: "Tip" },
     };
   },
 
   parseHTML() {
-    return [{ tag: 'notex-tip' }];
+    return [{ tag: "notex-tip" }];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['notex-tip', mergeAttributes(HTMLAttributes), 0];
+    return ["notex-tip", mergeAttributes(HTMLAttributes), 0];
   },
 });
 
@@ -74,28 +79,32 @@ export const NoteTipNode = Node.create({
  * File removal is destructive: keep it outside undo history and refuse any
  * later transaction that tries to restore an ID whose binary was deleted.
  */
-export function createPermanentNoteFileRemovalExtension(onFilesRemoved: (fileIds: string[]) => void) {
+export function createPermanentNoteFileRemovalExtension(
+  onFilesRemoved: (fileIds: string[]) => void,
+) {
   const deletedFileIds = new Set<string>();
   return Extension.create({
-    name: 'permanentNoteFileRemoval',
+    name: "permanentNoteFileRemoval",
     addProseMirrorPlugins() {
-      return [new Plugin({
-        filterTransaction(transaction, state) {
-          if (!transaction.docChanged) return true;
-          const before = noteFileIds(state.doc);
-          const after = noteFileIds(transaction.doc);
-          if ([...after].some((fileId) => deletedFileIds.has(fileId) && !before.has(fileId))) {
-            return false;
-          }
-          const removed = [...before].filter((fileId) => !after.has(fileId));
-          if (removed.length) {
-            transaction.setMeta('addToHistory', false);
-            removed.forEach((fileId) => deletedFileIds.add(fileId));
-            queueMicrotask(() => onFilesRemoved(removed));
-          }
-          return true;
-        },
-      })];
+      return [
+        new Plugin({
+          filterTransaction(transaction, state) {
+            if (!transaction.docChanged) return true;
+            const before = noteFileIds(state.doc);
+            const after = noteFileIds(transaction.doc);
+            if ([...after].some((fileId) => deletedFileIds.has(fileId) && !before.has(fileId))) {
+              return false;
+            }
+            const removed = [...before].filter((fileId) => !after.has(fileId));
+            if (removed.length) {
+              transaction.setMeta("addToHistory", false);
+              removed.forEach((fileId) => deletedFileIds.add(fileId));
+              queueMicrotask(() => onFilesRemoved(removed));
+            }
+            return true;
+          },
+        }),
+      ];
     },
   });
 }
@@ -103,7 +112,7 @@ export function createPermanentNoteFileRemovalExtension(onFilesRemoved: (fileIds
 function noteFileIds(document: ProseMirrorNode) {
   const ids = new Set<string>();
   document.descendants((node) => {
-    if (node.type.name === 'noteFile' && typeof node.attrs.id === 'string') ids.add(node.attrs.id);
+    if (node.type.name === "noteFile" && typeof node.attrs.id === "string") ids.add(node.attrs.id);
     return true;
   });
   return ids;
@@ -167,13 +176,14 @@ function createOrderedListInputRule(find: RegExp, type: NodeType) {
     find,
     type,
     getAttributes: (match) => ({ start: Number(match[1]) }),
-    joinPredicate: (match, node: ProseMirrorNode) => node.childCount + node.attrs.start === Number(match[1]),
+    joinPredicate: (match, node: ProseMirrorNode) =>
+      node.childCount + node.attrs.start === Number(match[1]),
   });
 }
 
 export function createNoteContentExtensions({
   fileNode = NoteFileNode,
-  placeholder = '',
+  placeholder = "",
   tipNode = NoteTipNode,
 }: {
   fileNode?: Node;
@@ -192,10 +202,10 @@ export function createNoteContentExtensions({
     Link.configure({
       openOnClick: false,
       autolink: true,
-      defaultProtocol: 'https',
+      defaultProtocol: "https",
     }),
     ShortcutTextAlign.configure({
-      types: ['heading', 'paragraph'],
+      types: ["heading", "paragraph"],
     }),
     TextStyle,
     Color,
@@ -213,7 +223,7 @@ export function createNoteContentExtensions({
   ];
 }
 
-export function createNoteInlineExtensions(placeholder = ''): Extensions {
+export function createNoteInlineExtensions(placeholder = ""): Extensions {
   return [
     StarterKit.configure({
       blockquote: false,
@@ -230,7 +240,7 @@ export function createNoteInlineExtensions(placeholder = ''): Extensions {
     Link.configure({
       openOnClick: false,
       autolink: true,
-      defaultProtocol: 'https',
+      defaultProtocol: "https",
     }),
     TextStyle,
     Color,

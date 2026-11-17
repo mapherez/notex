@@ -45,8 +45,13 @@
   -webkit-touch-callout: none;
 }
 
-.note-document-shell--touch .note-block:not(.is-touch-active) :is(.note-inline-prosemirror, .note-tiptap-prosemirror),
-.note-document-shell--touch .note-block:not(.is-touch-active) :is(.note-inline-prosemirror, .note-tiptap-prosemirror) * {
+.note-document-shell--touch
+  .note-block:not(.is-touch-active)
+  :is(.note-inline-prosemirror, .note-tiptap-prosemirror),
+.note-document-shell--touch
+  .note-block:not(.is-touch-active)
+  :is(.note-inline-prosemirror, .note-tiptap-prosemirror)
+  * {
   user-select: none;
   /* stylelint-disable-next-line property-no-vendor-prefix */
   -webkit-user-select: none;
@@ -86,7 +91,9 @@
     0 0 1.4rem color-mix(in srgb, var(--nx-color-accent) 18%, transparent);
 }
 
-.note-document-shell--touch .note-block-list.is-touch-compacted .note-block.is-touch-dragging-source {
+.note-document-shell--touch
+  .note-block-list.is-touch-compacted
+  .note-block.is-touch-dragging-source {
   border-style: dashed;
   border-color: color-mix(in srgb, var(--nx-color-accent) 48%, var(--nx-color-border));
   background: color-mix(in srgb, var(--nx-color-accent) 4%, var(--nx-color-surface));
@@ -101,7 +108,10 @@
   display: none;
 }
 
-.note-document-shell--touch .note-block-list.is-touch-compacted .note-block.is-touch-held .note-block-body {
+.note-document-shell--touch
+  .note-block-list.is-touch-compacted
+  .note-block.is-touch-held
+  .note-block-body {
   position: absolute;
   inset: 0;
   display: grid;
@@ -368,7 +378,9 @@
   -webkit-touch-callout: none;
 }
 
-.note-document-shell--touch .is-touch-readonly :is(.note-inline-prosemirror, .note-tiptap-prosemirror) {
+.note-document-shell--touch
+  .is-touch-readonly
+  :is(.note-inline-prosemirror, .note-tiptap-prosemirror) {
   cursor: default;
 }
 

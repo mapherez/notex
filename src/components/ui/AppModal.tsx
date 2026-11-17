@@ -1,16 +1,16 @@
-import { X } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
-import { useI18n } from '../../i18n/I18nProvider';
+import { X } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { useI18n } from "../../i18n/I18nProvider";
 
 const focusableSelector = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
   '[tabindex]:not([tabindex="-1"])',
-].join(',');
+].join(",");
 
 export function AppModal({
   children,
@@ -50,20 +50,26 @@ export function AppModal({
 
     function updateViewport() {
       const viewport = window.visualViewport;
-      element.style.setProperty('--nx-modal-viewport-top', `${viewport?.offsetTop ?? 0}px`);
-      element.style.setProperty('--nx-modal-viewport-left', `${viewport?.offsetLeft ?? 0}px`);
-      element.style.setProperty('--nx-modal-viewport-width', `${viewport?.width ?? window.innerWidth}px`);
-      element.style.setProperty('--nx-modal-viewport-height', `${viewport?.height ?? window.innerHeight}px`);
+      element.style.setProperty("--nx-modal-viewport-top", `${viewport?.offsetTop ?? 0}px`);
+      element.style.setProperty("--nx-modal-viewport-left", `${viewport?.offsetLeft ?? 0}px`);
+      element.style.setProperty(
+        "--nx-modal-viewport-width",
+        `${viewport?.width ?? window.innerWidth}px`,
+      );
+      element.style.setProperty(
+        "--nx-modal-viewport-height",
+        `${viewport?.height ?? window.innerHeight}px`,
+      );
     }
 
     updateViewport();
-    window.visualViewport?.addEventListener('resize', updateViewport);
-    window.visualViewport?.addEventListener('scroll', updateViewport);
-    window.addEventListener('resize', updateViewport);
+    window.visualViewport?.addEventListener("resize", updateViewport);
+    window.visualViewport?.addEventListener("scroll", updateViewport);
+    window.addEventListener("resize", updateViewport);
     return () => {
-      window.visualViewport?.removeEventListener('resize', updateViewport);
-      window.visualViewport?.removeEventListener('scroll', updateViewport);
-      window.removeEventListener('resize', updateViewport);
+      window.visualViewport?.removeEventListener("resize", updateViewport);
+      window.visualViewport?.removeEventListener("scroll", updateViewport);
+      window.removeEventListener("resize", updateViewport);
     };
   }, [open]);
 
@@ -72,8 +78,9 @@ export function AppModal({
       return;
     }
 
-    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const appRoot = document.getElementById('root');
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const appRoot = document.getElementById("root");
     const rootWasInert = appRoot?.inert ?? false;
     const previousBodyOverflow = document.body.style.overflow;
     const focusFrame = window.requestAnimationFrame(() => {
@@ -84,10 +91,10 @@ export function AppModal({
     if (appRoot) {
       appRoot.inert = true;
     }
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         event.preventDefault();
         event.stopImmediatePropagation();
         if (dismissibleRef.current) {
@@ -96,7 +103,7 @@ export function AppModal({
         return;
       }
 
-      if (event.key !== 'Tab' || !modalRef.current) {
+      if (event.key !== "Tab" || !modalRef.current) {
         return;
       }
 
@@ -121,10 +128,10 @@ export function AppModal({
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener("keydown", handleKeyDown, true);
     return () => {
       window.cancelAnimationFrame(focusFrame);
-      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener("keydown", handleKeyDown, true);
       if (appRoot) {
         appRoot.inert = rootWasInert;
       }
@@ -139,7 +146,7 @@ export function AppModal({
     return null;
   }
 
-  const modalClassName = ['app-modal', className].filter(Boolean).join(' ');
+  const modalClassName = ["app-modal", className].filter(Boolean).join(" ");
 
   return createPortal(
     <div className="modal-backdrop" ref={backdropRef}>
@@ -156,8 +163,8 @@ export function AppModal({
         <button
           className="icon-button app-modal__close"
           type="button"
-          aria-label={t('common.close')}
-          title={t('common.close')}
+          aria-label={t("common.close")}
+          title={t("common.close")}
           disabled={!dismissible}
           onClick={() => onCloseRef.current()}
         >

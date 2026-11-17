@@ -1,15 +1,22 @@
-import type { ThemePreference } from '../theme/themeRegistry';
-import type { NoteThumbnailVariant } from '@notex/mcp-contract';
+import type { ThemePreference } from "../theme/themeRegistry";
+import type { NoteThumbnailVariant } from "@notex/mcp-contract";
 
-export type Locale = 'pt' | 'en';
+export type Locale = "pt" | "en";
 
-export type { ThemePreference } from '../theme/themeRegistry';
+export type { ThemePreference } from "../theme/themeRegistry";
 
-export type PreferredLayout = 'list' | 'grid';
+export type PreferredLayout = "list" | "grid";
 
-export type StartupPage = '/' | '/notes' | '/favorites' | '/recent' | '/tags' | '/collections' | '/profile';
+export type StartupPage =
+  | "/"
+  | "/notes"
+  | "/favorites"
+  | "/recent"
+  | "/tags"
+  | "/collections"
+  | "/profile";
 
-export type SaveState = 'saved' | 'draft';
+export type SaveState = "saved" | "draft";
 
 export type RelatedLink = {
   id: string;
@@ -28,11 +35,11 @@ export type NoteThumbnail = {
 };
 
 export type TiptapDocument = {
-  type: 'doc';
+  type: "doc";
   content?: unknown[];
 };
 
-export type NoteBlockKind = 'title' | 'content';
+export type NoteBlockKind = "title" | "content";
 
 export type NoteBlock = {
   id: string;
@@ -46,7 +53,7 @@ export type NoteBlock = {
   updatedAt: string;
 };
 
-export type NoteFileKind = 'image' | 'attachment';
+export type NoteFileKind = "image" | "attachment";
 
 export type NoteFile = {
   id: string;
@@ -89,26 +96,26 @@ export type Note = {
 };
 
 export type TagColor =
-  | 'amber'
-  | 'blue'
-  | 'brown'
-  | 'cyan'
-  | 'fuchsia'
-  | 'green'
-  | 'indigo'
-  | 'lime'
-  | 'mint'
-  | 'neutral'
-  | 'orange'
-  | 'pink'
-  | 'purple'
-  | 'red'
-  | 'rose'
-  | 'sky'
-  | 'slate'
-  | 'teal'
-  | 'violet'
-  | 'yellow';
+  | "amber"
+  | "blue"
+  | "brown"
+  | "cyan"
+  | "fuchsia"
+  | "green"
+  | "indigo"
+  | "lime"
+  | "mint"
+  | "neutral"
+  | "orange"
+  | "pink"
+  | "purple"
+  | "red"
+  | "rose"
+  | "sky"
+  | "slate"
+  | "teal"
+  | "violet"
+  | "yellow";
 
 export type Tag = {
   id: string;

@@ -10,16 +10,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type {
-  Collection,
-  PreferredLayout,
-  Tag,
-  TagColor,
-} from "../../core/models/models";
-import {
-  defaultNotesSortOrder,
-  type NotesSortOrder,
-} from "../../core/utils/noteFilters";
+import type { Collection, PreferredLayout, Tag, TagColor } from "../../core/models/models";
+import { defaultNotesSortOrder, type NotesSortOrder } from "../../core/utils/noteFilters";
 import { sortTagsByName } from "../../core/utils/tagSorting";
 import { useClickOutside } from "../../core/utils/useClickOutside";
 import { useFloatingPopover } from "../../core/utils/useFloatingPopover";
@@ -91,8 +83,7 @@ export function NotesFilterRow({
     [collections],
   );
   const hasActiveFilter =
-    sortOrder !== defaultSortOrder ||
-    Boolean(selectedTagId || selectedCollectionId);
+    sortOrder !== defaultSortOrder || Boolean(selectedTagId || selectedCollectionId);
   const sortOptions = [
     { value: "nameAsc", label: t("notes.filters.nameAsc") },
     { value: "nameDesc", label: t("notes.filters.nameDesc") },
@@ -147,11 +138,7 @@ export function NotesFilterRow({
 
       <div className="notes-filter-control notes-filter-view">
         <span className="notes-filter-label">{t("notes.filters.view")}</span>
-        <div
-          className="notes-filter-toggle"
-          role="group"
-          aria-label={t("notes.filters.view")}
-        >
+        <div className="notes-filter-toggle" role="group" aria-label={t("notes.filters.view")}>
           <button
             className={
               preferredLayout === "list"
@@ -213,9 +200,7 @@ function SearchableFilterField({
   const selectedOption = options.find((option) => option.value === value);
   const filteredOptions = query.trim()
     ? options.filter((option) =>
-        normalizeSearchValue(option.label).includes(
-          normalizeSearchValue(query),
-        ),
+        normalizeSearchValue(option.label).includes(normalizeSearchValue(query)),
       )
     : options;
   const optionCount = filteredOptions.length + 1;
@@ -247,7 +232,10 @@ function SearchableFilterField({
   }, [open]);
 
   useEffect(() => {
-    if (open) wrapperRef.current?.querySelector<HTMLElement>('.notes-filter-options .active')?.scrollIntoView({ block: 'nearest' });
+    if (open)
+      wrapperRef.current
+        ?.querySelector<HTMLElement>(".notes-filter-options .active")
+        ?.scrollIntoView({ block: "nearest" });
   }, [open, optionNavigation.activeIndex]);
 
   function selectValue(nextValue: string | null) {
@@ -266,7 +254,9 @@ function SearchableFilterField({
       className="notes-filter-control notes-filter-combobox"
       ref={wrapperRef}
       onKeyDown={optionNavigation.onKeyDown}
-      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+      }}
     >
       <span className="notes-filter-label">
         <Icon />
@@ -288,9 +278,7 @@ function SearchableFilterField({
               : "notes-filter-dot neutral"
           }
         />
-        <span>
-          {selectedOption ? formatOptionLabel(selectedOption) : allLabel}
-        </span>
+        <span>{selectedOption ? formatOptionLabel(selectedOption) : allLabel}</span>
         <ChevronDown />
       </button>
       {open ? (
@@ -320,7 +308,10 @@ function SearchableFilterField({
             {filteredOptions.length ? (
               filteredOptions.map((option, index) => (
                 <button
-                  className={filterOptionClassName(option.value === value, optionNavigation.activeIndex === index + 1)}
+                  className={filterOptionClassName(
+                    option.value === value,
+                    optionNavigation.activeIndex === index + 1,
+                  )}
                   key={option.value}
                   type="button"
                   role="option"
@@ -331,9 +322,7 @@ function SearchableFilterField({
                 >
                   <span
                     className={
-                      option.color
-                        ? `notes-filter-dot ${option.color}`
-                        : "notes-filter-dot neutral"
+                      option.color ? `notes-filter-dot ${option.color}` : "notes-filter-dot neutral"
                     }
                   />
                   <span>{formatOptionLabel(option)}</span>

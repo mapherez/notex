@@ -1,22 +1,22 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes } from "node:crypto";
 
-import type { Response } from 'express';
+import type { Response } from "express";
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>'"]/g, (character) => {
     const replacements: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      "'": '&#39;',
-      '"': '&quot;',
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "'": "&#39;",
+      '"': "&quot;",
     };
     return replacements[character] ?? character;
   });
 }
 
-function document(title: string, body: string, script = ''): { html: string; nonce: string } {
-  const nonce = randomBytes(18).toString('base64url');
+function document(title: string, body: string, script = ""): { html: string; nonce: string } {
+  const nonce = randomBytes(18).toString("base64url");
   return {
     nonce,
     html: `<!doctype html>
@@ -42,14 +42,18 @@ function document(title: string, body: string, script = ''): { html: string; non
   };
 }
 
-export function sendPage(response: Response, page: ReturnType<typeof document>, status = 200): void {
+export function sendPage(
+  response: Response,
+  page: ReturnType<typeof document>,
+  status = 200,
+): void {
   response
     .status(status)
     .set({
-      'content-type': 'text/html; charset=utf-8',
-      'cache-control': 'no-store',
-      'content-security-policy': `default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${page.nonce}'; connect-src 'self'; base-uri 'none'; form-action 'self'`,
-      'referrer-policy': 'no-referrer',
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+      "content-security-policy": `default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${page.nonce}'; connect-src 'self'; base-uri 'none'; form-action 'self'`,
+      "referrer-policy": "no-referrer",
     })
     .send(page.html);
 }
@@ -73,7 +77,7 @@ function showError(error) { document.querySelector('[data-error]').textContent =
 
 export function loginPage(): ReturnType<typeof document> {
   return document(
-    'Sign in to NoteX MCP',
+    "Sign in to NoteX MCP",
     `<h1>Sign in to NoteX MCP</h1>
      <p>Use the same Google account that is registered in NoteX Desktop.</p>
      <p class="muted" data-error></p>
@@ -95,10 +99,10 @@ continueAuthorization().catch(() => {});`,
 
 export function consentPage(scopes: string): ReturnType<typeof document> {
   return document(
-    'Authorize NoteX MCP',
+    "Authorize NoteX MCP",
     `<h1>Authorize AI access</h1>
      <p>This client is requesting access to your local NoteX while the desktop application is online.</p>
-     <p class="muted"><code>${escapeHtml(scopes || 'notex:read')}</code></p>
+     <p class="muted"><code>${escapeHtml(scopes || "notex:read")}</code></p>
      <p class="muted" data-error></p>
      <div class="actions"><button type="button" data-accept>Allow</button><button type="button" data-deny>Deny</button></div>`,
     `async function decide(accept) {
@@ -137,16 +141,16 @@ export function devicePage(userCode: string, authenticated: boolean): ReturnType
       document.querySelector('[data-approve]').addEventListener('click', () => decide('approve').catch(showError));
       document.querySelector('[data-deny]').addEventListener('click', () => decide('deny').catch(showError));`
     : socialSignInScript;
-  return document('Connect NoteX Desktop', body, actionScript);
+  return document("Connect NoteX Desktop", body, actionScript);
 }
 
 export function errorPage(message: string): ReturnType<typeof document> {
   return document(
-    'NoteX MCP sign-in error',
+    "NoteX MCP sign-in error",
     `<h1>Sign-in failed</h1><p>${escapeHtml(message)}</p><p class="muted">Open NoteX Desktop and register this Google account first.</p>`,
   );
 }
 
 export function completePage(): ReturnType<typeof document> {
-  return document('NoteX MCP', '<h1>Done</h1><p>You can return to NoteX.</p>');
+  return document("NoteX MCP", "<h1>Done</h1><p>You can return to NoteX.</p>");
 }

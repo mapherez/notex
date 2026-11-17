@@ -1,7 +1,7 @@
-import { getVersion } from '@tauri-apps/api/app';
-import { invoke, isTauri } from '@tauri-apps/api/core';
-import { exit, relaunch } from '@tauri-apps/plugin-process';
-import { check, type DownloadEvent, type Update } from '@tauri-apps/plugin-updater';
+import { getVersion } from "@tauri-apps/api/app";
+import { invoke, isTauri } from "@tauri-apps/api/core";
+import { exit, relaunch } from "@tauri-apps/plugin-process";
+import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
 
 export type AppUpdateInfo = {
   currentVersion: string;
@@ -42,22 +42,25 @@ export async function installAppUpdate(
   let totalBytes: number | null = null;
 
   await update.downloadAndInstall((event: DownloadEvent) => {
-    if (event.event === 'Started') {
+    if (event.event === "Started") {
       downloadedBytes = 0;
       totalBytes = event.data.contentLength ?? null;
     }
 
-    if (event.event === 'Progress') {
+    if (event.event === "Progress") {
       downloadedBytes += event.data.chunkLength;
     }
 
-    if (event.event === 'Finished' && totalBytes !== null) {
+    if (event.event === "Finished" && totalBytes !== null) {
       downloadedBytes = totalBytes;
     }
 
     onProgress?.({
       downloadedBytes,
-      percent: totalBytes && totalBytes > 0 ? Math.min(100, Math.round((downloadedBytes / totalBytes) * 100)) : null,
+      percent:
+        totalBytes && totalBytes > 0
+          ? Math.min(100, Math.round((downloadedBytes / totalBytes) * 100))
+          : null,
       totalBytes,
     });
   });
@@ -73,17 +76,19 @@ async function getCurrentAppVersion() {
   try {
     return await getVersion();
   } catch {
-    return '';
+    return "";
   }
 }
 
 async function relaunchAfterUpdate() {
-  const strategy = await invoke<'exit' | 'relaunch'>('notex_prepare_update_relaunch_with_local_data_reset');
-  if (strategy === 'exit') {
+  const strategy = await invoke<"exit" | "relaunch">(
+    "notex_prepare_update_relaunch_with_local_data_reset",
+  );
+  if (strategy === "exit") {
     await exit(0);
-  } else if (strategy === 'relaunch') {
+  } else if (strategy === "relaunch") {
     await relaunch();
   } else {
-    throw new Error('Unknown update relaunch strategy');
+    throw new Error("Unknown update relaunch strategy");
   }
 }

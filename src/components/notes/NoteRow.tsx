@@ -1,23 +1,32 @@
-import { ArchiveRestore, Copy, Folder, GripVertical, MoreVertical, Pin, Star, Trash2 } from 'lucide-react';
-import { useRef, useState, type PointerEventHandler } from 'react';
-import { Link } from 'react-router-dom';
-import type { Collection, Note, PreferredLayout, Tag } from '../../core/models/models';
-import { richTextToPlainText } from '../../core/utils/richText';
-import { sortTagsByName } from '../../core/utils/tagSorting';
-import { useClickOutside } from '../../core/utils/useClickOutside';
-import { useMenuOptionFocus } from '../../core/utils/useMenuOptionFocus';
-import { useFloatingPopover } from '../../core/utils/useFloatingPopover';
-import { useI18n } from '../../i18n/I18nProvider';
-import { useAppStore } from '../../store/useAppStore';
-import { useNotesStore } from '../../store/useNotesStore';
-import { useToastStore } from '../../store/useToastStore';
-import { InlineFormattedText } from '../editing/InlineFormattedText';
-import { NoteThumbnail } from '../ui/NoteThumbnail';
-import { TagChip } from '../ui/TagChip';
+import {
+  ArchiveRestore,
+  Copy,
+  Folder,
+  GripVertical,
+  MoreVertical,
+  Pin,
+  Star,
+  Trash2,
+} from "lucide-react";
+import { useRef, useState, type PointerEventHandler } from "react";
+import { Link } from "react-router-dom";
+import type { Collection, Note, PreferredLayout, Tag } from "../../core/models/models";
+import { richTextToPlainText } from "../../core/utils/richText";
+import { sortTagsByName } from "../../core/utils/tagSorting";
+import { useClickOutside } from "../../core/utils/useClickOutside";
+import { useMenuOptionFocus } from "../../core/utils/useMenuOptionFocus";
+import { useFloatingPopover } from "../../core/utils/useFloatingPopover";
+import { useI18n } from "../../i18n/I18nProvider";
+import { useAppStore } from "../../store/useAppStore";
+import { useNotesStore } from "../../store/useNotesStore";
+import { useToastStore } from "../../store/useToastStore";
+import { InlineFormattedText } from "../editing/InlineFormattedText";
+import { NoteThumbnail } from "../ui/NoteThumbnail";
+import { TagChip } from "../ui/TagChip";
 
 export function NoteRow({
   collections,
-  layout = 'list',
+  layout = "list",
   note,
   onPermanentDelete,
   onPinnedDragPointerDown,
@@ -56,7 +65,7 @@ export function NoteRow({
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menu = useMenuOptionFocus(menuOpen, () => setMenuOpen(false));
-  useFloatingPopover(menuOpen, menu.triggerRef, menu.menuRef, 'bottom-end');
+  useFloatingPopover(menuOpen, menu.triggerRef, menu.menuRef, "bottom-end");
   const toggleFavorite = useNotesStore((state) => state.toggleFavorite);
   const togglePinned = useNotesStore((state) => state.togglePinned);
   const setPinnedNoteState = useAppStore((state) => state.setPinnedNoteState);
@@ -67,13 +76,16 @@ export function NoteRow({
   const noteTags = sortTagsByName(tags.filter((tag) => note.tagIds.includes(tag.id)));
   const collection = collections.find((item) => item.id === note.collectionId);
   const titlePlain = richTextToPlainText(note.title).trim();
-  const title = titlePlain || t('notes.untitled');
+  const title = titlePlain || t("notes.untitled");
   const subtitlePlain = richTextToPlainText(note.subtitle).trim();
 
   useClickOutside(menuRef, menuOpen, () => setMenuOpen(false));
 
   async function handleDuplicate() {
-    const duplicate = await createNote({ collectionId: note.collectionId, title: `${title} (${t('common.copy')})` });
+    const duplicate = await createNote({
+      collectionId: note.collectionId,
+      title: `${title} (${t("common.copy")})`,
+    });
     const notesStore = useNotesStore.getState();
     await notesStore.updateNoteHeader(duplicate.id, { subtitle: note.subtitle });
     await notesStore.updateNoteTags(duplicate.id, note.tagIds);
@@ -88,7 +100,7 @@ export function NoteRow({
         title: block.title,
       });
     }
-    pushToast(t('notes.duplicated'), 'success');
+    pushToast(t("notes.duplicated"), "success");
     setMenuOpen(false);
   }
 
@@ -98,14 +110,14 @@ export function NoteRow({
     } else {
       await moveToTrash(note.id);
     }
-    pushToast(t('notes.trashChanged'), 'warning');
+    pushToast(t("notes.trashChanged"), "warning");
     setMenuOpen(false);
   }
 
   async function handlePin() {
     await togglePinned(note.id);
     await setPinnedNoteState(note.id, !note.isPinned);
-    pushToast(t('notes.pinChanged'), 'success');
+    pushToast(t("notes.pinChanged"), "success");
     setMenuOpen(false);
   }
 
@@ -119,23 +131,30 @@ export function NoteRow({
       })}
       data-note-id={note.id}
     >
-      <Link className="note-row__link-overlay" to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${title}`} />
+      <Link
+        className="note-row__link-overlay"
+        to={`/notes/${note.id}`}
+        aria-label={`${t("common.open")} ${title}`}
+      />
       {showPinnedDragHandle ? (
         <button
-          className={pinnedDragEnabled ? 'note-row__drag-handle' : 'note-row__drag-handle is-disabled'}
+          className={
+            pinnedDragEnabled ? "note-row__drag-handle" : "note-row__drag-handle is-disabled"
+          }
           type="button"
-          aria-label={t('notes.reorderPinned')}
+          aria-label={t("notes.reorderPinned")}
           disabled={!pinnedDragEnabled}
-          title={t('notes.reorderPinned')}
+          title={t("notes.reorderPinned")}
           onPointerDown={pinnedDragEnabled ? onPinnedDragPointerDown : undefined}
           onPointerUp={pinnedDragEnabled ? onPinnedDragPointerUp : undefined}
           onPointerCancel={pinnedDragEnabled ? onPinnedDragPointerCancel : undefined}
           onClick={(event) => event.currentTarget.focus({ preventScroll: true })}
           onKeyDown={(event) => {
-            if (!onPinnedKeyboardReorder || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+            if (!onPinnedKeyboardReorder || (event.key !== "ArrowUp" && event.key !== "ArrowDown"))
+              return;
             event.preventDefault();
             event.stopPropagation();
-            onPinnedKeyboardReorder(event.key === 'ArrowUp' ? -1 : 1);
+            onPinnedKeyboardReorder(event.key === "ArrowUp" ? -1 : 1);
           }}
         >
           <GripVertical />
@@ -146,7 +165,7 @@ export function NoteRow({
           <input
             type="checkbox"
             checked={selected}
-            aria-label={t('notes.bulk.selectNote', { title })}
+            aria-label={t("notes.bulk.selectNote", { title })}
             onChange={(event) => onSelectionChange?.(note.id, event.currentTarget.checked)}
           />
         </label>
@@ -154,20 +173,28 @@ export function NoteRow({
       <div className="note-row__status-stack">
         {showPinIndicator ? (
           <button
-            className={note.isPinned ? 'note-row__status-button note-row__pin-indicator is-pinned' : 'note-row__status-button note-row__pin-indicator'}
+            className={
+              note.isPinned
+                ? "note-row__status-button note-row__pin-indicator is-pinned"
+                : "note-row__status-button note-row__pin-indicator"
+            }
             type="button"
-            aria-label={note.isPinned ? t('common.unpin') : t('common.pin')}
-            title={note.isPinned ? t('common.unpin') : t('common.pin')}
+            aria-label={note.isPinned ? t("common.unpin") : t("common.pin")}
+            title={note.isPinned ? t("common.unpin") : t("common.pin")}
             onClick={() => void handlePin()}
           >
             <Pin />
           </button>
         ) : null}
         <button
-          className={note.isFavorite ? 'note-row__status-button note-row__favorite-toggle is-favorite' : 'note-row__status-button note-row__favorite-toggle'}
+          className={
+            note.isFavorite
+              ? "note-row__status-button note-row__favorite-toggle is-favorite"
+              : "note-row__status-button note-row__favorite-toggle"
+          }
           type="button"
-          aria-label={note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
-          title={note.isFavorite ? t('common.unfavorite') : t('common.favorite')}
+          aria-label={note.isFavorite ? t("common.unfavorite") : t("common.favorite")}
+          title={note.isFavorite ? t("common.unfavorite") : t("common.favorite")}
           onClick={() => void toggleFavorite(note.id)}
         >
           <Star />
@@ -183,7 +210,7 @@ export function NoteRow({
           </span>
         </div>
         {subtitlePlain ? (
-          layout === 'grid' ? (
+          layout === "grid" ? (
             <p className="note-row__summary-preview">
               <InlineFormattedText value={note.subtitle} />
             </p>
@@ -197,14 +224,21 @@ export function NoteRow({
       <div className="note-row__metadata">
         <div className="note-row__badges">
           {collection ? (
-            <Link className={`collection-chip ${collection.color ?? 'neutral'}`} to={`/notes?collection=${collection.id}`}>
+            <Link
+              className={`collection-chip ${collection.color ?? "neutral"}`}
+              to={`/notes?collection=${collection.id}`}
+            >
               <Folder strokeWidth={1.9} />
               <span>{collection.name}</span>
             </Link>
           ) : (
-            <Link className="collection-chip neutral collection-chip--empty" to={`/notes/${note.id}`} aria-label={`${t('common.open')} ${title}`}>
+            <Link
+              className="collection-chip neutral collection-chip--empty"
+              to={`/notes/${note.id}`}
+              aria-label={`${t("common.open")} ${title}`}
+            >
               <Folder strokeWidth={1.9} />
-              <span>{t('noteDetail.noCollection')}</span>
+              <span>{t("noteDetail.noCollection")}</span>
             </Link>
           )}
           {noteTags.length ? (
@@ -217,13 +251,15 @@ export function NoteRow({
             </span>
           ) : null}
         </div>
-        <span className="note-row__time">{formatDisplayTime(timeValue ?? note.updatedAt, t('common.today'), t('common.yesterday'))}</span>
+        <span className="note-row__time">
+          {formatDisplayTime(timeValue ?? note.updatedAt, t("common.today"), t("common.yesterday"))}
+        </span>
       </div>
       <div className="note-row-actions" ref={menuRef} onKeyDown={menu.onKeyDown}>
         <button
           className="icon-button"
           type="button"
-          aria-label={t('notes.openMenu')}
+          aria-label={t("notes.openMenu")}
           aria-expanded={menuOpen}
           ref={menu.triggerRef}
           onClick={(event) => {
@@ -234,20 +270,24 @@ export function NoteRow({
           <MoreVertical />
         </button>
         {menuOpen ? (
-          <div className="floating-menu note-row-menu responsive-popover" ref={menu.menuRef} onClick={menu.closeAndFocus}>
-            <Link to={`/notes/${note.id}`}>{t('common.open')}</Link>
+          <div
+            className="floating-menu note-row-menu responsive-popover"
+            ref={menu.menuRef}
+            onClick={menu.closeAndFocus}
+          >
+            <Link to={`/notes/${note.id}`}>{t("common.open")}</Link>
             <button type="button" onClick={() => void handleDuplicate()}>
               <Copy />
-              {t('common.duplicate')}
+              {t("common.duplicate")}
             </button>
             <button type="button" onClick={() => void handleTrash()}>
               {note.isTrashed ? <ArchiveRestore /> : <Trash2 />}
-              {note.isTrashed ? t('notes.restore') : t('notes.moveToTrash')}
+              {note.isTrashed ? t("notes.restore") : t("notes.moveToTrash")}
             </button>
             {note.isTrashed && onPermanentDelete ? (
               <button type="button" onClick={() => onPermanentDelete(note.id)}>
                 <Trash2 />
-                {t('notes.deleteForever')}
+                {t("notes.deleteForever")}
               </button>
             ) : null}
           </div>
@@ -269,14 +309,14 @@ function getNoteRowClassName({
   selectable: boolean;
 }) {
   return [
-    'note-row',
-    selectable ? 'selectable' : '',
-    pinIndicator ? 'with-pin-indicator' : '',
-    dragHandle ? 'with-drag-handle' : '',
-    dragActive ? 'is-dragging' : '',
+    "note-row",
+    selectable ? "selectable" : "",
+    pinIndicator ? "with-pin-indicator" : "",
+    dragHandle ? "with-drag-handle" : "",
+    dragActive ? "is-dragging" : "",
   ]
     .filter(Boolean)
-    .join(' ');
+    .join(" ");
 }
 
 function formatDisplayTime(value: string, today: string, yesterday: string) {
@@ -287,7 +327,7 @@ function formatDisplayTime(value: string, today: string, yesterday: string) {
 
   const now = new Date();
   const sameDay = date.toDateString() === now.toDateString();
-  const mockTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const mockTime = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   if (sameDay) {
     return mockTime;
@@ -303,5 +343,5 @@ function formatDisplayTime(value: string, today: string, yesterday: string) {
     return `${today}, ${mockTime}`;
   }
 
-  return date.toLocaleDateString([], { day: '2-digit', month: 'short' });
+  return date.toLocaleDateString([], { day: "2-digit", month: "short" });
 }

@@ -107,11 +107,7 @@ button {
   right: -10%;
   top: -200px;
   height: 800px;
-  background: radial-gradient(
-    ellipse at 50% 35%,
-    var(--hero-glow) 0%,
-    var(--paper) 65%
-  );
+  background: radial-gradient(ellipse at 50% 35%, var(--hero-glow) 0%, var(--paper) 65%);
   pointer-events: none;
 }
 .eyebrow {
@@ -813,8 +809,7 @@ button {
   right: -20px;
   left: 30px;
   height: 155px;
-  background: radial-gradient(circle, #8ba4ff77 1.1px, transparent 1.4px) 0
-    0/17px 17px;
+  background: radial-gradient(circle, #8ba4ff77 1.1px, transparent 1.4px) 0 0/17px 17px;
   mask-image: linear-gradient(to top, #000, transparent);
 }
 .ai-card {

@@ -1,13 +1,14 @@
-import { Fragment, type ReactNode } from 'react';
-import { openExternalUrl } from '../../core/services/externalLinks';
-import { isSafeMarkdownHref } from '../../core/utils/markdown';
-import { normalizeInlineStyleColor } from '../../core/utils/inlineFormatting';
+import { Fragment, type ReactNode } from "react";
+import { openExternalUrl } from "../../core/services/externalLinks";
+import { isSafeMarkdownHref } from "../../core/utils/markdown";
+import { normalizeInlineStyleColor } from "../../core/utils/inlineFormatting";
 
-const inlinePattern = /(\[\[(color|bg):([a-z-]+)\]\][\s\S]+?\[\[\/\2\]\]|\[\[u\]\][\s\S]+?\[\[\/u\]\]|~~[^~]+~~|`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|\[[^\]]+\]\([^)]+\))/g;
+const inlinePattern =
+  /(\[\[(color|bg):([a-z-]+)\]\][\s\S]+?\[\[\/\2\]\]|\[\[u\]\][\s\S]+?\[\[\/u\]\]|~~[^~]+~~|`[^`]+`|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|\[[^\]]+\]\([^)]+\))/g;
 const htmlTagPattern = /<\/?[a-z][\s\S]*>/i;
 
 export function InlineFormattedText({ value }: { value?: string | null }) {
-  return <>{renderInlineText(value ?? '')}</>;
+  return <>{renderInlineText(value ?? "")}</>;
 }
 
 export function renderInlineText(text: string): ReactNode[] {
@@ -43,22 +44,24 @@ function renderInlineHtml(html: string) {
     return [htmlToPlainText(html)];
   }
 
-  return Array.from(root.childNodes).flatMap((node, index) => renderHtmlNode(node, `html-${index}`));
+  return Array.from(root.childNodes).flatMap((node, index) =>
+    renderHtmlNode(node, `html-${index}`),
+  );
 }
 
 function parseHtmlFragment(html: string) {
-  if (typeof document === 'undefined') {
+  if (typeof document === "undefined") {
     return null;
   }
 
-  const template = document.createElement('template');
+  const template = document.createElement("template");
   template.innerHTML = html;
   return template.content;
 }
 
 function renderHtmlNode(node: ChildNode, key: string): ReactNode[] {
   if (node.nodeType === Node.TEXT_NODE) {
-    return [node.textContent ?? ''];
+    return [node.textContent ?? ""];
   }
 
   if (node.nodeType !== Node.ELEMENT_NODE) {
@@ -68,25 +71,25 @@ function renderHtmlNode(node: ChildNode, key: string): ReactNode[] {
   const element = node as HTMLElement;
   const tagName = element.tagName.toLowerCase();
 
-  if (tagName === 'script' || tagName === 'style') {
+  if (tagName === "script" || tagName === "style") {
     return [];
   }
 
-  if (tagName === 'br') {
+  if (tagName === "br") {
     return [<br key={key} />];
   }
 
   const children = renderHtmlChildren(element, key);
 
-  if (tagName === 'strong' || tagName === 'b') {
+  if (tagName === "strong" || tagName === "b") {
     return [<strong key={key}>{children}</strong>];
   }
 
-  if (tagName === 'em' || tagName === 'i') {
+  if (tagName === "em" || tagName === "i") {
     return [<em key={key}>{children}</em>];
   }
 
-  if (tagName === 'u') {
+  if (tagName === "u") {
     return [
       <span className="rich-text-underline" key={key}>
         {children}
@@ -94,7 +97,7 @@ function renderHtmlNode(node: ChildNode, key: string): ReactNode[] {
     ];
   }
 
-  if (tagName === 's' || tagName === 'strike' || tagName === 'del') {
+  if (tagName === "s" || tagName === "strike" || tagName === "del") {
     return [
       <s className="rich-text-strike" key={key}>
         {children}
@@ -102,20 +105,23 @@ function renderHtmlNode(node: ChildNode, key: string): ReactNode[] {
     ];
   }
 
-  if (tagName === 'code') {
+  if (tagName === "code") {
     return [<code key={key}>{children}</code>];
   }
 
-  if (tagName === 'a') {
-    const href = element.getAttribute('href')?.trim() ?? '';
-    const safeHref = isSafeMarkdownHref(href) ? href : '#';
-    const isExternal = safeHref.startsWith('http://') || safeHref.startsWith('https://') || safeHref.startsWith('mailto:');
+  if (tagName === "a") {
+    const href = element.getAttribute("href")?.trim() ?? "";
+    const safeHref = isSafeMarkdownHref(href) ? href : "#";
+    const isExternal =
+      safeHref.startsWith("http://") ||
+      safeHref.startsWith("https://") ||
+      safeHref.startsWith("mailto:");
 
     return [
       <a
         href={safeHref}
         key={key}
-        rel={isExternal ? 'noreferrer' : undefined}
+        rel={isExternal ? "noreferrer" : undefined}
         onClick={
           isExternal
             ? (event) => {
@@ -130,7 +136,7 @@ function renderHtmlNode(node: ChildNode, key: string): ReactNode[] {
     ];
   }
 
-  if (tagName === 'span' || tagName === 'mark') {
+  if (tagName === "span" || tagName === "mark") {
     const className = getInlineHtmlClassName(element, tagName);
 
     if (className) {
@@ -146,37 +152,39 @@ function renderHtmlNode(node: ChildNode, key: string): ReactNode[] {
 }
 
 function renderHtmlChildren(element: HTMLElement, keyPrefix: string) {
-  return Array.from(element.childNodes).flatMap((child, index) => renderHtmlNode(child, `${keyPrefix}-${index}`));
+  return Array.from(element.childNodes).flatMap((child, index) =>
+    renderHtmlNode(child, `${keyPrefix}-${index}`),
+  );
 }
 
 function getInlineHtmlClassName(element: HTMLElement, tagName: string) {
-  const style = element.getAttribute('style') ?? '';
-  const color = extractKnownColor(style.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i)?.[1] ?? '');
+  const style = element.getAttribute("style") ?? "";
+  const color = extractKnownColor(style.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i)?.[1] ?? "");
   const background = extractKnownColor(
-    element.getAttribute('data-color') ??
+    element.getAttribute("data-color") ??
       style.match(/(?:^|;)\s*background(?:-color)?\s*:\s*([^;]+)/i)?.[1] ??
-      '',
+      "",
   );
   const classes = [
-    color ? `rich-text-color--${color}` : '',
-    background || tagName === 'mark' ? `rich-text-bg--${background ?? 'neutral'}` : '',
+    color ? `rich-text-color--${color}` : "",
+    background || tagName === "mark" ? `rich-text-bg--${background ?? "neutral"}` : "",
   ].filter(Boolean);
 
-  return classes.join(' ');
+  return classes.join(" ");
 }
 
 function extractKnownColor(value: string) {
   const cssVariable = value.match(/--nx-color-([a-z-]+)/i)?.[1];
   const dataColor = value.match(/^([a-z-]+)$/i)?.[1];
-  return normalizeInlineStyleColor(cssVariable ?? dataColor ?? '');
+  return normalizeInlineStyleColor(cssVariable ?? dataColor ?? "");
 }
 
 function htmlToPlainText(html: string) {
   return html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/(p|div|h[1-6]|li)>/gi, ' ')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|li)>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
     .trim();
 }
 
@@ -206,7 +214,7 @@ function renderInlineToken(token: string, key: number) {
     );
   }
 
-  if (token.startsWith('~~') && token.endsWith('~~')) {
+  if (token.startsWith("~~") && token.endsWith("~~")) {
     return (
       <s className="rich-text-strike" key={key}>
         {renderInlineText(token.slice(2, -2))}
@@ -214,29 +222,38 @@ function renderInlineToken(token: string, key: number) {
     );
   }
 
-  if (token.startsWith('`') && token.endsWith('`')) {
+  if (token.startsWith("`") && token.endsWith("`")) {
     return <code key={key}>{token.slice(1, -1)}</code>;
   }
 
-  if ((token.startsWith('**') && token.endsWith('**')) || (token.startsWith('__') && token.endsWith('__'))) {
+  if (
+    (token.startsWith("**") && token.endsWith("**")) ||
+    (token.startsWith("__") && token.endsWith("__"))
+  ) {
     return <strong key={key}>{renderInlineText(token.slice(2, -2))}</strong>;
   }
 
-  if ((token.startsWith('*') && token.endsWith('*')) || (token.startsWith('_') && token.endsWith('_'))) {
+  if (
+    (token.startsWith("*") && token.endsWith("*")) ||
+    (token.startsWith("_") && token.endsWith("_"))
+  ) {
     return <em key={key}>{renderInlineText(token.slice(1, -1))}</em>;
   }
 
   const link = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
   if (link) {
     const href = link[2].trim();
-    const safeHref = isSafeMarkdownHref(href) ? href : '#';
-    const isExternal = safeHref.startsWith('http://') || safeHref.startsWith('https://') || safeHref.startsWith('mailto:');
+    const safeHref = isSafeMarkdownHref(href) ? href : "#";
+    const isExternal =
+      safeHref.startsWith("http://") ||
+      safeHref.startsWith("https://") ||
+      safeHref.startsWith("mailto:");
 
     return (
       <a
         href={safeHref}
         key={key}
-        rel={isExternal ? 'noreferrer' : undefined}
+        rel={isExternal ? "noreferrer" : undefined}
         onClick={
           isExternal
             ? (event) => {

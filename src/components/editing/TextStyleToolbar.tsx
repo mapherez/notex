@@ -1,17 +1,17 @@
-import { Baseline, ChevronDown, Eraser, Highlighter } from 'lucide-react';
-import clsx from 'clsx';
-import { useEffect, useRef, useState } from 'react';
-import type { ChangeEvent, MouseEvent } from 'react';
-import { createPortal } from 'react-dom';
+import { Baseline, ChevronDown, Eraser, Highlighter } from "lucide-react";
+import clsx from "clsx";
+import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent, MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import {
   inlineStyleColors,
   type InlineStyleColor,
   type InlineStyleKind,
-} from '../../core/utils/inlineFormatting';
-import { useClickOutside } from '../../core/utils/useClickOutside';
-import { useMenuOptionFocus } from '../../core/utils/useMenuOptionFocus';
-import { useFloatingPopover } from '../../core/utils/useFloatingPopover';
-import { useI18n } from '../../i18n/I18nProvider';
+} from "../../core/utils/inlineFormatting";
+import { useClickOutside } from "../../core/utils/useClickOutside";
+import { useMenuOptionFocus } from "../../core/utils/useMenuOptionFocus";
+import { useFloatingPopover } from "../../core/utils/useFloatingPopover";
+import { useI18n } from "../../i18n/I18nProvider";
 
 type TextControlElement = HTMLInputElement | HTMLTextAreaElement;
 
@@ -35,9 +35,28 @@ export function TextStyleToolbar({
   const { t } = useI18n();
 
   return (
-    <div className={clsx('text-style-toolbar', compact && 'text-style-toolbar--compact')} aria-label={t('editor.textStyleToolbar')}>
-      <TextStylePicker active={activeColor} disabled={disabled} floatingMenu={floatingMenus} kind="color" label={t('editor.textColor')} menuEnabled={menusEnabled} onSelect={onSelect} />
-      <TextStylePicker active={activeBackground} disabled={disabled} floatingMenu={floatingMenus} kind="bg" label={t('editor.highlightColor')} menuEnabled={menusEnabled} onSelect={onSelect} />
+    <div
+      className={clsx("text-style-toolbar", compact && "text-style-toolbar--compact")}
+      aria-label={t("editor.textStyleToolbar")}
+    >
+      <TextStylePicker
+        active={activeColor}
+        disabled={disabled}
+        floatingMenu={floatingMenus}
+        kind="color"
+        label={t("editor.textColor")}
+        menuEnabled={menusEnabled}
+        onSelect={onSelect}
+      />
+      <TextStylePicker
+        active={activeBackground}
+        disabled={disabled}
+        floatingMenu={floatingMenus}
+        kind="bg"
+        label={t("editor.highlightColor")}
+        menuEnabled={menusEnabled}
+        onSelect={onSelect}
+      />
     </div>
   );
 }
@@ -73,8 +92,12 @@ export function StyledTextField({
   };
 
   return (
-    <div className={clsx('styled-text-field', className)}>
-      {multiline ? <textarea {...controlProps} rows={rows} /> : <input {...controlProps} type="text" />}
+    <div className={clsx("styled-text-field", className)}>
+      {multiline ? (
+        <textarea {...controlProps} rows={rows} />
+      ) : (
+        <input {...controlProps} type="text" />
+      )}
     </div>
   );
 }
@@ -100,10 +123,17 @@ function TextStylePicker({
   const [open, setOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
   const menu = useMenuOptionFocus(open, () => setOpen(false), 1, 0, !floatingMenu);
-  const Icon = kind === 'color' ? Baseline : Highlighter;
+  const Icon = kind === "color" ? Baseline : Highlighter;
 
   useClickOutside(pickerRef, open, () => setOpen(false), floatingMenu ? menu.menuRef : undefined);
-  useFloatingPopover(open && floatingMenu, menu.triggerRef, menu.menuRef, 'top-start', null, 'fixed');
+  useFloatingPopover(
+    open && floatingMenu,
+    menu.triggerRef,
+    menu.menuRef,
+    "top-start",
+    null,
+    "fixed",
+  );
 
   useEffect(() => {
     if (!menuEnabled) setOpen(false);
@@ -116,7 +146,10 @@ function TextStylePicker({
 
   const pickerMenu = open ? (
     <div
-      className={clsx('text-style-picker__menu', floatingMenu && 'responsive-popover note-toolbar-popover')}
+      className={clsx(
+        "text-style-picker__menu",
+        floatingMenu && "responsive-popover note-toolbar-popover",
+      )}
       ref={menu.menuRef}
       role="menu"
       aria-label={label}
@@ -126,16 +159,20 @@ function TextStylePicker({
         type="button"
         role="menuitem"
         tabIndex={-1}
-        title={kind === 'color' ? t('editor.automaticColor') : t('editor.noHighlightColor')}
-        aria-label={kind === 'color' ? `${label}: ${t('editor.automaticColor')}` : `${label}: ${t('editor.noHighlightColor')}`}
+        title={kind === "color" ? t("editor.automaticColor") : t("editor.noHighlightColor")}
+        aria-label={
+          kind === "color"
+            ? `${label}: ${t("editor.automaticColor")}`
+            : `${label}: ${t("editor.noHighlightColor")}`
+        }
         onMouseDown={preserveEditorSelection}
-          onClick={() => {
-            onSelect(kind, null);
-            closeMenuAfterSelection();
+        onClick={() => {
+          onSelect(kind, null);
+          closeMenuAfterSelection();
         }}
       >
-        {kind === 'color' ? <span className="text-style-picker__auto-swatch" /> : <Eraser />}
-        <span>{kind === 'color' ? t('editor.automaticColor') : t('editor.noHighlightColor')}</span>
+        {kind === "color" ? <span className="text-style-picker__auto-swatch" /> : <Eraser />}
+        <span>{kind === "color" ? t("editor.automaticColor") : t("editor.noHighlightColor")}</span>
       </button>
       {inlineStyleColors.map((color) => (
         <button
@@ -161,7 +198,7 @@ function TextStylePicker({
   return (
     <div className="text-style-picker" ref={pickerRef} onKeyDown={menu.onKeyDown}>
       <button
-        className={clsx('markdown-tool-button text-style-picker__trigger', active && 'is-active')}
+        className={clsx("markdown-tool-button text-style-picker__trigger", active && "is-active")}
         ref={menu.triggerRef}
         disabled={disabled}
         type="button"

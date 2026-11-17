@@ -25,10 +25,7 @@
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": [
-          "$APPDATA/files/**",
-          "$APPDATA/*/files/**"
-        ]
+        "scope": ["$APPDATA/files/**", "$APPDATA/*/files/**"]
       }
     }
   },
@@ -50,9 +47,7 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ0NzUwQTFBRDExNEU1NkQKUldSdDVSVFJHZ3AxUkV3d2NaL1FDRVpOaWJJdnpFWk1lbGFMbklYeWFvaEVCZzZQR1M5cWFibDYK",
-      "endpoints": [
-        "https://github.com/mapherez/notex/releases/latest/download/latest.json"
-      ],
+      "endpoints": ["https://github.com/mapherez/notex/releases/latest/download/latest.json"],
       "windows": {
         "installMode": "passive"
       }

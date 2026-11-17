@@ -1,18 +1,18 @@
-import { Plus, X } from 'lucide-react';
-import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Note } from '../../core/models/models';
-import { richTextToPlainText } from '../../core/utils/richText';
-import { isPrimaryShortcut } from '../../core/utils/keyboardShortcuts';
-import { useI18n } from '../../i18n/I18nProvider';
-import { useAppStore } from '../../store/useAppStore';
-import { useNotesStore } from '../../store/useNotesStore';
-import { AppModal } from '../ui/AppModal';
-import { LegalModal, type LegalModalKind } from '../ui/LegalModal';
-import { PhoneLandscapeGuard } from './PhoneLandscapeGuard';
-import { Sidebar } from './Sidebar';
-import { TopBar } from './TopBar';
-import { useCustomWindowTitleBar, WindowTitleBar } from './WindowTitleBar';
+import { Plus, X } from "lucide-react";
+import { Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Note } from "../../core/models/models";
+import { richTextToPlainText } from "../../core/utils/richText";
+import { isPrimaryShortcut } from "../../core/utils/keyboardShortcuts";
+import { useI18n } from "../../i18n/I18nProvider";
+import { useAppStore } from "../../store/useAppStore";
+import { useNotesStore } from "../../store/useNotesStore";
+import { AppModal } from "../ui/AppModal";
+import { LegalModal, type LegalModalKind } from "../ui/LegalModal";
+import { PhoneLandscapeGuard } from "./PhoneLandscapeGuard";
+import { Sidebar } from "./Sidebar";
+import { TopBar } from "./TopBar";
+import { useCustomWindowTitleBar, WindowTitleBar } from "./WindowTitleBar";
 
 export function AppShell() {
   const { t } = useI18n();
@@ -34,7 +34,7 @@ export function AppShell() {
   const getCurrentNote = useCallback(() => {
     const match = location.pathname.match(/^\/notes\/([^/]+)$/);
     const noteId = match?.[1];
-    if (!noteId || noteId === 'new') {
+    if (!noteId || noteId === "new") {
       return undefined;
     }
 
@@ -74,24 +74,24 @@ export function AppShell() {
 
   useEffect(() => {
     function handleGlobalShortcut(event: KeyboardEvent) {
-      if (isPrimaryShortcut(event, 'n')) {
+      if (isPrimaryShortcut(event, "n")) {
         event.preventDefault();
         setSidebarOpen(false);
         void requestNewNote();
       }
 
-      if (isPrimaryShortcut(event, 'p')) {
+      if (isPrimaryShortcut(event, "p")) {
         event.preventDefault();
         setSidebarOpen(false);
-        navigate('/profile');
+        navigate("/profile");
       }
     }
 
-    window.addEventListener('keydown', handleGlobalShortcut);
-    return () => window.removeEventListener('keydown', handleGlobalShortcut);
+    window.addEventListener("keydown", handleGlobalShortcut);
+    return () => window.removeEventListener("keydown", handleGlobalShortcut);
   }, [navigate, requestNewNote]);
 
-  const legalModalKind = readLegalModalKind(searchParams.get('modal'));
+  const legalModalKind = readLegalModalKind(searchParams.get("modal"));
 
   useEffect(() => {
     closeSidebar();
@@ -99,12 +99,12 @@ export function AppShell() {
 
   function closeLegalModal() {
     const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.delete('modal');
+    nextSearchParams.delete("modal");
     setSearchParams(nextSearchParams, { replace: true });
   }
 
   return (
-    <div className={hasWindowTitleBar ? 'app-frame app-frame--custom-titlebar' : 'app-frame'}>
+    <div className={hasWindowTitleBar ? "app-frame app-frame--custom-titlebar" : "app-frame"}>
       {hasWindowTitleBar && <WindowTitleBar />}
       <div className="app-shell" ref={appShellRef}>
         <Sidebar
@@ -130,16 +130,20 @@ export function AppShell() {
           onClose={() => setConfirmNewNoteOpen(false)}
           open={confirmNewNoteOpen}
         >
-          <h2 id="new-note-confirm-title">{t('notes.newNoteConfirmTitle')}</h2>
-          <p>{t('notes.newNoteConfirmDescription')}</p>
+          <h2 id="new-note-confirm-title">{t("notes.newNoteConfirmTitle")}</h2>
+          <p>{t("notes.newNoteConfirmDescription")}</p>
           <div className="choice-modal-actions two-column-actions">
-            <button type="button" disabled={creatingNote} onClick={() => setConfirmNewNoteOpen(false)}>
+            <button
+              type="button"
+              disabled={creatingNote}
+              onClick={() => setConfirmNewNoteOpen(false)}
+            >
               <X />
-              <span>{t('common.cancel')}</span>
+              <span>{t("common.cancel")}</span>
             </button>
             <button type="button" disabled={creatingNote} onClick={() => void createAndOpenNote()}>
               <Plus />
-              <span>{t('navigation.newNote')}</span>
+              <span>{t("navigation.newNote")}</span>
             </button>
           </div>
         </AppModal>
@@ -151,7 +155,7 @@ export function AppShell() {
 }
 
 function readLegalModalKind(value: string | null): LegalModalKind | null {
-  return value === 'privacy' || value === 'terms' ? value : null;
+  return value === "privacy" || value === "terms" ? value : null;
 }
 
 function noteHasContent(note: Note) {
@@ -160,9 +164,10 @@ function noteHasContent(note: Note) {
     richTextToPlainText(note.subtitle),
     ...(note.additionalExamples ?? []),
     ...(note.relatedLinks?.flatMap((link) => [link.title, link.href]) ?? []),
-    ...(note.blocks?.flatMap((block) => [richTextToPlainText(block.title), block.contentText]) ?? []),
+    ...(note.blocks?.flatMap((block) => [richTextToPlainText(block.title), block.contentText]) ??
+      []),
     ...(note.files?.map((file) => file.originalName) ?? []),
-  ].join(' ');
+  ].join(" ");
 
   return Boolean(text.trim());
 }

@@ -6,7 +6,6 @@
   .document-aside {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
 }
 
 @media (max-width: 900px) {
@@ -163,5 +162,3 @@
     margin-left: 0;
   }
 }
-
-

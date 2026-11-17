@@ -1,34 +1,34 @@
-import { ChevronDown, Tag as TagIcon, Trash2, X } from 'lucide-react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { NoteRow } from '../components/notes/NoteRow';
-import { useAdaptedContent } from '../core/utils/useAdaptedContent';
-import { AppModal } from '../components/ui/AppModal';
-import { CustomSelect } from '../components/ui/CustomSelect';
-import { EmptyState } from '../components/ui/EmptyState';
-import { NotesFilterRow } from '../components/ui/NotesFilterRow';
-import type { Collection, Note, PreferredLayout, Tag as TagModel } from '../core/models/models';
+import { ChevronDown, Tag as TagIcon, Trash2, X } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { useSearchParams } from "react-router-dom";
+import { NoteRow } from "../components/notes/NoteRow";
+import { useAdaptedContent } from "../core/utils/useAdaptedContent";
+import { AppModal } from "../components/ui/AppModal";
+import { CustomSelect } from "../components/ui/CustomSelect";
+import { EmptyState } from "../components/ui/EmptyState";
+import { NotesFilterRow } from "../components/ui/NotesFilterRow";
+import type { Collection, Note, PreferredLayout, Tag as TagModel } from "../core/models/models";
 import {
   defaultNotesSortOrder,
   filterNotes,
   recentNotesSortOrder,
-} from '../core/utils/noteFilters';
-import { normalizeNotesSortOrder, type NotesSortOrder } from '../core/utils/noteFilters';
-import { richTextToPlainText } from '../core/utils/richText';
-import { sortTagsByName } from '../core/utils/tagSorting';
-import { useClickOutside } from '../core/utils/useClickOutside';
-import { useFloatingPopover } from '../core/utils/useFloatingPopover';
-import { useI18n } from '../i18n/I18nProvider';
-import { useAppStore } from '../store/useAppStore';
-import { useNotesStore } from '../store/useNotesStore';
-import { useKnowledgeStore } from '../store/useKnowledgeStore';
-import { useToastStore } from '../store/useToastStore';
+} from "../core/utils/noteFilters";
+import { normalizeNotesSortOrder, type NotesSortOrder } from "../core/utils/noteFilters";
+import { richTextToPlainText } from "../core/utils/richText";
+import { sortTagsByName } from "../core/utils/tagSorting";
+import { useClickOutside } from "../core/utils/useClickOutside";
+import { useFloatingPopover } from "../core/utils/useFloatingPopover";
+import { useI18n } from "../i18n/I18nProvider";
+import { useAppStore } from "../store/useAppStore";
+import { useNotesStore } from "../store/useNotesStore";
+import { useKnowledgeStore } from "../store/useKnowledgeStore";
+import { useToastStore } from "../store/useToastStore";
 
-type ListMode = 'all' | 'favorites' | 'recent' | 'trash';
+type ListMode = "all" | "favorites" | "recent" | "trash";
 type TrashConfirmState =
   | null
-  | { kind: 'clear' }
-  | { kind: 'delete'; noteIds: string[]; title?: string };
+  | { kind: "clear" }
+  | { kind: "delete"; noteIds: string[]; title?: string };
 
 export function NotesListViewPage({ mode }: { mode: ListMode }) {
   const { t } = useI18n();
@@ -43,7 +43,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   const collections = useKnowledgeStore((state) => state.collections);
   const preferredLayout = useAppStore((state) => state.settings.preferredLayout);
   const adaptedContent = useAdaptedContent();
-  const effectiveLayout = adaptedContent ? 'list' : preferredLayout;
+  const effectiveLayout = adaptedContent ? "list" : preferredLayout;
   const pinnedNoteIds = useAppStore((state) => state.settings.pinnedNoteIds);
   const setPreferredLayout = useAppStore((state) => state.setPreferredLayout);
   const reorderPinnedNotes = useAppStore((state) => state.reorderPinnedNotes);
@@ -61,23 +61,25 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   const pinnedDragGhostRef = useRef<HTMLDivElement>(null);
   const pinnedDropIndicatorRef = useRef<HTMLDivElement>(null);
   const pinnedKeyboardReorderPendingRef = useRef(false);
-  const tagParam = searchParams.get('tag');
-  const collectionParam = searchParams.get('collection');
-  const defaultSortOrder: NotesSortOrder = mode === 'recent' ? recentNotesSortOrder : defaultNotesSortOrder;
-  const sortOrder = mode === 'recent' ? defaultSortOrder : normalizeNotesSortOrder(searchParams.get('sort'));
+  const tagParam = searchParams.get("tag");
+  const collectionParam = searchParams.get("collection");
+  const defaultSortOrder: NotesSortOrder =
+    mode === "recent" ? recentNotesSortOrder : defaultNotesSortOrder;
+  const sortOrder =
+    mode === "recent" ? defaultSortOrder : normalizeNotesSortOrder(searchParams.get("sort"));
   const activeTag = tags.find((tag) => tag.id === tagParam);
   const activeCollection = collections.find((collection) => collection.id === collectionParam);
   const tagId = activeTag?.id ?? null;
   const collectionId = activeCollection?.id ?? null;
   const hasActiveFilter = sortOrder !== defaultSortOrder || Boolean(tagId || collectionId);
-  const pinActionsEnabled = mode === 'all';
+  const pinActionsEnabled = mode === "all";
   const pinOrderingEnabled = pinActionsEnabled && !hasActiveFilter;
 
   const copy = {
-    all: { title: t('notes.title'), subtitle: t('notes.subtitle') },
-    favorites: { title: t('notes.favoritesTitle'), subtitle: t('notes.favoritesSubtitle') },
-    recent: { title: t('notes.recentTitle'), subtitle: t('notes.recentSubtitle') },
-    trash: { title: t('notes.trashTitle'), subtitle: t('notes.trashSubtitle') },
+    all: { title: t("notes.title"), subtitle: t("notes.subtitle") },
+    favorites: { title: t("notes.favoritesTitle"), subtitle: t("notes.favoritesSubtitle") },
+    recent: { title: t("notes.recentTitle"), subtitle: t("notes.recentSubtitle") },
+    trash: { title: t("notes.trashTitle"), subtitle: t("notes.trashSubtitle") },
   }[mode];
 
   const filtered = useMemo(
@@ -91,8 +93,8 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       }),
     [collectionId, notes, mode, pinOrderingEnabled, sortOrder, tagId],
   );
-  const selectionEnabled = mode === 'all';
-  const visibleNoteIdsKey = filtered.map((note) => note.id).join('|');
+  const selectionEnabled = mode === "all";
+  const visibleNoteIdsKey = filtered.map((note) => note.id).join("|");
   const selectedNoteIdSet = useMemo(() => new Set(selectedNoteIds), [selectedNoteIds]);
   const selectedNotes = useMemo(
     () => filtered.filter((note) => selectedNoteIdSet.has(note.id)),
@@ -117,7 +119,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
   const regularNotes = splitPinnedLists ? filtered.filter((note) => !note.isPinned) : filtered;
   const showBulkActions = selectionEnabled && selectedNotes.length > 0;
   const trashCount = notes.filter((note) => note.isTrashed).length;
-  const listContextKey = `${mode}|${tagId ?? ''}|${collectionId ?? ''}|${sortOrder}`;
+  const listContextKey = `${mode}|${tagId ?? ""}|${collectionId ?? ""}|${sortOrder}`;
 
   useEffect(() => {
     setSelectedNoteIds([]);
@@ -179,37 +181,40 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
     }
 
     function handleKeyDown(event: globalThis.KeyboardEvent) {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         cancelPinnedNoteReorder();
       }
     }
 
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-    window.addEventListener('pointercancel', handlePointerCancel);
-    window.addEventListener('pointerdown', handleAdditionalPointer);
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerCancel);
+    window.addEventListener("pointerdown", handleAdditionalPointer);
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('pointercancel', handlePointerCancel);
-      window.removeEventListener('pointerdown', handleAdditionalPointer);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerCancel);
+      window.removeEventListener("pointerdown", handleAdditionalPointer);
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [activePinnedDragId, pinnedNotes]);
 
   useLayoutEffect(() => {
     if (!pinnedDragVisual || !activePinnedDragId) return;
-    const list = document.querySelector<HTMLElement>('.pin-list');
+    const list = document.querySelector<HTMLElement>(".pin-list");
     if (!list) return;
     const listRect = list.getBoundingClientRect();
-    const candidates = Array.from(list.querySelectorAll<HTMLElement>('[data-note-id]'))
+    const candidates = Array.from(list.querySelectorAll<HTMLElement>("[data-note-id]"))
       .filter((row) => row.dataset.noteId !== activePinnedDragId)
       .map((row) => row.getBoundingClientRect());
-    const dropIndex = Math.max(0, pinnedNotes.findIndex((note) => note.id === activePinnedDragId));
+    const dropIndex = Math.max(
+      0,
+      pinnedNotes.findIndex((note) => note.id === activePinnedDragId),
+    );
     let lineTop = listRect.top;
     if (candidates.length > 0) {
       if (dropIndex === 0) lineTop = candidates[0].top;
@@ -226,17 +231,20 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       viewportLeft + viewportWidth - ghostWidth - 8,
       Math.max(viewportLeft + 8, desiredLeft),
     );
-    pinnedDragGhostRef.current?.style.setProperty('--nx-touch-drag-left', `${ghostLeft}px`);
-    pinnedDragGhostRef.current?.style.setProperty('--nx-touch-drag-top', `${pinnedDragVisual.y}px`);
-    pinnedDragGhostRef.current?.style.setProperty('--nx-touch-drag-width', `${ghostWidth}px`);
-    pinnedDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-left', `${listRect.left}px`);
-    pinnedDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-top', `${lineTop}px`);
-    pinnedDropIndicatorRef.current?.style.setProperty('--nx-touch-drop-width', `${listRect.width}px`);
+    pinnedDragGhostRef.current?.style.setProperty("--nx-touch-drag-left", `${ghostLeft}px`);
+    pinnedDragGhostRef.current?.style.setProperty("--nx-touch-drag-top", `${pinnedDragVisual.y}px`);
+    pinnedDragGhostRef.current?.style.setProperty("--nx-touch-drag-width", `${ghostWidth}px`);
+    pinnedDropIndicatorRef.current?.style.setProperty("--nx-touch-drop-left", `${listRect.left}px`);
+    pinnedDropIndicatorRef.current?.style.setProperty("--nx-touch-drop-top", `${lineTop}px`);
+    pinnedDropIndicatorRef.current?.style.setProperty(
+      "--nx-touch-drop-width",
+      `${listRect.width}px`,
+    );
   }, [activePinnedDragId, pinnedDragVisual, pinnedNotes]);
 
   async function handleClearTrash() {
     if (trashCount) {
-      setTrashConfirm({ kind: 'clear' });
+      setTrashConfirm({ kind: "clear" });
     }
   }
 
@@ -245,19 +253,19 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
       return;
     }
 
-    if (trashConfirm.kind === 'clear') {
+    if (trashConfirm.kind === "clear") {
       await clearTrash();
-      pushToast(t('notes.trashCleared'), 'warning');
+      pushToast(t("notes.trashCleared"), "warning");
     } else {
       await deleteNotesPermanently(trashConfirm.noteIds);
-      pushToast(t('notes.deletedForever'), 'warning');
+      pushToast(t("notes.deletedForever"), "warning");
     }
     setTrashConfirm(null);
   }
 
-  function updateFilterParam(name: 'collection' | 'sort' | 'tag', value: string | null) {
+  function updateFilterParam(name: "collection" | "sort" | "tag", value: string | null) {
     const nextParams = new URLSearchParams(searchParams);
-    if (value && !(name === 'sort' && value === defaultSortOrder)) {
+    if (value && !(name === "sort" && value === defaultSortOrder)) {
       nextParams.set(name, value);
     } else {
       nextParams.delete(name);
@@ -267,9 +275,9 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
 
   function clearFilters() {
     const nextParams = new URLSearchParams(searchParams);
-    nextParams.delete('collection');
-    nextParams.delete('sort');
-    nextParams.delete('tag');
+    nextParams.delete("collection");
+    nextParams.delete("sort");
+    nextParams.delete("tag");
     setSearchParams(nextParams);
   }
 
@@ -288,7 +296,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
     }
 
     await bulkUpdateNoteCollection(selectedNoteIds, nextCollectionId);
-    pushToast(t('notes.bulk.collectionUpdated'), 'success');
+    pushToast(t("notes.bulk.collectionUpdated"), "success");
   }
 
   async function updateSelectedTag(tagId: string, assigned: boolean) {
@@ -297,7 +305,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
     }
 
     await bulkUpdateNoteTag(selectedNoteIds, tagId, assigned);
-    pushToast(t(assigned ? 'notes.bulk.tagsAssigned' : 'notes.bulk.tagsRemoved'), 'success');
+    pushToast(t(assigned ? "notes.bulk.tagsAssigned" : "notes.bulk.tagsRemoved"), "success");
   }
 
   async function deleteSelectedNotes() {
@@ -307,7 +315,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
 
     await Promise.all(selectedNoteIds.map((noteId) => moveNoteToTrash(noteId)));
     setSelectedNoteIds([]);
-    pushToast(t('notes.bulk.deleted'), 'warning');
+    pushToast(t("notes.bulk.deleted"), "warning");
   }
 
   function beginPinnedNoteReorder(event: PointerEvent<HTMLButtonElement>, noteId: string) {
@@ -337,16 +345,27 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
     try {
       await reorderPinnedNotes(ids);
       requestAnimationFrame(() => {
-        const row = Array.from(document.querySelectorAll<HTMLElement>('.pin-list [data-note-id]'))
-          .find((element) => element.dataset.noteId === noteId);
+        const row = Array.from(
+          document.querySelectorAll<HTMLElement>(".pin-list [data-note-id]"),
+        ).find((element) => element.dataset.noteId === noteId);
         if (!row) return;
-        row.querySelector<HTMLButtonElement>('.note-row__drag-handle')?.focus({ preventScroll: true });
+        row
+          .querySelector<HTMLButtonElement>(".note-row__drag-handle")
+          ?.focus({ preventScroll: true });
         const rect = row.getBoundingClientRect();
-        const headerBottom = Math.max(0, ...Array.from(document.querySelectorAll<HTMLElement>('.topbar'))
-          .map((bar) => bar.getBoundingClientRect().bottom)) + 16;
+        const headerBottom =
+          Math.max(
+            0,
+            ...Array.from(document.querySelectorAll<HTMLElement>(".topbar")).map(
+              (bar) => bar.getBoundingClientRect().bottom,
+            ),
+          ) + 16;
         const available = Math.max(0, window.innerHeight - headerBottom - 16);
         const desiredTop = headerBottom + (available - Math.min(rect.height, available)) / 2;
-        window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - desiredTop), behavior: 'instant' });
+        window.scrollTo({
+          top: Math.max(0, window.scrollY + rect.top - desiredTop),
+          behavior: "instant",
+        });
       });
     } finally {
       pinnedKeyboardReorderPendingRef.current = false;
@@ -372,7 +391,8 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
     setPinnedDragVisual({ x: clientX, y: clientY });
 
     const target = document.elementFromPoint(clientX, clientY);
-    const row = target instanceof HTMLElement ? target.closest<HTMLElement>('[data-note-id]') : null;
+    const row =
+      target instanceof HTMLElement ? target.closest<HTMLElement>("[data-note-id]") : null;
     const overId = row?.dataset.noteId;
     if (!overId || draggedId === overId || !orderedPinnedDragIdsRef.current.includes(overId)) {
       return;
@@ -386,7 +406,11 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
     const nextIds = orderedPinnedDragIdsRef.current;
     const originalIds = persistedPinnedNotes.map((note) => note.id);
 
-    if (activePinnedDragIdRef.current && pinnedDragMovedRef.current && !isSameOrder(originalIds, nextIds)) {
+    if (
+      activePinnedDragIdRef.current &&
+      pinnedDragMovedRef.current &&
+      !isSameOrder(originalIds, nextIds)
+    ) {
       void reorderPinnedNotes(nextIds);
     }
 
@@ -409,7 +433,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
 
   function updateOrderedPinnedDragIds(input: string[] | ((currentIds: string[]) => string[])) {
     setOrderedPinnedDragIds((currentIds) => {
-      const nextIds = typeof input === 'function' ? input(currentIds) : input;
+      const nextIds = typeof input === "function" ? input(currentIds) : input;
       if (isSameOrder(currentIds, nextIds)) {
         return currentIds;
       }
@@ -427,23 +451,41 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
         layout={effectiveLayout}
         note={note}
         onPermanentDelete={
-          mode === 'trash'
+          mode === "trash"
             ? (noteId) => {
                 const trashedNote = notes.find((item) => item.id === noteId);
-                setTrashConfirm({ kind: 'delete', noteIds: [noteId], title: richTextToPlainText(trashedNote?.title).trim() });
+                setTrashConfirm({
+                  kind: "delete",
+                  noteIds: [noteId],
+                  title: richTextToPlainText(trashedNote?.title).trim(),
+                });
               }
             : undefined
         }
-        onPinnedDragPointerDown={pinOrderingEnabled && note.isPinned ? (event) => beginPinnedNoteReorder(event, note.id) : undefined}
-        onPinnedDragPointerUp={pinOrderingEnabled && note.isPinned ? (event) => {
-          if (event.pointerId === activePinnedPointerIdRef.current) finishPinnedNoteReorder();
-        } : undefined}
-        onPinnedDragPointerCancel={pinOrderingEnabled && note.isPinned ? (event) => {
-          if (event.pointerId === activePinnedPointerIdRef.current) cancelPinnedNoteReorder();
-        } : undefined}
-        onPinnedKeyboardReorder={pinOrderingEnabled && note.isPinned
-          ? (direction) => void movePinnedNoteWithKeyboard(note.id, direction)
-          : undefined}
+        onPinnedDragPointerDown={
+          pinOrderingEnabled && note.isPinned
+            ? (event) => beginPinnedNoteReorder(event, note.id)
+            : undefined
+        }
+        onPinnedDragPointerUp={
+          pinOrderingEnabled && note.isPinned
+            ? (event) => {
+                if (event.pointerId === activePinnedPointerIdRef.current) finishPinnedNoteReorder();
+              }
+            : undefined
+        }
+        onPinnedDragPointerCancel={
+          pinOrderingEnabled && note.isPinned
+            ? (event) => {
+                if (event.pointerId === activePinnedPointerIdRef.current) cancelPinnedNoteReorder();
+              }
+            : undefined
+        }
+        onPinnedKeyboardReorder={
+          pinOrderingEnabled && note.isPinned
+            ? (direction) => void movePinnedNoteWithKeyboard(note.id, direction)
+            : undefined
+        }
         onSelectionChange={updateNoteSelection}
         pinnedDragActive={activePinnedDragId === note.id}
         pinnedDragEnabled={pinOrderingEnabled && note.isPinned}
@@ -452,22 +494,26 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
         showPinIndicator={pinActionsEnabled}
         showPinnedDragHandle={pinActionsEnabled}
         tags={tags}
-        timeValue={mode === 'recent' ? note.updatedAt : undefined}
+        timeValue={mode === "recent" ? note.updatedAt : undefined}
       />
     ));
   }
 
   return (
-    <div className={`page-content list-page-grid${adaptedContent ? ' adapted-content' : ''}`}>
+    <div className={`page-content list-page-grid${adaptedContent ? " adapted-content" : ""}`}>
       <header className="page-header-actions">
         <span>
           <h1 className="page-title">{copy.title}</h1>
           <p className="page-subtitle">{copy.subtitle}</p>
         </span>
-        {mode === 'trash' && trashCount ? (
-          <button className="danger-action-button" type="button" onClick={() => void handleClearTrash()}>
+        {mode === "trash" && trashCount ? (
+          <button
+            className="danger-action-button"
+            type="button"
+            onClick={() => void handleClearTrash()}
+          >
             <Trash2 />
-            {t('notes.clearTrash')}
+            {t("notes.clearTrash")}
           </button>
         ) : null}
       </header>
@@ -479,7 +525,9 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
           onClearSelection={() => setSelectedNoteIds([])}
           onDeleteSelected={() => void deleteSelectedNotes()}
           onMoveCollection={(nextCollectionId) => void moveSelectedNotes(nextCollectionId)}
-          onSelectAll={(checked) => setSelectedNoteIds(checked ? filtered.map((note) => note.id) : [])}
+          onSelectAll={(checked) =>
+            setSelectedNoteIds(checked ? filtered.map((note) => note.id) : [])
+          }
           onToggleTag={(tagId, assigned) => void updateSelectedTag(tagId, assigned)}
           selectedCount={selectedNotes.length}
           selectedNotes={selectedNotes}
@@ -491,31 +539,43 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
           collections={collections}
           defaultSortOrder={defaultSortOrder}
           onClear={clearFilters}
-          onCollectionChange={(nextCollectionId) => updateFilterParam('collection', nextCollectionId)}
+          onCollectionChange={(nextCollectionId) =>
+            updateFilterParam("collection", nextCollectionId)
+          }
           onLayoutChange={(nextLayout: PreferredLayout) => void setPreferredLayout(nextLayout)}
-          onSortChange={(nextSortOrder: NotesSortOrder) => updateFilterParam('sort', nextSortOrder)}
-          onTagChange={(nextTagId) => updateFilterParam('tag', nextTagId)}
+          onSortChange={(nextSortOrder: NotesSortOrder) => updateFilterParam("sort", nextSortOrder)}
+          onTagChange={(nextTagId) => updateFilterParam("tag", nextTagId)}
           preferredLayout={preferredLayout}
           selectedCollectionId={collectionId}
           selectedTagId={tagId}
-          sortLocked={mode === 'recent'}
+          sortLocked={mode === "recent"}
           sortOrder={sortOrder}
           tags={tags}
         />
       )}
 
       {filtered.length ? (
-        <div className={splitPinnedLists ? 'note-list-stack' : undefined}>
+        <div className={splitPinnedLists ? "note-list-stack" : undefined}>
           {splitPinnedLists ? (
             <div
-              className={['note-list', 'pin-list', effectiveLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}
+              className={["note-list", "pin-list", effectiveLayout === "grid" && "notes-grid"]
+                .filter(Boolean)
+                .join(" ")}
             >
               {renderNoteRows(pinnedNotes)}
             </div>
           ) : null}
 
           {regularNotes.length ? (
-            <div className={['note-list', splitPinnedLists && 'unpinned-list', effectiveLayout === 'grid' && 'notes-grid'].filter(Boolean).join(' ')}>
+            <div
+              className={[
+                "note-list",
+                splitPinnedLists && "unpinned-list",
+                effectiveLayout === "grid" && "notes-grid",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
               {renderNoteRows(regularNotes)}
             </div>
           ) : null}
@@ -527,7 +587,7 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
         <>
           <div className="pinned-note-drag-ghost" ref={pinnedDragGhostRef} aria-hidden="true">
             <div className="pinned-note-drag-ghost__title">
-              {richTextToPlainText(draggedPinnedNote.title).trim() || t('notes.untitled')}
+              {richTextToPlainText(draggedPinnedNote.title).trim() || t("notes.untitled")}
             </div>
             {richTextToPlainText(draggedPinnedNote.subtitle).trim() ? (
               <div className="pinned-note-drag-ghost__content">
@@ -535,7 +595,11 @@ export function NotesListViewPage({ mode }: { mode: ListMode }) {
               </div>
             ) : null}
           </div>
-          <div className="pinned-note-drop-indicator" ref={pinnedDropIndicatorRef} aria-hidden="true" />
+          <div
+            className="pinned-note-drop-indicator"
+            ref={pinnedDropIndicatorRef}
+            aria-hidden="true"
+          />
         </>
       ) : null}
       <TrashConfirmModal
@@ -574,7 +638,7 @@ function BulkNoteActionsRow({
   totalCount: number;
 }) {
   const { t } = useI18n();
-  const [moveCollectionId, setMoveCollectionId] = useState('');
+  const [moveCollectionId, setMoveCollectionId] = useState("");
   const [tagsOpen, setTagsOpen] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
   const tagsMenuRef = useRef<HTMLDivElement>(null);
@@ -584,7 +648,7 @@ function BulkNoteActionsRow({
   const partiallySelected = selectedCount > 0 && selectedCount < totalCount;
 
   useClickOutside(tagsMenuRef, tagsOpen, () => setTagsOpen(false));
-  useFloatingPopover(tagsOpen, tagsTriggerRef, tagsPopoverRef, 'bottom-start');
+  useFloatingPopover(tagsOpen, tagsTriggerRef, tagsPopoverRef, "bottom-start");
 
   useEffect(() => {
     if (selectAllRef.current) {
@@ -596,7 +660,7 @@ function BulkNoteActionsRow({
     setMoveCollectionId(collectionId);
     if (collectionId) {
       onMoveCollection(collectionId);
-      setMoveCollectionId('');
+      setMoveCollectionId("");
     }
   }
 
@@ -607,42 +671,55 @@ function BulkNoteActionsRow({
           ref={selectAllRef}
           type="checkbox"
           checked={allSelected}
-          aria-label={t('notes.bulk.selectAll')}
+          aria-label={t("notes.bulk.selectAll")}
           onChange={(event) => onSelectAll(event.currentTarget.checked)}
         />
-        <span className="bulk-selection-count">{t('notes.bulk.selected', { count: selectedCount })}</span>
+        <span className="bulk-selection-count">
+          {t("notes.bulk.selected", { count: selectedCount })}
+        </span>
       </label>
       <div className="bulk-field">
-        <span>{t('notes.bulk.moveCollection')}</span>
+        <span>{t("notes.bulk.moveCollection")}</span>
         <CustomSelect
-          ariaLabel={t('notes.bulk.moveCollection')}
-          emptyText={t('notes.filters.noCollections')}
+          ariaLabel={t("notes.bulk.moveCollection")}
+          emptyText={t("notes.filters.noCollections")}
           onChange={handleMoveCollection}
           options={collections.map((collection) => ({
             color: collection.color,
             label: collection.name,
             value: collection.id,
           }))}
-          placeholder={t('notes.bulk.movePlaceholder')}
+          placeholder={t("notes.bulk.movePlaceholder")}
           value={moveCollectionId}
         />
       </div>
 
       <div className="bulk-field bulk-tags-field" ref={tagsMenuRef}>
-        <span>{t('notes.bulk.assignTags')}</span>
-        <button className="bulk-tags-trigger" ref={tagsTriggerRef} type="button" aria-expanded={tagsOpen} onClick={() => setTagsOpen((value) => !value)}>
+        <span>{t("notes.bulk.assignTags")}</span>
+        <button
+          className="bulk-tags-trigger"
+          ref={tagsTriggerRef}
+          type="button"
+          aria-expanded={tagsOpen}
+          onClick={() => setTagsOpen((value) => !value)}
+        >
           <TagIcon />
-          <span>{t('notes.bulk.chooseTags')}</span>
+          <span>{t("notes.bulk.chooseTags")}</span>
           <ChevronDown />
         </button>
         {tagsOpen ? (
           <div className="bulk-tags-menu" ref={tagsPopoverRef}>
             {sortedTags.length ? (
               sortedTags.map((tag) => (
-                <BulkTagCheckbox key={tag.id} tag={tag} selectedNotes={selectedNotes} onToggle={onToggleTag} />
+                <BulkTagCheckbox
+                  key={tag.id}
+                  tag={tag}
+                  selectedNotes={selectedNotes}
+                  onToggle={onToggleTag}
+                />
               ))
             ) : (
-              <span className="notes-filter-empty">{t('notes.bulk.noTags')}</span>
+              <span className="notes-filter-empty">{t("notes.bulk.noTags")}</span>
             )}
           </div>
         ) : null}
@@ -650,11 +727,15 @@ function BulkNoteActionsRow({
 
       <button className="bulk-clear-button" type="button" onClick={onClearSelection}>
         <X />
-        {t('notes.bulk.clearSelection')}
+        {t("notes.bulk.clearSelection")}
       </button>
-      <button className="bulk-clear-button bulk-delete-button danger" type="button" onClick={onDeleteSelected}>
+      <button
+        className="bulk-clear-button bulk-delete-button danger"
+        type="button"
+        onClick={onDeleteSelected}
+      >
         <Trash2 />
-        {t('notes.bulk.deleteSelected')}
+        {t("notes.bulk.deleteSelected")}
       </button>
     </div>
   );
@@ -669,17 +750,17 @@ function TrashConfirmModal({
   confirmState: TrashConfirmState;
   onCancel: () => void;
   onConfirm: () => void;
-  t: ReturnType<typeof useI18n>['t'];
+  t: ReturnType<typeof useI18n>["t"];
 }) {
   if (!confirmState) {
     return null;
   }
 
-  const title = confirmState.kind === 'clear' ? t('notes.clearTrash') : t('notes.deleteForever');
+  const title = confirmState.kind === "clear" ? t("notes.clearTrash") : t("notes.deleteForever");
   const description =
-    confirmState.kind === 'clear'
-      ? t('notes.clearTrashConfirm')
-      : t('notes.deleteForeverConfirm', { title: confirmState.title ?? t('notes.untitled') });
+    confirmState.kind === "clear"
+      ? t("notes.clearTrashConfirm")
+      : t("notes.deleteForeverConfirm", { title: confirmState.title ?? t("notes.untitled") });
 
   return (
     <AppModal className="choice-modal" labelledBy="trash-confirm-title" onClose={onCancel} open>
@@ -688,11 +769,11 @@ function TrashConfirmModal({
       <div className="choice-modal-actions two-column-actions">
         <button type="button" onClick={onCancel}>
           <X />
-          <span>{t('common.cancel')}</span>
+          <span>{t("common.cancel")}</span>
         </button>
         <button type="button" onClick={onConfirm}>
           <Trash2 />
-          <span>{t('common.delete')}</span>
+          <span>{t("common.delete")}</span>
         </button>
       </div>
     </AppModal>
@@ -727,7 +808,7 @@ function BulkTagCheckbox({
         checked={checked}
         onChange={(event) => onToggle(tag.id, event.currentTarget.checked)}
       />
-      <span className={`notes-filter-dot ${tag.color ?? 'neutral'}`} />
+      <span className={`notes-filter-dot ${tag.color ?? "neutral"}`} />
       <span># {tag.name}</span>
     </label>
   );

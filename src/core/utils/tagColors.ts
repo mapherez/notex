@@ -1,1 +1,1 @@
-export { tagColorOptions } from '../../config/appSettings';
+export { tagColorOptions } from "../../config/appSettings";

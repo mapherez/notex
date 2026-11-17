@@ -1,27 +1,24 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from 'react';
-import { RotateCcw } from 'lucide-react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { AppShell } from './components/layout/AppShell';
-import { AppUpdatePrompt } from './components/ui/AppUpdatePrompt';
-import { ToastViewport } from './components/ui/ToastViewport';
-import { CloudTransferBanner } from './components/ui/CloudTransferBanner';
-import { isTauri } from '@tauri-apps/api/core';
-import { GoogleAccountModal } from './components/profile/GoogleAccountModal';
-import { DesktopBackupCloseGuard } from './components/ui/DesktopBackupCloseGuard';
-import { useGoogleAccountStore } from './store/useGoogleAccountStore';
-import { I18nProvider, useI18n } from './i18n/I18nProvider';
-import { DashboardPage } from './pages/DashboardPage';
-import { CollectionsPage, NotesListPage } from './pages/NotesListPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { TagsPage } from './pages/TagsPage';
-import { useAppStore } from './store/useAppStore';
-import { BrandName } from './components/ui/Brand';
-
-
-
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from "react";
+import { RotateCcw } from "lucide-react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AppShell } from "./components/layout/AppShell";
+import { AppUpdatePrompt } from "./components/ui/AppUpdatePrompt";
+import { ToastViewport } from "./components/ui/ToastViewport";
+import { CloudTransferBanner } from "./components/ui/CloudTransferBanner";
+import { isTauri } from "@tauri-apps/api/core";
+import { GoogleAccountModal } from "./components/profile/GoogleAccountModal";
+import { DesktopBackupCloseGuard } from "./components/ui/DesktopBackupCloseGuard";
+import { useGoogleAccountStore } from "./store/useGoogleAccountStore";
+import { I18nProvider, useI18n } from "./i18n/I18nProvider";
+import { DashboardPage } from "./pages/DashboardPage";
+import { CollectionsPage, NotesListPage } from "./pages/NotesListPage";
+import { ProfilePage } from "./pages/ProfilePage";
+import { TagsPage } from "./pages/TagsPage";
+import { useAppStore } from "./store/useAppStore";
+import { BrandName } from "./components/ui/Brand";
 
 const NoteDetailPage = lazy(() =>
-  import('./pages/NoteDetailPage').then((module) => ({ default: module.NoteDetailPage })),
+  import("./pages/NoteDetailPage").then((module) => ({ default: module.NoteDetailPage })),
 );
 
 export function App() {
@@ -29,15 +26,20 @@ export function App() {
   const settings = useAppStore((state) => state.settings);
   const status = useGoogleAccountStore((state) => state.status);
   const initialize = useGoogleAccountStore((state) => state.initialize);
-  const appReady = status === 'ready';
-  useEffect(() => { void initialize(); }, [initialize]);
+  const appReady = status === "ready";
+  useEffect(() => {
+    void initialize();
+  }, [initialize]);
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
     document.documentElement.lang = settings.language;
-    const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"][type="image/svg+xml"]');
-    if (favicon) favicon.href = `${import.meta.env.BASE_URL}assets/notex-mark-${settings.theme === 'light' ? 'light' : 'dark'}.svg`;
+    const favicon = document.querySelector<HTMLLinkElement>(
+      'link[rel="icon"][type="image/svg+xml"]',
+    );
+    if (favicon)
+      favicon.href = `${import.meta.env.BASE_URL}assets/notex-mark-${settings.theme === "light" ? "light" : "dark"}.svg`;
     const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    if (themeColor) themeColor.content = settings.theme === 'light' ? '#f7f8fb' : '#0d1017';
+    if (themeColor) themeColor.content = settings.theme === "light" ? "#f7f8fb" : "#0d1017";
   }, [settings.language, settings.theme]);
   useLayoutEffect(() => {
     const element = notificationViewportRef.current;
@@ -46,28 +48,43 @@ export function App() {
 
     function updateNotificationViewport() {
       const viewport = window.visualViewport;
-      viewportElement.style.setProperty('--nx-notification-viewport-top', `${viewport?.offsetTop ?? 0}px`);
-      viewportElement.style.setProperty('--nx-notification-viewport-left', `${viewport?.offsetLeft ?? 0}px`);
-      viewportElement.style.setProperty('--nx-notification-viewport-width', `${viewport?.width ?? window.innerWidth}px`);
-      viewportElement.style.setProperty('--nx-notification-viewport-height', `${viewport?.height ?? window.innerHeight}px`);
+      viewportElement.style.setProperty(
+        "--nx-notification-viewport-top",
+        `${viewport?.offsetTop ?? 0}px`,
+      );
+      viewportElement.style.setProperty(
+        "--nx-notification-viewport-left",
+        `${viewport?.offsetLeft ?? 0}px`,
+      );
+      viewportElement.style.setProperty(
+        "--nx-notification-viewport-width",
+        `${viewport?.width ?? window.innerWidth}px`,
+      );
+      viewportElement.style.setProperty(
+        "--nx-notification-viewport-height",
+        `${viewport?.height ?? window.innerHeight}px`,
+      );
     }
 
     updateNotificationViewport();
-    window.visualViewport?.addEventListener('resize', updateNotificationViewport);
-    window.visualViewport?.addEventListener('scroll', updateNotificationViewport);
-    window.addEventListener('resize', updateNotificationViewport);
+    window.visualViewport?.addEventListener("resize", updateNotificationViewport);
+    window.visualViewport?.addEventListener("scroll", updateNotificationViewport);
+    window.addEventListener("resize", updateNotificationViewport);
     return () => {
-      window.visualViewport?.removeEventListener('resize', updateNotificationViewport);
-      window.visualViewport?.removeEventListener('scroll', updateNotificationViewport);
-      window.removeEventListener('resize', updateNotificationViewport);
+      window.visualViewport?.removeEventListener("resize", updateNotificationViewport);
+      window.visualViewport?.removeEventListener("scroll", updateNotificationViewport);
+      window.removeEventListener("resize", updateNotificationViewport);
     };
   }, []);
   useEffect(() => {
-    if (appReady && isTauri()) void import('./store/useLocalMcpStore').then(({ useLocalMcpStore }) => useLocalMcpStore.getState().initialize());
+    if (appReady && isTauri())
+      void import("./store/useLocalMcpStore").then(({ useLocalMcpStore }) =>
+        useLocalMcpStore.getState().initialize(),
+      );
   }, [appReady]);
   return (
     <I18nProvider locale={settings.language}>
-      <BrowserRouter basename={isTauri() ? '/' : import.meta.env.BASE_URL}>
+      <BrowserRouter basename={isTauri() ? "/" : import.meta.env.BASE_URL}>
         {appReady ? (
           <Routes>
             <Route element={<AppShell />}>
@@ -93,7 +110,10 @@ export function App() {
             </Route>
           </Routes>
         ) : (
-          <AppLoadingScreen failed={status === 'error'} waitingForLogin={status === 'login-required'} />
+          <AppLoadingScreen
+            failed={status === "error"}
+            waitingForLogin={status === "login-required"}
+          />
         )}
         <GoogleAccountModal />
         <DesktopBackupCloseGuard />
@@ -109,19 +129,33 @@ export function App() {
   );
 }
 
-function AppLoadingScreen({ failed, waitingForLogin }: { failed: boolean; waitingForLogin: boolean }) {
+function AppLoadingScreen({
+  failed,
+  waitingForLogin,
+}: {
+  failed: boolean;
+  waitingForLogin: boolean;
+}) {
   const { t } = useI18n();
   return (
-    <div className={failed ? 'app-loading-screen app-loading-screen--failed' : 'app-loading-screen'}
-      aria-busy={!failed && !waitingForLogin} aria-label="NoteX" role="status">
+    <div
+      className={failed ? "app-loading-screen app-loading-screen--failed" : "app-loading-screen"}
+      aria-busy={!failed && !waitingForLogin}
+      aria-label="NoteX"
+      role="status"
+    >
       {failed ? (
         <section className="app-modal choice-modal" aria-labelledby="storage-error-title">
           <h2 id="storage-error-title">NoteX</h2>
-          <p>{t('google.storageError')}</p>
+          <p>{t("google.storageError")}</p>
           <div className="choice-modal-actions">
-            <button type="button" className="secondary-button" onClick={() => window.location.reload()}>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => window.location.reload()}
+            >
               <RotateCcw aria-hidden="true" />
-              <span>{t('google.retry')}</span>
+              <span>{t("google.retry")}</span>
             </button>
           </div>
         </section>
@@ -137,7 +171,12 @@ function AppLoadingScreen({ failed, waitingForLogin }: { failed: boolean; waitin
 
 function RouteLoadingFallback() {
   return (
-    <div className="page-content route-loading-screen" aria-busy="true" aria-label="Loading note" role="status">
+    <div
+      className="page-content route-loading-screen"
+      aria-busy="true"
+      aria-label="Loading note"
+      role="status"
+    >
       <span className="route-loading-screen__spinner" aria-hidden="true" />
     </div>
   );

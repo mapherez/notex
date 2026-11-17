@@ -3,19 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=26.13.1 <27"
-  },
   "scripts": {
     "build:contract": "npm run build --workspace @notex/mcp-contract",
     "prebuild": "npm run build:contract",
     "build": "tsc -p tsconfig.json",
-    "dev": "tsx watch src/main.ts",
+    "dev": "vpx --watch src/main.ts",
     "start": "node dist/main.js",
     "typecheck": "npm run build:contract && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
-    "test": "npm run build:contract && vitest run",
-    "test:watch": "vitest",
-    "simulate:desktop": "tsx src/simulator.ts"
+    "test": "npm run build:contract && vp test run",
+    "test:watch": "vp test",
+    "simulate:desktop": "vpx src/simulator.ts"
   },
   "dependencies": {
     "@better-auth/cimd": "^1.7.2",
@@ -44,8 +41,11 @@
     "@types/supertest": "^6.0.3",
     "@types/ws": "^8.18.1",
     "supertest": "^7.2.2",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vite-plus": "1.6.0",
+    "vitest": "5.1.0"
+  },
+  "engines": {
+    "node": ">=26.13.1 <27"
   }
 }

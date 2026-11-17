@@ -149,7 +149,17 @@
 
 // Native horizontal swiping dismisses the sheet; text/interactive regions
 // retain their own vertical scrolling, selection and controls.
-.side-panel-content :is(input, textarea, [contenteditable="true"], button, a, .sortable-tag-list__item, .custom-select, .color-picker) {
+.side-panel-content
+  :is(
+    input,
+    textarea,
+    [contenteditable="true"],
+    button,
+    a,
+    .sortable-tag-list__item,
+    .custom-select,
+    .color-picker
+  ) {
   touch-action: pan-y pinch-zoom;
 }
 

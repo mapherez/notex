@@ -1,33 +1,33 @@
 #!/usr/bin/env node
 
-import { readFile, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import process from 'node:process';
-import { fileURLToPath } from 'node:url';
-import { createInterface } from 'node:readline/promises';
+import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+import { createInterface } from "node:readline/promises";
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
-  packageJson: path.join(rootDir, 'package.json'),
-  packageLock: path.join(rootDir, 'package-lock.json'),
-  cargoToml: path.join(rootDir, 'src-tauri', 'Cargo.toml'),
-  cargoLock: path.join(rootDir, 'src-tauri', 'Cargo.lock'),
-  tauriConfig: path.join(rootDir, 'src-tauri', 'tauri.conf.json'),
+  packageJson: path.join(rootDir, "package.json"),
+  packageLock: path.join(rootDir, "package-lock.json"),
+  cargoToml: path.join(rootDir, "src-tauri", "Cargo.toml"),
+  cargoLock: path.join(rootDir, "src-tauri", "Cargo.lock"),
+  tauriConfig: path.join(rootDir, "src-tauri", "tauri.conf.json"),
 };
 
 const args = process.argv.slice(2);
-if (args.includes('--help') || args.includes('-h')) {
+if (args.includes("--help") || args.includes("-h")) {
   printHelp();
   process.exit(0);
 }
 
-if (args.length > 1 || args[0]?.startsWith('-')) {
-  fail('Expected a single version argument.');
+if (args.length > 1 || args[0]?.startsWith("-")) {
+  fail("Expected a single version argument.");
 }
 
 const originals = Object.fromEntries(
   await Promise.all(
-    Object.entries(files).map(async ([key, filePath]) => [key, await readFile(filePath, 'utf8')]),
+    Object.entries(files).map(async ([key, filePath]) => [key, await readFile(filePath, "utf8")]),
   ),
 );
 
@@ -37,7 +37,7 @@ let requestedVersion = args[0];
 
 if (!requestedVersion) {
   if (!process.stdin.isTTY) {
-    fail('No version provided. Run interactively or pass it after --.');
+    fail("No version provided. Run interactively or pass it after --.");
   }
 
   const prompt = createInterface({ input: process.stdin, output: process.stdout });
@@ -58,16 +58,16 @@ if (!isSemver(nextVersion)) {
 const packageLock = parseJson(originals.packageLock, files.packageLock);
 const tauriConfig = parseJson(originals.tauriConfig, files.tauriConfig);
 
-assertStringVersion(packageJson.version, 'package.json');
-assertStringVersion(packageLock.version, 'package-lock.json');
-assertStringVersion(packageLock.packages?.['']?.version, 'package-lock.json root package');
-assertStringVersion(tauriConfig.version, 'src-tauri/tauri.conf.json');
+assertStringVersion(packageJson.version, "package.json");
+assertStringVersion(packageLock.version, "package-lock.json");
+assertStringVersion(packageLock.packages?.[""]?.version, "package-lock.json root package");
+assertStringVersion(tauriConfig.version, "src-tauri/tauri.conf.json");
 
 const currentVersions = [
   packageJson.version,
   packageLock.version,
-  packageLock.packages[''].version,
-  readPackageVersion(originals.cargoToml, '[package]', 'src-tauri/Cargo.toml'),
+  packageLock.packages[""].version,
+  readPackageVersion(originals.cargoToml, "[package]", "src-tauri/Cargo.toml"),
   readCargoLockVersion(originals.cargoLock),
   tauriConfig.version,
 ];
@@ -83,7 +83,7 @@ if (currentVersions.every((version) => normalizeVersion(version) === nextVersion
 
 packageJson.version = nextVersion;
 packageLock.version = nextVersion;
-packageLock.packages[''].version = nextVersion;
+packageLock.packages[""].version = nextVersion;
 tauriConfig.version = nextVersion;
 
 const updated = {
@@ -91,8 +91,8 @@ const updated = {
   packageLock: formatJson(packageLock, originals.packageLock),
   cargoToml: replacePackageVersion(
     originals.cargoToml,
-    '[package]',
-    'src-tauri/Cargo.toml',
+    "[package]",
+    "src-tauri/Cargo.toml",
     nextVersion,
   ),
   cargoLock: replaceCargoLockVersion(originals.cargoLock, nextVersion),
@@ -108,10 +108,10 @@ const written = [];
 try {
   for (const key of Object.keys(files)) {
     written.push(key);
-    await writeFile(files[key], updated[key], 'utf8');
+    await writeFile(files[key], updated[key], "utf8");
   }
 } catch (error) {
-  await Promise.allSettled(written.map((key) => writeFile(files[key], originals[key], 'utf8')));
+  await Promise.allSettled(written.map((key) => writeFile(files[key], originals[key], "utf8")));
   throw error;
 }
 
@@ -124,7 +124,7 @@ function replacePackageVersion(contents, sectionName, label, version) {
   readPackageVersion(contents, sectionName, label);
 
   const sectionStart = contents.indexOf(sectionName);
-  const nextSection = contents.indexOf('\n[', sectionStart + sectionName.length);
+  const nextSection = contents.indexOf("\n[", sectionStart + sectionName.length);
   const sectionEnd = nextSection === -1 ? contents.length : nextSection;
   const section = contents.slice(sectionStart, sectionEnd);
   const updatedSection = section.replace(
@@ -140,12 +140,10 @@ function readPackageVersion(contents, sectionName, label) {
     fail(`Could not find ${sectionName} in ${label}.`);
   }
 
-  const nextSection = contents.indexOf('\n[', sectionStart + sectionName.length);
+  const nextSection = contents.indexOf("\n[", sectionStart + sectionName.length);
   const sectionEnd = nextSection === -1 ? contents.length : nextSection;
   const section = contents.slice(sectionStart, sectionEnd);
-  const matches = [
-    ...section.matchAll(/^version[ \t]*=[ \t]*"([^"]+)"[ \t]*(\r?)$/gm),
-  ];
+  const matches = [...section.matchAll(/^version[ \t]*=[ \t]*"([^"]+)"[ \t]*(\r?)$/gm)];
 
   if (matches.length !== 1) {
     fail(`Expected exactly one package version in ${label}.`);
@@ -159,28 +157,24 @@ function replaceCargoLockVersion(contents, version) {
 
   const blocks = contents.split(/(?=^\[\[package\]\][ \t]*\r?$)/m);
   const matchingIndexes = blocks
-    .map((block, index) =>
-      /^name[ \t]*=[ \t]*"NoteX"[ \t]*\r?$/m.test(block) ? index : -1,
-    )
+    .map((block, index) => (/^name[ \t]*=[ \t]*"NoteX"[ \t]*\r?$/m.test(block) ? index : -1))
     .filter((index) => index !== -1);
 
   if (matchingIndexes.length !== 1) {
-    fail('Expected exactly one NoteX package in src-tauri/Cargo.lock.');
+    fail("Expected exactly one NoteX package in src-tauri/Cargo.lock.");
   }
 
   const index = matchingIndexes[0];
-  const matches = [
-    ...blocks[index].matchAll(/^version[ \t]*=[ \t]*"[^"]+"[ \t]*(\r?)$/gm),
-  ];
+  const matches = [...blocks[index].matchAll(/^version[ \t]*=[ \t]*"[^"]+"[ \t]*(\r?)$/gm)];
   if (matches.length !== 1) {
-    fail('Expected exactly one NoteX version in src-tauri/Cargo.lock.');
+    fail("Expected exactly one NoteX version in src-tauri/Cargo.lock.");
   }
 
   blocks[index] = blocks[index].replace(
     /^version[ \t]*=[ \t]*"[^"]+"[ \t]*(\r?)$/m,
     `version = "${version}"$1`,
   );
-  return blocks.join('');
+  return blocks.join("");
 }
 
 function readCargoLockVersion(contents) {
@@ -190,14 +184,12 @@ function readCargoLockVersion(contents) {
   );
 
   if (matchingBlocks.length !== 1) {
-    fail('Expected exactly one NoteX package in src-tauri/Cargo.lock.');
+    fail("Expected exactly one NoteX package in src-tauri/Cargo.lock.");
   }
 
-  const matches = [
-    ...matchingBlocks[0].matchAll(/^version[ \t]*=[ \t]*"([^"]+)"[ \t]*(\r?)$/gm),
-  ];
+  const matches = [...matchingBlocks[0].matchAll(/^version[ \t]*=[ \t]*"([^"]+)"[ \t]*(\r?)$/gm)];
   if (matches.length !== 1) {
-    fail('Expected exactly one NoteX version in src-tauri/Cargo.lock.');
+    fail("Expected exactly one NoteX version in src-tauri/Cargo.lock.");
   }
 
   return matches[0][1];
@@ -212,18 +204,20 @@ function parseJson(contents, filePath) {
 }
 
 function formatJson(value, original) {
-  const newline = original.includes('\r\n') ? '\r\n' : '\n';
-  return `${JSON.stringify(value, null, 2).replaceAll('\n', newline)}${newline}`;
+  const newline = original.includes("\r\n") ? "\r\n" : "\n";
+  return `${JSON.stringify(value, null, 2).replaceAll("\n", newline)}${newline}`;
 }
 
 function assertStringVersion(value, label) {
-  if (typeof value !== 'string' || !isSemver(normalizeVersion(value))) {
+  if (typeof value !== "string" || !isSemver(normalizeVersion(value))) {
     fail(`Invalid or missing version in ${label}.`);
   }
 }
 
 function normalizeVersion(value) {
-  return String(value ?? '').trim().replace(/^v/i, '');
+  return String(value ?? "")
+    .trim()
+    .replace(/^v/i, "");
 }
 
 function isSemver(value) {

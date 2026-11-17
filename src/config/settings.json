@@ -33,16 +33,9 @@
       "startupPage": "/",
       "preferredLayout": "list",
       "primaryCollectionId": "collection-work",
-      "favoriteTagIds": [
-        "tag-grammar",
-        "tag-doubt"
-      ],
-      "pinnedNoteIds": [
-        "note-linguistic"
-      ],
-      "quickPinNoteIds": [
-        "note-linguistic"
-      ],
+      "favoriteTagIds": ["tag-grammar", "tag-doubt"],
+      "pinnedNoteIds": ["note-linguistic"],
+      "quickPinNoteIds": ["note-linguistic"],
       "noteHiddenPanelIds": [],
       "confirmNoteExport": true
     }
@@ -130,10 +123,7 @@
         "asset": "/assets/thumb-calendar.svg"
       }
     ],
-    "layouts": [
-      "list",
-      "grid"
-    ]
+    "layouts": ["list", "grid"]
   },
   "navigation": {
     "sidebarItems": [
@@ -224,10 +214,7 @@
       "keyboardThreshold": 120
     },
     "defaultTable": {
-      "columns": [
-        "Column 1",
-        "Column 2"
-      ],
+      "columns": ["Column 1", "Column 2"],
       "rows": 1
     },
     "readingWordsPerMinute": 180,
@@ -316,21 +303,10 @@
   },
   "demo": {
     "enabled": true,
-    "demoNoteIds": [
-      "note-linguistic"
-    ],
-    "defaultTagIds": [
-      "tag-grammar",
-      "tag-doubt"
-    ],
-    "defaultCollectionIds": [
-      "collection-work",
-      "collection-personal"
-    ],
-    "collectionOrder": [
-      "collection-work",
-      "collection-personal"
-    ]
+    "demoNoteIds": ["note-linguistic"],
+    "defaultTagIds": ["tag-grammar", "tag-doubt"],
+    "defaultCollectionIds": ["collection-work", "collection-personal"],
+    "collectionOrder": ["collection-work", "collection-personal"]
   },
   "ui": {
     "toastMaxVisible": 4,

@@ -26,7 +26,11 @@ export function isEditableShortcutTarget(target: EventTarget | null) {
   }
 
   if (editableElement instanceof HTMLInputElement) {
-    return editableElement.type !== 'button' && editableElement.type !== 'checkbox' && editableElement.type !== 'radio';
+    return (
+      editableElement.type !== "button" &&
+      editableElement.type !== "checkbox" &&
+      editableElement.type !== "radio"
+    );
   }
 
   return true;

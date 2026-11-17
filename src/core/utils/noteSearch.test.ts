@@ -1,113 +1,159 @@
-import { describe, expect, it } from 'vitest';
-import type { Note } from '../models/models';
-import { searchNotes } from './noteSearch';
+import { describe, expect, it } from "vite-plus/test";
+import type { Note } from "../models/models";
+import { searchNotes } from "./noteSearch";
 
 const tags = [
-  { id: 'tag-grammar', name: 'Gramática', color: 'blue' as const },
-  { id: 'tag-work', name: 'Trabalho', color: 'green' as const },
+  { id: "tag-grammar", name: "Gramática", color: "blue" as const },
+  { id: "tag-work", name: "Trabalho", color: "green" as const },
 ];
 const collections = [
-  { id: 'collection-reference', name: 'Referência', color: 'amber' as const },
-  { id: 'collection-work', name: 'Projetos', color: 'violet' as const },
+  { id: "collection-reference", name: "Referência", color: "amber" as const },
+  { id: "collection-work", name: "Projetos", color: "violet" as const },
 ];
 
-describe('searchNotes', () => {
-  it('normalizes accents and searches note content, tags, and collections', () => {
+describe("searchNotes", () => {
+  it("normalizes accents and searches note content, tags, and collections", () => {
     const notes = [
-      note({ id: 'content', title: '<p>Introdução</p>', contentText: 'Conceitos linguísticos' }),
-      note({ id: 'tag', title: 'Other', tagIds: ['tag-grammar'] }),
-      note({ id: 'collection', title: 'Other', collectionId: 'collection-reference' }),
+      note({ id: "content", title: "<p>Introdução</p>", contentText: "Conceitos linguísticos" }),
+      note({ id: "tag", title: "Other", tagIds: ["tag-grammar"] }),
+      note({ id: "collection", title: "Other", collectionId: "collection-reference" }),
     ];
 
-    expect(searchNotes({ collections, limit: 10, notes, query: 'introducao', tags }).map(resultId)).toEqual(['content']);
-    expect(searchNotes({ collections, limit: 10, notes, query: 'gramatica', tags }).map(resultId)).toEqual(['tag']);
-    expect(searchNotes({ collections, limit: 10, notes, query: 'referencia', tags }).map(resultId)).toEqual(['collection']);
-  });
-
-  it('uses active by default and supports trash and all explicitly', () => {
-    const active = note({ id: 'active', title: 'Shared term', updatedAt: '2026-01-01T00:00:00.000Z' });
-    const trash = note({ id: 'trash', title: 'Shared term', isTrashed: true, updatedAt: '2026-01-02T00:00:00.000Z' });
-
-    expect(searchNotes({ collections, limit: 10, notes: [active, trash], query: 'shared', tags }).map(resultId)).toEqual(['active']);
     expect(
-      searchNotes({ collections, limit: 10, location: 'trash', notes: [active, trash], query: 'shared', tags }).map(resultId),
-    ).toEqual(['trash']);
+      searchNotes({ collections, limit: 10, notes, query: "introducao", tags }).map(resultId),
+    ).toEqual(["content"]);
     expect(
-      searchNotes({ collections, limit: 10, location: 'all', notes: [active, trash], query: 'shared', tags }).map(resultId),
-    ).toEqual(['trash', 'active']);
+      searchNotes({ collections, limit: 10, notes, query: "gramatica", tags }).map(resultId),
+    ).toEqual(["tag"]);
+    expect(
+      searchNotes({ collections, limit: 10, notes, query: "referencia", tags }).map(resultId),
+    ).toEqual(["collection"]);
   });
 
-  it('returns the most recently updated notes for an empty query and enforces the limit', () => {
+  it("uses active by default and supports trash and all explicitly", () => {
+    const active = note({
+      id: "active",
+      title: "Shared term",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    const trash = note({
+      id: "trash",
+      title: "Shared term",
+      isTrashed: true,
+      updatedAt: "2026-01-02T00:00:00.000Z",
+    });
+
+    expect(
+      searchNotes({ collections, limit: 10, notes: [active, trash], query: "shared", tags }).map(
+        resultId,
+      ),
+    ).toEqual(["active"]);
+    expect(
+      searchNotes({
+        collections,
+        limit: 10,
+        location: "trash",
+        notes: [active, trash],
+        query: "shared",
+        tags,
+      }).map(resultId),
+    ).toEqual(["trash"]);
+    expect(
+      searchNotes({
+        collections,
+        limit: 10,
+        location: "all",
+        notes: [active, trash],
+        query: "shared",
+        tags,
+      }).map(resultId),
+    ).toEqual(["trash", "active"]);
+  });
+
+  it("returns the most recently updated notes for an empty query and enforces the limit", () => {
     const notes = [
-      note({ id: 'older', updatedAt: '2026-01-01T00:00:00.000Z' }),
-      note({ id: 'newer', updatedAt: '2026-01-03T00:00:00.000Z' }),
-      note({ id: 'middle', updatedAt: '2026-01-02T00:00:00.000Z' }),
+      note({ id: "older", updatedAt: "2026-01-01T00:00:00.000Z" }),
+      note({ id: "newer", updatedAt: "2026-01-03T00:00:00.000Z" }),
+      note({ id: "middle", updatedAt: "2026-01-02T00:00:00.000Z" }),
     ];
 
-    expect(searchNotes({ collections, limit: 2, notes, query: '', tags }).map(resultId)).toEqual(['newer', 'middle']);
-  });
-
-  it('preserves phrase matching across adjacent note fields', () => {
-    const notes = [note({ id: 'cross-field', title: 'Project', subtitle: 'Atlas' })];
-
-    expect(searchNotes({ collections, limit: 10, notes, query: 'project atlas', tags }).map(resultId)).toEqual([
-      'cross-field',
+    expect(searchNotes({ collections, limit: 2, notes, query: "", tags }).map(resultId)).toEqual([
+      "newer",
+      "middle",
     ]);
   });
 
-  it('matches every query term independently across notes', () => {
-    const notes = [
-      note({ id: 'linguistic', title: 'Dúvida linguística', updatedAt: '2026-01-03T00:00:00.000Z' }),
-      note({ id: 'rice', title: 'Arroz-doce', updatedAt: '2026-01-02T00:00:00.000Z' }),
-      note({ id: 'test', title: 'Test note', updatedAt: '2026-01-01T00:00:00.000Z' }),
-    ];
+  it("preserves phrase matching across adjacent note fields", () => {
+    const notes = [note({ id: "cross-field", title: "Project", subtitle: "Atlas" })];
 
-    expect(searchNotes({ collections, limit: 10, notes, query: 'duvida doce', tags }).map(resultId)).toEqual([
-      'linguistic',
-      'rice',
-    ]);
-    expect(searchNotes({ collections, limit: 10, notes, query: 'linguistica arroz test', tags }).map(resultId)).toEqual([
-      'linguistic',
-      'rice',
-      'test',
-    ]);
+    expect(
+      searchNotes({ collections, limit: 10, notes, query: "project atlas", tags }).map(resultId),
+    ).toEqual(["cross-field"]);
   });
 
-  it('searches independent terms in subtitles and block titles', () => {
+  it("matches every query term independently across notes", () => {
     const notes = [
-      note({ id: 'subtitle', subtitle: 'Hidden subtitle match' }),
-      note({ id: 'block-title', blockTitle: 'Separate block heading' }),
+      note({
+        id: "linguistic",
+        title: "Dúvida linguística",
+        updatedAt: "2026-01-03T00:00:00.000Z",
+      }),
+      note({ id: "rice", title: "Arroz-doce", updatedAt: "2026-01-02T00:00:00.000Z" }),
+      note({ id: "test", title: "Test note", updatedAt: "2026-01-01T00:00:00.000Z" }),
     ];
 
-    expect(searchNotes({ collections, limit: 10, notes, query: 'hidden heading', tags }).map(resultId).sort()).toEqual([
-      'block-title',
-      'subtitle',
-    ]);
+    expect(
+      searchNotes({ collections, limit: 10, notes, query: "duvida doce", tags }).map(resultId),
+    ).toEqual(["linguistic", "rice"]);
+    expect(
+      searchNotes({ collections, limit: 10, notes, query: "linguistica arroz test", tags }).map(
+        resultId,
+      ),
+    ).toEqual(["linguistic", "rice", "test"]);
   });
 
-  it('ranks notes matching more distinct terms first', () => {
+  it("searches independent terms in subtitles and block titles", () => {
     const notes = [
-      note({ id: 'one', title: 'Test only', updatedAt: '2026-01-03T00:00:00.000Z' }),
-      note({ id: 'three', title: 'Linguística arroz test', updatedAt: '2026-01-01T00:00:00.000Z' }),
+      note({ id: "subtitle", subtitle: "Hidden subtitle match" }),
+      note({ id: "block-title", blockTitle: "Separate block heading" }),
     ];
 
-    const results = searchNotes({ collections, limit: 10, notes, query: 'linguistica arroz test', tags });
-    expect(results.map(resultId)).toEqual(['three', 'one']);
+    expect(
+      searchNotes({ collections, limit: 10, notes, query: "hidden heading", tags })
+        .map(resultId)
+        .sort(),
+    ).toEqual(["block-title", "subtitle"]);
+  });
+
+  it("ranks notes matching more distinct terms first", () => {
+    const notes = [
+      note({ id: "one", title: "Test only", updatedAt: "2026-01-03T00:00:00.000Z" }),
+      note({ id: "three", title: "Linguística arroz test", updatedAt: "2026-01-01T00:00:00.000Z" }),
+    ];
+
+    const results = searchNotes({
+      collections,
+      limit: 10,
+      notes,
+      query: "linguistica arroz test",
+      tags,
+    });
+    expect(results.map(resultId)).toEqual(["three", "one"]);
     expect(results.map((result) => result.matchedTermCount)).toEqual([3, 1]);
   });
 
-  it('returns a bounded plain-text snippet', () => {
+  it("returns a bounded plain-text snippet", () => {
     const result = searchNotes({
       collections,
       limit: 1,
-      notes: [note({ id: 'long', contentText: `needle ${'content '.repeat(60)}` })],
-      query: 'needle',
+      notes: [note({ id: "long", contentText: `needle ${"content ".repeat(60)}` })],
+      query: "needle",
       tags,
     })[0];
 
-    expect(result.snippet).toContain('needle');
+    expect(result.snippet).toContain("needle");
     expect(result.snippet.length).toBeLessThanOrEqual(240);
-    expect(result.snippet.endsWith('...')).toBe(true);
+    expect(result.snippet.endsWith("...")).toBe(true);
   });
 });
 
@@ -116,15 +162,15 @@ function resultId(result: { note: Note }) {
 }
 
 function note({
-  blockTitle = '',
+  blockTitle = "",
   collectionId = null,
-  contentText = '',
+  contentText = "",
   id,
   isTrashed = false,
-  subtitle = '',
+  subtitle = "",
   tagIds = [],
-  title = 'Note',
-  updatedAt = '2026-01-01T00:00:00.000Z',
+  title = "Note",
+  updatedAt = "2026-01-01T00:00:00.000Z",
 }: {
   blockTitle?: string;
   collectionId?: string | null;
@@ -147,8 +193,8 @@ function note({
     isPinned: false,
     isArchived: false,
     isTrashed,
-    saveState: 'saved',
-    createdAt: '2025-01-01T00:00:00.000Z',
+    saveState: "saved",
+    createdAt: "2025-01-01T00:00:00.000Z",
     updatedAt,
     stats: { wordCount: 0, characterCount: 0, readingTimeMinutes: 1 },
     version: 1,
@@ -158,10 +204,10 @@ function note({
         noteId: id,
         sortOrder: 0,
         title: blockTitle,
-        kind: 'content',
-        contentJson: { type: 'doc', content: [{ type: 'paragraph' }] },
+        kind: "content",
+        contentJson: { type: "doc", content: [{ type: "paragraph" }] },
         contentText,
-        createdAt: '2025-01-01T00:00:00.000Z',
+        createdAt: "2025-01-01T00:00:00.000Z",
         updatedAt,
       },
     ],

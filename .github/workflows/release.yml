@@ -1,6 +1,8 @@
 name: Release Tauri App
 
 on:
+  push:
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
       release_tag:
@@ -30,7 +32,40 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  approval:
+    name: Reuse approved source CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      source_sha: ${{ steps.ci.outputs.source_sha }}
+      ci_run_id: ${{ steps.ci.outputs.ci_run_id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          package-manager-cache: false
+      - name: Require successful CI for the exact source
+        id: ci
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { pathToFileURL } = require('node:url');
+            const { requireApprovedCI } = await import(pathToFileURL(`${process.env.GITHUB_WORKSPACE}/scripts/ci-policy.mjs`).href);
+            const tag = context.ref.startsWith('refs/tags/') ? context.ref.slice('refs/tags/'.length) : '';
+
+            const approval = await requireApprovedCI({ github, ...context.repo, revision: context.sha, tag });
+            core.setOutput('source_sha', approval.sourceSha);
+            core.setOutput('ci_run_id', String(approval.runId));
+            core.notice(`Reusing source CI ${approval.runId} (${approval.sourceSha}); no source checks are repeated.`);
+
   windows:
+    needs: approval
     name: Build Windows x86_64
     runs-on: windows-latest
     timeout-minutes: 60
@@ -43,7 +78,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: "26"
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -62,12 +97,6 @@ jobs:
           workspaces: src-tauri -> target
           key: windows-x86_64-pc-windows-msvc-release
       - run: npm ci
-      - run: npm run test:release
-      - run: npm test --workspace @notex/mcp-contract
-      - run: npm test
-      - run: git diff --exit-code -- packages/notex-mcp-contract/generated/tool-manifest.json
-      - run: npm run check:styles
-      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml --target $env:NOTEX_RELEASE_TARGET
       - name: Verify updater signing secret
         shell: pwsh
         env:
@@ -93,6 +122,7 @@ jobs:
           retention-days: 14
 
   macos:
+    needs: approval
     name: Build macOS Apple Silicon (ad hoc)
     runs-on: macos-15
     timeout-minutes: 60
@@ -105,7 +135,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: "26"
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -130,12 +160,6 @@ jobs:
           workspaces: src-tauri -> target
           key: macos-15-aarch64-apple-darwin-release
       - run: npm ci
-      - run: npm run test:release
-      - run: npm test --workspace @notex/mcp-contract
-      - run: npm test
-      - run: git diff --exit-code -- packages/notex-mcp-contract/generated/tool-manifest.json
-      - run: npm run check:styles
-      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml --target "$NOTEX_RELEASE_TARGET"
       - name: Verify updater signing secret
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -172,17 +196,17 @@ jobs:
     permissions:
       contents: write
     env:
-      RELEASE_TAG: ${{ inputs.release_tag }}
+      RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.release_tag }}
       TAURI_RELEASE_NOTES: ${{ inputs.release_notes }}
       RELEASE_DRAFT: ${{ inputs.draft }}
-      RELEASE_PRERELEASE: ${{ inputs.prerelease }}
+      RELEASE_PRERELEASE: ${{ inputs.prerelease || (github.ref_type == 'tag' && contains(github.ref_name, '-')) }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: "26"
       - uses: actions/download-artifact@v8
         with:
           name: release-windows-x86_64

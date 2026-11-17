@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 import {
   DEFAULT_LOCAL_MCP_PORT,
   getLocalMcpState,
@@ -8,10 +8,10 @@ import {
   startLocalMcpServer,
   stopLocalMcpServer,
   type LocalMcpPublicState,
-} from '../core/services/mcpLocalServer';
-import { useAppStore } from './useAppStore';
+} from "../core/services/mcpLocalServer";
+import { useAppStore } from "./useAppStore";
 
-type LocalMcpAction = 'start' | 'stop' | null;
+type LocalMcpAction = "start" | "stop" | null;
 
 type LocalMcpStore = {
   connection: LocalMcpPublicState;
@@ -25,7 +25,7 @@ type LocalMcpStore = {
 };
 
 const initialConnection: LocalMcpPublicState = {
-  state: 'stopped',
+  state: "stopped",
   rendererReady: false,
   port: DEFAULT_LOCAL_MCP_PORT,
   url: localMcpUrl(DEFAULT_LOCAL_MCP_PORT),
@@ -60,10 +60,10 @@ export const useLocalMcpStore = create<LocalMcpStore>((set, get) => ({
         })
         .catch(async () => {
           const connection = await getLocalMcpState().catch(() => ({
-            state: 'error' as const,
+            state: "error" as const,
             rendererReady: false,
-            errorCode: 'INITIALIZATION_FAILED',
-            errorMessage: 'The local MCP server could not be initialized.',
+            errorCode: "INITIALIZATION_FAILED",
+            errorMessage: "The local MCP server could not be initialized.",
           }));
           set({
             connection: withConfiguredPort(connection, get().port),
@@ -76,10 +76,10 @@ export const useLocalMcpStore = create<LocalMcpStore>((set, get) => ({
   },
   setPort: async (port) => {
     if (!isValidLocalMcpPort(port)) {
-      throw new Error('The MCP port must be between 1024 and 65535.');
+      throw new Error("The MCP port must be between 1024 and 65535.");
     }
-    if (!['stopped', 'error'].includes(get().connection.state)) {
-      throw new Error('The MCP server must be stopped before changing its port.');
+    if (!["stopped", "error"].includes(get().connection.state)) {
+      throw new Error("The MCP server must be stopped before changing its port.");
     }
 
     await useAppStore.getState().setMcpPort(port);
@@ -93,7 +93,7 @@ export const useLocalMcpStore = create<LocalMcpStore>((set, get) => ({
     }));
   },
   start: async () => {
-    set({ action: 'start' });
+    set({ action: "start" });
     try {
       const connection = await startLocalMcpServer(get().port);
       set({ connection: withConfiguredPort(connection, get().port) });
@@ -106,7 +106,7 @@ export const useLocalMcpStore = create<LocalMcpStore>((set, get) => ({
     }
   },
   stop: async () => {
-    set({ action: 'stop' });
+    set({ action: "stop" });
     try {
       const connection = await stopLocalMcpServer();
       set({ connection: withConfiguredPort(connection, get().port) });

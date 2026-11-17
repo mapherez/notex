@@ -1,7 +1,7 @@
-import { CheckCircle2, Info, X, AlertTriangle } from 'lucide-react';
-import clsx from 'clsx';
-import { useI18n } from '../../i18n/I18nProvider';
-import { useToastStore, type ToastTone } from '../../store/useToastStore';
+import { CheckCircle2, Info, X, AlertTriangle } from "lucide-react";
+import clsx from "clsx";
+import { useI18n } from "../../i18n/I18nProvider";
+import { useToastStore, type ToastTone } from "../../store/useToastStore";
 
 const icons = {
   info: Info,
@@ -21,10 +21,15 @@ export function ToastViewport() {
       {toasts.map((toast) => {
         const Icon = icons[toast.tone];
         return (
-          <div className={clsx('toast', toast.tone)} key={toast.id}>
+          <div className={clsx("toast", toast.tone)} key={toast.id}>
             <Icon />
             <span>{toast.message}</span>
-            <button className="icon-button" type="button" aria-label={t('common.dismiss')} onClick={() => dismissToast(toast.id)}>
+            <button
+              className="icon-button"
+              type="button"
+              aria-label={t("common.dismiss")}
+              onClick={() => dismissToast(toast.id)}
+            >
               <X />
             </button>
           </div>
@@ -33,4 +38,3 @@ export function ToastViewport() {
     </div>
   );
 }
-

@@ -1,21 +1,27 @@
-import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
-import { join } from 'node:path';
+import { readdir, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { join } from "node:path";
 
-const root = new URL('../dist/', import.meta.url);
-async function files(directory, prefix = '') {
+const root = new URL("../dist/", import.meta.url);
+async function files(directory, prefix = "") {
   const result = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const relative = `${prefix}${entry.name}`;
-    if (entry.isDirectory()) result.push(...await files(join(directory, entry.name), `${relative}/`));
-    else if (entry.name !== 'sw.js') result.push(relative);
+    if (entry.isDirectory())
+      result.push(...(await files(join(directory, entry.name), `${relative}/`)));
+    else if (entry.name !== "sw.js") result.push(relative);
   }
   return result;
 }
-const { fileURLToPath } = await import('node:url');
+const { fileURLToPath } = await import("node:url");
 const assets = await files(fileURLToPath(root));
-const revision = createHash('sha256').update(await readFile(new URL('index.html', root))).digest('hex').slice(0, 16);
-await writeFile(new URL('sw.js', root), `
+const revision = createHash("sha256")
+  .update(await readFile(new URL("index.html", root)))
+  .digest("hex")
+  .slice(0, 16);
+await writeFile(
+  new URL("sw.js", root),
+  `
 const CACHE = 'notex-shell-${revision}';
 const ASSETS = ${JSON.stringify(assets)};
 self.addEventListener('install', event => {
@@ -35,4 +41,5 @@ self.addEventListener('fetch', event => {
   }
   event.respondWith(caches.open(CACHE).then(async cache => (await cache.match(event.request)) || fetch(event.request)));
 });
-`);
+`,
+);

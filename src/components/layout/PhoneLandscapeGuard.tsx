@@ -1,13 +1,13 @@
-import { RotateCw, Smartphone } from 'lucide-react';
-import { useEffect, useRef, useState, type RefObject } from 'react';
-import { useI18n } from '../../i18n/I18nProvider';
+import { RotateCw, Smartphone } from "lucide-react";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { useI18n } from "../../i18n/I18nProvider";
 
 const unsupportedPhoneLandscapeQuery = [
-  '(orientation: landscape)',
-  '(pointer: coarse)',
-  '(max-width: 64rem)',
-  '(max-height: 32rem)',
-].join(' and ');
+  "(orientation: landscape)",
+  "(pointer: coarse)",
+  "(max-width: 64rem)",
+  "(max-height: 32rem)",
+].join(" and ");
 
 export function PhoneLandscapeGuard({
   backgroundRef,
@@ -15,8 +15,8 @@ export function PhoneLandscapeGuard({
   backgroundRef: RefObject<HTMLElement | null>;
 }) {
   const { t } = useI18n();
-  const [visible, setVisible] = useState(() =>
-    window.matchMedia(unsupportedPhoneLandscapeQuery).matches,
+  const [visible, setVisible] = useState(
+    () => window.matchMedia(unsupportedPhoneLandscapeQuery).matches,
   );
   const guardRef = useRef<HTMLDivElement>(null);
 
@@ -24,8 +24,8 @@ export function PhoneLandscapeGuard({
     const media = window.matchMedia(unsupportedPhoneLandscapeQuery);
     const update = () => setVisible(media.matches);
     update();
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
   }, []);
 
   useEffect(() => {
@@ -39,8 +39,8 @@ export function PhoneLandscapeGuard({
 
     if (activeElement instanceof HTMLElement) activeElement.blur();
     if (background) background.inert = true;
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
 
     const focusFrame = window.requestAnimationFrame(() => {
       guardRef.current?.focus({ preventScroll: true });
@@ -57,19 +57,14 @@ export function PhoneLandscapeGuard({
   if (!visible) return null;
 
   return (
-    <div
-      className="phone-landscape-guard"
-      ref={guardRef}
-      role="alert"
-      tabIndex={-1}
-    >
+    <div className="phone-landscape-guard" ref={guardRef} role="alert" tabIndex={-1}>
       <div className="phone-landscape-guard__content">
         <div className="phone-landscape-guard__icon" aria-hidden="true">
           <Smartphone />
           <RotateCw />
         </div>
-        <h1>{t('orientation.phoneLandscapeTitle')}</h1>
-        <p>{t('orientation.phoneLandscapeDescription')}</p>
+        <h1>{t("orientation.phoneLandscapeTitle")}</h1>
+        <p>{t("orientation.phoneLandscapeDescription")}</p>
       </div>
     </div>
   );

@@ -24,19 +24,11 @@ type PatchNotesModel = {
 const patchNotesModel = buildPatchNotesModel(patchNotesMarkdown);
 export const latestPatchNoteVersion = patchNotesModel.versions[0]?.title ?? "";
 
-export function PatchNotesModal({
-  onClose,
-  open,
-}: {
-  onClose: () => void;
-  open: boolean;
-}) {
+export function PatchNotesModal({ onClose, open }: { onClose: () => void; open: boolean }) {
   const { t } = useI18n();
   const headingRefs = useRef<Record<string, HTMLHeadingElement | null>>({});
   const { blocks, headingIds, versions } = patchNotesModel;
-  const [activeId, setActiveId] = useState<string | null>(
-    versions[0]?.id ?? null,
-  );
+  const [activeId, setActiveId] = useState<string | null>(versions[0]?.id ?? null);
 
   useEffect(() => {
     if (!open) {
@@ -69,47 +61,39 @@ export function PatchNotesModal({
       onClose={onClose}
       open={open}
     >
-        <header className="patch-notes-modal__header">
-          <h2 id="patch-notes-title">{t("patchNotes.title")}</h2>
-        </header>
+      <header className="patch-notes-modal__header">
+        <h2 id="patch-notes-title">{t("patchNotes.title")}</h2>
+      </header>
 
-        <div className="patch-notes-modal__layout">
-          <nav
-            className="patch-notes-modal__versions"
-            aria-label={t("patchNotes.versions")}
-          >
-            <h3>{t("patchNotes.versions")}</h3>
-            <div>
-              {versions.map((version) => (
-                <button
-                  className={version.id === activeId ? "active" : undefined}
-                  key={version.id}
-                  type="button"
-                  onClick={() => scrollToVersion(version.id)}
-                >
-                  {version.title}
-                </button>
-              ))}
-            </div>
-          </nav>
-
-          <div className="patch-notes-modal__content">
-            {blocks.length ? (
-              <div className="markdown-preview">
-                {blocks.map((block, index) =>
-                  renderPatchNotesBlock(
-                    block,
-                    index,
-                    headingIds,
-                    registerHeading,
-                  ),
-                )}
-              </div>
-            ) : (
-              <p className="markdown-empty">{t("patchNotes.empty")}</p>
-            )}
+      <div className="patch-notes-modal__layout">
+        <nav className="patch-notes-modal__versions" aria-label={t("patchNotes.versions")}>
+          <h3>{t("patchNotes.versions")}</h3>
+          <div>
+            {versions.map((version) => (
+              <button
+                className={version.id === activeId ? "active" : undefined}
+                key={version.id}
+                type="button"
+                onClick={() => scrollToVersion(version.id)}
+              >
+                {version.title}
+              </button>
+            ))}
           </div>
+        </nav>
+
+        <div className="patch-notes-modal__content">
+          {blocks.length ? (
+            <div className="markdown-preview">
+              {blocks.map((block, index) =>
+                renderPatchNotesBlock(block, index, headingIds, registerHeading),
+              )}
+            </div>
+          ) : (
+            <p className="markdown-empty">{t("patchNotes.empty")}</p>
+          )}
         </div>
+      </div>
     </AppModal>
   );
 }
@@ -130,9 +114,7 @@ function buildPatchNotesModel(markdown: string): PatchNotesModel {
       },
     ];
   });
-  const headingIds = new Map(
-    versions.map((version) => [version.blockIndex, version.id]),
-  );
+  const headingIds = new Map(versions.map((version) => [version.blockIndex, version.id]));
 
   return { blocks, headingIds, versions };
 }

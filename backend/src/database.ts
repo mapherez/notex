@@ -1,13 +1,13 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import fs from 'node:fs';
-import path from 'node:path';
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 
-import Database from 'better-sqlite3';
+import Database from "better-sqlite3";
 
-const GOOGLE_ISSUER = 'https://accounts.google.com';
+const GOOGLE_ISSUER = "https://accounts.google.com";
 
 function sha256(value: string): string {
-  return createHash('sha256').update(value).digest('hex');
+  return createHash("sha256").update(value).digest("hex");
 }
 
 export interface RegisteredAccount {
@@ -23,9 +23,9 @@ export class BackendDatabase {
   constructor(databasePath: string) {
     fs.mkdirSync(path.dirname(databasePath), { recursive: true });
     this.raw = new Database(databasePath);
-    this.raw.pragma('journal_mode = WAL');
-    this.raw.pragma('foreign_keys = ON');
-    this.raw.pragma('busy_timeout = 5000');
+    this.raw.pragma("journal_mode = WAL");
+    this.raw.pragma("foreign_keys = ON");
+    this.raw.pragma("busy_timeout = 5000");
   }
 
   migrate(): void {
@@ -106,15 +106,26 @@ export class BackendDatabase {
   }
 
   revokeIssuedAiTokens(userId: string): void {
-    this.raw.prepare('INSERT INTO notex_ai_revocations(user_id, revoked_at) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET revoked_at = excluded.revoked_at').run(userId, Math.floor(Date.now() / 1000));
+    this.raw
+      .prepare(
+        "INSERT INTO notex_ai_revocations(user_id, revoked_at) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET revoked_at = excluded.revoked_at",
+      )
+      .run(userId, Math.floor(Date.now() / 1000));
   }
 
   aiRevokedAt(userId: string): number | undefined {
-    return (this.raw.prepare('SELECT revoked_at FROM notex_ai_revocations WHERE user_id = ?').get(userId) as { revoked_at: number } | undefined)?.revoked_at;
+    return (
+      this.raw
+        .prepare("SELECT revoked_at FROM notex_ai_revocations WHERE user_id = ?")
+        .get(userId) as { revoked_at: number } | undefined
+    )?.revoked_at;
   }
 
-  createRegistrationIntent(userCode: string, ttlSeconds = 600): { token: string; expiresAt: number } {
-    const token = randomBytes(32).toString('base64url');
+  createRegistrationIntent(
+    userCode: string,
+    ttlSeconds = 600,
+  ): { token: string; expiresAt: number } {
+    const token = randomBytes(32).toString("base64url");
     const expiresAt = Math.floor(Date.now() / 1000) + ttlSeconds;
     this.cleanupExpiredRegistrationIntents();
     this.raw
@@ -151,14 +162,14 @@ export class BackendDatabase {
 
   hasPendingRegistration(userId: string): boolean {
     return Boolean(
-      this.raw.prepare('SELECT 1 FROM notex_pending_registrations WHERE user_id = ?').get(userId),
+      this.raw.prepare("SELECT 1 FROM notex_pending_registrations WHERE user_id = ?").get(userId),
     );
   }
 
   completeGoogleRegistration(input: { userId: string; subject: string }): void {
     const complete = this.raw.transaction(() => {
       const pending = this.raw
-        .prepare('SELECT email FROM notex_pending_registrations WHERE user_id = ?')
+        .prepare("SELECT email FROM notex_pending_registrations WHERE user_id = ?")
         .get(input.userId) as { email: string } | undefined;
       if (!pending) return;
       const now = new Date().toISOString();
@@ -172,7 +183,9 @@ export class BackendDatabase {
              updated_at = excluded.updated_at`,
         )
         .run(input.userId, GOOGLE_ISSUER, input.subject, pending.email, now, now);
-      this.raw.prepare('DELETE FROM notex_pending_registrations WHERE user_id = ?').run(input.userId);
+      this.raw
+        .prepare("DELETE FROM notex_pending_registrations WHERE user_id = ?")
+        .run(input.userId);
     });
     complete();
   }
@@ -192,14 +205,12 @@ export class BackendDatabase {
   }
 
   createDesktopActivation(ttlSeconds = 600): { token: string; expiresAt: number } {
-    const token = randomBytes(32).toString('base64url');
+    const token = randomBytes(32).toString("base64url");
     const expiresAt = Math.floor(Date.now() / 1000) + ttlSeconds;
     const now = Math.floor(Date.now() / 1000);
+    this.raw.prepare("DELETE FROM notex_desktop_activations WHERE expires_at < ?").run(now);
     this.raw
-      .prepare('DELETE FROM notex_desktop_activations WHERE expires_at < ?')
-      .run(now);
-    this.raw
-      .prepare('INSERT INTO notex_desktop_activations(token_hash, expires_at) VALUES (?, ?)')
+      .prepare("INSERT INTO notex_desktop_activations(token_hash, expires_at) VALUES (?, ?)")
       .run(sha256(token), expiresAt);
     return { token, expiresAt };
   }
@@ -235,7 +246,9 @@ export class BackendDatabase {
 
       const replacedSessionIds = (
         this.raw
-          .prepare('SELECT id FROM notex_desktop_sessions WHERE user_id = ? AND active = 1 AND grant_hash <> ?')
+          .prepare(
+            "SELECT id FROM notex_desktop_sessions WHERE user_id = ? AND active = 1 AND grant_hash <> ?",
+          )
           .all(userId, grantHash) as Array<{ id: string }>
       ).map((row) => row.id);
       this.raw
@@ -247,7 +260,7 @@ export class BackendDatabase {
         .run(now, now, userId, grantHash);
 
       const existing = this.raw
-        .prepare('SELECT id FROM notex_desktop_sessions WHERE user_id = ? AND grant_hash = ?')
+        .prepare("SELECT id FROM notex_desktop_sessions WHERE user_id = ? AND grant_hash = ?")
         .get(userId, grantHash) as { id: string } | undefined;
       const sessionId = existing?.id ?? randomUUID();
       this.raw
@@ -272,14 +285,16 @@ export class BackendDatabase {
   isDesktopSessionActive(userId: string, sessionId: string): boolean {
     return Boolean(
       this.raw
-        .prepare('SELECT 1 FROM notex_desktop_sessions WHERE id = ? AND user_id = ? AND active = 1')
+        .prepare("SELECT 1 FROM notex_desktop_sessions WHERE id = ? AND user_id = ? AND active = 1")
         .get(sessionId, userId),
     );
   }
 
   hasActiveDesktopSession(userId: string): boolean {
     return Boolean(
-      this.raw.prepare('SELECT 1 FROM notex_desktop_sessions WHERE user_id = ? AND active = 1').get(userId),
+      this.raw
+        .prepare("SELECT 1 FROM notex_desktop_sessions WHERE user_id = ? AND active = 1")
+        .get(userId),
     );
   }
 
@@ -298,7 +313,9 @@ export class BackendDatabase {
 
   revokeAllDesktopSessions(userId: string): string[] {
     const sessionIds = (
-      this.raw.prepare('SELECT id FROM notex_desktop_sessions WHERE user_id = ? AND active = 1').all(userId) as Array<{
+      this.raw
+        .prepare("SELECT id FROM notex_desktop_sessions WHERE user_id = ? AND active = 1")
+        .all(userId) as Array<{
         id: string;
       }>
     ).map((row) => row.id);
@@ -315,18 +332,18 @@ export class BackendDatabase {
 
   deleteAccountMetadata(userId: string): void {
     this.raw.transaction(() => {
-      this.raw.prepare('DELETE FROM notex_ai_revocations WHERE user_id = ?').run(userId);
-      this.raw.prepare('DELETE FROM notex_desktop_sessions WHERE user_id = ?').run(userId);
-      this.raw.prepare('DELETE FROM notex_desktop_activations WHERE user_id = ?').run(userId);
-      this.raw.prepare('DELETE FROM notex_pending_registrations WHERE user_id = ?').run(userId);
-      this.raw.prepare('DELETE FROM notex_accounts WHERE user_id = ?').run(userId);
+      this.raw.prepare("DELETE FROM notex_ai_revocations WHERE user_id = ?").run(userId);
+      this.raw.prepare("DELETE FROM notex_desktop_sessions WHERE user_id = ?").run(userId);
+      this.raw.prepare("DELETE FROM notex_desktop_activations WHERE user_id = ?").run(userId);
+      this.raw.prepare("DELETE FROM notex_pending_registrations WHERE user_id = ?").run(userId);
+      this.raw.prepare("DELETE FROM notex_accounts WHERE user_id = ?").run(userId);
     })();
   }
 
   getSetting(key: string): string | null {
-    const row = this.raw.prepare('SELECT value FROM notex_backend_settings WHERE key = ?').get(key) as
-      | { value: string }
-      | undefined;
+    const row = this.raw
+      .prepare("SELECT value FROM notex_backend_settings WHERE key = ?")
+      .get(key) as { value: string } | undefined;
     return row?.value ?? null;
   }
 
@@ -342,16 +359,18 @@ export class BackendDatabase {
 
   private cleanupExpiredRegistrationIntents(): void {
     this.raw
-      .prepare('DELETE FROM notex_registration_intents WHERE expires_at < ? OR consumed_at IS NOT NULL')
+      .prepare(
+        "DELETE FROM notex_registration_intents WHERE expires_at < ? OR consumed_at IS NOT NULL",
+      )
       .run(Math.floor(Date.now() / 1000));
   }
 }
 
 export function readCookie(headers: Headers | undefined, name: string): string | null {
-  const cookieHeader = headers?.get('cookie');
+  const cookieHeader = headers?.get("cookie");
   if (!cookieHeader) return null;
-  for (const item of cookieHeader.split(';')) {
-    const separator = item.indexOf('=');
+  for (const item of cookieHeader.split(";")) {
+    const separator = item.indexOf("=");
     if (separator < 0) continue;
     if (item.slice(0, separator).trim() !== name) continue;
     return decodeURIComponent(item.slice(separator + 1).trim());

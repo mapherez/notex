@@ -1,5 +1,12 @@
-import { z } from 'zod';
-import { BRIDGE_PROTOCOL_VERSION as NOX_BRIDGE_VERSION, LEGACY_BRIDGE_PROTOCOL_VERSION, defaults, createResponseSchema, bridgeTicketSchema as noxTicketSchema, parseFrame } from '@nox/mcp/contract';
+import { z } from "zod";
+import {
+  BRIDGE_PROTOCOL_VERSION as NOX_BRIDGE_VERSION,
+  LEGACY_BRIDGE_PROTOCOL_VERSION,
+  defaults,
+  createResponseSchema,
+  bridgeTicketSchema as noxTicketSchema,
+  parseFrame,
+} from "@nox/mcp/contract";
 
 export const BRIDGE_PROTOCOL_VERSION = NOX_BRIDGE_VERSION;
 export const BRIDGE_REQUEST_TIMEOUT_MS = defaults.requestTimeoutMs;
@@ -8,38 +15,38 @@ export const BRIDGE_OFFLINE_AFTER_MS = defaults.offlineAfterMs;
 export const BRIDGE_TICKET_TTL_SECONDS = defaults.ticketTtlSeconds;
 export const MAX_BRIDGE_FRAME_BYTES = defaults.maxPayloadBytes;
 
-export { bridgeDeliveryPolicy } from '@nox/mcp/contract';
+export { bridgeDeliveryPolicy } from "@nox/mcp/contract";
 
-export const mcpScopes = ['notex:read', 'notex:create', 'notex:edit', 'notex:delete'] as const;
+export const mcpScopes = ["notex:read", "notex:create", "notex:edit", "notex:delete"] as const;
 export type McpScope = (typeof mcpScopes)[number];
 
 export const bridgeErrorCodeSchema = z.enum([
-  'USER_NOT_LOGGED_IN',
-  'NOTEX_OFFLINE',
-  'FORBIDDEN',
-  'NOT_FOUND',
-  'READ_ONLY_TRASH',
-  'CONFLICT',
-  'LOCAL_EDITS_PENDING',
-  'INVALID_INPUT',
-  'UNSUPPORTED_CONTENT',
-  'TIMEOUT',
-  'INTERNAL',
+  "USER_NOT_LOGGED_IN",
+  "NOTEX_OFFLINE",
+  "FORBIDDEN",
+  "NOT_FOUND",
+  "READ_ONLY_TRASH",
+  "CONFLICT",
+  "LOCAL_EDITS_PENDING",
+  "INVALID_INPUT",
+  "UNSUPPORTED_CONTENT",
+  "TIMEOUT",
+  "INTERNAL",
 ]);
 export type BridgeErrorCode = z.infer<typeof bridgeErrorCodeSchema>;
 
 export const bridgeErrorMessages: Record<BridgeErrorCode, string> = {
-  USER_NOT_LOGGED_IN: 'User not logged in',
-  NOTEX_OFFLINE: 'NoteX is offline',
-  FORBIDDEN: 'The requested operation is not allowed',
-  NOT_FOUND: 'The requested item was not found',
-  READ_ONLY_TRASH: 'Notes in trash are read-only',
-  CONFLICT: 'The note has changed; refresh it before trying again',
-  LOCAL_EDITS_PENDING: 'The note has unsaved local edits',
-  INVALID_INPUT: 'Invalid input',
-  UNSUPPORTED_CONTENT: 'The content contains unsupported elements',
-  TIMEOUT: 'NoteX did not respond in time',
-  INTERNAL: 'An internal error occurred',
+  USER_NOT_LOGGED_IN: "User not logged in",
+  NOTEX_OFFLINE: "NoteX is offline",
+  FORBIDDEN: "The requested operation is not allowed",
+  NOT_FOUND: "The requested item was not found",
+  READ_ONLY_TRASH: "Notes in trash are read-only",
+  CONFLICT: "The note has changed; refresh it before trying again",
+  LOCAL_EDITS_PENDING: "The note has unsaved local edits",
+  INVALID_INPUT: "Invalid input",
+  UNSUPPORTED_CONTENT: "The content contains unsupported elements",
+  TIMEOUT: "NoteX did not respond in time",
+  INTERNAL: "An internal error occurred",
 };
 
 export const bridgeErrorSchema = z.object({
@@ -51,11 +58,11 @@ export const bridgeErrorSchema = z.object({
 export type BridgeError = z.infer<typeof bridgeErrorSchema>;
 
 export const bridgePresenceStateSchema = z.enum([
-  'logged_out',
-  'offline',
-  'connecting',
-  'online',
-  'error',
+  "logged_out",
+  "offline",
+  "connecting",
+  "online",
+  "error",
 ]);
 export type BridgePresenceState = z.infer<typeof bridgePresenceStateSchema>;
 
@@ -67,18 +74,18 @@ export const bridgePresenceSchema = z
     error: bridgeErrorSchema.optional(),
   })
   .superRefine((presence, context) => {
-    if (presence.state === 'online' && !presence.appVersion) {
+    if (presence.state === "online" && !presence.appVersion) {
       context.addIssue({
-        code: 'custom',
-        path: ['appVersion'],
-        message: 'Online presence requires an app version.',
+        code: "custom",
+        path: ["appVersion"],
+        message: "Online presence requires an app version.",
       });
     }
-    if (presence.state === 'error' && !presence.error) {
+    if (presence.state === "error" && !presence.error) {
       context.addIssue({
-        code: 'custom',
-        path: ['error'],
-        message: 'Error presence requires a typed error.',
+        code: "custom",
+        path: ["error"],
+        message: "Error presence requires a typed error.",
       });
     }
   });
@@ -86,25 +93,25 @@ export type BridgePresence = z.infer<typeof bridgePresenceSchema>;
 
 export const entityIdSchema = z.string().min(1).max(128);
 const richTextFormatSchema = z
-  .enum(['text', 'html'])
-  .describe('Use text for literal plain text or html for supported NoteX rich text.');
+  .enum(["text", "html"])
+  .describe("Use text for literal plain text or html for supported NoteX rich text.");
 
 export const mcpInlineRichTextGuide =
   'For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href="...">, ' +
   '<span style="color: ...">, and <mark style="background-color: ...">. ' +
-  'Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, ' +
-  'violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. ' +
-  'For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent).';
+  "Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, " +
+  "violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. " +
+  "For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent).";
 
 export const mcpBlockRichTextGuide =
   `${mcpInlineRichTextGuide} Block bodies additionally support paragraphs and line breaks (<p>, <br>), ` +
-  'headings (<h1> through <h6>), bullet and ordered lists (<ul>, <ol>, <li>), quotes (<blockquote>), ' +
+  "headings (<h1> through <h6>), bullet and ordered lists (<ul>, <ol>, <li>), quotes (<blockquote>), " +
   'code blocks (<pre><code>), horizontal rules (<hr>), and text alignment via style="text-align: left|center|right|justify" ' +
   'on paragraphs or headings. For a checklist, use <ul data-type="taskList"><li data-type="taskItem" ' +
   'data-checked="true|false"><p>Item</p></li></ul>. For a NoteX tip, use <notex-tip title="Tip"><p>Content</p>' +
-  '</notex-tip>. For a table, use <table> with one <tr> per row and one <th> or <td> per column; wrap cell ' +
-  'content in <p>. Table cells may use colspan and rowspan. Images, files, scripts, embedded content, and unsafe ' +
-  'link protocols are not supported.';
+  "</notex-tip>. For a table, use <table> with one <tr> per row and one <th> or <td> per column; wrap cell " +
+  "content in <p>. Table cells may use colspan and rowspan. Images, files, scripts, embedded content, and unsafe " +
+  "link protocols are not supported.";
 
 function createRichTextInputSchema(valueDescription: string) {
   return z.object({
@@ -114,7 +121,7 @@ function createRichTextInputSchema(valueDescription: string) {
 }
 
 export const richTextInputSchema = createRichTextInputSchema(
-  'Complete literal text or supported NoteX HTML value for this field.',
+  "Complete literal text or supported NoteX HTML value for this field.",
 );
 export const inlineRichTextInputSchema = createRichTextInputSchema(mcpInlineRichTextGuide);
 export const blockRichTextInputSchema = createRichTextInputSchema(mcpBlockRichTextGuide);
@@ -125,46 +132,46 @@ export const richTextOutputSchema = z.object({
 export type RichTextInput = z.infer<typeof richTextInputSchema>;
 export type RichTextOutput = z.infer<typeof richTextOutputSchema>;
 
-export const noteLocationSchema = z.enum(['active', 'trash', 'all']);
+export const noteLocationSchema = z.enum(["active", "trash", "all"]);
 export type NoteLocation = z.infer<typeof noteLocationSchema>;
 
 export const tagColorSchema = z.enum([
-  'amber',
-  'blue',
-  'brown',
-  'cyan',
-  'fuchsia',
-  'green',
-  'indigo',
-  'lime',
-  'mint',
-  'neutral',
-  'orange',
-  'pink',
-  'purple',
-  'red',
-  'rose',
-  'sky',
-  'slate',
-  'teal',
-  'violet',
-  'yellow',
+  "amber",
+  "blue",
+  "brown",
+  "cyan",
+  "fuchsia",
+  "green",
+  "indigo",
+  "lime",
+  "mint",
+  "neutral",
+  "orange",
+  "pink",
+  "purple",
+  "red",
+  "rose",
+  "sky",
+  "slate",
+  "teal",
+  "violet",
+  "yellow",
 ]);
 export type TagColor = z.infer<typeof tagColorSchema>;
 
 export const noteThumbnailVariantSchema = z.enum([
-  'purple',
-  'paper',
-  'terminal',
-  'landscape',
-  'book',
-  'text',
-  'correct',
-  'wrong',
-  'checklist',
-  'ideas',
-  'research',
-  'calendar',
+  "purple",
+  "paper",
+  "terminal",
+  "landscape",
+  "book",
+  "text",
+  "correct",
+  "wrong",
+  "checklist",
+  "ideas",
+  "research",
+  "calendar",
 ]);
 export type NoteThumbnailVariant = z.infer<typeof noteThumbnailVariantSchema>;
 
@@ -243,46 +250,59 @@ const expectedVersionSchema = z
   .number()
   .int()
   .positive()
-  .describe('Current note version returned by get_note or get_note_block. The write fails if it is stale.');
+  .describe(
+    "Current note version returned by get_note or get_note_block. The write fails if it is stale.",
+  );
 
 const updateNoteHeaderInputSchema = z
   .object({
-    noteId: entityIdSchema.describe('ID of the note whose header will be updated.'),
+    noteId: entityIdSchema.describe("ID of the note whose header will be updated."),
     expectedVersion: expectedVersionSchema,
     title: inlineRichTextInputSchema
-      .describe('Complete new note title. Omit this field to preserve the current note title.')
+      .describe("Complete new note title. Omit this field to preserve the current note title.")
       .optional(),
     subtitle: inlineRichTextInputSchema
-      .describe('Complete new note subtitle. Omit this field to preserve the current note subtitle.')
+      .describe(
+        "Complete new note subtitle. Omit this field to preserve the current note subtitle.",
+      )
       .optional(),
     collectionId: entityIdSchema
       .nullable()
-      .describe('Existing collection ID for the note. Omit to preserve the current collection; use null to remove it.')
+      .describe(
+        "Existing collection ID for the note. Omit to preserve the current collection; use null to remove it.",
+      )
       .optional(),
   })
   .refine(
-    (input) => input.title !== undefined || input.subtitle !== undefined || input.collectionId !== undefined,
-    { message: 'At least one header field is required.' },
+    (input) =>
+      input.title !== undefined || input.subtitle !== undefined || input.collectionId !== undefined,
+    { message: "At least one header field is required." },
   );
 
 const updateNoteBlockInputSchema = z
   .object({
-    noteId: entityIdSchema.describe('ID of the note containing the block.'),
-    blockId: entityIdSchema.describe('ID of the exact block to update, obtained from get_note or add_note_block.'),
+    noteId: entityIdSchema.describe("ID of the note containing the block."),
+    blockId: entityIdSchema.describe(
+      "ID of the exact block to update, obtained from get_note or add_note_block.",
+    ),
     expectedVersion: expectedVersionSchema,
     title: inlineRichTextInputSchema
-      .describe('Complete new title of this block. Omit this field to preserve the current block title.')
+      .describe(
+        "Complete new title of this block. Omit this field to preserve the current block title.",
+      )
       .optional(),
     content: blockRichTextInputSchema
-      .describe('Complete new body of this block. Omit this field to preserve the current block body.')
+      .describe(
+        "Complete new body of this block. Omit this field to preserve the current block body.",
+      )
       .optional(),
   })
   .refine((input) => input.title !== undefined || input.content !== undefined, {
-    message: 'At least one block field is required.',
+    message: "At least one block field is required.",
   });
 
 const noteVersionInputSchema = z.object({
-  noteId: entityIdSchema.describe('ID of the note.'),
+  noteId: entityIdSchema.describe("ID of the note."),
   expectedVersion: expectedVersionSchema,
 });
 
@@ -298,7 +318,7 @@ const updateTagInputSchema = z
     color: tagColorSchema.optional(),
   })
   .refine((input) => input.name !== undefined || input.color !== undefined, {
-    message: 'At least one field is required.',
+    message: "At least one field is required.",
   });
 const updateCollectionInputSchema = z
   .object({
@@ -307,7 +327,7 @@ const updateCollectionInputSchema = z
     color: tagColorSchema.optional(),
   })
   .refine((input) => input.name !== undefined || input.color !== undefined, {
-    message: 'At least one field is required.',
+    message: "At least one field is required.",
   });
 const httpUrlSchema = z
   .string()
@@ -316,10 +336,12 @@ const httpUrlSchema = z
   .max(2048)
   .url()
   .refine((value) => /^https?:\/\//i.test(value), {
-    message: 'Only HTTP and HTTPS URLs are supported.',
+    message: "Only HTTP and HTTPS URLs are supported.",
   });
 const linkedNoteInputSchema = noteVersionInputSchema.extend({
-  linkedNoteId: entityIdSchema.describe('ID of the note to add to or remove from the linked-note set.'),
+  linkedNoteId: entityIdSchema.describe(
+    "ID of the note to add to or remove from the linked-note set.",
+  ),
 });
 const noteExampleInputSchema = noteVersionInputSchema.extend({
   example: z.string().trim().min(1).max(50_000),
@@ -335,7 +357,7 @@ const blockOrderSchema = z
   .max(100)
   .superRefine((blockIds, context) => {
     if (new Set(blockIds).size !== blockIds.length) {
-      context.addIssue({ code: 'custom', message: 'Block IDs must be unique.' });
+      context.addIssue({ code: "custom", message: "Block IDs must be unique." });
     }
   });
 
@@ -343,7 +365,7 @@ const trashStateTokenSchema = z
   .string()
   .length(64)
   .regex(/^[a-f0-9]+$/)
-  .describe('Trash state token returned by get_trash_status.');
+  .describe("Trash state token returned by get_trash_status.");
 
 export const commandInputSchemas = {
   notex_status: emptyInputSchema,
@@ -351,20 +373,22 @@ export const commandInputSchemas = {
     query: z
       .string()
       .max(500)
-      .describe('Search terms. A note matches when any term appears in its header, blocks, tags, or collection.')
-      .default(''),
-    location: noteLocationSchema.default('active'),
+      .describe(
+        "Search terms. A note matches when any term appears in its header, blocks, tags, or collection.",
+      )
+      .default(""),
+    location: noteLocationSchema.default("active"),
     limit: z.number().int().min(1).max(50).default(20),
   }),
   get_note: z.object({ noteId: entityIdSchema }),
   get_note_block: z.object({ noteId: entityIdSchema, blockId: entityIdSchema }),
   get_trash_status: emptyInputSchema,
   list_tags: z.object({
-    query: z.string().max(200).default(''),
+    query: z.string().max(200).default(""),
     limit: z.number().int().min(1).max(100).default(100),
   }),
   list_collections: z.object({
-    query: z.string().max(200).default(''),
+    query: z.string().max(200).default(""),
     limit: z.number().int().min(1).max(100).default(100),
   }),
   create_tag: createNamedEntityInputSchema,
@@ -374,58 +398,62 @@ export const commandInputSchemas = {
   update_collection: updateCollectionInputSchema,
   delete_collection: z.object({ collectionId: entityIdSchema }),
   create_note: z.object({
-    title: inlineRichTextInputSchema.describe('Title of the new note. Omit to create an empty note title.').optional(),
+    title: inlineRichTextInputSchema
+      .describe("Title of the new note. Omit to create an empty note title.")
+      .optional(),
     subtitle: inlineRichTextInputSchema
-      .describe('Subtitle of the new note. Omit to create an empty note subtitle.')
+      .describe("Subtitle of the new note. Omit to create an empty note subtitle.")
       .optional(),
     collectionId: entityIdSchema
       .nullable()
-      .describe('Existing collection ID for the new note. Omit or use null for no collection.')
+      .describe("Existing collection ID for the new note. Omit or use null for no collection.")
       .optional(),
     tagIds: z
       .array(entityIdSchema)
       .max(50)
-      .describe('Existing tag IDs to assign to the new note. Omit for no tags.')
+      .describe("Existing tag IDs to assign to the new note. Omit for no tags.")
       .default([]),
     blocks: z
       .array(
         z.object({
-          title: inlineRichTextInputSchema.describe('Optional title of this new block.').optional(),
-          content: blockRichTextInputSchema.describe('Optional body of this new block.').optional(),
+          title: inlineRichTextInputSchema.describe("Optional title of this new block.").optional(),
+          content: blockRichTextInputSchema.describe("Optional body of this new block.").optional(),
         }),
       )
       .max(100)
-      .describe('Ordered blocks to create in the new note. Omit to create the note without blocks.')
+      .describe("Ordered blocks to create in the new note. Omit to create the note without blocks.")
       .default([]),
   }),
   update_note_header: updateNoteHeaderInputSchema,
   add_note_block: z.object({
-    noteId: entityIdSchema.describe('ID of the note that will receive the new block.'),
+    noteId: entityIdSchema.describe("ID of the note that will receive the new block."),
     expectedVersion: expectedVersionSchema,
     title: inlineRichTextInputSchema
-      .describe('Optional title of the new block. Omit for an empty block title.')
+      .describe("Optional title of the new block. Omit for an empty block title.")
       .optional(),
     content: blockRichTextInputSchema
-      .describe('Optional body of the new block. Omit for an empty block body.')
+      .describe("Optional body of the new block. Omit for an empty block body.")
       .optional(),
   }),
   update_note_block: updateNoteBlockInputSchema,
   set_note_tags: z.object({
-    noteId: entityIdSchema.describe('ID of the note whose tags will be replaced.'),
+    noteId: entityIdSchema.describe("ID of the note whose tags will be replaced."),
     expectedVersion: expectedVersionSchema,
     tagIds: z
       .array(entityIdSchema)
       .max(50)
-      .describe('Complete replacement set of existing tag IDs. Use an empty array to remove all tags.'),
+      .describe(
+        "Complete replacement set of existing tag IDs. Use an empty array to remove all tags.",
+      ),
   }),
   set_note_favorite: noteVersionInputSchema.extend({
-    isFavorite: z.boolean().describe('Exact favorite state to apply.'),
+    isFavorite: z.boolean().describe("Exact favorite state to apply."),
   }),
   set_note_pinned: noteVersionInputSchema.extend({
-    isPinned: z.boolean().describe('Exact pinned state to apply.'),
+    isPinned: z.boolean().describe("Exact pinned state to apply."),
   }),
   set_note_thumbnail: noteVersionInputSchema.extend({
-    variant: noteThumbnailVariantSchema.describe('Exact NoteX thumbnail variant to apply.'),
+    variant: noteThumbnailVariantSchema.describe("Exact NoteX thumbnail variant to apply."),
   }),
   add_linked_note: linkedNoteInputSchema,
   remove_linked_note: linkedNoteInputSchema,
@@ -443,7 +471,9 @@ export const commandInputSchemas = {
     blockId: entityIdSchema,
   }),
   reorder_note_blocks: noteVersionInputSchema.extend({
-    blockIds: blockOrderSchema.describe('Complete ordered list of every current block ID in the note.'),
+    blockIds: blockOrderSchema.describe(
+      "Complete ordered list of every current block ID in the note.",
+    ),
   }),
   move_note_to_trash: noteVersionInputSchema,
   restore_note: noteVersionInputSchema,
@@ -463,7 +493,7 @@ const collectionResultSchema = z.object({ collection: collectionDtoSchema });
 
 export const commandOutputSchemas = {
   notex_status: z.object({
-    state: bridgePresenceStateSchema.extract(['online', 'offline', 'logged_out']),
+    state: bridgePresenceStateSchema.extract(["online", "offline", "logged_out"]),
     appVersion: z.string().optional(),
     protocolVersion: z.string(),
   }),
@@ -501,7 +531,9 @@ export const commandOutputSchemas = {
   add_linked_note: mutationResultSchema.extend({ linkedNoteId: entityIdSchema }),
   remove_linked_note: mutationResultSchema.extend({ linkedNoteId: entityIdSchema }),
   add_note_example: mutationResultSchema.extend({ exampleIndex: z.number().int().nonnegative() }),
-  update_note_example: mutationResultSchema.extend({ exampleIndex: z.number().int().nonnegative() }),
+  update_note_example: mutationResultSchema.extend({
+    exampleIndex: z.number().int().nonnegative(),
+  }),
   delete_note_example: mutationResultSchema.extend({
     exampleIndex: z.number().int().nonnegative(),
     deleted: z.literal(true),
@@ -534,40 +566,40 @@ export type CommandOutput<T extends CommandName> = z.infer<(typeof commandOutput
 export const commandNames = Object.keys(commandInputSchemas) as CommandName[];
 
 export const commandScope: Record<CommandName, McpScope> = {
-  notex_status: 'notex:read',
-  search_notes: 'notex:read',
-  get_note: 'notex:read',
-  get_note_block: 'notex:read',
-  get_trash_status: 'notex:read',
-  list_tags: 'notex:read',
-  list_collections: 'notex:read',
-  create_tag: 'notex:create',
-  update_tag: 'notex:edit',
-  delete_tag: 'notex:delete',
-  create_collection: 'notex:create',
-  update_collection: 'notex:edit',
-  delete_collection: 'notex:delete',
-  create_note: 'notex:create',
-  update_note_header: 'notex:edit',
-  add_note_block: 'notex:edit',
-  update_note_block: 'notex:edit',
-  set_note_tags: 'notex:edit',
-  set_note_favorite: 'notex:edit',
-  set_note_pinned: 'notex:edit',
-  set_note_thumbnail: 'notex:edit',
-  add_linked_note: 'notex:edit',
-  remove_linked_note: 'notex:delete',
-  add_note_example: 'notex:edit',
-  update_note_example: 'notex:edit',
-  delete_note_example: 'notex:delete',
-  add_note_link: 'notex:edit',
-  delete_note_link: 'notex:delete',
-  delete_note_block: 'notex:delete',
-  reorder_note_blocks: 'notex:edit',
-  move_note_to_trash: 'notex:edit',
-  restore_note: 'notex:edit',
-  delete_note_permanently: 'notex:delete',
-  clear_trash: 'notex:delete',
+  notex_status: "notex:read",
+  search_notes: "notex:read",
+  get_note: "notex:read",
+  get_note_block: "notex:read",
+  get_trash_status: "notex:read",
+  list_tags: "notex:read",
+  list_collections: "notex:read",
+  create_tag: "notex:create",
+  update_tag: "notex:edit",
+  delete_tag: "notex:delete",
+  create_collection: "notex:create",
+  update_collection: "notex:edit",
+  delete_collection: "notex:delete",
+  create_note: "notex:create",
+  update_note_header: "notex:edit",
+  add_note_block: "notex:edit",
+  update_note_block: "notex:edit",
+  set_note_tags: "notex:edit",
+  set_note_favorite: "notex:edit",
+  set_note_pinned: "notex:edit",
+  set_note_thumbnail: "notex:edit",
+  add_linked_note: "notex:edit",
+  remove_linked_note: "notex:delete",
+  add_note_example: "notex:edit",
+  update_note_example: "notex:edit",
+  delete_note_example: "notex:delete",
+  add_note_link: "notex:edit",
+  delete_note_link: "notex:delete",
+  delete_note_block: "notex:delete",
+  reorder_note_blocks: "notex:edit",
+  move_note_to_trash: "notex:edit",
+  restore_note: "notex:edit",
+  delete_note_permanently: "notex:delete",
+  clear_trash: "notex:delete",
 };
 
 export type ToolAnnotations = {
@@ -585,108 +617,112 @@ export type ToolMetadata = {
 };
 
 const toolCliAliases: Record<CommandName, string> = {
-  notex_status: 'status',
-  search_notes: 'search',
-  get_note: 'note get',
-  get_note_block: 'block get',
-  get_trash_status: 'trash status',
-  list_tags: 'tag list',
-  list_collections: 'collection list',
-  create_tag: 'tag create',
-  update_tag: 'tag update',
-  delete_tag: 'tag delete',
-  create_collection: 'collection create',
-  update_collection: 'collection update',
-  delete_collection: 'collection delete',
-  create_note: 'note create',
-  update_note_header: 'note update',
-  add_note_block: 'block add',
-  update_note_block: 'block update',
-  delete_note_block: 'block delete',
-  reorder_note_blocks: 'block reorder',
-  set_note_tags: 'note tags',
-  set_note_favorite: 'note favorite',
-  set_note_pinned: 'note pin',
-  set_note_thumbnail: 'note thumbnail',
-  add_linked_note: 'link-note add',
-  remove_linked_note: 'link-note remove',
-  add_note_example: 'example add',
-  update_note_example: 'example update',
-  delete_note_example: 'example delete',
-  add_note_link: 'link add',
-  delete_note_link: 'link delete',
-  move_note_to_trash: 'note trash',
-  restore_note: 'note restore',
-  delete_note_permanently: 'note purge',
-  clear_trash: 'trash clear',
+  notex_status: "status",
+  search_notes: "search",
+  get_note: "note get",
+  get_note_block: "block get",
+  get_trash_status: "trash status",
+  list_tags: "tag list",
+  list_collections: "collection list",
+  create_tag: "tag create",
+  update_tag: "tag update",
+  delete_tag: "tag delete",
+  create_collection: "collection create",
+  update_collection: "collection update",
+  delete_collection: "collection delete",
+  create_note: "note create",
+  update_note_header: "note update",
+  add_note_block: "block add",
+  update_note_block: "block update",
+  delete_note_block: "block delete",
+  reorder_note_blocks: "block reorder",
+  set_note_tags: "note tags",
+  set_note_favorite: "note favorite",
+  set_note_pinned: "note pin",
+  set_note_thumbnail: "note thumbnail",
+  add_linked_note: "link-note add",
+  remove_linked_note: "link-note remove",
+  add_note_example: "example add",
+  update_note_example: "example update",
+  delete_note_example: "example delete",
+  add_note_link: "link add",
+  delete_note_link: "link delete",
+  move_note_to_trash: "note trash",
+  restore_note: "note restore",
+  delete_note_permanently: "note purge",
+  clear_trash: "trash clear",
 };
 
 const toolDescriptions: Record<CommandName, string> = {
-  notex_status: 'Check whether NoteX is ready to handle MCP requests.',
-  search_notes: 'Search NoteX notes by independent terms across note headers, blocks, tags, and collections, ranked by relevance.',
-  get_note: 'Read one NoteX note header and its ordered block summaries.',
-  get_note_block: 'Read the exact supported rich-text content of one NoteX note block.',
-  get_trash_status: 'Read the current trash count and state token required by clear_trash.',
-  list_tags: 'List existing NoteX tags. Use returned IDs in write tools.',
-  list_collections: 'List existing NoteX collections. Use returned IDs in write tools.',
-  create_tag: 'Create a NoteX tag with a name and optional palette color.',
-  update_tag: 'Update selected fields of an existing NoteX tag.',
-  delete_tag: 'Delete a NoteX tag and remove it from every note that uses it.',
-  create_collection: 'Create a NoteX collection with a name and optional palette color.',
-  update_collection: 'Update selected fields of an existing NoteX collection.',
-  delete_collection: 'Delete a NoteX collection and unassign every note that uses it.',
-  create_note: 'Create a NoteX note, optionally with rich-text blocks and existing tags.',
-  update_note_header: 'Update selected inline-rich-text header fields using optimistic versioning.',
-  add_note_block: 'Append a rich-text block to a NoteX note using optimistic versioning.',
-  update_note_block: 'Replace selected block fields using optimistic versioning. Content is the complete new body.',
-  set_note_tags: 'Replace a NoteX note tag set with existing tag IDs using optimistic versioning.',
-  set_note_favorite: 'Set the exact favorite state of a NoteX note using optimistic versioning.',
-  set_note_pinned: 'Set the exact pinned state of a NoteX note using optimistic versioning.',
-  set_note_thumbnail: 'Set the thumbnail variant of a NoteX note using optimistic versioning.',
-  add_linked_note: 'Add one existing note to a NoteX note linked-note set using optimistic versioning.',
-  remove_linked_note: 'Remove one note from a NoteX note linked-note set using optimistic versioning.',
-  add_note_example: 'Append one additional example to a NoteX note using optimistic versioning.',
-  update_note_example: 'Replace one additional example by its current index using optimistic versioning.',
-  delete_note_example: 'Delete one additional example by its current index using optimistic versioning.',
-  add_note_link: 'Add one HTTP or HTTPS related link to a NoteX note using optimistic versioning.',
-  delete_note_link: 'Delete one related link by its stable ID using optimistic versioning.',
-  delete_note_block: 'Permanently delete one block from an active NoteX note using optimistic versioning.',
-  reorder_note_blocks: 'Apply a complete ordered list of block IDs to a NoteX note using optimistic versioning.',
-  move_note_to_trash: 'Move an active NoteX note to trash using optimistic versioning.',
-  restore_note: 'Restore a NoteX note from trash using optimistic versioning.',
-  delete_note_permanently: 'Permanently delete one NoteX note that is already in trash.',
-  clear_trash: 'Permanently delete the complete NoteX trash if its state has not changed.',
+  notex_status: "Check whether NoteX is ready to handle MCP requests.",
+  search_notes:
+    "Search NoteX notes by independent terms across note headers, blocks, tags, and collections, ranked by relevance.",
+  get_note: "Read one NoteX note header and its ordered block summaries.",
+  get_note_block: "Read the exact supported rich-text content of one NoteX note block.",
+  get_trash_status: "Read the current trash count and state token required by clear_trash.",
+  list_tags: "List existing NoteX tags. Use returned IDs in write tools.",
+  list_collections: "List existing NoteX collections. Use returned IDs in write tools.",
+  create_tag: "Create a NoteX tag with a name and optional palette color.",
+  update_tag: "Update selected fields of an existing NoteX tag.",
+  delete_tag: "Delete a NoteX tag and remove it from every note that uses it.",
+  create_collection: "Create a NoteX collection with a name and optional palette color.",
+  update_collection: "Update selected fields of an existing NoteX collection.",
+  delete_collection: "Delete a NoteX collection and unassign every note that uses it.",
+  create_note: "Create a NoteX note, optionally with rich-text blocks and existing tags.",
+  update_note_header: "Update selected inline-rich-text header fields using optimistic versioning.",
+  add_note_block: "Append a rich-text block to a NoteX note using optimistic versioning.",
+  update_note_block:
+    "Replace selected block fields using optimistic versioning. Content is the complete new body.",
+  set_note_tags: "Replace a NoteX note tag set with existing tag IDs using optimistic versioning.",
+  set_note_favorite: "Set the exact favorite state of a NoteX note using optimistic versioning.",
+  set_note_pinned: "Set the exact pinned state of a NoteX note using optimistic versioning.",
+  set_note_thumbnail: "Set the thumbnail variant of a NoteX note using optimistic versioning.",
+  add_linked_note:
+    "Add one existing note to a NoteX note linked-note set using optimistic versioning.",
+  remove_linked_note:
+    "Remove one note from a NoteX note linked-note set using optimistic versioning.",
+  add_note_example: "Append one additional example to a NoteX note using optimistic versioning.",
+  update_note_example:
+    "Replace one additional example by its current index using optimistic versioning.",
+  delete_note_example:
+    "Delete one additional example by its current index using optimistic versioning.",
+  add_note_link: "Add one HTTP or HTTPS related link to a NoteX note using optimistic versioning.",
+  delete_note_link: "Delete one related link by its stable ID using optimistic versioning.",
+  delete_note_block:
+    "Permanently delete one block from an active NoteX note using optimistic versioning.",
+  reorder_note_blocks:
+    "Apply a complete ordered list of block IDs to a NoteX note using optimistic versioning.",
+  move_note_to_trash: "Move an active NoteX note to trash using optimistic versioning.",
+  restore_note: "Restore a NoteX note from trash using optimistic versioning.",
+  delete_note_permanently: "Permanently delete one NoteX note that is already in trash.",
+  clear_trash: "Permanently delete the complete NoteX trash if its state has not changed.",
 };
 
 const destructiveCommands = new Set<CommandName>([
-  'delete_tag',
-  'delete_collection',
-  'remove_linked_note',
-  'delete_note_example',
-  'delete_note_link',
-  'delete_note_block',
-  'move_note_to_trash',
-  'delete_note_permanently',
-  'clear_trash',
+  "delete_tag",
+  "delete_collection",
+  "remove_linked_note",
+  "delete_note_example",
+  "delete_note_link",
+  "delete_note_block",
+  "move_note_to_trash",
+  "delete_note_permanently",
+  "clear_trash",
 ]);
 
 function isIdempotentTool(command: CommandName): boolean {
-  return (
-    command.startsWith('get_') ||
-    command.startsWith('list_') ||
-    command === 'search_notes'
-  );
+  return command.startsWith("get_") || command.startsWith("list_") || command === "search_notes";
 }
 
 export const toolMetadata = Object.fromEntries(
   commandNames.map((command) => [
     command,
     {
-      title: command.replaceAll('_', ' '),
+      title: command.replaceAll("_", " "),
       description: toolDescriptions[command],
       _meta: { cli: toolCliAliases[command] },
       annotations: {
-        readOnlyHint: commandScope[command] === 'notex:read',
+        readOnlyHint: commandScope[command] === "notex:read",
         destructiveHint: destructiveCommands.has(command),
         idempotentHint: isIdempotentTool(command),
         openWorldHint: false,
@@ -717,19 +753,23 @@ export function createToolManifest(): ToolManifest {
       scope: commandScope[command],
       ...toolMetadata[command],
       inputSchema: z.toJSONSchema(commandInputSchemas[command], {
-        target: 'draft-07',
-        io: 'input',
-        reused: 'inline',
+        target: "draft-07",
+        io: "input",
+        reused: "inline",
         override: ({ zodSchema, jsonSchema }) => {
           if (zodSchema === httpUrlSchema) {
             // NoX's portable schema profile does not support format: uri.
             // Describe the allowed schemes here; Zod still validates full URLs.
             delete jsonSchema.format;
-            jsonSchema.pattern = '^[hH][tT][tT][pP][sS]?://';
+            jsonSchema.pattern = "^[hH][tT][tT][pP][sS]?://";
           }
         },
       }) as Record<string, unknown>,
-      outputSchema: z.toJSONSchema(commandOutputSchemas[command], { target: 'draft-07', io: 'output', reused: 'inline' }) as Record<string, unknown>,
+      outputSchema: z.toJSONSchema(commandOutputSchemas[command], {
+        target: "draft-07",
+        io: "output",
+        reused: "inline",
+      }) as Record<string, unknown>,
     })),
   };
 }
@@ -738,26 +778,29 @@ export function parseCommandInput<T extends CommandName>(name: T, input: unknown
   return commandInputSchemas[name].parse(input) as CommandInput<T>;
 }
 
-export function parseCommandOutput<T extends CommandName>(name: T, output: unknown): CommandOutput<T> {
+export function parseCommandOutput<T extends CommandName>(
+  name: T,
+  output: unknown,
+): CommandOutput<T> {
   return commandOutputSchemas[name].parse(output) as CommandOutput<T>;
 }
 
 export const bridgeTicketSchema = noxTicketSchema;
 
 export const bridgeAuthenticateSchema = z.object({
-  type: z.literal('authenticate'),
+  type: z.literal("authenticate"),
   ticket: bridgeTicketSchema,
 });
 
 export const bridgeReadySchema = z.object({
-  type: z.literal('ready'),
+  type: z.literal("ready"),
   protocolVersion: z.enum([BRIDGE_PROTOCOL_VERSION, LEGACY_BRIDGE_PROTOCOL_VERSION]),
   appVersion: z.string().min(1).max(64),
 });
 export type BridgeReady = z.infer<typeof bridgeReadySchema>;
 
 export const bridgeRequestSchema = z.object({
-  type: z.literal('request'),
+  type: z.literal("request"),
   requestId: z.string().uuid(),
   command: z.enum(commandNames as [CommandName, ...CommandName[]]),
   input: z.unknown(),
@@ -768,17 +811,17 @@ export type BridgeRequest = z.infer<typeof bridgeRequestSchema>;
 export const bridgeResponseSchema = createResponseSchema(bridgeErrorSchema);
 export type BridgeResponse = z.infer<typeof bridgeResponseSchema>;
 
-export const desktopBridgeMessageSchema = z.discriminatedUnion('type', [
+export const desktopBridgeMessageSchema = z.discriminatedUnion("type", [
   bridgeAuthenticateSchema,
   bridgeReadySchema,
   bridgeResponseSchema,
 ]);
 
-export const serverBridgeMessageSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('authenticated') }),
+export const serverBridgeMessageSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("authenticated") }),
   bridgeRequestSchema,
-  z.object({ type: z.literal('cancel'), requestId: z.string().uuid() }),
-  z.object({ type: z.literal('session_revoked'), reason: z.string().max(200) }),
+  z.object({ type: z.literal("cancel"), requestId: z.string().uuid() }),
+  z.object({ type: z.literal("session_revoked"), reason: z.string().max(200) }),
 ]);
 
 export type DesktopBridgeMessage = z.infer<typeof desktopBridgeMessageSchema>;

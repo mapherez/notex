@@ -21,3 +21,4 @@ data/
 *.local
 .DS_Store
 Thumbs.db
+.vitest/

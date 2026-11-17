@@ -4,4 +4,4 @@ export {
   readUserSettings,
   seedDatabaseIfEmpty,
   writeUserSettings,
-} from '../db/notexDb';
+} from "../db/notexDb";

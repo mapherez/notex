@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 import {
   cancelMcpAuthorization,
   deleteMcpAccount,
@@ -9,9 +9,9 @@ import {
   startMcpAuthorization,
   type McpAuthorizationMode,
   type McpPublicState,
-} from '../core/services/mcpBridge';
+} from "../core/services/mcpBridge";
 
-type McpAction = 'register' | 'login' | 'cancel' | 'logout' | 'revoke' | 'delete' | null;
+type McpAction = "register" | "login" | "cancel" | "logout" | "revoke" | "delete" | null;
 
 type McpStore = {
   connection: McpPublicState;
@@ -28,7 +28,7 @@ type McpStore = {
 let initialization: Promise<void> | null = null;
 
 export const useMcpStore = create<McpStore>((set) => ({
-  connection: { state: 'logged_out' },
+  connection: { state: "logged_out" },
   initialized: false,
   action: null,
   initialize: async () => {
@@ -38,7 +38,7 @@ export const useMcpStore = create<McpStore>((set) => ({
           set({ connection, initialized: true });
         })
         .catch(async () => {
-          const connection = await getMcpState().catch(() => ({ state: 'error' as const }));
+          const connection = await getMcpState().catch(() => ({ state: "error" as const }));
           set({ connection, initialized: true });
         });
     }
@@ -54,7 +54,7 @@ export const useMcpStore = create<McpStore>((set) => ({
     }
   },
   cancelAuthorization: async () => {
-    set({ action: 'cancel' });
+    set({ action: "cancel" });
     try {
       const connection = await cancelMcpAuthorization();
       set({ connection });
@@ -63,7 +63,7 @@ export const useMcpStore = create<McpStore>((set) => ({
     }
   },
   logout: async () => {
-    set({ action: 'logout' });
+    set({ action: "logout" });
     try {
       const connection = await logoutMcp();
       set({ connection });
@@ -72,7 +72,7 @@ export const useMcpStore = create<McpStore>((set) => ({
     }
   },
   revokeAiAccess: async () => {
-    set({ action: 'revoke' });
+    set({ action: "revoke" });
     try {
       await revokeMcpAiAccess();
     } finally {
@@ -80,7 +80,7 @@ export const useMcpStore = create<McpStore>((set) => ({
     }
   },
   deleteAccount: async () => {
-    set({ action: 'delete' });
+    set({ action: "delete" });
     try {
       const connection = await deleteMcpAccount();
       set({ connection });

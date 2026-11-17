@@ -13,9 +13,13 @@
   min-width: 0;
 }
 
-.profile-module--wide { grid-column: 1 / -1; }
+.profile-module--wide {
+  grid-column: 1 / -1;
+}
 
-.profile-module--full { grid-column: 1 / -1; }
+.profile-module--full {
+  grid-column: 1 / -1;
+}
 
 .profile-page-header {
   display: flex;
@@ -38,7 +42,9 @@
   font-size: 0.875rem;
 }
 
-.profile-update-action[hidden] { display: none; }
+.profile-update-action[hidden] {
+  display: none;
+}
 
 .profile-update-button {
   border-color: var(--nx-color-border);
@@ -137,7 +143,9 @@
   margin-top: var(--nx-space-5);
 }
 
-.profile-account-actions > button { width: 100%; }
+.profile-account-actions > button {
+  width: 100%;
+}
 
 .profile-account-actions .google-sign-in-button {
   width: max-content;
@@ -163,7 +171,10 @@
   color: var(--nx-color-text-muted);
   font-size: 0.875rem;
   font-weight: 600;
-  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
 }
 
 .profile-sign-out-button:hover:not(:disabled) {
@@ -232,7 +243,9 @@
   color: var(--nx-color-accent-strong);
   font-size: 0.875rem;
   font-weight: 650;
-  transition: background 160ms ease, border-color 160ms ease;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
 }
 
 .profile-backup-button:hover:not(:disabled) {
@@ -773,12 +786,10 @@ button.security-row:hover {
 
 .plan-card {
   overflow: hidden;
-  border: 1px solid
-    color-mix(in srgb, var(--nx-color-accent) 24%, var(--nx-color-border));
+  border: 1px solid color-mix(in srgb, var(--nx-color-accent) 24%, var(--nx-color-border));
   border-radius: var(--nx-radius-card);
   background:
-    linear-gradient(135deg, rgba(109, 76, 255, 0.24), transparent 70%),
-    var(--nx-color-surface);
+    linear-gradient(135deg, rgba(109, 76, 255, 0.24), transparent 70%), var(--nx-color-surface);
   padding: var(--nx-space-4);
 }
 
@@ -858,8 +869,7 @@ button.security-row:hover {
   align-items: center;
   justify-content: center;
   gap: var(--nx-space-2);
-  border: 1px solid
-    color-mix(in srgb, var(--nx-color-danger) 48%, var(--nx-color-border));
+  border: 1px solid color-mix(in srgb, var(--nx-color-danger) 48%, var(--nx-color-border));
   border-radius: var(--nx-radius-sm);
   background: color-mix(in srgb, var(--nx-color-danger) 12%, transparent);
   color: var(--nx-color-danger);

@@ -1,15 +1,28 @@
-import { ArrowRight, Edit3, FileText, Folder, Plus, Search, Star, Tag, Timer, Trash, Trash2, X } from 'lucide-react';
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
-import { IconBadge } from '../components/ui/IconBadge';
-import { NoteThumbnail } from '../components/ui/NoteThumbnail';
-import { NoteRow } from '../components/notes/NoteRow';
-import { useAdaptedContent } from '../core/utils/useAdaptedContent';
-import { InlineFormattedText } from '../components/editing/InlineFormattedText';
+import {
+  ArrowRight,
+  Edit3,
+  FileText,
+  Folder,
+  Plus,
+  Search,
+  Star,
+  Tag,
+  Timer,
+  Trash,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
+import { IconBadge } from "../components/ui/IconBadge";
+import { NoteThumbnail } from "../components/ui/NoteThumbnail";
+import { NoteRow } from "../components/notes/NoteRow";
+import { useAdaptedContent } from "../core/utils/useAdaptedContent";
+import { InlineFormattedText } from "../components/editing/InlineFormattedText";
 import { Panel } from "../components/ui/Panel";
-import { appLimits, demoSettings } from '../config/appSettings';
-import { stripInlineFormatting } from '../core/utils/inlineFormatting';
+import { appLimits, demoSettings } from "../config/appSettings";
+import { stripInlineFormatting } from "../core/utils/inlineFormatting";
 import {
   focusTextControlAtEnd,
   getPrimaryDigitShortcutIndex,
@@ -17,18 +30,24 @@ import {
   isEditableShortcutTarget,
   isPlainLetterShortcut,
   isPrimaryShortcut,
-} from '../core/utils/keyboardShortcuts';
-import { filterNotes } from '../core/utils/noteFilters';
-import { richTextToPlainText, textToTiptapDocument } from '../core/utils/richText';
-import { useClickOutside } from '../core/utils/useClickOutside';
-import { useFloatingPopover } from '../core/utils/useFloatingPopover';
-import { useKeyboardListNavigation } from '../core/utils/useKeyboardListNavigation';
-import { useI18n } from '../i18n/I18nProvider';
-import { useAppStore } from '../store/useAppStore';
-import { useNotesStore } from '../store/useNotesStore';
-import { useKnowledgeStore } from '../store/useKnowledgeStore';
-import { useToastStore } from '../store/useToastStore';
-import type { Collection, Note, Tag as TagModel, TagColor, TiptapDocument } from '../core/models/models';
+} from "../core/utils/keyboardShortcuts";
+import { filterNotes } from "../core/utils/noteFilters";
+import { richTextToPlainText, textToTiptapDocument } from "../core/utils/richText";
+import { useClickOutside } from "../core/utils/useClickOutside";
+import { useFloatingPopover } from "../core/utils/useFloatingPopover";
+import { useKeyboardListNavigation } from "../core/utils/useKeyboardListNavigation";
+import { useI18n } from "../i18n/I18nProvider";
+import { useAppStore } from "../store/useAppStore";
+import { useNotesStore } from "../store/useNotesStore";
+import { useKnowledgeStore } from "../store/useKnowledgeStore";
+import { useToastStore } from "../store/useToastStore";
+import type {
+  Collection,
+  Note,
+  Tag as TagModel,
+  TagColor,
+  TiptapDocument,
+} from "../core/models/models";
 
 type CaptureForm = {
   capture: string;
@@ -44,8 +63,14 @@ export function DashboardPage() {
   const [activeQuickPinIndex, setActiveQuickPinIndex] = useState<number | null>(null);
   const quickPinSlotRef = useRef<HTMLDivElement>(null);
   const quickPinPopoverRef = useRef<HTMLDivElement>(null);
-  useFloatingPopover(activeQuickPinIndex !== null, quickPinSlotRef, quickPinPopoverRef, 'bottom-start', activeQuickPinIndex);
-  const [quickPinQuery, setQuickPinQuery] = useState('');
+  useFloatingPopover(
+    activeQuickPinIndex !== null,
+    quickPinSlotRef,
+    quickPinPopoverRef,
+    "bottom-start",
+    activeQuickPinIndex,
+  );
+  const [quickPinQuery, setQuickPinQuery] = useState("");
   const settings = useAppStore((state) => state.settings);
   const setQuickPinAt = useAppStore((state) => state.setQuickPinAt);
   const notes = useNotesStore((state) => state.notes);
@@ -55,27 +80,46 @@ export function DashboardPage() {
   const addBlock = useNotesStore((state) => state.addBlock);
   const pushToast = useToastStore((state) => state.pushToast);
   const { getValues, handleSubmit, register, reset, setFocus, setValue } = useForm<CaptureForm>({
-    defaultValues: { capture: '' },
+    defaultValues: { capture: "" },
   });
 
   const activeNotes = notes.filter((note) => !note.isTrashed);
   const quickPinNotes = settings.quickPinNoteIds
     .slice(0, appLimits.quickPins)
     .flatMap((noteId) => activeNotes.find((note) => note.id === noteId) ?? []);
-  const quickPinSlots = Array.from({ length: appLimits.quickPins }, (_, index) => quickPinNotes[index] ?? null);
+  const quickPinSlots = Array.from(
+    { length: appLimits.quickPins },
+    (_, index) => quickPinNotes[index] ?? null,
+  );
   const pinnedNoteIds = new Set(quickPinNotes.map((note) => note.id));
-  const activeQuickPinNote = activeQuickPinIndex === null ? null : quickPinSlots[activeQuickPinIndex];
+  const activeQuickPinNote =
+    activeQuickPinIndex === null ? null : quickPinSlots[activeQuickPinIndex];
   const quickPinOptions = activeNotes
     .filter((note) => note.id === activeQuickPinNote?.id || !pinnedNoteIds.has(note.id))
-    .filter((note) => !quickPinQuery.trim() || normalizeSearchValue(richTextToPlainText(note.title)).includes(normalizeSearchValue(quickPinQuery)))
-    .sort((a, b) => richTextToPlainText(a.title).localeCompare(richTextToPlainText(b.title), undefined, { numeric: true, sensitivity: 'base' }))
+    .filter(
+      (note) =>
+        !quickPinQuery.trim() ||
+        normalizeSearchValue(richTextToPlainText(note.title)).includes(
+          normalizeSearchValue(quickPinQuery),
+        ),
+    )
+    .sort((a, b) =>
+      richTextToPlainText(a.title).localeCompare(richTextToPlainText(b.title), undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }),
+    )
     .slice(0, appLimits.quickPinSuggestions);
   const trashedNotes = notes.filter((note) => note.isTrashed);
-  const recentNoteFeed = filterNotes(notes, { mode: 'recent' });
-  const recentNotes = recentNoteFeed.filter((note) => !demoSettings.demoNoteIds.includes(note.id)).slice(0, appLimits.dashboardRecentNotes);
+  const recentNoteFeed = filterNotes(notes, { mode: "recent" });
+  const recentNotes = recentNoteFeed
+    .filter((note) => !demoSettings.demoNoteIds.includes(note.id))
+    .slice(0, appLimits.dashboardRecentNotes);
   const recentActivityNotes = recentNoteFeed.slice(0, appLimits.dashboardRecentActivity);
   const favoriteCount = activeNotes.filter((note) => note.isFavorite).length;
-  const activeNotesThisWeek = activeNotes.filter((note) => isThisWeek(note.createdAt) || isThisWeek(note.updatedAt));
+  const activeNotesThisWeek = activeNotes.filter(
+    (note) => isThisWeek(note.createdAt) || isThisWeek(note.updatedAt),
+  );
   const tagCounts = countTags(activeNotes);
   const popularTags = tags
     .map((tag) => ({ ...tag, count: tagCounts.get(tag.id) ?? 0 }))
@@ -85,44 +129,47 @@ export function DashboardPage() {
 
   const stats = [
     {
-      label: t('dashboard.stats.notes'),
+      label: t("dashboard.stats.notes"),
       value: activeNotes.length,
       delta: formatWeekDelta(activeNotes.filter((note) => isThisWeek(note.createdAt)).length, t),
       icon: FileText,
-      color: 'blue',
-      to: '/notes',
+      color: "blue",
+      to: "/notes",
     },
     {
-      label: t('dashboard.stats.favorites'),
+      label: t("dashboard.stats.favorites"),
       value: favoriteCount,
-      delta: formatWeekDelta(activeNotes.filter((note) => note.isFavorite && isThisWeek(note.updatedAt)).length, t),
+      delta: formatWeekDelta(
+        activeNotes.filter((note) => note.isFavorite && isThisWeek(note.updatedAt)).length,
+        t,
+      ),
       icon: Star,
-      color: 'amber',
-      to: '/favorites',
+      color: "amber",
+      to: "/favorites",
     },
     {
-      label: t('dashboard.stats.collections'),
+      label: t("dashboard.stats.collections"),
       value: collections.length,
       delta: formatWeekDelta(countTouchedCollections(activeNotesThisWeek, collections), t),
       icon: Folder,
-      color: 'green',
-      to: '/collections',
+      color: "green",
+      to: "/collections",
     },
     {
-      label: t('dashboard.stats.tags'),
+      label: t("dashboard.stats.tags"),
       value: tags.length,
       delta: formatWeekDelta(countTouchedTags(activeNotesThisWeek, tags), t),
       icon: Tag,
-      color: 'red',
-      to: '/tags',
+      color: "red",
+      to: "/tags",
     },
     {
-      label: t('dashboard.stats.trash'),
+      label: t("dashboard.stats.trash"),
       value: trashedNotes.length,
       delta: formatWeekDelta(trashedNotes.filter((note) => isThisWeek(note.updatedAt)).length, t),
       icon: trashedNotes.length ? Trash2 : Trash,
-      color: 'orange',
-      to: '/trash',
+      color: "orange",
+      to: "/trash",
     },
   ] as const;
   const quickPinNavigation = useKeyboardListNavigation({
@@ -173,13 +220,13 @@ export function DashboardPage() {
       }
     }
 
-    window.addEventListener('keydown', handleDashboardShortcut);
-    return () => window.removeEventListener('keydown', handleDashboardShortcut);
+    window.addEventListener("keydown", handleDashboardShortcut);
+    return () => window.removeEventListener("keydown", handleDashboardShortcut);
   });
 
   function openQuickPinPicker(index: number) {
     setActiveQuickPinIndex(index);
-    setQuickPinQuery('');
+    setQuickPinQuery("");
   }
 
   function activateQuickPinSlot(index: number) {
@@ -194,27 +241,27 @@ export function DashboardPage() {
 
   function closeQuickPinPicker() {
     setActiveQuickPinIndex(null);
-    setQuickPinQuery('');
+    setQuickPinQuery("");
   }
 
   async function selectQuickPin(index: number, noteId: string | null) {
     await setQuickPinAt(index, noteId);
     closeQuickPinPicker();
-    pushToast(t('dashboard.quickPins.updated'), 'success');
+    pushToast(t("dashboard.quickPins.updated"), "success");
   }
 
   function appendToQuickCaptureAndFocus(value: string) {
-    setValue('capture', `${getValues('capture') ?? ''}${value}`, {
+    setValue("capture", `${getValues("capture") ?? ""}${value}`, {
       shouldDirty: true,
       shouldTouch: true,
     });
     requestAnimationFrame(() => {
-      setFocus('capture');
+      setFocus("capture");
       focusTextControlAtEnd(quickCaptureTextareaRef.current);
     });
   }
 
-  const captureField = register('capture');
+  const captureField = register("capture");
   const submitQuickCapture = handleSubmit(async ({ capture }) => {
     const trimmed = capture.trim();
     if (!trimmed) {
@@ -228,30 +275,30 @@ export function DashboardPage() {
     await addBlock(note.id, {
       contentJson: textToTiptapDocument(trimmed) as TiptapDocument,
       contentText: trimmed,
-      kind: 'content',
-      title: '',
+      kind: "content",
+      title: "",
     });
     pushToast(t("notes.draftCreated"), "success");
     navigate(`/notes/${note.id}`);
-    reset({ capture: '' });
+    reset({ capture: "" });
   });
 
   function handleQuickCaptureKeyDown(event: ReactKeyboardEvent<HTMLTextAreaElement>) {
-    if (isPrimaryShortcut(event, 's')) {
+    if (isPrimaryShortcut(event, "s")) {
       event.preventDefault();
       void submitQuickCapture();
       return;
     }
 
-    if (event.key === 'Escape') {
+    if (event.key === "Escape") {
       event.preventDefault();
-      reset({ capture: '' });
+      reset({ capture: "" });
       event.currentTarget.blur();
     }
   }
 
   return (
-    <div className={`page-content${adaptedContent ? ' adapted-content' : ''}`}>
+    <div className={`page-content${adaptedContent ? " adapted-content" : ""}`}>
       <div className="dashboard-layout">
         <section className="dashboard-main">
           <div className="stats-grid">
@@ -298,9 +345,19 @@ export function DashboardPage() {
                       <>
                         <NoteThumbnail thumbnail={note.thumbnail} />
                         <span className="quick-pin-copy">
-                          <strong>{richTextToPlainText(note.title).trim() ? <InlineFormattedText value={note.title} /> : t('notes.untitled')}</strong>
+                          <strong>
+                            {richTextToPlainText(note.title).trim() ? (
+                              <InlineFormattedText value={note.title} />
+                            ) : (
+                              t("notes.untitled")
+                            )}
+                          </strong>
                           <span>
-                            {getNotePreview(note) ? <InlineFormattedText value={note.subtitle} /> : t("dashboard.quickPins.noteFallback")}
+                            {getNotePreview(note) ? (
+                              <InlineFormattedText value={note.subtitle} />
+                            ) : (
+                              t("dashboard.quickPins.noteFallback")
+                            )}
                           </span>
                         </span>
                       </>
@@ -329,38 +386,46 @@ export function DashboardPage() {
                         <input
                           ref={quickPinInputRef}
                           value={quickPinQuery}
-                          onChange={(event) =>
-                            setQuickPinQuery(event.target.value)
-                          }
+                          onChange={(event) => setQuickPinQuery(event.target.value)}
                           onKeyDown={quickPinNavigation.onKeyDown}
-                          placeholder={t(
-                            "dashboard.quickPins.searchPlaceholder",
-                          )}
+                          placeholder={t("dashboard.quickPins.searchPlaceholder")}
                         />
                       </label>
                       <div className="quick-pin-options">
                         {quickPinOptions.length ? (
                           quickPinOptions.map((option, optionIndex) => (
                             <button
-                              className={optionIndex === quickPinNavigation.activeIndex ? 'active' : undefined}
+                              className={
+                                optionIndex === quickPinNavigation.activeIndex
+                                  ? "active"
+                                  : undefined
+                              }
                               key={option.id}
                               type="button"
-                              onClick={() =>
-                                void selectQuickPin(index, option.id)
-                              }
+                              onClick={() => void selectQuickPin(index, option.id)}
                               onMouseEnter={() => quickPinNavigation.setActiveIndex(optionIndex)}
                             >
                               <NoteThumbnail thumbnail={option.thumbnail} />
                               <span>
-                                <strong>{richTextToPlainText(option.title).trim() ? <InlineFormattedText value={option.title} /> : t('notes.untitled')}</strong>
-                                <span>{getNotePreview(option) ? <InlineFormattedText value={option.subtitle} /> : t("dashboard.quickPins.noteFallback")}</span>
+                                <strong>
+                                  {richTextToPlainText(option.title).trim() ? (
+                                    <InlineFormattedText value={option.title} />
+                                  ) : (
+                                    t("notes.untitled")
+                                  )}
+                                </strong>
+                                <span>
+                                  {getNotePreview(option) ? (
+                                    <InlineFormattedText value={option.subtitle} />
+                                  ) : (
+                                    t("dashboard.quickPins.noteFallback")
+                                  )}
+                                </span>
                               </span>
                             </button>
                           ))
                         ) : (
-                          <span className="inline-help">
-                            {t("dashboard.quickPins.noMatches")}
-                          </span>
+                          <span className="inline-help">{t("dashboard.quickPins.noMatches")}</span>
                         )}
                       </div>
                       {note ? (
@@ -403,10 +468,7 @@ export function DashboardPage() {
 
         <aside className="dashboard-side">
           <Panel title={t("dashboard.quickCapture.title")}>
-            <form
-              className="quick-capture"
-              onSubmit={submitQuickCapture}
-            >
+            <form className="quick-capture" onSubmit={submitQuickCapture}>
               <div className="capture-box">
                 <textarea
                   {...captureField}
@@ -455,21 +517,17 @@ export function DashboardPage() {
           >
             <div className="activity-list">
               {recentActivityNotes.map((note) => (
-                <Link
-                  className="activity-row"
-                  key={note.id}
-                  to={`/notes/${note.id}`}
-                >
+                <Link className="activity-row" key={note.id} to={`/notes/${note.id}`}>
                   <Timer />
                   <span className="activity-copy">
-                    <span>{richTextToPlainText(note.title).trim() ? <InlineFormattedText value={note.title} /> : t('notes.untitled')}</span>
                     <span>
-                      {formatRecentTimestamp(
-                        getRecentTimestamp(note),
-                        locale,
-                        t,
+                      {richTextToPlainText(note.title).trim() ? (
+                        <InlineFormattedText value={note.title} />
+                      ) : (
+                        t("notes.untitled")
                       )}
                     </span>
+                    <span>{formatRecentTimestamp(getRecentTimestamp(note), locale, t)}</span>
                   </span>
                 </Link>
               ))}
@@ -497,7 +555,11 @@ function countTags(notes: Note[]) {
 
 function countTouchedCollections(notes: Note[], collections: Collection[]) {
   const collectionIds = new Set(collections.map((collection) => collection.id));
-  return new Set(notes.flatMap((note) => (note.collectionId && collectionIds.has(note.collectionId) ? [note.collectionId] : []))).size;
+  return new Set(
+    notes.flatMap((note) =>
+      note.collectionId && collectionIds.has(note.collectionId) ? [note.collectionId] : [],
+    ),
+  ).size;
 }
 
 function countTouchedTags(notes: Note[], tags: TagModel[]) {
@@ -505,8 +567,8 @@ function countTouchedTags(notes: Note[], tags: TagModel[]) {
   return new Set(notes.flatMap((note) => note.tagIds.filter((tagId) => tagIds.has(tagId)))).size;
 }
 
-function formatWeekDelta(count: number, t: ReturnType<typeof useI18n>['t']) {
-  return t('dashboard.stats.weekDelta', { count });
+function formatWeekDelta(count: number, t: ReturnType<typeof useI18n>["t"]) {
+  return t("dashboard.stats.weekDelta", { count });
 }
 
 function isThisWeek(value?: string | null) {
@@ -533,37 +595,39 @@ function startOfWeek(value: Date) {
   return start;
 }
 
-function formatRecentTimestamp(value: string, locale: string, t: ReturnType<typeof useI18n>['t']) {
+function formatRecentTimestamp(value: string, locale: string, t: ReturnType<typeof useI18n>["t"]) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
 
   const now = new Date();
-  const localeCode = locale === 'pt' ? 'pt-PT' : 'en-US';
-  const time = new Intl.DateTimeFormat(localeCode, { hour: '2-digit', minute: '2-digit' }).format(date);
+  const localeCode = locale === "pt" ? "pt-PT" : "en-US";
+  const time = new Intl.DateTimeFormat(localeCode, { hour: "2-digit", minute: "2-digit" }).format(
+    date,
+  );
 
   if (date.toDateString() === now.toDateString()) {
-    return `${t('common.today')}, ${time}`;
+    return `${t("common.today")}, ${time}`;
   }
 
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   if (date.toDateString() === yesterday.toDateString()) {
-    return `${t('common.yesterday')}, ${time}`;
+    return `${t("common.yesterday")}, ${time}`;
   }
 
   return new Intl.DateTimeFormat(localeCode, {
-    day: '2-digit',
-    month: 'short',
-    year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric',
+    day: "2-digit",
+    month: "short",
+    year: date.getFullYear() === now.getFullYear() ? undefined : "numeric",
   }).format(date);
 }
 
 function PopularTagRow({ tag }: { tag: TagModel }) {
   return (
     <Link className="tag-popular-row" to={`/notes?tag=${tag.id}`}>
-      <strong className={`tag-chip ${tag.color ?? 'neutral'}`}># {tag.name}</strong>
+      <strong className={`tag-chip ${tag.color ?? "neutral"}`}># {tag.name}</strong>
       <span>{tag.count}</span>
     </Link>
   );
@@ -577,6 +641,6 @@ function normalizeSearchValue(value: string) {
   return stripInlineFormatting(value)
     .trim()
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }

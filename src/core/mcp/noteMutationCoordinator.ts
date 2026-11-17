@@ -6,19 +6,25 @@ type NoteMutationEntry = {
 
 export type McpMutationLease =
   | { acquired: true; release: () => void }
-  | { acquired: false; blockedBy: 'local' | 'mcp' };
+  | { acquired: false; blockedBy: "local" | "mcp" };
 
 const entries = new Map<string, NoteMutationEntry>();
 const idleListeners = new Set<() => void>();
-export function hasNoteMutations(noteId: string) { return entries.has(noteId); }
+export function hasNoteMutations(noteId: string) {
+  return entries.has(noteId);
+}
 
 export function waitForNoteMutations(timeoutMs = 10_000): Promise<void> {
   if (!entries.size) return Promise.resolve();
   return new Promise((resolve, reject) => {
-    const ready = () => { clearTimeout(timer); idleListeners.delete(ready); resolve(); };
+    const ready = () => {
+      clearTimeout(timer);
+      idleListeners.delete(ready);
+      resolve();
+    };
     const timer = setTimeout(() => {
       idleListeners.delete(ready);
-      reject(new Error('LOCAL_SAVE_PENDING'));
+      reject(new Error("LOCAL_SAVE_PENDING"));
     }, timeoutMs);
     idleListeners.add(ready);
   });
@@ -61,10 +67,10 @@ export function beginLocalSave(noteId: string, sourceId: string) {
 export function tryBeginMcpMutation(noteId: string): McpMutationLease {
   const entry = getOrCreateEntry(noteId);
   if (entry.localDraftSources.size || entry.localSaveCounts.size) {
-    return { acquired: false, blockedBy: 'local' };
+    return { acquired: false, blockedBy: "local" };
   }
   if (entry.mcpMutationActive) {
-    return { acquired: false, blockedBy: 'mcp' };
+    return { acquired: false, blockedBy: "mcp" };
   }
 
   entry.mcpMutationActive = true;

@@ -83,8 +83,8 @@
   }
 }
 
-@include divided-grid('.profile-stat-grid', '.profile-row', 1);
-@include divided-grid('.database-management-grid', '.database-path-row', 1);
+@include divided-grid(".profile-stat-grid", ".profile-row", 1);
+@include divided-grid(".database-management-grid", ".database-path-row", 1);
 
 @container page (min-width: 42rem) {
   .profile-layout {
@@ -115,35 +115,36 @@
 }
 
 @container profile-module (min-width: 26rem) {
-  @include divided-grid('.profile-stat-grid', '.profile-row', 2);
+  @include divided-grid(".profile-stat-grid", ".profile-row", 2);
 }
 
 @container profile-module (min-width: 42rem) {
-  @include divided-grid('.profile-stat-grid', '.profile-row', 3);
+  @include divided-grid(".profile-stat-grid", ".profile-row", 3);
 }
 
 @container profile-module (min-width: 64rem) {
-  @include divided-grid('.profile-stat-grid', '.profile-row', 5);
+  @include divided-grid(".profile-stat-grid", ".profile-row", 5);
 }
 
 @container profile-module (min-width: 38rem) {
-  @include divided-grid('.database-management-grid', '.database-path-row', 2);
+  @include divided-grid(".database-management-grid", ".database-path-row", 2);
 }
 
 @container profile-module (min-width: 58rem) {
-  @include divided-grid('.database-management-grid', '.database-path-row', 3);
+  @include divided-grid(".database-management-grid", ".database-path-row", 3);
 }
 
 @media (any-pointer: coarse) {
-  .profile-page :is(
-    .custom-select__trigger,
-    .custom-select__option,
-    .profile-sign-out-button,
-    .google-sign-in-button,
-    .profile-backup-button,
-    .profile-action-row,
-    .mcp-command-button
-  ) {
+  .profile-page
+    :is(
+      .custom-select__trigger,
+      .custom-select__option,
+      .profile-sign-out-button,
+      .google-sign-in-button,
+      .profile-backup-button,
+      .profile-action-row,
+      .mcp-command-button
+    ) {
     min-height: 3rem;
   }
 

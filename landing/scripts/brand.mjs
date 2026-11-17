@@ -6,10 +6,7 @@ const sources = Object.fromEntries(
   await Promise.all(
     ["dark", "light"].map(async (tile) => [
       tile,
-      await readFile(
-        new URL(`../assets/brand/notex-${tile}.svg`, import.meta.url),
-        "utf8",
-      ),
+      await readFile(new URL(`../assets/brand/notex-${tile}.svg`, import.meta.url), "utf8"),
     ]),
   ),
 );

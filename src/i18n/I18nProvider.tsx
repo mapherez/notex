@@ -1,6 +1,6 @@
-import { createContext, useContext, useMemo, type PropsWithChildren } from 'react';
-import { getDictionary, getLocaleValue } from './dictionaries';
-import type { Locale } from '../core/models/models';
+import { createContext, useContext, useMemo, type PropsWithChildren } from "react";
+import { getDictionary, getLocaleValue } from "./dictionaries";
+import type { Locale } from "../core/models/models";
 
 type TranslateVars = Record<string, string | number>;
 
@@ -13,8 +13,8 @@ type I18nContextValue = {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 function readValue(dictionary: unknown, key: string): unknown {
-  return key.split('.').reduce<unknown>((scope, segment) => {
-    if (scope && typeof scope === 'object' && segment in scope) {
+  return key.split(".").reduce<unknown>((scope, segment) => {
+    if (scope && typeof scope === "object" && segment in scope) {
       return (scope as Record<string, unknown>)[segment];
     }
 
@@ -41,12 +41,12 @@ export function I18nProvider({ children, locale }: PropsWithChildren<{ locale: L
       locale,
       t: (key, vars) => {
         const translated = readValue(dictionary, key);
-        if (typeof translated === 'string') {
+        if (typeof translated === "string") {
           return interpolate(translated, vars);
         }
 
-        const fallback = readValue(getDictionary('pt'), key);
-        return typeof fallback === 'string' ? interpolate(fallback, vars) : key;
+        const fallback = readValue(getDictionary("pt"), key);
+        return typeof fallback === "string" ? interpolate(fallback, vars) : key;
       },
       raw: (key) => getLocaleValue(locale, key),
     };
@@ -58,7 +58,7 @@ export function I18nProvider({ children, locale }: PropsWithChildren<{ locale: L
 export function useI18n() {
   const context = useContext(I18nContext);
   if (!context) {
-    throw new Error('useI18n must be used inside I18nProvider');
+    throw new Error("useI18n must be used inside I18nProvider");
   }
 
   return context;

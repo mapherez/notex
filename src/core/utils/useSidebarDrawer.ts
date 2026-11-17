@@ -1,9 +1,11 @@
-import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 const focusableSelector = 'a[href], button:not([disabled]), [tabindex="0"]';
 
 function drawerMedia() {
-  const breakpoint = getComputedStyle(document.documentElement).getPropertyValue('--nx-breakpoint-tablet').trim();
+  const breakpoint = getComputedStyle(document.documentElement)
+    .getPropertyValue("--nx-breakpoint-tablet")
+    .trim();
   return window.matchMedia(`(max-width: ${breakpoint})`);
 }
 
@@ -25,37 +27,44 @@ export function useSidebarDrawer(
       setCompact(media.matches);
       closeRef.current();
     }
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
   }, []);
 
   useLayoutEffect(() => {
     const sidebar = sidebarRef.current;
     if (!sidebar) return;
     sidebar.inert = compact && !open;
-    if (sidebar.inert && sidebar.contains(document.activeElement)) triggerRef.current?.focus({ preventScroll: true });
+    if (sidebar.inert && sidebar.contains(document.activeElement))
+      triggerRef.current?.focus({ preventScroll: true });
     if (!compact || !open) return;
 
-    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const backgrounds = [backgroundRef.current, document.querySelector<HTMLElement>('.notification-viewport')]
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const backgrounds = [
+      backgroundRef.current,
+      document.querySelector<HTMLElement>(".notification-viewport"),
+    ]
       .filter((element): element is HTMLElement => Boolean(element))
       .map((element) => ({ element, wasInert: element.inert ?? false }));
     const previousOverflow = document.body.style.overflow;
-    backgrounds.forEach(({ element }) => { element.inert = true; });
-    document.body.style.overflow = 'hidden';
+    backgrounds.forEach(({ element }) => {
+      element.inert = true;
+    });
+    document.body.style.overflow = "hidden";
     const focusFrame = window.requestAnimationFrame(() => {
       // On short screens the navigation body can scroll independently of the
       // footer. Reveal the close button before focusing a newly opened drawer.
-      sidebar.querySelector('.sidebar-content')?.scrollTo({ top: 0, behavior: 'instant' });
-      sidebar.querySelector<HTMLElement>('.sidebar-close')?.focus({ preventScroll: true });
+      sidebar.querySelector(".sidebar-content")?.scrollTo({ top: 0, behavior: "instant" });
+      sidebar.querySelector<HTMLElement>(".sidebar-close")?.focus({ preventScroll: true });
     });
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         event.preventDefault();
         event.stopImmediatePropagation();
         closeRef.current();
-      } else if (event.key === 'Tab') {
+      } else if (event.key === "Tab") {
         const controls = Array.from(sidebar!.querySelectorAll<HTMLElement>(focusableSelector));
         const first = controls[0];
         const last = controls[controls.length - 1];
@@ -69,21 +78,27 @@ export function useSidebarDrawer(
       }
     }
     function keepFocusInside(event: FocusEvent) {
-      if (!sidebar!.contains(event.target as Node) && !document.querySelector('.modal-backdrop')) {
-        sidebar!.querySelector<HTMLElement>('.sidebar-close')?.focus();
+      if (!sidebar!.contains(event.target as Node) && !document.querySelector(".modal-backdrop")) {
+        sidebar!.querySelector<HTMLElement>(".sidebar-close")?.focus();
       }
     }
-    window.addEventListener('keydown', handleKeyDown, true);
-    document.addEventListener('focusin', keepFocusInside);
+    window.addEventListener("keydown", handleKeyDown, true);
+    document.addEventListener("focusin", keepFocusInside);
     return () => {
       window.cancelAnimationFrame(focusFrame);
-      window.removeEventListener('keydown', handleKeyDown, true);
-      document.removeEventListener('focusin', keepFocusInside);
-      backgrounds.forEach(({ element, wasInert }) => { element.inert = wasInert; });
+      window.removeEventListener("keydown", handleKeyDown, true);
+      document.removeEventListener("focusin", keepFocusInside);
+      backgrounds.forEach(({ element, wasInert }) => {
+        element.inert = wasInert;
+      });
       document.body.style.overflow = previousOverflow;
       // A newly opened AppModal manages its own focus; resizing to desktop keeps
       // focus in the persistent sidebar instead of focusing its hidden trigger.
-      if (drawerMedia().matches && previousFocus?.isConnected && !document.querySelector('.modal-backdrop')) {
+      if (
+        drawerMedia().matches &&
+        previousFocus?.isConnected &&
+        !document.querySelector(".modal-backdrop")
+      ) {
         previousFocus.focus({ preventScroll: true });
       }
     };

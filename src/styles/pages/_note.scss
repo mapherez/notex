@@ -16,9 +16,9 @@
 .note-toc {
   position: sticky;
   top: var(--nx-note-navigation-top, calc(var(--nx-topbar-height) + 8rem));
-    z-index: 40;
-    width: 2.75rem;
-    min-height: 9rem;
+  z-index: 40;
+  width: 2.75rem;
+  min-height: 9rem;
   color: var(--nx-color-text-muted);
   font-size: 0.88rem;
 }
@@ -72,7 +72,9 @@
   opacity: 0;
   pointer-events: none;
   transform: translateX(-0.35rem);
-  transition: opacity 140ms ease, transform 140ms ease;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
   visibility: hidden;
 }
 
@@ -105,12 +107,12 @@
   border: 0;
   border-radius: var(--nx-radius-sm);
   background: transparent;
-    color: var(--nx-color-text-muted);
-    padding: var(--nx-space-1) var(--nx-space-2);
-    overflow: hidden;
-    text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  color: var(--nx-color-text-muted);
+  padding: var(--nx-space-1) var(--nx-space-2);
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .note-toc-link--level-2 {
@@ -199,7 +201,9 @@
   margin-inline: calc(var(--nx-space-3) * -1);
   padding: var(--nx-space-3);
   cursor: text;
-  transition: border-color 160ms ease, background 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
 }
 
 .note-block:hover,
@@ -226,7 +230,11 @@
   background: transparent;
   color: var(--nx-color-text-soft);
   opacity: 0;
-  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, opacity 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
 }
 
 .note-block-handle {
@@ -280,8 +288,8 @@
   display: grid;
   min-width: 0;
   align-content: start;
-    gap: 10px;
-    min-height: 30px;
+  gap: 10px;
+  min-height: 30px;
 }
 
 .note-block-title {
@@ -293,10 +301,10 @@
   font-size: 1.1rem;
   font-weight: 760;
   line-height: 1.35;
-    outline: none;
-    overflow: hidden;
-    resize: none;
-  }
+  outline: none;
+  overflow: hidden;
+  resize: none;
+}
 
 .note-inline-editor {
   min-width: 0;
@@ -331,7 +339,8 @@
   cursor: pointer;
   opacity: 0.76;
   transform: translateY(0.08em);
-  mask: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20fill='none'%20stroke='black'%20stroke-linecap='round'%20stroke-linejoin='round'%20stroke-width='2'%20d='M15%203h6v6M10%2014%2021%203M18%2013v6a2%202%200%200%201-2%202H5a2%202%200%200%201-2-2V8a2%202%200%200%201%202-2h6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20fill='none'%20stroke='black'%20stroke-linecap='round'%20stroke-linejoin='round'%20stroke-width='2'%20d='M15%203h6v6M10%2014%2021%203M18%2013v6a2%202%200%200%201-2%202H5a2%202%200%200%201-2-2V8a2%202%200%200%201%202-2h6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
 }
 
 .note-inline-prosemirror p.is-editor-empty:first-child::before {
@@ -417,14 +426,14 @@
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   gap: 0;
-    min-height: 30px;
+  min-height: 30px;
 }
 
 .note-tiptap-toolbar {
   display: flex;
   flex-wrap: wrap;
   min-height: 3.1rem;
-    align-items: center;
+  align-items: center;
   border: 1px solid var(--nx-color-border);
   border-radius: var(--nx-radius-md);
   background: var(--nx-color-surface);
@@ -517,7 +526,7 @@
   list-style: none;
 }
 
-.note-tiptap-prosemirror ul[data-type="taskList"]>li,
+.note-tiptap-prosemirror ul[data-type="taskList"] > li,
 .note-tiptap-prosemirror li[data-type="taskItem"],
 .note-tiptap-prosemirror li[data-checked] {
   display: flex;
@@ -527,15 +536,15 @@
   list-style: none;
 }
 
-.note-tiptap-prosemirror ul[data-type="taskList"]>li::marker,
+.note-tiptap-prosemirror ul[data-type="taskList"] > li::marker,
 .note-tiptap-prosemirror li[data-type="taskItem"]::marker,
 .note-tiptap-prosemirror li[data-checked]::marker {
   content: "";
 }
 
-.note-tiptap-prosemirror ul[data-type="taskList"]>li>label,
-.note-tiptap-prosemirror li[data-type="taskItem"]>label,
-.note-tiptap-prosemirror li[data-checked]>label {
+.note-tiptap-prosemirror ul[data-type="taskList"] > li > label,
+.note-tiptap-prosemirror li[data-type="taskItem"] > label,
+.note-tiptap-prosemirror li[data-checked] > label {
   display: inline-flex;
   flex: 0 0 1rem;
   align-items: center;
@@ -545,31 +554,31 @@
   margin: 0;
 }
 
-.note-tiptap-prosemirror ul[data-type="taskList"]>li>label input,
-.note-tiptap-prosemirror li[data-type="taskItem"]>label input,
-.note-tiptap-prosemirror li[data-checked]>label input {
+.note-tiptap-prosemirror ul[data-type="taskList"] > li > label input,
+.note-tiptap-prosemirror li[data-type="taskItem"] > label input,
+.note-tiptap-prosemirror li[data-checked] > label input {
   width: 0.92rem;
   height: 0.92rem;
   margin: 0;
   accent-color: var(--nx-color-accent);
 }
 
-.note-tiptap-prosemirror ul[data-type="taskList"]>li>label span,
-.note-tiptap-prosemirror li[data-type="taskItem"]>label span,
-.note-tiptap-prosemirror li[data-checked]>label span {
+.note-tiptap-prosemirror ul[data-type="taskList"] > li > label span,
+.note-tiptap-prosemirror li[data-type="taskItem"] > label span,
+.note-tiptap-prosemirror li[data-checked] > label span {
   display: none;
 }
 
-.note-tiptap-prosemirror ul[data-type="taskList"]>li>div,
-.note-tiptap-prosemirror li[data-type="taskItem"]>div,
-.note-tiptap-prosemirror li[data-checked]>div {
+.note-tiptap-prosemirror ul[data-type="taskList"] > li > div,
+.note-tiptap-prosemirror li[data-type="taskItem"] > div,
+.note-tiptap-prosemirror li[data-checked] > div {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.note-tiptap-prosemirror ul[data-type="taskList"]>li>div>p,
-.note-tiptap-prosemirror li[data-type="taskItem"]>div>p,
-.note-tiptap-prosemirror li[data-checked]>div>p {
+.note-tiptap-prosemirror ul[data-type="taskList"] > li > div > p,
+.note-tiptap-prosemirror li[data-type="taskItem"] > div > p,
+.note-tiptap-prosemirror li[data-checked] > div > p {
   margin: 0;
 }
 
@@ -584,7 +593,10 @@
   top: var(--nx-space-3);
   right: var(--nx-space-3);
   opacity: 0;
-  transition: opacity 140ms ease, background 140ms ease, color 140ms ease;
+  transition:
+    opacity 140ms ease,
+    background 140ms ease,
+    color 140ms ease;
 }
 
 .note-tip-box:hover .note-tip-delete,
@@ -651,7 +663,10 @@
 }
 
 .note-image-node {
-  --nx-note-image-controls-width: min(100%, max(11rem, min(22rem, var(--nx-note-image-width, 22rem))));
+  --nx-note-image-controls-width: min(
+    100%,
+    max(11rem, min(22rem, var(--nx-note-image-width, 22rem)))
+  );
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -747,12 +762,18 @@
 
 .note-image-node.align-left .note-image-controls {
   justify-self: start;
-  margin-inline-start: max(0px, calc((min(100%, var(--nx-note-image-width)) - var(--nx-note-image-controls-width)) / 2));
+  margin-inline-start: max(
+    0px,
+    calc((min(100%, var(--nx-note-image-width)) - var(--nx-note-image-controls-width)) / 2)
+  );
 }
 
 .note-image-node.align-right .note-image-controls {
   justify-self: end;
-  margin-inline-end: max(0px, calc((min(100%, var(--nx-note-image-width)) - var(--nx-note-image-controls-width)) / 2));
+  margin-inline-end: max(
+    0px,
+    calc((min(100%, var(--nx-note-image-width)) - var(--nx-note-image-controls-width)) / 2)
+  );
 }
 
 .note-image-controls__alignment {
@@ -773,7 +794,10 @@
   border-radius: var(--nx-radius-sm);
   background: var(--nx-color-surface-subtle);
   color: var(--nx-color-text-muted);
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
 }
 
 .note-image-controls button svg {
@@ -854,7 +878,15 @@
 
 .note-image-node.is-resizing .note-image-controls {
   justify-self: start;
-  margin-inline: clamp(0px, calc(var(--nx-note-image-resize-left, 0px) + (var(--nx-note-image-width) - var(--nx-note-image-controls-width)) / 2), calc(100% - var(--nx-note-image-controls-width))) 0;
+  margin-inline: clamp(
+      0px,
+      calc(
+        var(--nx-note-image-resize-left, 0px) +
+          (var(--nx-note-image-width) - var(--nx-note-image-controls-width)) / 2
+      ),
+      calc(100% - var(--nx-note-image-controls-width))
+    )
+    0;
 }
 
 .note-image-resize-scroll {
@@ -908,7 +940,10 @@
   min-height: 0;
   place-items: center;
   overflow: hidden;
-  padding: max(var(--nx-space-5), env(safe-area-inset-top)) max(var(--nx-space-5), env(safe-area-inset-right)) max(var(--nx-space-5), env(safe-area-inset-bottom)) max(var(--nx-space-5), env(safe-area-inset-left));
+  padding: max(var(--nx-space-5), env(safe-area-inset-top))
+    max(var(--nx-space-5), env(safe-area-inset-right))
+    max(var(--nx-space-5), env(safe-area-inset-bottom))
+    max(var(--nx-space-5), env(safe-area-inset-left));
   cursor: grab;
   touch-action: none;
   user-select: none;
@@ -926,7 +961,8 @@
   max-height: 100%;
   object-fit: contain;
   pointer-events: none;
-  transform: translate3d(var(--nx-image-preview-x, 0), var(--nx-image-preview-y, 0), 0) scale(var(--nx-image-preview-scale, 1));
+  transform: translate3d(var(--nx-image-preview-x, 0), var(--nx-image-preview-y, 0), 0)
+    scale(var(--nx-image-preview-scale, 1));
   transform-origin: center;
   user-select: none;
   will-change: transform;

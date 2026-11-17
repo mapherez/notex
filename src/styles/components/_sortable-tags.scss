@@ -11,7 +11,10 @@
   border-radius: 0.35rem;
   cursor: grab;
   outline: none;
-  transition: opacity 160ms ease, outline-color 160ms ease, transform 160ms ease;
+  transition:
+    opacity 160ms ease,
+    outline-color 160ms ease,
+    transform 160ms ease;
   user-select: none;
 }
 

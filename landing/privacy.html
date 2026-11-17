@@ -11,7 +11,13 @@
     <meta name="theme-color" content="#f7f8fc" />
     <meta name="color-scheme" content="light dark" />
     <link rel="canonical" href="https://notex.mapherez.com/privacy.html" />
-    <link rel="icon" href="./assets/notex-mark.svg" data-icon-light="./assets/notex-mark-light.svg" data-icon-dark="./assets/notex-mark-dark.svg" type="image/svg+xml" />
+    <link
+      rel="icon"
+      href="./assets/notex-mark.svg"
+      data-icon-light="./assets/notex-mark-light.svg"
+      data-icon-dark="./assets/notex-mark-dark.svg"
+      type="image/svg+xml"
+    />
     <script src="./theme.js"></script>
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./assets/fonts/fonts.css" />
@@ -26,63 +32,56 @@
       <header>
         <p class="eyebrow">NoteX</p>
         <h1>Privacy Policy</h1>
-        <p>
-          How NoteX handles local data, Google Drive backups, and optional AI
-          access.
-        </p>
+        <p>How NoteX handles local data, Google Drive backups, and optional AI access.</p>
       </header>
 
       <section class="legal-copy" aria-labelledby="privacy-en">
         <h2 id="privacy-en">Your data and account</h2>
         <p>
-          NoteX stores desktop libraries in local SQLite databases and browser
-          libraries in IndexedDB on your device. Local libraries are kept
-          separate for each Google account.
+          NoteX stores desktop libraries in local SQLite databases and browser libraries in
+          IndexedDB on your device. Local libraries are kept separate for each Google account.
         </p>
         <p>
-          Desktop use does not require an account. Browser mode requires Google
-          sign-in. NoteX uses your Google account ID, email, display name, and
-          profile image to identify your account and library.
+          Desktop use does not require an account. Browser mode requires Google sign-in. NoteX uses
+          your Google account ID, email, display name, and profile image to identify your account
+          and library.
         </p>
         <p>
-          Signing in with Google starts automatic backups on desktop and in the
-          browser. NoteX sends note JSON, library metadata, and attachments
-          directly to the application's hidden data area in your own Google
-          Drive. Google processes this data under its own policies. Your notes
-          and Google tokens are not stored on a NoteX server.
+          Signing in with Google starts automatic backups on desktop and in the browser. NoteX sends
+          note JSON, library metadata, and attachments directly to the application's hidden data
+          area in your own Google Drive. Google processes this data under its own policies. Your
+          notes and Google tokens are not stored on a NoteX server.
         </p>
         <p>
-          Desktop refresh tokens are stored using the operating system
-          credential store. Browser access tokens are kept in session storage
-          until logout or expiry. Signing out preserves local account libraries;
-          clearing browser site data can remove local notes and pending backups.
+          Desktop refresh tokens are stored using the operating system credential store. Browser
+          access tokens are kept in session storage until logout or expiry. Signing out preserves
+          local account libraries; clearing browser site data can remove local notes and pending
+          backups.
         </p>
         <p>
-          The public website and webapp host receive normal HTTP requests and
-          may record connection information in server logs. Google sign-in,
-          Drive access, release checks, and downloads require internet access.
+          The public website and webapp host receive normal HTTP requests and may record connection
+          information in server logs. Google sign-in, Drive access, release checks, and downloads
+          require internet access.
         </p>
         <p>
-          When you start local MCP and connect an AI client, note data requested
-          by that client is sent through the local MCP connection. NoteX does
-          not store an additional copy of that exchange, but the connected AI
-          client may process the content under its own privacy policy.
+          When you start local MCP and connect an AI client, note data requested by that client is
+          sent through the local MCP connection. NoteX does not store an additional copy of that
+          exchange, but the connected AI client may process the content under its own privacy
+          policy.
         </p>
         <p>
-          On desktop, exporting a workspace creates a <code>.notex</code>
-          package with your database and attached files. Exporting one note
-          creates a <code>.notex-note</code> package with that note and its
-          files. You choose where to store or share these packages.
+          On desktop, exporting a workspace creates a <code>.notex</code> package with your database
+          and attached files. Exporting one note creates a <code>.notex-note</code> package with
+          that note and its files. You choose where to store or share these packages.
         </p>
         <p>
-          When you import a full-workspace package on desktop, NoteX replaces
-          the current local database and files folder with the selected
+          When you import a full-workspace package on desktop, NoteX replaces the current local
+          database and files folder with the selected
           <code>.notex</code> package.
         </p>
         <p>
-          NoteX does not sell your data or use your notes for advertising. Data
-          is transferred to Google or a connected AI client only through the
-          corresponding features described above.
+          NoteX does not sell your data or use your notes for advertising. Data is transferred to
+          Google or a connected AI client only through the corresponding features described above.
         </p>
       </section>
     </main>

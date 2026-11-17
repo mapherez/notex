@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { appLimits, defaultUserSettings } from '../config/appSettings';
-import { db } from '../core/storage/notexRepository';
-import type { Locale, PreferredLayout, ThemePreference, UserSettings } from '../core/models/models';
+import { create } from "zustand";
+import { appLimits, defaultUserSettings } from "../config/appSettings";
+import { db } from "../core/storage/notexRepository";
+import type { Locale, PreferredLayout, ThemePreference, UserSettings } from "../core/models/models";
 
 type AppStore = {
   settings: UserSettings;
@@ -32,16 +32,36 @@ async function persist(settings: UserSettings) {
   rememberDevicePreferences(settings);
 }
 
-const deviceFields = ['theme', 'language', 'mcpPort', 'username', 'startupPage', 'preferredLayout', 'confirmNoteExport'] as const;
+const deviceFields = [
+  "theme",
+  "language",
+  "mcpPort",
+  "username",
+  "startupPage",
+  "preferredLayout",
+  "confirmNoteExport",
+] as const;
 function rememberDevicePreferences(settings: UserSettings) {
-  try { localStorage.setItem('notex.devicePreferences', JSON.stringify(Object.fromEntries(deviceFields.map((key) => [key, settings[key]])))); }
-  catch { /* SQLite/IndexedDB still holds the preferences when browser storage is unavailable. */ }
+  try {
+    localStorage.setItem(
+      "notex.devicePreferences",
+      JSON.stringify(Object.fromEntries(deviceFields.map((key) => [key, settings[key]]))),
+    );
+  } catch {
+    /* SQLite/IndexedDB still holds the preferences when browser storage is unavailable. */
+  }
 }
 function devicePreferences(): Partial<UserSettings> {
   try {
-    const value = JSON.parse(localStorage.getItem('notex.devicePreferences') ?? '{}');
-    return Object.fromEntries(deviceFields.filter((key) => typeof value?.[key] === typeof defaultUserSettings[key]).map((key) => [key, value[key]]));
-  } catch { return {}; }
+    const value = JSON.parse(localStorage.getItem("notex.devicePreferences") ?? "{}");
+    return Object.fromEntries(
+      deviceFields
+        .filter((key) => typeof value?.[key] === typeof defaultUserSettings[key])
+        .map((key) => [key, value[key]]),
+    );
+  } catch {
+    return {};
+  }
 }
 
 function normalizeSettings(settings?: Partial<UserSettings> | null): UserSettings {
@@ -109,7 +129,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
   toggleFavoriteTag: async (tagId) => {
     const current = get().settings.favoriteTagIds;
-    const favoriteTagIds = current.includes(tagId) ? current.filter((id) => id !== tagId) : [...current, tagId];
+    const favoriteTagIds = current.includes(tagId)
+      ? current.filter((id) => id !== tagId)
+      : [...current, tagId];
     const settings = { ...get().settings, favoriteTagIds };
     await updateSettings(set, settings);
   },
@@ -117,7 +139,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const current = get().settings.favoriteTagIds;
     const currentSet = new Set(current);
     const orderedIds = tagIds.filter((tagId) => currentSet.has(tagId));
-    const favoriteTagIds = [...orderedIds, ...current.filter((tagId) => !orderedIds.includes(tagId))];
+    const favoriteTagIds = [
+      ...orderedIds,
+      ...current.filter((tagId) => !orderedIds.includes(tagId)),
+    ];
     const settings = { ...get().settings, favoriteTagIds };
     await updateSettings(set, settings);
   },
@@ -138,24 +163,28 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await updateSettings(set, settings);
   },
   setQuickPinAt: async (index, noteId) => {
-    const nextSlots = [...get().settings.quickPinNoteIds.slice(0, appLimits.quickPins)];
+    const nextSlots = get().settings.quickPinNoteIds.slice(0, appLimits.quickPins);
     const normalizedIndex = Math.max(0, Math.min(appLimits.quickPins - 1, index));
-    const dedupedSlots = noteId ? nextSlots.map((id) => (id === noteId ? '' : id)) : nextSlots;
+    const dedupedSlots = noteId ? nextSlots.map((id) => (id === noteId ? "" : id)) : nextSlots;
 
-    dedupedSlots[normalizedIndex] = noteId ?? '';
+    dedupedSlots[normalizedIndex] = noteId ?? "";
     const quickPinNoteIds = dedupedSlots.filter(Boolean).slice(0, appLimits.quickPins);
     const settings = { ...get().settings, quickPinNoteIds };
     await updateSettings(set, settings);
   },
   toggleQuickPin: async (noteId) => {
     const current = get().settings.quickPinNoteIds;
-    const quickPinNoteIds = current.includes(noteId) ? current.filter((id) => id !== noteId) : [...current, noteId].slice(-appLimits.quickPins);
+    const quickPinNoteIds = current.includes(noteId)
+      ? current.filter((id) => id !== noteId)
+      : [...current, noteId].slice(-appLimits.quickPins);
     const settings = { ...get().settings, quickPinNoteIds };
     await updateSettings(set, settings);
   },
   setNotePanelHidden: async (panelId, hidden) => {
     const current = get().settings.noteHiddenPanelIds ?? [];
-    const noteHiddenPanelIds = hidden ? uniqueIds([...current, panelId]) : current.filter((id) => id !== panelId);
+    const noteHiddenPanelIds = hidden
+      ? uniqueIds([...current, panelId])
+      : current.filter((id) => id !== panelId);
     const settings = { ...get().settings, noteHiddenPanelIds };
     await updateSettings(set, settings);
   },
@@ -173,7 +202,7 @@ function uniqueIds(ids: string[]) {
 }
 
 function normalizeMcpPort(value: unknown) {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 1024 && value <= 65535
+  return typeof value === "number" && Number.isInteger(value) && value >= 1024 && value <= 65535
     ? value
     : defaultUserSettings.mcpPort;
 }

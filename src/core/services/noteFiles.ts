@@ -1,38 +1,45 @@
-import { convertFileSrc, isTauri } from '@tauri-apps/api/core';
-import { browserFileUrl, currentBrowserStorage, releaseBrowserFileUrl } from '../storage/storageRuntime';
-import { desktopInvoke as invoke } from '../storage/desktopInvoke';
-import { open, save } from '@tauri-apps/plugin-dialog';
-import type { NoteFile, NoteFileKind } from '../models/models';
-import { createUuid } from '../utils/createUuid';
+import { convertFileSrc, isTauri } from "@tauri-apps/api/core";
+import {
+  browserFileUrl,
+  currentBrowserStorage,
+  releaseBrowserFileUrl,
+} from "../storage/storageRuntime";
+import { desktopInvoke as invoke } from "../storage/desktopInvoke";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import type { NoteFile, NoteFileKind } from "../models/models";
+import { createUuid } from "../utils/createUuid";
 
 type FileImportInfo = NoteFile & {
   absolutePath: string;
   kind: NoteFileKind;
 };
 
-const imageExtensions = ['apng', 'avif', 'bmp', 'gif', 'jpeg', 'jpg', 'png', 'svg', 'webp'];
-const fileExtensions = ['csv', 'doc', 'docx', 'md', 'pdf', 'txt', 'xls', 'xlsx'];
+const imageExtensions = ["apng", "avif", "bmp", "gif", "jpeg", "jpg", "png", "svg", "webp"];
+const fileExtensions = ["csv", "doc", "docx", "md", "pdf", "txt", "xls", "xlsx"];
 
-function attachmentFilter(kind: NoteFileKind | 'any') {
+function attachmentFilter(kind: NoteFileKind | "any") {
   return {
-    name: kind === 'image' ? 'Images' : kind === 'attachment' ? 'Documents' : 'Supported files',
-    extensions: kind === 'image'
-      ? imageExtensions
-      : kind === 'attachment'
-        ? fileExtensions
-        : [...imageExtensions, ...fileExtensions],
+    name: kind === "image" ? "Images" : kind === "attachment" ? "Documents" : "Supported files",
+    extensions:
+      kind === "image"
+        ? imageExtensions
+        : kind === "attachment"
+          ? fileExtensions
+          : [...imageExtensions, ...fileExtensions],
   };
 }
 
-export async function chooseNoteAttachment(kind: NoteFileKind | 'any' = 'any'): Promise<string | File | null> {
+export async function chooseNoteAttachment(
+  kind: NoteFileKind | "any" = "any",
+): Promise<string | File | null> {
   const filter = attachmentFilter(kind);
   if (!isTauri()) {
     return new Promise((resolve) => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = filter.extensions.map((extension) => `.${extension}`).join(',');
-      input.addEventListener('change', () => resolve(input.files?.[0] ?? null), { once: true });
-      input.addEventListener('cancel', () => resolve(null), { once: true });
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = filter.extensions.map((extension) => `.${extension}`).join(",");
+      input.addEventListener("change", () => resolve(input.files?.[0] ?? null), { once: true });
+      input.addEventListener("cancel", () => resolve(null), { once: true });
       input.click();
     });
   }
@@ -41,24 +48,39 @@ export async function chooseNoteAttachment(kind: NoteFileKind | 'any' = 'any'): 
     filters: [filter],
   });
 
-  return typeof selected === 'string' ? selected : null;
+  return typeof selected === "string" ? selected : null;
 }
 
-export async function importNoteAttachment(sourcePath: string | File, noteId: string, blockId?: string | null): Promise<FileImportInfo> {
+export async function importNoteAttachment(
+  sourcePath: string | File,
+  noteId: string,
+  blockId?: string | null,
+): Promise<FileImportInfo> {
   if (!isTauri()) {
-    if (!(sourcePath instanceof File)) throw new Error('Select a file from this device');
+    if (!(sourcePath instanceof File)) throw new Error("Select a file from this device");
     const storage = currentBrowserStorage();
     const bytes = new Uint8Array(await sourcePath.arrayBuffer());
     let checksum = 0xcbf29ce484222325n;
-    for (const byte of bytes) checksum = BigInt.asUintN(64, (checksum ^ BigInt(byte)) * 0x100000001b3n);
+    for (const byte of bytes)
+      checksum = BigInt.asUintN(64, (checksum ^ BigInt(byte)) * 0x100000001b3n);
     const id = createUuid();
-    const relativePath = `${noteId}/${id}/${encodeURIComponent(sourcePath.name).replace(/%/g, '_')}`;
+    const relativePath = `${noteId}/${id}/${encodeURIComponent(sourcePath.name).replace(/%/g, "_")}`;
     await storage.writeBlob(relativePath, sourcePath);
-    return { id, noteId, blockId: blockId ?? null, kind: sourcePath.type.startsWith('image/') ? 'image' : 'attachment',
-      originalName: sourcePath.name, mimeType: sourcePath.type || 'application/octet-stream', sizeBytes: sourcePath.size,
-      checksum: checksum.toString(16).padStart(16, '0'), relativePath, absolutePath: '', createdAt: new Date().toISOString() };
+    return {
+      id,
+      noteId,
+      blockId: blockId ?? null,
+      kind: sourcePath.type.startsWith("image/") ? "image" : "attachment",
+      originalName: sourcePath.name,
+      mimeType: sourcePath.type || "application/octet-stream",
+      sizeBytes: sourcePath.size,
+      checksum: checksum.toString(16).padStart(16, "0"),
+      relativePath,
+      absolutePath: "",
+      createdAt: new Date().toISOString(),
+    };
   }
-  return invoke<FileImportInfo>('notex_note_file_import', {
+  return invoke<FileImportInfo>("notex_note_file_import", {
     sourcePath,
     noteId,
     blockId: blockId ?? null,
@@ -67,19 +89,39 @@ export async function importNoteAttachment(sourcePath: string | File, noteId: st
 
 export async function resolveNoteFileSrc(relativePath: string) {
   if (!isTauri()) return browserFileUrl(relativePath);
-  const absolutePath = await invoke<string>('notex_note_file_absolute_path', { relativePath });
+  const absolutePath = await invoke<string>("notex_note_file_absolute_path", { relativePath });
   return convertFileSrc(absolutePath);
 }
 
 export async function openNoteAttachment(relativePath: string) {
   if (!isTauri()) {
     const url = await browserFileUrl(relativePath);
-    const file = (await currentBrowserStorage().db.noteFiles.where('relativePath').equals(relativePath).toArray())[0];
-    const anchor = document.createElement('a'); anchor.href = url; anchor.target = '_blank'; anchor.rel = 'noopener noreferrer';
-    if (!file || !['application/pdf', 'image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif'].includes(file.mimeType)) anchor.download = file?.originalName ?? 'attachment';
-    anchor.click(); return;
+    const file = (
+      await currentBrowserStorage()
+        .db.noteFiles.where("relativePath")
+        .equals(relativePath)
+        .toArray()
+    )[0];
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    if (
+      !file ||
+      ![
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "image/gif",
+        "image/webp",
+        "image/avif",
+      ].includes(file.mimeType)
+    )
+      anchor.download = file?.originalName ?? "attachment";
+    anchor.click();
+    return;
   }
-  return invoke<void>('notex_note_file_open', { relativePath });
+  return invoke<void>("notex_note_file_open", { relativePath });
 }
 
 export function deleteNoteAttachment(relativePath: string) {
@@ -87,13 +129,17 @@ export function deleteNoteAttachment(relativePath: string) {
     releaseBrowserFileUrl(relativePath);
     return currentBrowserStorage().deleteBlob(relativePath);
   }
-  return invoke<void>('notex_note_file_delete', { relativePath });
+  return invoke<void>("notex_note_file_delete", { relativePath });
 }
 
 export async function exportNoteAttachment(file: NoteFile) {
   if (!isTauri()) {
     const url = await browserFileUrl(file.relativePath);
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = file.originalName; anchor.click(); return file.originalName;
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = file.originalName;
+    anchor.click();
+    return file.originalName;
   }
   const destinationPath = await save({
     defaultPath: file.originalName,
@@ -103,7 +149,7 @@ export async function exportNoteAttachment(file: NoteFile) {
     return null;
   }
 
-  return invoke<string>('notex_note_file_copy_to', {
+  return invoke<string>("notex_note_file_copy_to", {
     relativePath: file.relativePath,
     destinationPath,
   });

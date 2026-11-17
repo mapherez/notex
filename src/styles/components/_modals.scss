@@ -8,7 +8,10 @@
   place-items: center;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.48);
-  padding: max(var(--nx-space-5), env(safe-area-inset-top)) max(var(--nx-space-5), env(safe-area-inset-right)) max(var(--nx-space-5), env(safe-area-inset-bottom)) max(var(--nx-space-5), env(safe-area-inset-left));
+  padding: max(var(--nx-space-5), env(safe-area-inset-top))
+    max(var(--nx-space-5), env(safe-area-inset-right))
+    max(var(--nx-space-5), env(safe-area-inset-bottom))
+    max(var(--nx-space-5), env(safe-area-inset-left));
   z-index: 120;
 }
 
@@ -317,7 +320,7 @@
   text-transform: uppercase;
 }
 
-.patch-notes-modal__versions>div {
+.patch-notes-modal__versions > div {
   display: grid;
   gap: var(--nx-space-2);
 }
@@ -361,7 +364,10 @@
 
 @media (max-width: 42rem) {
   .modal-backdrop {
-    padding: max(var(--nx-space-3), env(safe-area-inset-top)) max(var(--nx-space-3), env(safe-area-inset-right)) max(var(--nx-space-3), env(safe-area-inset-bottom)) max(var(--nx-space-3), env(safe-area-inset-left));
+    padding: max(var(--nx-space-3), env(safe-area-inset-top))
+      max(var(--nx-space-3), env(safe-area-inset-right))
+      max(var(--nx-space-3), env(safe-area-inset-bottom))
+      max(var(--nx-space-3), env(safe-area-inset-left));
   }
 
   .shortcut-help-row {

@@ -13,23 +13,14 @@
   }
 
   function apply() {
-    const theme =
-      preference === "system"
-        ? system.matches
-          ? "dark"
-          : "light"
-        : preference;
+    const theme = preference === "system" ? (system.matches ? "dark" : "light") : preference;
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.themePreference = preference;
-    document
-      .querySelector('meta[name="color-scheme"]')
-      ?.setAttribute("content", theme);
+    document.querySelector('meta[name="color-scheme"]')?.setAttribute("content", theme);
     document
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute("content", theme === "dark" ? "#0c1019" : "#f7f8fc");
-    const favicon = document.querySelector(
-      'link[rel="icon"][type="image/svg+xml"]',
-    );
+    const favicon = document.querySelector('link[rel="icon"][type="image/svg+xml"]');
     const themeIcon = favicon?.getAttribute(`data-icon-${theme}`);
     if (themeIcon) favicon.setAttribute("href", themeIcon);
     refreshPicker();
@@ -39,9 +30,7 @@
   window.addEventListener("storage", (event) => {
     if (event.key !== key && event.key !== null) return;
     preference =
-      event.newValue === "light" || event.newValue === "dark"
-        ? event.newValue
-        : "system";
+      event.newValue === "light" || event.newValue === "dark" ? event.newValue : "system";
     apply();
   });
 
@@ -81,24 +70,17 @@
       opened = true;
       trigger.setAttribute("aria-expanded", "true");
       position();
-      options
-        .find((option) => option.dataset.themeValue === preference)
-        ?.focus();
+      options.find((option) => option.dataset.themeValue === preference)?.focus();
     }
     refreshPicker = () => {
       trigger.setAttribute("aria-label", `Color theme: ${names[preference]}`);
       trigger.title = `Color theme: ${names[preference]}`;
       for (const option of options)
-        option.setAttribute(
-          "aria-pressed",
-          String(option.dataset.themeValue === preference),
-        );
+        option.setAttribute("aria-pressed", String(option.dataset.themeValue === preference));
       const currentIcon = options
         .find((option) => option.dataset.themeValue === preference)
         .querySelector("svg");
-      trigger
-        .querySelector("[data-theme-icon]")
-        .replaceChildren(currentIcon.cloneNode(true));
+      trigger.querySelector("[data-theme-icon]").replaceChildren(currentIcon.cloneNode(true));
     };
     trigger.addEventListener("click", () => (opened ? close() : open()));
     trigger.addEventListener("keydown", (event) => {
@@ -124,8 +106,7 @@
       const index = options.indexOf(document.activeElement);
       let next;
       if (event.key === "ArrowDown") next = (index + 1) % options.length;
-      else if (event.key === "ArrowUp")
-        next = (index + options.length - 1) % options.length;
+      else if (event.key === "ArrowUp") next = (index + options.length - 1) % options.length;
       else if (event.key === "Home") next = 0;
       else if (event.key === "End") next = options.length - 1;
       else return;
