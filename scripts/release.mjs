@@ -1,16 +1,22 @@
 import { readFileSync, writeFileSync, realpathSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import path, { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline/promises";
 import { config, git, versionTag, renderVersion, releaseRequest } from "./ci-policy.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
+// Compare already resolved paths using the host's path rules (including Windows casing).
+export function sameCanonicalPath(left, right, paths = path) {
+  return paths.relative(left, right) === "";
+}
+
 export function release(input, { root = repositoryRoot, cwd = process.cwd() } = {}) {
   const tag = versionTag(input);
+  const canonicalRoot = realpathSync(root);
   if (
-    realpathSync(cwd) !== realpathSync(root) ||
-    realpathSync(git(root, "rev-parse", "--show-toplevel")) !== realpathSync(root)
+    !sameCanonicalPath(realpathSync(cwd), canonicalRoot) ||
+    !sameCanonicalPath(realpathSync(git(root, "rev-parse", "--show-toplevel")), canonicalRoot)
   ) {
     throw new Error("Run npm run release at the repository root.");
   }

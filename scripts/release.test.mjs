@@ -2,10 +2,52 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, posix, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config, git, releaseRequest } from "./ci-policy.mjs";
-import { release } from "./release.mjs";
+import { release, sameCanonicalPath } from "./release.mjs";
+
+void test("canonical Windows paths accept casing and separator differences", () => {
+  for (const [left, right] of [
+    ["D:\\a\\_temp\\Release-Flow\\work", "d:/a/_temp/release-flow/work"],
+    [
+      "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\work",
+      "c:/users/runner~1/AppData/Local/Temp/work/",
+    ],
+    ["\\\\Server\\Share\\Work", "//server/share/work"],
+  ]) {
+    assert.equal(sameCanonicalPath(left, right, win32), true);
+  }
+  for (const other of ["D:/a/repo/src", "D:/a/repo-other", "E:/a/repo"]) {
+    assert.equal(sameCanonicalPath("D:/a/repo", other, win32), false);
+  }
+});
+
+void test("canonical POSIX paths preserve case-sensitive directory checks", () => {
+  assert.equal(sameCanonicalPath("/repo/work", "/repo/work/", posix), true);
+  for (const other of ["/repo/Work", "/repo/work/src", "/repo/work-other"]) {
+    assert.equal(sameCanonicalPath("/repo/work", other, posix), false);
+  }
+});
+
+void test("repository root validation accepts the root and rejects nested or unrelated directories", (t) => {
+  const temp = mkdtempSync(join(tmpdir(), "release-root-"));
+  t.after(() => rmSync(temp, { recursive: true, force: true }));
+  const root = join(temp, "work");
+  const nested = join(root, "src");
+  const unrelated = join(temp, "other");
+  mkdirSync(nested, { recursive: true });
+  mkdirSync(unrelated);
+  git(root, "init", "-b", config.branch);
+  writeFileSync(join(root, "pending.txt"), "uncommitted source\n");
+  // A valid root reaches the dirty-tree guard without creating any commit or tag.
+  assert.throws(() => release("9.9.9", { root, cwd: root }), /Commit and push/);
+  for (const cwd of [nested, unrelated]) {
+    assert.throws(() => release("9.9.9", { root, cwd }), /at the repository root/);
+  }
+  assert.throws(() => release("9.9.9", { root: nested, cwd: nested }), /at the repository root/);
+  assert.equal(git(root, "tag", "--list"), "");
+});
 
 function fixture(t) {
   const temp = mkdtempSync(join(tmpdir(), "release-flow-"));
