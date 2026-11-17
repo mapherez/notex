@@ -74,6 +74,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run format:check
       - run: npm run test:format
+      - run: npm run test:generated
 
   approved:
     name: CI approved

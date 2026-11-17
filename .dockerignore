@@ -18,3 +18,5 @@
 !packages/notex-mcp-contract/scripts/**
 !packages/notex-mcp-contract/src
 !packages/notex-mcp-contract/src/**
+!scripts
+!scripts/format-options.json

@@ -20,6 +20,7 @@ RUN npm ci
 
 COPY packages/notex-mcp-contract/tsconfig.json ./packages/notex-mcp-contract/tsconfig.json
 COPY packages/notex-mcp-contract/scripts ./packages/notex-mcp-contract/scripts
+COPY scripts/format-options.json ./scripts/format-options.json
 COPY packages/notex-mcp-contract/src ./packages/notex-mcp-contract/src
 COPY backend/tsconfig.json ./backend/tsconfig.json
 COPY backend/src ./backend/src
