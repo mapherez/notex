@@ -1,7 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" role="img" aria-labelledby="title"><title id="title">Landscape note thumbnail</title><rect width="96" height="96" rx="5" fill="#aac2d3"/>
-    <circle cx="69" cy="27" r="10" fill="#eee1b3"/>
-    <path d="M0 62 27 31l29 32 14-15 26 24v24H0Z" fill="#dce6e6"/>
-    <path d="m16 44 11-13 13 14-12-4Z" fill="#f3f4ed"/>
-    <path d="M0 70c20-16 35-12 52-5 19 8 28-6 44-10v41H0Z" fill="#5f8d7d"/>
-    <path d="M0 85c21-17 44-12 61-6 15 5 24-4 35-8v25H0Z" fill="#345a51"/>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="96"
+  height="96"
+  viewBox="0 0 96 96"
+  fill="none"
+  role="img"
+  aria-labelledby="title"
+><title id="title">Landscape note thumbnail</title><rect
+    width="96"
+    height="96"
+    rx="5"
+    fill="#aac2d3"
+  />
+    <circle cx="69" cy="27" r="10" fill="#eee1b3" />
+    <path d="M0 62 27 31l29 32 14-15 26 24v24H0Z" fill="#dce6e6" />
+    <path d="m16 44 11-13 13 14-12-4Z" fill="#f3f4ed" />
+    <path d="M0 70c20-16 35-12 52-5 19 8 28-6 44-10v41H0Z" fill="#5f8d7d" />
+    <path d="M0 85c21-17 44-12 61-6 15 5 24-4 35-8v25H0Z" fill="#345a51" />
 </svg>

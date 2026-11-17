@@ -3,14 +3,14 @@
 FROM node:26-bookworm-slim AS build
 
 ENV npm_config_audit=false \
-    npm_config_fund=false \
-    npm_config_update_notifier=false
+  npm_config_fund=false \
+  npm_config_update_notifier=false
 
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git ca-certificates python3 make g++ \
-    && rm -rf /var/lib/apt/lists/*
+  && apt-get install -y --no-install-recommends git ca-certificates python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
 COPY backend/package.json ./backend/
@@ -24,21 +24,21 @@ COPY packages/notex-mcp-contract/src ./packages/notex-mcp-contract/src
 COPY backend/tsconfig.json ./backend/tsconfig.json
 COPY backend/src ./backend/src
 RUN npm run build --workspace backend \
-    && npm prune --omit=dev \
-    && mkdir -p backend/node_modules packages/notex-mcp-contract/node_modules
+  && npm prune --omit=dev \
+  && mkdir -p backend/node_modules packages/notex-mcp-contract/node_modules
 
 FROM node:26-bookworm-slim AS runtime
 
 ENV NODE_ENV=production \
-    NOTEX_MCP_HOST=0.0.0.0 \
-    NOTEX_MCP_PORT=8080 \
-    NOTEX_MCP_DATABASE_PATH=/data/notex-mcp.sqlite \
-    NOTEX_MCP_ALLOWED_HOSTS=127.0.0.1,localhost
+  NOTEX_MCP_HOST=0.0.0.0 \
+  NOTEX_MCP_PORT=8080 \
+  NOTEX_MCP_DATABASE_PATH=/data/notex-mcp.sqlite \
+  NOTEX_MCP_ALLOWED_HOSTS=127.0.0.1,localhost
 
 RUN groupadd --gid 10001 notex \
-    && useradd --uid 10001 --gid notex --no-create-home --shell /usr/sbin/nologin notex \
-    && mkdir -p /app/backend /app/packages/notex-mcp-contract /data \
-    && chown -R notex:notex /app /data
+  && useradd --uid 10001 --gid notex --no-create-home --shell /usr/sbin/nologin notex \
+  && mkdir -p /app/backend /app/packages/notex-mcp-contract /data \
+  && chown -R notex:notex /app /data
 
 WORKDIR /app/backend
 

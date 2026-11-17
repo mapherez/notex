@@ -40,19 +40,19 @@ Development endpoints use `http://127.0.0.1:8080`. Production rejects a non-HTTP
 
 ## Configuration
 
-| Variable | Purpose |
-| --- | --- |
-| `NODE_ENV` | `development`, `test`, or `production`. |
-| `NOTEX_MCP_PUBLIC_URL` | Canonical externally reachable origin. It determines OAuth issuer, MCP resource, callbacks, and WSS URL. |
-| `NOTEX_MCP_HOST` | Listen address. Use `0.0.0.0` in the container. |
-| `NOTEX_MCP_PORT` | HTTP listen port; defaults to `8080`. |
-| `NOTEX_MCP_DATABASE_PATH` | Backend-only SQLite path; use `/data/notex-mcp.sqlite` in the container. |
-| `NOTEX_MCP_ALLOWED_HOSTS` | Additional comma-separated Host values accepted behind the proxy. The public URL hostname is always included. |
-| `NOTEX_MCP_TRUST_PROXY` | Optional trusted proxy address/CIDR accepted by Express. Leave empty when clients can reach the backend directly. |
-| `NOTEX_MCP_LOG_LEVEL` | Pino level. Payloads, query strings, credentials, email addresses, and bridge frames are never logged. |
-| `BETTER_AUTH_SECRET` | Random secret of at least 32 characters. Rotating it invalidates existing credentials. |
-| `GOOGLE_CLIENT_ID` | Google OAuth web client ID. |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth web client secret. |
+| Variable                  | Purpose                                                                                                           |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                | `development`, `test`, or `production`.                                                                           |
+| `NOTEX_MCP_PUBLIC_URL`    | Canonical externally reachable origin. It determines OAuth issuer, MCP resource, callbacks, and WSS URL.          |
+| `NOTEX_MCP_HOST`          | Listen address. Use `0.0.0.0` in the container.                                                                   |
+| `NOTEX_MCP_PORT`          | HTTP listen port; defaults to `8080`.                                                                             |
+| `NOTEX_MCP_DATABASE_PATH` | Backend-only SQLite path; use `/data/notex-mcp.sqlite` in the container.                                          |
+| `NOTEX_MCP_ALLOWED_HOSTS` | Additional comma-separated Host values accepted behind the proxy. The public URL hostname is always included.     |
+| `NOTEX_MCP_TRUST_PROXY`   | Optional trusted proxy address/CIDR accepted by Express. Leave empty when clients can reach the backend directly. |
+| `NOTEX_MCP_LOG_LEVEL`     | Pino level. Payloads, query strings, credentials, email addresses, and bridge frames are never logged.            |
+| `BETTER_AUTH_SECRET`      | Random secret of at least 32 characters. Rotating it invalidates existing credentials.                            |
+| `GOOGLE_CLIENT_ID`        | Google OAuth web client ID.                                                                                       |
+| `GOOGLE_CLIENT_SECRET`    | Google OAuth web client secret.                                                                                   |
 
 ## Docker
 

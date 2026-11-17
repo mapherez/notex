@@ -1,4 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" role="img" aria-labelledby="title"><title id="title">Text note thumbnail</title><rect width="96" height="96" rx="5" fill="#1b2030"/>
-    <rect x="18" y="14" width="60" height="68" rx="4" fill="#23283c" stroke="#3b4058" stroke-width="1.5"/>
-    <path fill="none" d="M29 30h35M29 42h27M29 54h35M29 66h22" stroke="#b9a8e7" stroke-width="3.5" stroke-linecap="round"/>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="96"
+  height="96"
+  viewBox="0 0 96 96"
+  fill="none"
+  role="img"
+  aria-labelledby="title"
+><title id="title">Text note thumbnail</title><rect
+    width="96"
+    height="96"
+    rx="5"
+    fill="#1b2030"
+  />
+    <rect
+    x="18"
+    y="14"
+    width="60"
+    height="68"
+    rx="4"
+    fill="#23283c"
+    stroke="#3b4058"
+    stroke-width="1.5"
+  />
+    <path
+    fill="none"
+    d="M29 30h35M29 42h27M29 54h35M29 66h22"
+    stroke="#b9a8e7"
+    stroke-width="3.5"
+    stroke-linecap="round"
+  />
 </svg>

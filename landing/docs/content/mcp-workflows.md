@@ -4,13 +4,13 @@ MCP exposes NoteX actions to a compatible AI client. It does not run an AI model
 
 ## What a client can do
 
-| Area | Available actions |
-| --- | --- |
-| Read | Check status, search notes, read notes and blocks, list tags and collections |
-| Write | Create notes, update headers, add or edit blocks, delete or reorder blocks |
-| Organize | Manage tags and collections, set favorites, pins, and thumbnails |
-| Connect content | Manage linked notes, examples, and related links |
-| Trash | Move, restore, permanently delete notes, and clear trash |
+| Area            | Available actions                                                            |
+| --------------- | ---------------------------------------------------------------------------- |
+| Read            | Check status, search notes, read notes and blocks, list tags and collections |
+| Write           | Create notes, update headers, add or edit blocks, delete or reorder blocks   |
+| Organize        | Manage tags and collections, set favorites, pins, and thumbnails             |
+| Connect content | Manage linked notes, examples, and related links                             |
+| Trash           | Move, restore, permanently delete notes, and clear trash                     |
 
 Images and attachment uploads are not accepted through MCP. Add those through the app. Deleting a complete block through MCP also removes its associated stored files.
 

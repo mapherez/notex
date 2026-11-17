@@ -102,8 +102,7 @@ files, with no Node process, volumes, credentials or OAuth configuration.
 
 The public domain stays `notex.mapherez.com`. Keep the existing Cloudflare worker
 handling downloads and the separate `/app/` routing. This container does not
-implement `/download` or serve `/app/`; a direct request to those paths returns
-404. All download and webapp links stay unchanged. `CNAME` remains in the static
+implement `/download` or serve `/app/`; a direct request to those paths returns 404. All download and webapp links stay unchanged. `CNAME` remains in the static
 build for compatibility but does not configure Docker hosting.
 
 ### Run on the host

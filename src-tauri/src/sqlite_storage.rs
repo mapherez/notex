@@ -3064,12 +3064,20 @@ mod tests {
         let mut conn = Connection::open_in_memory().unwrap();
         ensure_schema(&conn).unwrap();
         let tx = conn.transaction().unwrap();
-        super::insert_tag(&tx, &serde_json::json!({
-            "id": "tag", "name": "Reading", "isPinned": true
-        })).unwrap();
-        super::insert_collection(&tx, &serde_json::json!({
-            "id": "collection", "name": "Projects", "isPinned": true
-        })).unwrap();
+        super::insert_tag(
+            &tx,
+            &serde_json::json!({
+                "id": "tag", "name": "Reading", "isPinned": true
+            }),
+        )
+        .unwrap();
+        super::insert_collection(
+            &tx,
+            &serde_json::json!({
+                "id": "collection", "name": "Projects", "isPinned": true
+            }),
+        )
+        .unwrap();
         tx.commit().unwrap();
         for table in ["tags", "collections"] {
             let records = super::read_payloads(&conn, table, None, &[]).unwrap();
@@ -3077,15 +3085,26 @@ mod tests {
         }
         conn.execute("DELETE FROM cloud_outbox", []).unwrap();
         let tx = conn.transaction().unwrap();
-        super::insert_tag(&tx, &serde_json::json!({
-            "id": "tag", "name": "Reading", "isPinned": false
-        })).unwrap();
+        super::insert_tag(
+            &tx,
+            &serde_json::json!({
+                "id": "tag", "name": "Reading", "isPinned": false
+            }),
+        )
+        .unwrap();
         tx.commit().unwrap();
-        let kind: String = conn.query_row(
-            "SELECT kind FROM cloud_outbox WHERE entity_id = '@library'", [], |row| row.get(0)
-        ).unwrap();
+        let kind: String = conn
+            .query_row(
+                "SELECT kind FROM cloud_outbox WHERE entity_id = '@library'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
         assert_eq!(kind, "library");
-        assert_eq!(super::read_payloads(&conn, "tags", None, &[]).unwrap()[0]["isPinned"], false);
+        assert_eq!(
+            super::read_payloads(&conn, "tags", None, &[]).unwrap()[0]["isPinned"],
+            false
+        );
     }
 
     struct AdoptionFixture {

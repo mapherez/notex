@@ -26,9 +26,7 @@ use tauri::{AppHandle, Emitter, Runtime, State};
 use tokio::{net::TcpListener, sync::Mutex, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
 
-use crate::mcp_request_broker::{
-    DesktopResponse, McpRequestBroker, McpRequestBrokerError,
-};
+use crate::mcp_request_broker::{DesktopResponse, McpRequestBroker, McpRequestBrokerError};
 
 const LOCAL_STATE_EVENT: &str = "notex://mcp-local-state";
 const TOOL_MANIFEST_JSON: &str =
@@ -66,11 +64,7 @@ impl LocalMcpPublicState {
         Self::new(LocalMcpLifecycleState::Stopped, renderer_ready, port)
     }
 
-    fn new(
-        state: LocalMcpLifecycleState,
-        renderer_ready: bool,
-        port: Option<u16>,
-    ) -> Self {
+    fn new(state: LocalMcpLifecycleState, renderer_ready: bool, port: Option<u16>) -> Self {
         Self {
             state,
             renderer_ready,
@@ -179,8 +173,14 @@ impl LocalMcpManager {
             {
                 return Ok(runtime.public.clone());
             }
-            if !matches!(runtime.public.state, LocalMcpLifecycleState::Stopped | LocalMcpLifecycleState::Error) {
-                return Err(LocalMcpError::new("INVALID_STATE", "Stop the MCP server before changing its port."));
+            if !matches!(
+                runtime.public.state,
+                LocalMcpLifecycleState::Stopped | LocalMcpLifecycleState::Error
+            ) {
+                return Err(LocalMcpError::new(
+                    "INVALID_STATE",
+                    "Stop the MCP server before changing its port.",
+                ));
             }
         }
         let renderer_ready = self.inner.renderer_ready.load(Ordering::Acquire);
@@ -250,8 +250,19 @@ impl LocalMcpManager {
         };
         let service = StreamableHttpService::new(
             move || {
-                let mut server = nox_mcp::McpServer::new("NoteX".into(), env!("CARGO_PKG_VERSION").into(), handler.tools.clone(), handler.clone(), nox_mcp::ServerOptions { app_id: "notex".into(), ..Default::default() }).map_err(std::io::Error::other)?;
-                server.instructions = "Read and update notes in the open NoteX desktop application.".into();
+                let mut server = nox_mcp::McpServer::new(
+                    "NoteX".into(),
+                    env!("CARGO_PKG_VERSION").into(),
+                    handler.tools.clone(),
+                    handler.clone(),
+                    nox_mcp::ServerOptions {
+                        app_id: "notex".into(),
+                        ..Default::default()
+                    },
+                )
+                .map_err(std::io::Error::other)?;
+                server.instructions =
+                    "Read and update notes in the open NoteX desktop application.".into();
                 Ok::<_, std::io::Error>(server)
             },
             NeverSessionManager::default().into(),
@@ -290,7 +301,9 @@ impl LocalMcpManager {
                 .with_graceful_shutdown(shutdown.cancelled_owned())
                 .await;
             task_broker.cancel_all().await;
-            manager.server_exited(&task_app, port, result.is_err()).await;
+            manager
+                .server_exited(&task_app, port, result.is_err())
+                .await;
         });
 
         let mut runtime = self.inner.runtime.lock().await;
@@ -330,16 +343,17 @@ impl LocalMcpManager {
         broker.cancel_all().await;
         if let Some(mut task) = task {
             // Idle HTTP connections must not keep the Stop action pending indefinitely.
-            if tokio::time::timeout(Duration::from_secs(1), &mut task).await.is_err() {
+            if tokio::time::timeout(Duration::from_secs(1), &mut task)
+                .await
+                .is_err()
+            {
                 task.abort();
                 let _ = task.await;
             }
         }
 
-        let public = LocalMcpPublicState::stopped(
-            self.inner.renderer_ready.load(Ordering::Acquire),
-            port,
-        );
+        let public =
+            LocalMcpPublicState::stopped(self.inner.renderer_ready.load(Ordering::Acquire), port);
         let mut runtime = self.inner.runtime.lock().await;
         runtime.public = public.clone();
         emit_state(app, &public);
@@ -373,9 +387,7 @@ impl LocalMcpManager {
 
         runtime.cancellation = None;
         runtime.task = None;
-        runtime.public = if failed
-            && runtime.public.state != LocalMcpLifecycleState::Stopping
-        {
+        runtime.public = if failed && runtime.public.state != LocalMcpLifecycleState::Stopping {
             LocalMcpPublicState::error(
                 self.inner.renderer_ready.load(Ordering::Acquire),
                 Some(port),
@@ -412,10 +424,21 @@ impl<R: Runtime> Clone for NoteXMcpHandler<R> {
 }
 
 impl<R: Runtime> nox_mcp::Executor for NoteXMcpHandler<R> {
-    async fn execute(&self, name: String, input: Value, context: nox_mcp::ExecutionContext) -> CallToolResult {
+    async fn execute(
+        &self,
+        name: String,
+        input: Value,
+        context: nox_mcp::ExecutionContext,
+    ) -> CallToolResult {
         let cancellation = context.cancellation;
-        if self.cancellation.is_cancelled() || cancellation.is_cancelled() || !self.renderer_ready.load(Ordering::Acquire) {
-            return tool_error("NOTEX_OFFLINE", "NoteX is not ready to handle MCP requests.");
+        if self.cancellation.is_cancelled()
+            || cancellation.is_cancelled()
+            || !self.renderer_ready.load(Ordering::Acquire)
+        {
+            return tool_error(
+                "NOTEX_OFFLINE",
+                "NoteX is not ready to handle MCP requests.",
+            );
         }
         let future = self.broker.dispatch(&self.app, name, input);
         tokio::select! {
@@ -425,9 +448,7 @@ impl<R: Runtime> nox_mcp::Executor for NoteXMcpHandler<R> {
     }
 }
 
-fn renderer_response(
-    response: Result<DesktopResponse, McpRequestBrokerError>,
-) -> CallToolResult {
+fn renderer_response(response: Result<DesktopResponse, McpRequestBrokerError>) -> CallToolResult {
     match response {
         Ok(response) if response.ok => match response.result {
             Some(result) => {
@@ -445,18 +466,17 @@ fn renderer_response(
                     "retryable": error.retryable,
                     "currentVersion": error.current_version,
                 }));
-                result.content = vec![ContentBlock::text(result.structured_content.as_ref().unwrap().to_string())];
+                result.content = vec![ContentBlock::text(
+                    result.structured_content.as_ref().unwrap().to_string(),
+                )];
                 result
-            },
+            }
             None => tool_error("INTERNAL", "An internal error occurred."),
         },
-        Err(McpRequestBrokerError::Timeout) => {
-            tool_error("TIMEOUT", "The MCP request timed out.")
+        Err(McpRequestBrokerError::Timeout) => tool_error("TIMEOUT", "The MCP request timed out."),
+        Err(McpRequestBrokerError::Overloaded) => {
+            tool_error("INTERNAL", "NoteX has too many MCP requests in progress.")
         }
-        Err(McpRequestBrokerError::Overloaded) => tool_error(
-            "INTERNAL",
-            "NoteX has too many MCP requests in progress.",
-        ),
         Err(McpRequestBrokerError::RendererUnavailable) => {
             tool_error("NOTEX_OFFLINE", "The NoteX renderer is unavailable.")
         }
@@ -474,7 +494,9 @@ fn tool_error(code: &str, message: &str) -> CallToolResult {
         "code": code,
         "message": message,
     }));
-    result.content = vec![ContentBlock::text(result.structured_content.as_ref().unwrap().to_string())];
+    result.content = vec![ContentBlock::text(
+        result.structured_content.as_ref().unwrap().to_string(),
+    )];
     result
 }
 
@@ -496,7 +518,10 @@ struct RequestRateLimit {
 
 impl RequestRateLimit {
     fn new() -> Self {
-        Self { window_started: Instant::now(), requests: 0 }
+        Self {
+            window_started: Instant::now(),
+            requests: 0,
+        }
     }
 
     fn accept(&mut self, now: Instant) -> bool {
@@ -518,7 +543,12 @@ async fn limit_request_rate(
     next: Next,
 ) -> Response {
     if !limit.lock().await.accept(Instant::now()) {
-        return (StatusCode::TOO_MANY_REQUESTS, [("retry-after", "1")], "Too many requests").into_response();
+        return (
+            StatusCode::TOO_MANY_REQUESTS,
+            [("retry-after", "1")],
+            "Too many requests",
+        )
+            .into_response();
     }
     next.run(request).await
 }
@@ -531,7 +561,9 @@ mod tests {
     fn rate_limit_rejects_bursts_and_recovers() {
         let mut limit = RequestRateLimit::new();
         let start = limit.window_started;
-        for _ in 0..60 { assert!(limit.accept(start)); }
+        for _ in 0..60 {
+            assert!(limit.accept(start));
+        }
         assert!(!limit.accept(start));
         assert!(limit.accept(start + Duration::from_secs(1)));
     }
@@ -539,10 +571,15 @@ mod tests {
     #[test]
     fn conflict_preserves_recovery_metadata() {
         let result = renderer_response(Ok(DesktopResponse {
-            request_id: "local-mcp-test".into(), ok: false, result: None, generation: None,
+            request_id: "local-mcp-test".into(),
+            ok: false,
+            result: None,
+            generation: None,
             error: Some(crate::mcp_request_broker::DesktopBridgeError {
-                code: "CONFLICT".into(), message: "Conflict".into(),
-                retryable: true, current_version: Some(7),
+                code: "CONFLICT".into(),
+                message: "Conflict".into(),
+                retryable: true,
+                current_version: Some(7),
             }),
         }));
         let value = serde_json::to_value(result).unwrap();
@@ -569,11 +606,19 @@ mod tests {
         let tools = load_tools().unwrap();
         assert_eq!(tools.len(), 34);
         let value = serde_json::to_value(tools).unwrap();
-        let reads = value.as_array().unwrap().iter()
-            .filter(|tool| tool["annotations"]["readOnlyHint"] == true).count();
+        let reads = value
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|tool| tool["annotations"]["readOnlyHint"] == true)
+            .count();
         assert_eq!(reads, 7);
-        let destructive = value.as_array().unwrap().iter()
-            .filter(|tool| tool["annotations"]["destructiveHint"] == true).count();
+        let destructive = value
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|tool| tool["annotations"]["destructiveHint"] == true)
+            .count();
         assert_eq!(destructive, 9);
     }
 }

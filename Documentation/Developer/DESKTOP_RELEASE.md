@@ -59,13 +59,13 @@ The final publisher requires both manifests to match the selected version,
 workflow commit and public key, and rejects missing signatures, mixed versions,
 unexpected files and altered artefacts.
 
-| Public asset | Purpose |
-| --- | --- |
-| `NoteX-windows-x86_64-setup.exe` and `.sig` | Windows installer and updater payload |
-| `NoteX-windows-x86_64.msi` and `.sig` | Windows MSI installer |
-| `NoteX-macos-arm64.dmg` | Apple Silicon installation |
-| `NoteX-macos-arm64.app.tar.gz` and `.sig` | Apple Silicon updater payload |
-| `latest.json` | One manifest with `windows-x86_64` and `darwin-aarch64` |
+| Public asset                                | Purpose                                                 |
+| ------------------------------------------- | ------------------------------------------------------- |
+| `NoteX-windows-x86_64-setup.exe` and `.sig` | Windows installer and updater payload                   |
+| `NoteX-windows-x86_64.msi` and `.sig`       | Windows MSI installer                                   |
+| `NoteX-macos-arm64.dmg`                     | Apple Silicon installation                              |
+| `NoteX-macos-arm64.app.tar.gz` and `.sig`   | Apple Silicon updater payload                           |
+| `latest.json`                               | One manifest with `windows-x86_64` and `darwin-aarch64` |
 
 The publisher creates a draft, uploads all assets with `latest.json` last, and
 only then publishes. An upload failure leaves a draft rather than a partially
@@ -128,7 +128,9 @@ when needed; no note-format migration is required.
      },
      "plugins": {
        "updater": {
-         "endpoints": ["https://github.com/mapherez/notex/releases/download/v2.5.1-updater-test/latest.json"]
+         "endpoints": [
+           "https://github.com/mapherez/notex/releases/download/v2.5.1-updater-test/latest.json"
+         ]
        }
      }
    }

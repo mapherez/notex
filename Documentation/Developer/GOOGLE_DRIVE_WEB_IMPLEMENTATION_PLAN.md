@@ -56,11 +56,11 @@ Publicação: [deployment e release](GOOGLE_DRIVE_WEB_DEPLOYMENT.md).
 
 Manter o NoteX desktop rápido e utilizável offline, acrescentar backups automáticos na Drive pessoal e disponibilizar a mesma experiência de edição no browser.
 
-| Ambiente | Armazenamento | Acesso |
-| --- | --- | --- |
-| Desktop Windows | SQLite e anexos locais | Login opcional |
-| Web | IndexedDB, incluindo anexos e fila de transferências | Conta obrigatória |
-| Google Drive | JSON e anexos na `appDataFolder` | Diretamente pelos clientes |
+| Ambiente        | Armazenamento                                        | Acesso                     |
+| --------------- | ---------------------------------------------------- | -------------------------- |
+| Desktop Windows | SQLite e anexos locais                               | Login opcional             |
+| Web             | IndexedDB, incluindo anexos e fila de transferências | Conta obrigatória          |
+| Google Drive    | JSON e anexos na `appDataFolder`                     | Diretamente pelos clientes |
 
 - Partilhar os modelos de dados, validação, regras de versões e lógica das transferências.
 - Criar adaptadores específicos para armazenamento, ficheiros e autenticação.

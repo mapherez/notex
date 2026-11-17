@@ -19,12 +19,5 @@
       "cwd": "."
     }
   ],
-  "format": [
-    {
-      "command": "npm",
-      "args": ["exec", "--no", "--", "vp", "fmt"],
-      "cwd": "."
-    }
-  ],
   "styles": true
 }

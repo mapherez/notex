@@ -35,10 +35,11 @@
     "prepare": "node --input-type=module -e \"import { existsSync } from 'node:fs'; if (existsSync('scripts/install-hooks.mjs')) await import('./scripts/install-hooks.mjs');\"",
     "precommit": "node scripts/git-hooks.mjs commit",
     "check": "node scripts/git-hooks.mjs check",
-    "prepush": "npm run check",
+    "prepush": "node scripts/format-files.mjs --check --revision HEAD && npm run check",
     "check:code": "vp check",
-    "format:check": "vp fmt --check",
-    "format": "vp fmt"
+    "format:check": "node scripts/format-files.mjs --check",
+    "format": "node scripts/format-files.mjs",
+    "test:format": "node --test scripts/format-files.test.mjs"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.7",
@@ -77,12 +78,16 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@prettier/plugin-xml": "3.4.2",
     "@tauri-apps/cli": "^2.11.2",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^5.1.4",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^27.0.0",
+    "prettier": "3.10.1",
+    "prettier-plugin-nginx": "2.0.0",
+    "prettier-plugin-sh": "0.20.2",
     "sass": "^1.100.0",
     "stylelint": "^17.12.0",
     "stylelint-config-standard-scss": "^17.0.0",

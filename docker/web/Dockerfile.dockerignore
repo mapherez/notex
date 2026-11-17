@@ -18,6 +18,7 @@
 !public/**
 !scripts
 !scripts/build-web-worker.mjs
+!scripts/format-options.json
 !packages
 !packages/notex-mcp-contract
 !packages/notex-mcp-contract/package.json

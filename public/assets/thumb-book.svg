@@ -1,6 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" role="img" aria-labelledby="title"><title id="title">Book note thumbnail</title><rect width="96" height="96" rx="5" fill="#f3efe5"/>
-    <rect x="20" y="14" width="57" height="68" rx="4" fill="#fffdf6" stroke="#d2cabc" stroke-width="2"/>
-    <path fill="none" d="M27 15v66" stroke="#e0d7c7" stroke-width="3"/>
-    <path fill="none" d="M36 30h30M36 40h25M36 50h30M36 60h23M36 70h27" stroke="#aaa08f" stroke-width="3" stroke-linecap="round"/>
-    <path d="M65 14v18l-5-3-5 3V14" fill="#c8b9e6"/>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="96"
+  height="96"
+  viewBox="0 0 96 96"
+  fill="none"
+  role="img"
+  aria-labelledby="title"
+><title id="title">Book note thumbnail</title><rect
+    width="96"
+    height="96"
+    rx="5"
+    fill="#f3efe5"
+  />
+    <rect
+    x="20"
+    y="14"
+    width="57"
+    height="68"
+    rx="4"
+    fill="#fffdf6"
+    stroke="#d2cabc"
+    stroke-width="2"
+  />
+    <path fill="none" d="M27 15v66" stroke="#e0d7c7" stroke-width="3" />
+    <path
+    fill="none"
+    d="M36 30h30M36 40h25M36 50h30M36 60h23M36 70h27"
+    stroke="#aaa08f"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
+    <path d="M65 14v18l-5-3-5 3V14" fill="#c8b9e6" />
 </svg>

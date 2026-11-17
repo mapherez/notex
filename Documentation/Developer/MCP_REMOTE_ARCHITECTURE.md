@@ -30,18 +30,18 @@ Google identifies people to the hosted backend. It does not authorize access to 
 
 ### Threats and mandatory controls
 
-| Threat | Mandatory control |
-| --- | --- |
-| Cross-account routing or email reassignment | Route by the stable identity mapping `Google issuer + subject`; email is display metadata only. Never route by email alone. |
-| An AI client creates a NoteX account implicitly | A new account requires a short-lived registration intent created by `Register account` in NoteX Desktop. Normal MCP OAuth and desktop Login cannot create it. |
-| Stolen or replayed bridge ticket | Tickets are cryptographically random, expire after 30 seconds, are stored only in memory, and are consumed exactly once. |
-| Delayed or duplicated local mutation | Every request carries a UUID and deadline. There is no queue or replay; disconnect, timeout, logout, replacement, or restart fails in-flight work. Existing-note mutations additionally require `expectedVersion`. |
-| Oversized, malformed, or wrong-direction WebSocket input | Both peers enforce the 2 MiB byte limit, strict UTF-8/JSON decoding, direction-specific Zod schemas, and the exact bridge protocol version before dispatch. |
-| Scope escalation by an OAuth client | Access tokens are audience-bound to the canonical MCP resource and each tool checks its required `notex:read`, `notex:create`, or `notex:edit` scope. The private desktop scope is not available through public client registration. |
-| SSRF through Client ID Metadata Documents | CIMD retrieval uses the Node transport that resolves once, rejects special/private addresses, pins the approved address, and refuses redirects. |
-| Rich-text script, file, or unsafe URL injection | MCP rich text is parsed by the same Tiptap schema as the editor and sanitized before any store mutation. Unsupported nodes, images, files, scripts, and unsafe protocols are rejected or removed. |
-| Backend or log retention of note data | Request arguments, results, bridge frames, note identifiers, titles, email addresses, and query strings are excluded from logs and persistent backend storage. |
-| Direct remote access to the NoteX SQLite file | Only the local renderer command layer may invoke the existing stores/repository. Rust and the hosted backend never issue note SQL. |
+| Threat                                                   | Mandatory control                                                                                                                                                                                                                    |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Cross-account routing or email reassignment              | Route by the stable identity mapping `Google issuer + subject`; email is display metadata only. Never route by email alone.                                                                                                          |
+| An AI client creates a NoteX account implicitly          | A new account requires a short-lived registration intent created by `Register account` in NoteX Desktop. Normal MCP OAuth and desktop Login cannot create it.                                                                        |
+| Stolen or replayed bridge ticket                         | Tickets are cryptographically random, expire after 30 seconds, are stored only in memory, and are consumed exactly once.                                                                                                             |
+| Delayed or duplicated local mutation                     | Every request carries a UUID and deadline. There is no queue or replay; disconnect, timeout, logout, replacement, or restart fails in-flight work. Existing-note mutations additionally require `expectedVersion`.                   |
+| Oversized, malformed, or wrong-direction WebSocket input | Both peers enforce the 2 MiB byte limit, strict UTF-8/JSON decoding, direction-specific Zod schemas, and the exact bridge protocol version before dispatch.                                                                          |
+| Scope escalation by an OAuth client                      | Access tokens are audience-bound to the canonical MCP resource and each tool checks its required `notex:read`, `notex:create`, or `notex:edit` scope. The private desktop scope is not available through public client registration. |
+| SSRF through Client ID Metadata Documents                | CIMD retrieval uses the Node transport that resolves once, rejects special/private addresses, pins the approved address, and refuses redirects.                                                                                      |
+| Rich-text script, file, or unsafe URL injection          | MCP rich text is parsed by the same Tiptap schema as the editor and sanitized before any store mutation. Unsupported nodes, images, files, scripts, and unsafe protocols are rejected or removed.                                    |
+| Backend or log retention of note data                    | Request arguments, results, bridge frames, note identifiers, titles, email addresses, and query strings are excluded from logs and persistent backend storage.                                                                       |
+| Direct remote access to the NoteX SQLite file            | Only the local renderer command layer may invoke the existing stores/repository. Rust and the hosted backend never issue note SQL.                                                                                                   |
 
 ### Accepted exposure and assumptions
 

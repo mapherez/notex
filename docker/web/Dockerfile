@@ -6,8 +6,8 @@ WORKDIR /app
 ENV npm_config_audit=false npm_config_fund=false npm_config_update_notifier=false
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git ca-certificates python3 make g++ \
-    && rm -rf /var/lib/apt/lists/*
+  && apt-get install -y --no-install-recommends git ca-certificates python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
 COPY backend/package.json ./backend/
@@ -21,7 +21,7 @@ COPY packages/notex-mcp-contract/src ./packages/notex-mcp-contract/src
 COPY tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts vitest.config.ts index.html ./
 COPY src ./src
 COPY public ./public
-COPY scripts/build-web-worker.mjs ./scripts/build-web-worker.mjs
+COPY scripts/build-web-worker.mjs scripts/format-options.json ./scripts/
 
 # These are public web configuration values. Never pass the desktop secret.
 ARG VITE_GOOGLE_WEB_CLIENT_ID
@@ -33,11 +33,11 @@ RUN node --input-type=module -e 'const id = process.env.VITE_GOOGLE_WEB_CLIENT_I
 FROM nginx:stable-alpine AS runtime
 
 LABEL org.opencontainers.image.source="https://github.com/mapherez/notex" \
-      org.opencontainers.image.description="NoteX browser app with personal Google Drive backups"
+  org.opencontainers.image.description="NoteX browser app with personal Google Drive backups"
 
 COPY docker/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/ /usr/share/nginx/html/app/
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1
+  CMD wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1

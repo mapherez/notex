@@ -88,11 +88,15 @@ fn callback_page(title: &str, description: &str, received: bool) -> Html<String>
             )
             .replace(
                 "{{SOURCE_SANS_3}}",
-                &STANDARD.encode(include_bytes!("../../public/assets/fonts/source-sans-3.woff2")),
+                &STANDARD.encode(include_bytes!(
+                    "../../public/assets/fonts/source-sans-3.woff2"
+                )),
             )
             .replace(
                 "{{MANROPE}}",
-                &STANDARD.encode(include_bytes!("../../public/assets/fonts/manrope-latin.woff2")),
+                &STANDARD.encode(include_bytes!(
+                    "../../public/assets/fonts/manrope-latin.woff2"
+                )),
             )
             .replace("{{ICON}}", icon)
             .replace("{{TITLE}}", title)

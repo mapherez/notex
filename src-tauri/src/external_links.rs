@@ -26,7 +26,9 @@ fn is_allowed_external_url(url: &str) -> bool {
 fn open_url(url: &str) -> Result<(), String> {
     use windows_sys::Win32::{
         Foundation::RPC_E_CHANGED_MODE,
-        System::Com::{CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE},
+        System::Com::{
+            CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE,
+        },
         UI::{Shell::ShellExecuteW, WindowsAndMessaging::SW_SHOWNORMAL},
     };
 
@@ -59,7 +61,9 @@ fn open_url(url: &str) -> Result<(), String> {
         if result > 32 {
             Ok(())
         } else {
-            Err(format!("Could not open external URL: Windows error {result}"))
+            Err(format!(
+                "Could not open external URL: Windows error {result}"
+            ))
         }
     }
 }

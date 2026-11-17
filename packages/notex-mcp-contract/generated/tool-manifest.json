@@ -28,11 +28,7 @@
         "properties": {
           "state": {
             "type": "string",
-            "enum": [
-              "online",
-              "offline",
-              "logged_out"
-            ]
+            "enum": ["online", "offline", "logged_out"]
           },
           "appVersion": {
             "type": "string"
@@ -41,10 +37,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "state",
-          "protocolVersion"
-        ],
+        "required": ["state", "protocolVersion"],
         "additionalProperties": false
       }
     },
@@ -75,11 +68,7 @@
           "location": {
             "default": "active",
             "type": "string",
-            "enum": [
-              "active",
-              "trash",
-              "all"
-            ]
+            "enum": ["active", "trash", "all"]
           },
           "limit": {
             "default": 20,
@@ -159,9 +148,7 @@
             }
           }
         },
-        "required": [
-          "results"
-        ],
+        "required": ["results"],
         "additionalProperties": false
       }
     },
@@ -189,9 +176,7 @@
             "maxLength": 128
           }
         },
-        "required": [
-          "noteId"
-        ]
+        "required": ["noteId"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -212,10 +197,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "html",
-              "text"
-            ],
+            "required": ["html", "text"],
             "additionalProperties": false
           },
           "subtitle": {
@@ -228,10 +210,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "html",
-              "text"
-            ],
+            "required": ["html", "text"],
             "additionalProperties": false
           },
           "collectionId": {
@@ -285,11 +264,7 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "id",
-                "title",
-                "href"
-              ],
+              "required": ["id", "title", "href"],
               "additionalProperties": false
             }
           },
@@ -322,9 +297,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "variant"
-                ],
+                "required": ["variant"],
                 "additionalProperties": false
               },
               {
@@ -374,10 +347,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "html",
-                    "text"
-                  ],
+                  "required": ["html", "text"],
                   "additionalProperties": false
                 },
                 "contentPreview": {
@@ -387,13 +357,7 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "id",
-                "sortOrder",
-                "title",
-                "contentPreview",
-                "updatedAt"
-              ],
+              "required": ["id", "sortOrder", "title", "contentPreview", "updatedAt"],
               "additionalProperties": false
             }
           }
@@ -449,10 +413,7 @@
             "maxLength": 128
           }
         },
-        "required": [
-          "noteId",
-          "blockId"
-        ]
+        "required": ["noteId", "blockId"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -483,10 +444,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "html",
-              "text"
-            ],
+            "required": ["html", "text"],
             "additionalProperties": false
           },
           "content": {
@@ -499,10 +457,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "html",
-              "text"
-            ],
+            "required": ["html", "text"],
             "additionalProperties": false
           },
           "updatedAt": {
@@ -567,10 +522,7 @@
             "description": "Trash state token returned by get_trash_status."
           }
         },
-        "required": [
-          "noteCount",
-          "stateToken"
-        ],
+        "required": ["noteCount", "stateToken"],
         "additionalProperties": false
       }
     },
@@ -648,18 +600,12 @@
                   ]
                 }
               },
-              "required": [
-                "id",
-                "name",
-                "color"
-              ],
+              "required": ["id", "name", "color"],
               "additionalProperties": false
             }
           }
         },
-        "required": [
-          "tags"
-        ],
+        "required": ["tags"],
         "additionalProperties": false
       }
     },
@@ -737,18 +683,12 @@
                   ]
                 }
               },
-              "required": [
-                "id",
-                "name",
-                "color"
-              ],
+              "required": ["id", "name", "color"],
               "additionalProperties": false
             }
           }
         },
-        "required": [
-          "collections"
-        ],
+        "required": ["collections"],
         "additionalProperties": false
       }
     },
@@ -801,9 +741,7 @@
             ]
           }
         },
-        "required": [
-          "name"
-        ]
+        "required": ["name"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -846,17 +784,11 @@
                 ]
               }
             },
-            "required": [
-              "id",
-              "name",
-              "color"
-            ],
+            "required": ["id", "name", "color"],
             "additionalProperties": false
           }
         },
-        "required": [
-          "tag"
-        ],
+        "required": ["tag"],
         "additionalProperties": false
       }
     },
@@ -914,9 +846,7 @@
             ]
           }
         },
-        "required": [
-          "tagId"
-        ]
+        "required": ["tagId"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -959,17 +889,11 @@
                 ]
               }
             },
-            "required": [
-              "id",
-              "name",
-              "color"
-            ],
+            "required": ["id", "name", "color"],
             "additionalProperties": false
           }
         },
-        "required": [
-          "tag"
-        ],
+        "required": ["tag"],
         "additionalProperties": false
       }
     },
@@ -997,9 +921,7 @@
             "maxLength": 128
           }
         },
-        "required": [
-          "tagId"
-        ]
+        "required": ["tagId"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1020,11 +942,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "tagId",
-          "deleted",
-          "affectedNoteCount"
-        ],
+        "required": ["tagId", "deleted", "affectedNoteCount"],
         "additionalProperties": false
       }
     },
@@ -1077,9 +995,7 @@
             ]
           }
         },
-        "required": [
-          "name"
-        ]
+        "required": ["name"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1122,17 +1038,11 @@
                 ]
               }
             },
-            "required": [
-              "id",
-              "name",
-              "color"
-            ],
+            "required": ["id", "name", "color"],
             "additionalProperties": false
           }
         },
-        "required": [
-          "collection"
-        ],
+        "required": ["collection"],
         "additionalProperties": false
       }
     },
@@ -1190,9 +1100,7 @@
             ]
           }
         },
-        "required": [
-          "collectionId"
-        ]
+        "required": ["collectionId"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1235,17 +1143,11 @@
                 ]
               }
             },
-            "required": [
-              "id",
-              "name",
-              "color"
-            ],
+            "required": ["id", "name", "color"],
             "additionalProperties": false
           }
         },
-        "required": [
-          "collection"
-        ],
+        "required": ["collection"],
         "additionalProperties": false
       }
     },
@@ -1273,9 +1175,7 @@
             "maxLength": 128
           }
         },
-        "required": [
-          "collectionId"
-        ]
+        "required": ["collectionId"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1296,11 +1196,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "collectionId",
-          "deleted",
-          "affectedNoteCount"
-        ],
+        "required": ["collectionId", "deleted", "affectedNoteCount"],
         "additionalProperties": false
       }
     },
@@ -1327,10 +1223,7 @@
             "properties": {
               "format": {
                 "type": "string",
-                "enum": [
-                  "text",
-                  "html"
-                ],
+                "enum": ["text", "html"],
                 "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
@@ -1339,10 +1232,7 @@
                 "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
               }
             },
-            "required": [
-              "format",
-              "value"
-            ],
+            "required": ["format", "value"],
             "description": "Title of the new note. Omit to create an empty note title."
           },
           "subtitle": {
@@ -1350,10 +1240,7 @@
             "properties": {
               "format": {
                 "type": "string",
-                "enum": [
-                  "text",
-                  "html"
-                ],
+                "enum": ["text", "html"],
                 "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
@@ -1362,10 +1249,7 @@
                 "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
               }
             },
-            "required": [
-              "format",
-              "value"
-            ],
+            "required": ["format", "value"],
             "description": "Subtitle of the new note. Omit to create an empty note subtitle."
           },
           "collectionId": {
@@ -1404,10 +1288,7 @@
                   "properties": {
                     "format": {
                       "type": "string",
-                      "enum": [
-                        "text",
-                        "html"
-                      ],
+                      "enum": ["text", "html"],
                       "description": "Use text for literal plain text or html for supported NoteX rich text."
                     },
                     "value": {
@@ -1416,10 +1297,7 @@
                       "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
                     }
                   },
-                  "required": [
-                    "format",
-                    "value"
-                  ],
+                  "required": ["format", "value"],
                   "description": "Optional title of this new block."
                 },
                 "content": {
@@ -1427,10 +1305,7 @@
                   "properties": {
                     "format": {
                       "type": "string",
-                      "enum": [
-                        "text",
-                        "html"
-                      ],
+                      "enum": ["text", "html"],
                       "description": "Use text for literal plain text or html for supported NoteX rich text."
                     },
                     "value": {
@@ -1439,10 +1314,7 @@
                       "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent). Block bodies additionally support paragraphs and line breaks (<p>, <br>), headings (<h1> through <h6>), bullet and ordered lists (<ul>, <ol>, <li>), quotes (<blockquote>), code blocks (<pre><code>), horizontal rules (<hr>), and text alignment via style=\"text-align: left|center|right|justify\" on paragraphs or headings. For a checklist, use <ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"true|false\"><p>Item</p></li></ul>. For a NoteX tip, use <notex-tip title=\"Tip\"><p>Content</p></notex-tip>. For a table, use <table> with one <tr> per row and one <th> or <td> per column; wrap cell content in <p>. Table cells may use colspan and rowspan. Images, files, scripts, embedded content, and unsafe link protocols are not supported."
                     }
                   },
-                  "required": [
-                    "format",
-                    "value"
-                  ],
+                  "required": ["format", "value"],
                   "description": "Optional body of this new block."
                 }
               }
@@ -1474,11 +1346,7 @@
             }
           }
         },
-        "required": [
-          "noteId",
-          "version",
-          "blockIds"
-        ],
+        "required": ["noteId", "version", "blockIds"],
         "additionalProperties": false
       }
     },
@@ -1517,10 +1385,7 @@
             "properties": {
               "format": {
                 "type": "string",
-                "enum": [
-                  "text",
-                  "html"
-                ],
+                "enum": ["text", "html"],
                 "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
@@ -1529,10 +1394,7 @@
                 "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
               }
             },
-            "required": [
-              "format",
-              "value"
-            ],
+            "required": ["format", "value"],
             "description": "Complete new note title. Omit this field to preserve the current note title."
           },
           "subtitle": {
@@ -1540,10 +1402,7 @@
             "properties": {
               "format": {
                 "type": "string",
-                "enum": [
-                  "text",
-                  "html"
-                ],
+                "enum": ["text", "html"],
                 "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
@@ -1552,10 +1411,7 @@
                 "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
               }
             },
-            "required": [
-              "format",
-              "value"
-            ],
+            "required": ["format", "value"],
             "description": "Complete new note subtitle. Omit this field to preserve the current note subtitle."
           },
           "collectionId": {
@@ -1572,10 +1428,7 @@
             "description": "Existing collection ID for the note. Omit to preserve the current collection; use null to remove it."
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion"
-        ]
+        "required": ["noteId", "expectedVersion"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1592,10 +1445,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "noteId",
-          "version"
-        ],
+        "required": ["noteId", "version"],
         "additionalProperties": false
       }
     },
@@ -1634,10 +1484,7 @@
             "properties": {
               "format": {
                 "type": "string",
-                "enum": [
-                  "text",
-                  "html"
-                ],
+                "enum": ["text", "html"],
                 "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
@@ -1646,10 +1493,7 @@
                 "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
               }
             },
-            "required": [
-              "format",
-              "value"
-            ],
+            "required": ["format", "value"],
             "description": "Optional title of the new block. Omit for an empty block title."
           },
           "content": {
@@ -1657,10 +1501,7 @@
             "properties": {
               "format": {
                 "type": "string",
-                "enum": [
-                  "text",
-                  "html"
-                ],
+                "enum": ["text", "html"],
                 "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
@@ -1669,17 +1510,11 @@
                 "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent). Block bodies additionally support paragraphs and line breaks (<p>, <br>), headings (<h1> through <h6>), bullet and ordered lists (<ul>, <ol>, <li>), quotes (<blockquote>), code blocks (<pre><code>), horizontal rules (<hr>), and text alignment via style=\"text-align: left|center|right|justify\" on paragraphs or headings. For a checklist, use <ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"true|false\"><p>Item</p></li></ul>. For a NoteX tip, use <notex-tip title=\"Tip\"><p>Content</p></notex-tip>. For a table, use <table> with one <tr> per row and one <th> or <td> per column; wrap cell content in <p>. Table cells may use colspan and rowspan. Images, files, scripts, embedded content, and unsafe link protocols are not supported."
               }
             },
-            "required": [
-              "format",
-              "value"
-            ],
+            "required": ["format", "value"],
             "description": "Optional body of the new block. Omit for an empty block body."
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion"
-        ]
+        "required": ["noteId", "expectedVersion"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1701,11 +1536,7 @@
             "maxLength": 128
           }
         },
-        "required": [
-          "noteId",
-          "version",
-          "blockId"
-        ],
+        "required": ["noteId", "version", "blockId"],
         "additionalProperties": false
       }
     },
@@ -1750,10 +1581,7 @@
             "properties": {
               "format": {
                 "type": "string",
-                "enum": [
-                  "text",
-                  "html"
-                ],
+                "enum": ["text", "html"],
                 "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
@@ -1762,10 +1590,7 @@
                 "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent)."
               }
             },
-            "required": [
-              "format",
-              "value"
-            ],
+            "required": ["format", "value"],
             "description": "Complete new title of this block. Omit this field to preserve the current block title."
           },
           "content": {
@@ -1773,10 +1598,7 @@
             "properties": {
               "format": {
                 "type": "string",
-                "enum": [
-                  "text",
-                  "html"
-                ],
+                "enum": ["text", "html"],
                 "description": "Use text for literal plain text or html for supported NoteX rich text."
               },
               "value": {
@@ -1785,18 +1607,11 @@
                 "description": "For html, supported inline elements are <strong>, <em>, <u>, <s>, <code>, <a href=\"...\">, <span style=\"color: ...\">, and <mark style=\"background-color: ...\">. Prefer NoteX palette colors as var(--nx-color-NAME), where NAME is red, rose, pink, fuchsia, purple, violet, indigo, blue, sky, cyan, teal, mint, green, lime, yellow, amber, orange, brown, slate, or neutral. For a palette highlight, use color-mix(in srgb, var(--nx-color-NAME) 28%, transparent). Block bodies additionally support paragraphs and line breaks (<p>, <br>), headings (<h1> through <h6>), bullet and ordered lists (<ul>, <ol>, <li>), quotes (<blockquote>), code blocks (<pre><code>), horizontal rules (<hr>), and text alignment via style=\"text-align: left|center|right|justify\" on paragraphs or headings. For a checklist, use <ul data-type=\"taskList\"><li data-type=\"taskItem\" data-checked=\"true|false\"><p>Item</p></li></ul>. For a NoteX tip, use <notex-tip title=\"Tip\"><p>Content</p></notex-tip>. For a table, use <table> with one <tr> per row and one <th> or <td> per column; wrap cell content in <p>. Table cells may use colspan and rowspan. Images, files, scripts, embedded content, and unsafe link protocols are not supported."
               }
             },
-            "required": [
-              "format",
-              "value"
-            ],
+            "required": ["format", "value"],
             "description": "Complete new body of this block. Omit this field to preserve the current block body."
           }
         },
-        "required": [
-          "noteId",
-          "blockId",
-          "expectedVersion"
-        ]
+        "required": ["noteId", "blockId", "expectedVersion"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1818,11 +1633,7 @@
             "maxLength": 128
           }
         },
-        "required": [
-          "noteId",
-          "version",
-          "blockId"
-        ],
+        "required": ["noteId", "version", "blockId"],
         "additionalProperties": false
       }
     },
@@ -1867,11 +1678,7 @@
             "description": "Complete replacement set of existing tag IDs. Use an empty array to remove all tags."
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "tagIds"
-        ]
+        "required": ["noteId", "expectedVersion", "tagIds"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1888,10 +1695,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "noteId",
-          "version"
-        ],
+        "required": ["noteId", "version"],
         "additionalProperties": false
       }
     },
@@ -1930,11 +1734,7 @@
             "description": "Exact favorite state to apply."
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "isFavorite"
-        ]
+        "required": ["noteId", "expectedVersion", "isFavorite"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1951,10 +1751,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "noteId",
-          "version"
-        ],
+        "required": ["noteId", "version"],
         "additionalProperties": false
       }
     },
@@ -1993,11 +1790,7 @@
             "description": "Exact pinned state to apply."
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "isPinned"
-        ]
+        "required": ["noteId", "expectedVersion", "isPinned"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2014,10 +1807,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "noteId",
-          "version"
-        ],
+        "required": ["noteId", "version"],
         "additionalProperties": false
       }
     },
@@ -2070,11 +1860,7 @@
             "description": "Exact NoteX thumbnail variant to apply."
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "variant"
-        ]
+        "required": ["noteId", "expectedVersion", "variant"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2091,10 +1877,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "noteId",
-          "version"
-        ],
+        "required": ["noteId", "version"],
         "additionalProperties": false
       }
     },
@@ -2135,11 +1918,7 @@
             "description": "ID of the note to add to or remove from the linked-note set."
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "linkedNoteId"
-        ]
+        "required": ["noteId", "expectedVersion", "linkedNoteId"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2161,11 +1940,7 @@
             "maxLength": 128
           }
         },
-        "required": [
-          "noteId",
-          "version",
-          "linkedNoteId"
-        ],
+        "required": ["noteId", "version", "linkedNoteId"],
         "additionalProperties": false
       }
     },
@@ -2206,11 +1981,7 @@
             "description": "ID of the note to add to or remove from the linked-note set."
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "linkedNoteId"
-        ]
+        "required": ["noteId", "expectedVersion", "linkedNoteId"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2232,11 +2003,7 @@
             "maxLength": 128
           }
         },
-        "required": [
-          "noteId",
-          "version",
-          "linkedNoteId"
-        ],
+        "required": ["noteId", "version", "linkedNoteId"],
         "additionalProperties": false
       }
     },
@@ -2276,11 +2043,7 @@
             "maxLength": 50000
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "example"
-        ]
+        "required": ["noteId", "expectedVersion", "example"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2302,11 +2065,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "noteId",
-          "version",
-          "exampleIndex"
-        ],
+        "required": ["noteId", "version", "exampleIndex"],
         "additionalProperties": false
       }
     },
@@ -2351,12 +2110,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "example",
-          "exampleIndex"
-        ]
+        "required": ["noteId", "expectedVersion", "example", "exampleIndex"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2378,11 +2132,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "noteId",
-          "version",
-          "exampleIndex"
-        ],
+        "required": ["noteId", "version", "exampleIndex"],
         "additionalProperties": false
       }
     },
@@ -2422,11 +2172,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "exampleIndex"
-        ]
+        "required": ["noteId", "expectedVersion", "exampleIndex"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2452,12 +2198,7 @@
             "const": true
           }
         },
-        "required": [
-          "noteId",
-          "version",
-          "exampleIndex",
-          "deleted"
-        ],
+        "required": ["noteId", "version", "exampleIndex", "deleted"],
         "additionalProperties": false
       }
     },
@@ -2503,12 +2244,7 @@
             "pattern": "^[hH][tT][tT][pP][sS]?://"
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "title",
-          "href"
-        ]
+        "required": ["noteId", "expectedVersion", "title", "href"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2539,19 +2275,11 @@
                 "type": "string"
               }
             },
-            "required": [
-              "id",
-              "title",
-              "href"
-            ],
+            "required": ["id", "title", "href"],
             "additionalProperties": false
           }
         },
-        "required": [
-          "noteId",
-          "version",
-          "link"
-        ],
+        "required": ["noteId", "version", "link"],
         "additionalProperties": false
       }
     },
@@ -2591,11 +2319,7 @@
             "maxLength": 128
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "linkId"
-        ]
+        "required": ["noteId", "expectedVersion", "linkId"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2621,12 +2345,7 @@
             "const": true
           }
         },
-        "required": [
-          "noteId",
-          "version",
-          "linkId",
-          "deleted"
-        ],
+        "required": ["noteId", "version", "linkId", "deleted"],
         "additionalProperties": false
       }
     },
@@ -2666,11 +2385,7 @@
             "maxLength": 128
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "blockId"
-        ]
+        "required": ["noteId", "expectedVersion", "blockId"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2696,12 +2411,7 @@
             "const": true
           }
         },
-        "required": [
-          "noteId",
-          "version",
-          "blockId",
-          "deleted"
-        ],
+        "required": ["noteId", "version", "blockId", "deleted"],
         "additionalProperties": false
       }
     },
@@ -2746,11 +2456,7 @@
             "description": "Complete ordered list of every current block ID in the note."
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion",
-          "blockIds"
-        ]
+        "required": ["noteId", "expectedVersion", "blockIds"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2775,11 +2481,7 @@
             }
           }
         },
-        "required": [
-          "noteId",
-          "version",
-          "blockIds"
-        ],
+        "required": ["noteId", "version", "blockIds"],
         "additionalProperties": false
       }
     },
@@ -2814,10 +2516,7 @@
             "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion"
-        ]
+        "required": ["noteId", "expectedVersion"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2834,10 +2533,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "noteId",
-          "version"
-        ],
+        "required": ["noteId", "version"],
         "additionalProperties": false
       }
     },
@@ -2872,10 +2568,7 @@
             "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion"
-        ]
+        "required": ["noteId", "expectedVersion"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2892,10 +2585,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "noteId",
-          "version"
-        ],
+        "required": ["noteId", "version"],
         "additionalProperties": false
       }
     },
@@ -2930,10 +2620,7 @@
             "description": "Current note version returned by get_note or get_note_block. The write fails if it is stale."
           }
         },
-        "required": [
-          "noteId",
-          "expectedVersion"
-        ]
+        "required": ["noteId", "expectedVersion"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2949,10 +2636,7 @@
             "const": true
           }
         },
-        "required": [
-          "noteId",
-          "deleted"
-        ],
+        "required": ["noteId", "deleted"],
         "additionalProperties": false
       }
     },
@@ -2982,9 +2666,7 @@
             "description": "Trash state token returned by get_trash_status."
           }
         },
-        "required": [
-          "expectedStateToken"
-        ]
+        "required": ["expectedStateToken"]
       },
       "outputSchema": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2996,9 +2678,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": [
-          "deletedCount"
-        ],
+        "required": ["deletedCount"],
         "additionalProperties": false
       }
     }

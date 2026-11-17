@@ -57,12 +57,12 @@ configurado. A web mantém o seu fluxo de login obrigatório.
 
 Criar os seguintes repository secrets em **Settings → Secrets and variables → Actions**:
 
-| Secret | Variável passada ao build |
-| --- | --- |
-| `GOOGLE_WEB_CLIENT_ID` | `VITE_GOOGLE_WEB_CLIENT_ID` |
-| `GOOGLE_DESKTOP_CLIENT_ID` | `VITE_GOOGLE_DESKTOP_CLIENT_ID` |
+| Secret                         | Variável passada ao build                    |
+| ------------------------------ | -------------------------------------------- |
+| `GOOGLE_WEB_CLIENT_ID`         | `VITE_GOOGLE_WEB_CLIENT_ID`                  |
+| `GOOGLE_DESKTOP_CLIENT_ID`     | `VITE_GOOGLE_DESKTOP_CLIENT_ID`              |
 | `GOOGLE_DESKTOP_CLIENT_SECRET` | `GOOGLE_DESKTOP_CLIENT_SECRET` (apenas Rust) |
-| `GOOGLE_WEB_ORIGIN` | `VITE_GOOGLE_WEB_ORIGIN` |
+| `GOOGLE_WEB_ORIGIN`            | `VITE_GOOGLE_WEB_ORIGIN`                     |
 
 O workflow `release.yml` já faz esta ligação no passo de build Tauri. Não é
 preciso criar um `.env` no runner. A ausência dos secrets mantém a possibilidade

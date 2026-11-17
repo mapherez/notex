@@ -17,7 +17,7 @@ RUN npm run build --workspace landing && npm run check --workspace landing && np
 FROM nginx:stable-alpine AS runtime
 
 LABEL org.opencontainers.image.source="https://github.com/mapherez/notex" \
-      org.opencontainers.image.description="NoteX static landing page and documentation"
+  org.opencontainers.image.description="NoteX static landing page and documentation"
 
 RUN rm -rf /usr/share/nginx/html/*
 COPY docker/landing/nginx.conf /etc/nginx/conf.d/default.conf
@@ -25,4 +25,4 @@ COPY --from=build /site/landing/dist/ /usr/share/nginx/html/
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1
+  CMD wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1
